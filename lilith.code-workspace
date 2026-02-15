@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "lilith-frontend"
+    },
+    {
+      "path": "lilith-backend"
+    }
+  ],
+  "settings": {
+    "liveServer.settings.multiRootWorkspaceName": "lilith-backend",
+    "powershell.cwd": "lilith-backend"
+  }
+}
