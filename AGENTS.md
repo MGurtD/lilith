@@ -11,9 +11,13 @@ Guidelines for AI coding agents working in this manufacturing ERP monorepo.
 
 ## Quick Commands
 
-### Backend (lilith-backend/)
+**Note**: Directories may be named `backend/` and `frontend/` OR `lilith-backend/` and `lilith-frontend/` depending on whether the rename migration is complete. Commands below use the new naming (`backend/`, `frontend/`).
+
+### Backend (backend/)
 
 ```bash
+cd backend  # or 'cd lilith-backend' if not yet renamed
+
 # Build and run
 dotnet build
 dotnet run --project src/Api/
@@ -29,9 +33,11 @@ dotnet ef database update --project src/Infrastructure/
 
 **Swagger**: https://localhost:5001/swagger
 
-### Frontend (lilith-frontend/)
+### Frontend (frontend/)
 
 ```bash
+cd frontend  # or 'cd lilith-frontend' if not yet renamed
+
 # Setup (requires pnpm v10+)
 pnpm install
 
@@ -207,18 +213,18 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 ## Documentation References
 
 **Backend deep dives:**
-- Architecture: `lilith-backend/docs/architecture-layers.md`
-- Patterns: `lilith-backend/docs/architectural-patterns.md`
-- Domain model: `lilith-backend/docs/domain-model.md`
-- Developer guide: `lilith-backend/docs/developer-guide.md`
-- Localization: `lilith-backend/docs/localization.md`
-- Request flow: `lilith-backend/docs/request-flow.md`
+- Architecture: `backend/docs/architecture-layers.md` (or `lilith-backend/docs/` if not renamed)
+- Patterns: `backend/docs/architectural-patterns.md`
+- Domain model: `backend/docs/domain-model.md`
+- Developer guide: `backend/docs/developer-guide.md`
+- Localization: `backend/docs/localization.md`
+- Request flow: `backend/docs/request-flow.md`
 
 **Frontend guide:**
-- Comprehensive reference: `lilith-frontend/AGENTS.md` (218 lines)
+- Comprehensive reference: `frontend/AGENTS.md` (or `lilith-frontend/AGENTS.md` if not renamed)
 
 **Skills (task-specific guides):**
-- See `.skills/` directory for focused, task-oriented guides
+- See `.opencode/skills/` directory for focused, task-oriented guides
 - Use skills for: adding entities, implementing CRUD, understanding workflows
 
 ## Environment Setup
