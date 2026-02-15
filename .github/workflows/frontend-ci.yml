@@ -4,17 +4,21 @@ on:
   push:
     branches:
       - main
+      - master
       - dev
       - test
     paths:
+      - 'frontend/**'
       - 'lilith-frontend/**'
       - '.github/workflows/frontend-ci.yml'
       - 'docker-compose.yml'
   pull_request:
     branches:
       - main
+      - master
       - dev
     paths:
+      - 'frontend/**'
       - 'lilith-frontend/**'
 
 env:
@@ -44,21 +48,30 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
       
+      - name: Determine working directory
+        id: workdir
+        run: |
+          if [ -d "./frontend" ]; then
+            echo "dir=frontend" >> $GITHUB_OUTPUT
+          else
+            echo "dir=lilith-frontend" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Setup pnpm cache
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/${{ steps.workdir.outputs.dir }}/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: ./lilith-frontend
+        working-directory: ./${{ steps.workdir.outputs.dir }}
       
       - name: Type check
         run: pnpm run typecheck
-        working-directory: ./lilith-frontend
+        working-directory: ./${{ steps.workdir.outputs.dir }}
       
       - name: Determine environment and build
         id: build
@@ -80,7 +93,7 @@ jobs:
             pnpm run build-development
             echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
           fi
-        working-directory: ./lilith-frontend
+        working-directory: ./${{ steps.workdir.outputs.dir }}
         env:
           VITE_API_APP_NAME: ${{ secrets.VITE_API_APP_NAME }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
@@ -99,8 +112,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./lilith-frontend
-          file: ./lilith-frontend/Dockerfile
+          context: ./${{ steps.workdir.outputs.dir }}
+          file: ./${{ steps.workdir.outputs.dir }}/Dockerfile
           push: true
           tags: ${{ env.DOCKER_IMAGE }}:${{ steps.build.outputs.tag }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
