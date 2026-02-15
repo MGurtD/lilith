@@ -1,0 +1,124 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - test
+    paths:
+      - 'lilith-frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+      - 'docker-compose.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'lilith-frontend/**'
+
+env:
+  DOCKER_IMAGE: marcgurt/lilith-frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./lilith-frontend
+      
+      - name: Type check
+        run: pnpm run typecheck
+        working-directory: ./lilith-frontend
+      
+      - name: Determine environment and build
+        id: build
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "Building for production"
+            pnpm run build
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/dev" ]; then
+            echo "Building for development"
+            pnpm run build-development
+            echo "tag=dev" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/test" ]; then
+            echo "Building for preprod"
+            pnpm run build-preprod
+            echo "tag=test" >> $GITHUB_OUTPUT
+          else
+            echo "Building for branch"
+            pnpm run build-development
+            echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ./lilith-frontend
+        env:
+          VITE_API_APP_NAME: ${{ secrets.VITE_API_APP_NAME }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_REPORTS_BASE_URL: ${{ secrets.VITE_REPORTS_BASE_URL }}
+          VITE_API_ACTIONS_URL: ${{ secrets.VITE_API_ACTIONS_URL }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./lilith-frontend
+          file: ./lilith-frontend/Dockerfile
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:${{ steps.build.outputs.tag }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+  
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    
+    steps:
+      - name: Deploy to dev server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}
+          username: ${{ secrets.DEV_SERVER_USERNAME }}
+          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          script: |
+            cd ~/lilith
+            docker compose pull lilith-frontend
+            docker compose up -d --no-deps --force-recreate lilith-frontend
