@@ -1,0 +1,16 @@
+<Solution>
+    <Folder Name="/Solution Items/">
+        <File Path=".github\copilot-instructions.md" />
+        <File Path="Dockerfile" />
+    </Folder>
+    <Project Path="src\Domain\Domain.csproj" Type="Classic C#" />
+    <Project Path="src\Infrastructure\Infrastructure.csproj" Type="Classic C#" />
+    <Project Path="src\Application.Contracts\Application.Contracts.csproj" Type="Classic C#" />
+    <Project Path="src\Application\Application.csproj" Type="Classic C#" />
+    <Project Path="src\Api\Api.csproj" Type="Classic C#" />
+    <Project Path="src\Verifactu\Verifactu.csproj" Type="Classic C#" />
+    <Properties Name="Configuration">
+        <Property Name="Debug|Any CPU" />
+        <Property Name="Release|Any CPU" />
+    </Properties>
+</Solution>

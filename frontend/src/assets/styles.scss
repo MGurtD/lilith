@@ -1,0 +1,216 @@
+html {
+  font-family:
+    Inter var,
+    -apple-system,
+    BlinkMacSystemFont,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif,
+    Apple Color Emoji,
+    Segoe UI Emoji,
+    Segoe UI Symbol;
+}
+
+:root {
+  --top-panel-height: 4rem;
+  --side-bar-width: 240px;
+  --side-bar-collapsed-width: 50px;
+  --collapsed-side-padding: 15px;
+
+  /* Quantity status colors - PrimeVue v4 uses --p- prefix */
+  --quantity-ok-color: var(--p-green-600);
+  --quantity-ko-color: var(--p-red-600);
+
+  /* Loaded row highlight colors */
+  --loaded-row-bg: var(--p-green-100);
+  --loaded-row-border: var(--p-green-600);
+}
+
+.two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.two-columns-7525 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+
+.two-columns-2575 {
+  display: grid;
+  grid-template-columns: 0.33fr 0.68fr;
+  gap: 1rem;
+}
+
+.three-columns-7525 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.three-columns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.four-columns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.five-columns {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+.six-columns {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+}
+.seven-columns {
+  display: grid;
+  grid-template-columns: repeat(7, 0.5fr);
+  gap: 0.5rem;
+}
+
+.budgetordercostinput .p-inputnumber input {
+  width: 8em !important;
+  box-sizing: border-box;
+}
+
+.vsm--header {
+  font-size: 1.5rem !important;
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  padding-left: 1rem !important;
+}
+
+.vsm--toggle-btn {
+  height: 50px !important;
+}
+
+.vsm--link_open {
+  background-color: var(--p-blue-700) !important;
+}
+
+.summary-field {
+  font-weight: bold;
+  color: black;
+}
+
+.grid_add_row_button {
+  position: fixed !important;
+  right: 1rem !important;
+  z-index: 1 !important;
+}
+
+.grid_delete_column_button {
+  color: var(--p-red-600);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--p-red-800);
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+  }
+}
+
+.grid_copy_column_button {
+  cursor: pointer;
+}
+
+.p-card .p-card-content {
+  padding: 0.5rem !important;
+}
+
+.p-card .p-card-body {
+  padding: 1rem !important;
+}
+
+.p-password > input {
+  width: 100% !important;
+}
+
+/* PrimeVue v4 DatePicker (formerly Calendar) */
+.p-datepicker {
+  display: flex !important;
+}
+
+.p-datepicker > input {
+  width: 100% !important;
+}
+
+/* PrimeVue v4 Select - ensure entire component is clickable */
+.p-select {
+  cursor: pointer;
+}
+
+.p-select-label {
+  cursor: pointer;
+}
+
+table > tbody > tr {
+  font-size: 0.8rem !important;
+}
+
+.flex-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.datatable-filter {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.datatable-filter-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.datatable-filter-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.datatable-filter-5 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr;
+  gap: 2rem;
+}
+
+.filter-field {
+  display: grid;
+  grid-template-columns: 0.4fr 1fr;
+  font-size: 0.8rem !important;
+}
+
+.filter-field > label {
+  padding-top: 12px;
+  font-size: 1rem;
+}
+
+.clickable-rows :deep(.p-datatable-tbody > tr) {
+  cursor: pointer;
+}
+
+/* Quantity status classes */
+.quantity-ok {
+  color: var(--quantity-ok-color);
+  font-weight: 600;
+}
+
+.quantity-ko {
+  color: var(--quantity-ko-color);
+  font-weight: 600;
+}

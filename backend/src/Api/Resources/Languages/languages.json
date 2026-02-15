@@ -1,0 +1,26 @@
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "code": "ca",
+    "name": "Català",
+    "icon": "https://www.stevenskelton.ca/flag-icon/svg/es/catalonia.svg",
+    "isDefault": true,
+    "sortOrder": 1
+  },
+  {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "code": "es",
+    "name": "Español",
+    "icon": "https://www.stevenskelton.ca/flag-icon/svg/country-4x3/es.svg",
+    "isDefault": false,
+    "sortOrder": 2
+  },
+  {
+    "id": "33333333-3333-3333-3333-333333333333",
+    "code": "en",
+    "name": "English",
+    "icon": "https://www.stevenskelton.ca/flag-icon/svg/country-4x3/gb.svg",
+    "isDefault": false,
+    "sortOrder": 3
+  }
+]

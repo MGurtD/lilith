@@ -1,0 +1,3 @@
+# Under migrations folder, disable analyzer diagnostics
+[**/Migrations/*.cs]
+dotnet_analyzer_diagnostic.severity = none

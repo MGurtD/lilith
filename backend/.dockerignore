@@ -1,0 +1,52 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.userosscache
+*.sln.docstates
+
+# Logs
+**/logs/
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Environment files
+.env*
+*.Development.json
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# GitHub
+.github/
+
+# Tests (if added in future)
+**/TestResults/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Other
+*.cache
+*.temp
+*.tmp

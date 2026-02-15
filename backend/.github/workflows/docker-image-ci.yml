@@ -1,0 +1,62 @@
+name: docker-image-ci
+
+on:
+  push:
+    branches:
+      - "master"
+      - "dev"
+      - "test"
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    # Selección del entorno dinámico según la rama
+    environment: ${{ github.ref == 'refs/heads/master' && 'production' || 'staging' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build and push (master branch)
+        if: ${{ github.ref_name == 'master' }}
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: marcgurt/lilith-backend:latest
+
+      - name: Build and push (dev branch)
+        if: ${{ github.ref_name == 'dev' }}
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: marcgurt/lilith-backend:dev
+
+      - name: Build and push (test branch)
+        if: ${{ github.ref_name == 'test' }}
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: marcgurt/lilith-backend:test
+
+      - name: Deploy to server via SSH
+        if: github.ref_name == 'dev'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
+          script: |
+            cd ~/lilith
+            docker pull marcgurt/lilith-backend:dev
+            docker compose up -d --no-deps --force-recreate lilith-backend

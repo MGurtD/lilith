@@ -1,0 +1,62 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tikeV1.0/cont/ws/SistemaFacturacion.wsdl"
+    ],
+    "collectionTypes": [
+      "System.Collections.Generic.Dictionary`2",
+      "System.Collections.Generic.List`1"
+    ],
+    "namespaceMappings": [
+      "*, SistemaFacturacion"
+    ],
+    "references": [
+      "Azure.Core, {Azure.Core, 1.38.0}",
+      "Azure.Identity, {Azure.Identity, 1.11.4}",
+      "C:\\Users\\mgurt\\source\\personal\\lilith-backend\\Verifactu\\bin\\Debug\\net10.0\\Domain.dll",
+      "Microsoft.Bcl.AsyncInterfaces, {Microsoft.Bcl.AsyncInterfaces, 1.1.1}",
+      "Microsoft.Bcl.Cryptography, {Microsoft.Bcl.Cryptography, 9.0.4}",
+      "Microsoft.Data.SqlClient, {Microsoft.Data.SqlClient, 6.0.2}",
+      "Microsoft.Extensions.Configuration, {Microsoft.Extensions.Configuration, 10.0.0}",
+      "Microsoft.Extensions.Configuration.Abstractions, {Microsoft.Extensions.Configuration.Abstractions, 10.0.0}",
+      "Microsoft.Extensions.Configuration.EnvironmentVariables, {Microsoft.Extensions.Configuration.EnvironmentVariables, 10.0.0}",
+      "Microsoft.Extensions.Configuration.FileExtensions, {Microsoft.Extensions.Configuration.FileExtensions, 10.0.0}",
+      "Microsoft.Extensions.Configuration.Json, {Microsoft.Extensions.Configuration.Json, 10.0.0}",
+      "Microsoft.Extensions.Configuration.UserSecrets, {Microsoft.Extensions.Configuration.UserSecrets, 10.0.0}",
+      "Microsoft.Extensions.DependencyInjection.Abstractions, {Microsoft.Extensions.DependencyInjection.Abstractions, 10.0.0}",
+      "Microsoft.Extensions.FileProviders.Abstractions, {Microsoft.Extensions.FileProviders.Abstractions, 10.0.0}",
+      "Microsoft.Extensions.FileProviders.Physical, {Microsoft.Extensions.FileProviders.Physical, 10.0.0}",
+      "Microsoft.Extensions.FileSystemGlobbing, {Microsoft.Extensions.FileSystemGlobbing, 10.0.0}",
+      "Microsoft.Extensions.ObjectPool, {Microsoft.Extensions.ObjectPool, 6.0.16}",
+      "Microsoft.Extensions.Options, {Microsoft.Extensions.Options, 10.0.0}",
+      "Microsoft.Extensions.Primitives, {Microsoft.Extensions.Primitives, 10.0.0}",
+      "Microsoft.Identity.Client, {Microsoft.Identity.Client, 4.61.3}",
+      "Microsoft.Identity.Client.Extensions.Msal, {Microsoft.Identity.Client.Extensions.Msal, 4.61.3}",
+      "Microsoft.IdentityModel.Abstractions, {Microsoft.IdentityModel.Abstractions, 7.5.0}",
+      "Microsoft.IdentityModel.JsonWebTokens, {Microsoft.IdentityModel.JsonWebTokens, 7.5.0}",
+      "Microsoft.IdentityModel.Logging, {Microsoft.IdentityModel.Logging, 7.5.0}",
+      "Microsoft.IdentityModel.Protocols, {Microsoft.IdentityModel.Protocols, 7.5.0}",
+      "Microsoft.IdentityModel.Protocols.OpenIdConnect, {Microsoft.IdentityModel.Protocols.OpenIdConnect, 7.5.0}",
+      "Microsoft.IdentityModel.Protocols.WsTrust, {Microsoft.IdentityModel.Protocols.WsTrust, 6.8.0}",
+      "Microsoft.IdentityModel.Tokens, {Microsoft.IdentityModel.Tokens, 7.5.0}",
+      "Microsoft.IdentityModel.Tokens.Saml, {Microsoft.IdentityModel.Tokens.Saml, 6.8.0}",
+      "Microsoft.IdentityModel.Xml, {Microsoft.IdentityModel.Xml, 6.8.0}",
+      "Microsoft.SqlServer.Server, {Microsoft.SqlServer.Server, 1.0.0}",
+      "System.ClientModel, {System.ClientModel, 1.0.0}",
+      "System.IdentityModel.Tokens.Jwt, {System.IdentityModel.Tokens.Jwt, 7.5.0}",
+      "System.Memory.Data, {System.Memory.Data, 1.0.2}",
+      "System.Security.Cryptography.Pkcs, {System.Security.Cryptography.Pkcs, 9.0.4}",
+      "System.Security.Cryptography.ProtectedData, {System.Security.Cryptography.ProtectedData, 9.0.4}",
+      "System.Security.Cryptography.Xml, {System.Security.Cryptography.Xml, 6.0.1}",
+      "System.ServiceModel.Duplex, {System.ServiceModel.Duplex, 6.0.0}",
+      "System.ServiceModel.Federation, {System.ServiceModel.Federation, 6.0.0}",
+      "System.ServiceModel.Http, {System.ServiceModel.Http, 6.0.0}",
+      "System.ServiceModel.NetFramingBase, {System.ServiceModel.NetFramingBase, 6.0.0}",
+      "System.ServiceModel.NetTcp, {System.ServiceModel.NetTcp, 6.0.0}",
+      "System.ServiceModel.Primitives, {System.ServiceModel.Primitives, 6.0.0}",
+      "System.ServiceModel.Security, {System.ServiceModel.Security, 6.0.0}"
+    ],
+    "targetFramework": "net10.0",
+    "typeReuseMode": "All"
+  }
+}

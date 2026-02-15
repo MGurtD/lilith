@@ -1,0 +1,362 @@
+<?xml version="1.0"?>
+<ArrayOfDQ xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DQ>
+    <cod_dq>Area Elaborados L1,L2,L3 y L6 Asociar Diafragmas</cod_dq>
+    <desc_dq />
+    <orden>0</orden>
+    <menu />
+    <icono>0</icono>
+    <isSubMenu>0</isSubMenu>
+    <isWebEnabled>0</isWebEnabled>
+    <nivel_minimo>0</nivel_minimo>
+    <Visible>0</Visible>
+    <activo>0</activo>
+    <consulta>&lt;Event EverySeconds="5"&gt;
+	
+	&lt;!-- Source SQL to get the records or execute --&gt;
+	&lt;SourceSQL&gt;				
+		&lt;SQL&gt;
+			SELECT 
+	         	Id_graf,
+				cod_graf,
+				rt_lastupdate,
+	         	rt_commerror,
+				rt_valor
+	         FROM cfg_graf WITH (NOLOCK)
+	         WHERE activo = 1 AND funcion = 'MAQUINA'
+	         ORDER BY IP;
+		&lt;/SQL&gt;		
+	&lt;/SourceSQL&gt;
+	
+	&lt;!-- Target SQL to execute with source results--&gt;
+	&lt;TargetSQL&gt;		
+		&lt;SQL&gt;
+		
+		&lt;/SQL&gt;	
+	&lt;/TargetSQL&gt;
+	
+&lt;/Event&gt;</consulta>
+    <id_programa>823</id_programa>
+    <NivelMenu>0</NivelMenu>
+    <cod_grupo>Captura</cod_grupo>
+    <Standard>false</Standard>
+    <StandardV10>0</StandardV10>
+    <fecha>0001-01-01T00:00:00</fecha>
+    <gridLayouts />
+    <chartLayouts />
+    <reports />
+    <translations />
+    <vbCode>Imports Microsoft.VisualBasic
+Imports System
+Imports System.Collections.ObjectModel
+Imports MapexAgent
+Imports MapexAgent.mapex
+Imports MapexAgent.mapex.MapexData
+Imports System.IO
+Imports System.Collections.Generic
+Imports System.Net.Sockets 
+
+Namespace MapexAgentRunTime
+
+
+    Public Class OnTask
+#Region "Declaracion de Variables"		
+   	Dim FirstScan As Boolean
+    Dim EstadoFuncion As Boolean
+
+    Friend Class Tags
+        Inherits List(Of Tag)
+    End Class
+	
+    Friend Class Tag
+        Public IdGraf As Integer
+        'Public IdMaquina As Integer
+        Public Activo As Boolean
+        Public RegistrarEnBBDD As Boolean
+		Public Cod_graf As String
+        Public rt_commerror As Integer
+        Public ValorLeido As Integer
+        Public LastValorLeido As Integer
+		Public FechaUltimaLectura As DateTime 
+    End Class
+
+    Friend _Tags As New Tags
+    Dim TagActual As Tag
+    Dim TagEnMemoria As Integer
+    Dim ActualizarBBDD As Boolean
+    Dim sqlUpdateCfgGraf As String
+#end region
+	
+		Function BeforeSourceTask(task As MapexAgent.TaskClass.taskSourceClass) As Boolean
+			' Add your code here
+		End Function
+		
+#Region "MAIN"	
+		'MAIN - AfterSource
+		Function AfterSourceTask(task As MapexAgent.TaskClass.taskSourceClass) As Boolean
+			EstadoFuncion = False
+        	If FirstScan = False Then
+	            'Paso 0: Control Primera iteracion Tarea y Consulta devuelve valores. Inicializamos parámetros
+	            InicializarTarea(task)
+	            EstadoFuncion = True
+	        ElseIf task.Result.Rows.Count &gt; 0 Then
+	            'Paso 1: Cargar datos en memoria
+	            If CargarDatosEnMemoria(task) = True Then
+	                ' Paso 2: Control Peticiones a basculas
+	                If FirstScan = True And Funciones(task) Then
+	                    ' Paso 3: Actualizar cgf_maquina
+	                    If RegistrarDatos() = True Then
+	                        If PrepararIteracionSiguiente() Then
+	                            EstadoFuncion = True
+	                        End If
+	                    End If
+	                End If
+	            End If
+	        Else
+	            LogTXT("Consulta para cargar datos no devuelve valores")
+	        End If
+
+	        FirstScan = True
+	        Return EstadoFuncion
+		End Function
+#end region
+
+#Region "Codigo"
+		
+	    '   Paso 0: Inicializar tarea
+	    Public Function InicializarTarea(task As MapexAgent.TaskClass.taskSourceClass) As Boolean
+	        sqlUpdateCfgGraf = ""
+	        FirstScan = True
+	        Return True
+	    End Function
+
+	    '   Paso 1: Cargar Datos en memoria
+	    Public Function CargarDatosEnMemoria(task As MapexAgent.TaskClass.taskSourceClass) As Boolean
+	        Dim TagNuevo As Boolean = False
+
+	        Try
+	            For i As Integer = 0 To task.Result.Rows.Count - 1
+	                TagEnMemoria = False
+	                'buscar tag
+	                For Each t As Tag In _Tags
+	                    If t.IdGraf = task.Result.Rows(i)("id_graf") Then
+	                        TagActual = t
+	                        TagActual.Activo = True
+	                        TagEnMemoria = True
+	                        Exit For
+	                    End If
+	                Next
+	                'Añadir tag nuevo 
+	                If Not TagEnMemoria Then
+	                    TagActual = New Tag
+	                    TagActual.IdGraf = task.Result.Rows(i)("id_graf")
+	                    TagActual.Activo = True
+	                    _Tags.Add(TagActual)
+	                    LogTXT("Nuevo tag Id:" &amp; TagActual.IdGraf &amp; " en memoria.")
+	                    TagNuevo = True
+	                End If
+					
+	                ''rt_commerror
+	                If Not IsDBNull(task.Result.Rows(i)("rt_commerror")) Then
+	                    TagActual.rt_commerror = task.Result.Rows(i)("rt_commerror")
+	                Else
+	                    TagActual.rt_commerror = 0
+	                    Continue For
+	                End If
+					''cod_graf
+	                If Not IsDBNull(task.Result.Rows(i)("cod_graf")) Then
+	                    TagActual.Cod_graf  = task.Result.Rows(i)("cod_graf")
+	                Else
+	                    TagActual.Cod_graf = ""
+	                    Continue For
+	                End If
+'	                ''id_maquina
+'	                If Not IsDBNull(task.Result.Rows(i)("id_maquina")) Then
+'	                    TagActual.IdMaquina = task.Result.Rows(i)("id_maquina")
+'	                Else
+'	                    LogTXT("Falta indicar parámetro 'id_maquina' en el tag " &amp; task.Result.Rows(i)("id_graf"))
+'	                    TagActual.IdMaquina = 0
+'	                    TagActual.rt_commerror += 1
+'	                    Continue For
+'	                End If
+					''rt_valor
+	                If Not IsDBNull(task.Result.Rows(i)("rt_valor")) Then
+	                    TagActual.ValorLeido = task.Result.Rows(i)("rt_valor")
+	                Else
+	                    LogTXT("Falta inicializar lectura en el tag " &amp; task.Result.Rows(i)("id_graf"))
+	                    TagActual.rt_commerror += 1
+	                    Continue For
+	                End If
+					''rt_lastupdate
+	                If Not IsDBNull(task.Result.Rows(i)("rt_lastupdate")) Then
+	                    TagActual.FechaUltimaLectura = task.Result.Rows(i)("rt_lastupdate")
+	                Else
+	                    LogTXT("Falta inicializar campo RT_LASTUPDATE en el tag " &amp; task.Result.Rows(i)("id_graf"))
+	                    TagActual.rt_commerror += 1
+	                    Continue For
+	                End If
+					
+	            Next
+
+	            'Borrar de memoria máquinas desactivadas
+	            For Each t As Tag In _Tags
+	                If Not t.Activo Then LogTXT("Tag Id. " &amp; t.IdGraf &amp; " desactivado.")
+	            Next
+	            _Tags.RemoveAll(Function(tag) tag.Activo = False)
+
+	        Catch ex As Exception
+	            LogTXT("Error cargando datos en memoria, " &amp; ex.Message)
+	        End Try
+
+	        Return True
+
+	    End Function
+
+	    '   Paso 2: Protocolo
+	    Public Function Funciones(task As MapexAgent.TaskClass.taskSourceClass) As Boolean
+			Dim dt As System.Data.DataTable
+			Dim strlog As String = ""
+			
+			' ValorLeido: Id_maquina
+			' 1: 4 -  L1 elaborado
+			' 2: 6 -  L2 elaborado
+			' 3: 8 -  L3 elaborado
+			' 6: 12 - L6 elaborado
+			Dim relacionValorTagIdMaquina As New Dictionary(Of Integer, Integer) From {
+				{ 1, 4 },
+				{ 2, 6 },
+				{ 3, 8 },
+				{ 6, 12 }
+			}
+			
+			For Each _tag As Tag In _Tags
+	            Try
+					'Comprobamos si hay nueva asignacion de linea a los diafragmas
+					If _tag.ValorLeido &lt;&gt; _tag.ValorLeido AndAlso _tag.rt_commerror = 0 Then
+						'Buscamos los tags relacionados al diagrafma (tag contador y estado)
+						Try
+							dt = ExecQueryReadOnly(String.Format("SELECT id_graf FROM cfg_graf WITH (NOLOCK) WHERE id_grafrel= {0}", _tag.IdGraf ))
+							If dt Is Nothing Or dt.Rows.Count = 0 Then Continue For
+						Catch ex As Exception
+                			LogTXT("Error en Funcion, buscando tags relacionados, " &amp; ex.Message)
+            			End Try
+					
+						'Gestion asignacion linea a tags diafragma y los relacionados a este.
+						If _tag.ValorLeido &lt;&gt; 0 Then							
+							
+							'Habilitar/asignar linea a todos los tags reacionados con el diafragama
+							If relacionValorTagIdMaquina.ContainsKey(_tag.ValorLeido) Then
+								Dim idMaquina As Integer = relacionValorTagIdMaquina.Item(_tag.ValorLeido)
+								
+								sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf set id_maquina = {1}, CambioPendiente = 2 WHERE id_graf = {0}; ",_tag.IdGraf, idMaquina)
+								For Each r As Data.DataRow In dt.Rows
+									sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf set id_maquina = {1}, CambioPendiente = 2 WHERE id_graf = {0}; ",r("id_graf"), idMaquina)
+									strlog &amp;= ", " &amp; r("id_graf")
+								Next
+								LogTXT("Cambio de Asignacion Diafragma " &amp; _tag.Cod_graf &amp; " a L" &amp; _tag.ValorLeido &amp; " ELABORADO en tags (" &amp; _tag.IdGraf &amp; strlog)								
+								
+							Else
+								LogTXT("Valor Leido: " &amp; _tag.ValorLeido &amp; " en tag " &amp; _tag.IdGraf &amp; " no corresponde a ninguna máquina.")
+							End If
+							
+						Else
+							'deshabilitar linea a todos los tags reacionados con el diafragama
+							sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf set id_maquina = 0, CambioPendiente = 2 WHERE id_graf = {0}; ",_tag.IdGraf)
+							For Each r As Data.DataRow In dt.Rows
+								sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf set id_maquina = 0,  CambioPendiente = 2 WHERE id_graf = {0}; ",r("id_graf"))
+								strlog &amp;= ", " &amp; r("id_graf")
+							Next
+							LogTXT("Diafragma " &amp; _tag.Cod_graf &amp; " deshabilitado de maquina en tags (" &amp; _tag.IdGraf &amp; strlog)
+						End If
+
+						dt.Clear 
+						dt = Nothing
+						strlog = ""
+						
+					End If
+	            Catch ex As Exception
+	                LogTXT("ERROR en Funcion, IdGraf " &amp; _tag.IdGraf &amp; ", " &amp; ex.Message)
+	            End Try
+	        Next
+	        Return True
+	    End Function
+
+	    '   Paso 3: Insert HisPesadaAgrupada // update cfg_graf
+	    Public Function RegistrarDatos() As Boolean
+	        For Each _tag As Tag In _Tags
+	            Try
+	                If _tag.RegistrarEnBBDD Then
+	                    If _tag.ValorLeido &lt;&gt; _tag.LastValorLeido Then
+	                        sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf SET rt_lastupdate = GETDATE(), rt_commerror = 0, rt_valor = {1} WHERE id_graf = {0}; ", _tag.IdGraf, _tag.ValorLeido)
+	                        ActualizarBBDD = True
+	                    End If
+	                Else
+'	                    sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf SET rt_lastupdate = GETDATE(), rt_commerror +=1 WHERE id_graf = {0}; ", _tag.IdGraf)
+'	                    ActualizarBBDD = True
+	                End If
+	            Catch ex As Exception
+	                sqlUpdateCfgGraf &amp;= String.Format("UPDATE cfg_graf SET rt_lastupdate = GETDATE(), rt_commerror +=1 WHERE id_graf = {0}; ", _tag.IdGraf)
+	                LogTXT("Error Construyendo ExecNoQuery, " &amp; _tag.IdGraf &amp; ", " &amp; ex.Message)
+	            End Try
+	        Next
+
+	        Try
+	            If ActualizarBBDD Then ExecNoQuery(sqlUpdateCfgGraf)
+	        Catch ex As Exception
+	            LogTXT("Error funcion RegistrarDatos, " &amp; ex.Message)
+	            Return False
+	        End Try
+
+	        Return True
+	    End Function
+
+	    '   Paso 4: Preparar siguiente iteración tarea
+	    Public Function PrepararIteracionSiguiente() As Boolean
+	        sqlUpdateCfgGraf = ""
+	        ActualizarBBDD = False
+	        For Each _tag As Tag In _Tags
+	            _tag.LastValorLeido = _tag.ValorLeido
+	            _tag.RegistrarEnBBDD = False
+	        Next
+	        Return True
+	    End Function
+#end region		
+
+#Region "FUNCIONES"
+    Private Function BytesToInt(ByVal byte3 As Byte, ByVal byte2 As Byte, ByVal byte1 As Byte, ByVal byte0 As Byte) As Integer
+        BytesToInt = CInt(byte3) &lt;&lt; 24
+        BytesToInt += CInt(byte2) &lt;&lt; 16
+        BytesToInt += CInt(byte1) &lt;&lt; 8
+        BytesToInt += CInt(byte0)
+    End Function
+
+    Private Function BytesToInt(ByVal byte1 As Byte, ByVal byte0 As Byte) As Integer
+        BytesToInt += CInt(byte1) &lt;&lt; 8
+        BytesToInt += CInt(byte0)
+    End Function
+#End Region
+
+
+		Function BeforeTargetTask(task As MapexAgent.TaskClass.taskTargetClass) As Boolean
+			' Add your code here
+		End Function
+	
+		Function AfterTargetTask(task As MapexAgent.TaskClass.taskTargetClass) As Boolean
+			' Add your code here
+		End Function
+	
+	End Class
+	
+End Namespace</vbCode>
+    <layout />
+    <dashboardAdmin />
+    <modificado>OFICINA\mgurt (v.10.3.0.27)</modificado>
+    <ProjectVersion>0</ProjectVersion>
+    <Comments />
+    <Status>1</Status>
+    <Template>0</Template>
+    <Package />
+    <IsAppEnabled>0</IsAppEnabled>
+    <IsSettings>0</IsSettings>
+  </DQ>
+</ArrayOfDQ>

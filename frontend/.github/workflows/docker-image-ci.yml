@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - "main"
+      - "dev"
+      - "test"
+
+env:
+  BRANCH: ${{ github.ref_name }}
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    # Selección del entorno dinámico según la rama
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Log environment variables
+        run: |
+          echo "VITE_API_APP_NAME=${{ vars.VITE_API_APP_NAME }}"
+          echo "VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}"
+          echo "VITE_API_ACTIONS_URL=${{ vars.VITE_API_ACTIONS_URL }}"
+          echo "VITE_REPORTS_BASE_URL=${{ vars.VITE_REPORTS_BASE_URL }}"
+          echo "VITE_API_REQUEST_TIMEOUT=${{ vars.VITE_API_REQUEST_TIMEOUT }}"
+          echo "VITE_API_FILE_REQUEST_TIMEOUT=${{ vars.VITE_API_FILE_REQUEST_TIMEOUT }}"
+
+      - name: Build project with Vite
+        env:
+          VITE_API_APP_NAME: ${{ vars.VITE_API_APP_NAME }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_ACTIONS_URL: ${{ vars.VITE_API_ACTIONS_URL }}
+          VITE_REPORTS_BASE_URL: ${{ vars.VITE_REPORTS_BASE_URL }}
+          VITE_API_REQUEST_TIMEOUT: ${{ vars.VITE_API_REQUEST_TIMEOUT }}
+          VITE_API_FILE_REQUEST_TIMEOUT: ${{ vars.VITE_API_FILE_REQUEST_TIMEOUT }}
+        run: pnpm run build
+
+      - name: Build Docker image
+        run: |
+          docker build -t marcgurt/lilith-frontend:${{ github.sha }} .
+
+      - name: Push Docker image
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+          docker tag marcgurt/lilith-frontend:${{ github.sha }} marcgurt/lilith-frontend:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+          docker push marcgurt/lilith-frontend:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+
+      - name: Deploy to server via SSH
+        if: github.ref_name == 'dev'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
+          script: |
+            cd ~/lilith
+            docker pull marcgurt/lilith-frontend:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
+            docker compose up -d --no-deps --force-recreate lilith-frontend

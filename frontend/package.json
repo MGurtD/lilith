@@ -1,0 +1,52 @@
+{
+  "name": "lilith-frontend",
+  "private": true,
+  "version": "1.3.0",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "vue-tsc --noEmit",
+    "build": "pnpm run typecheck && vite build",
+    "build:versioned": "VITE_APP_VERSION=%npm_package_version% pnpm run build",
+    "build-development": "pnpm run typecheck && vite build --mode development --outDir dist-test",
+    "build-preprod": "pnpm run typecheck && vite build --mode preprod --outDir dist-preprod",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@primevue/core": "^4.5.4",
+    "@vuelidate/core": "^2.0.2",
+    "@vuelidate/validators": "^2.0.2",
+    "axios": "^1.2.2",
+    "chart.js": "^4.2.1",
+    "jwt-decode": "^3.1.2",
+    "lodash": "^4.17.21",
+    "pinia": "^2.1.7",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.4",
+    "uuid": "^9.0.0",
+    "vee-validate": "^4.10.1",
+    "vue": "^3.4.38",
+    "vue-chartjs": "^5.3.1",
+    "vue-i18n": "^11.2.8",
+    "vue-pdf-embed": "^2.1.3",
+    "vue-router": "^4.4.5",
+    "vue-sidebar-menu": "^5.2.8",
+    "yup": "^1.7.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.10",
+    "@types/node": "^24.9.2",
+    "@types/uuid": "^9.0.7",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "prettier": "^3.3.3",
+    "sass": "^1.80.3",
+    "typescript": "^5.5.4",
+    "vite": "^6.3.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "vue-tsc": "^2.2.10",
+    "workbox-window": "^7.3.0"
+  }
+}
