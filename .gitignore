@@ -1,13 +1,12 @@
-# Ignora los .git internos temporalmente durante la conversión
-lilith-backend/.git/
-lilith-frontend/.git/
-
 # Build outputs
 **/bin/
 **/obj/
-**/dist/
-**/dist-test/
-**/node_modules/
+backend/.vs/
+backend/obj/
+frontend/dist/
+frontend/dist-test/
+frontend/node_modules/
+frontend/.vite/
 
 # IDE
 .vs/
@@ -22,8 +21,8 @@ lilith-frontend/.git/
 # Environment
 .env
 .env.local
+frontend/.env.local
 
 # OS
 .DS_Store
 Thumbs.db
-nul
