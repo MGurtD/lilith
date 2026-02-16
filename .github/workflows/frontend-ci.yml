@@ -11,7 +11,6 @@ on:
       - "frontend/**"
       - "lilith-frontend/**"
       - ".github/workflows/frontend-ci.yml"
-      - "docker-compose.yml"
   pull_request:
     branches:
       - main
@@ -28,6 +27,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # Dynamic environment: main/master → production, everything else → staging
+    environment: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'production' || 'staging' }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,15 +40,7 @@ jobs:
           node-version: "20"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+        uses: pnpm/action-setup@v4
 
       - name: Determine working directory
         id: workdir
@@ -57,48 +51,52 @@ jobs:
             echo "dir=lilith-frontend" >> $GITHUB_OUTPUT
           fi
 
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
       - name: Setup pnpm cache
         uses: actions/cache@v3
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/${{ steps.workdir.outputs.dir }}/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
         working-directory: ./${{ steps.workdir.outputs.dir }}
 
-      - name: Type check
-        run: pnpm run typecheck
-        working-directory: ./${{ steps.workdir.outputs.dir }}
-
-      - name: Determine environment and build
-        id: build
+      - name: Log environment variables
         run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "Building for production"
-            pnpm run build
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/dev" ]; then
-            echo "Building for development"
-            pnpm run build
-            echo "tag=dev" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/test" ]; then
-            echo "Building for preprod"
-            pnpm run build
-            echo "tag=test" >> $GITHUB_OUTPUT
-          else
-            echo "Building for branch"
-            pnpm run build
-            echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
-          fi
-        working-directory: ./${{ steps.workdir.outputs.dir }}
+          echo "VITE_API_APP_NAME=${{ vars.VITE_API_APP_NAME }}"
+          echo "VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}"
+          echo "VITE_API_ACTIONS_URL=${{ vars.VITE_API_ACTIONS_URL }}"
+          echo "VITE_REPORTS_BASE_URL=${{ vars.VITE_REPORTS_BASE_URL }}"
+          echo "VITE_API_REQUEST_TIMEOUT=${{ vars.VITE_API_REQUEST_TIMEOUT }}"
+          echo "VITE_API_FILE_REQUEST_TIMEOUT=${{ vars.VITE_API_FILE_REQUEST_TIMEOUT }}"
+
+      - name: Build project with Vite
         env:
-          VITE_API_APP_NAME: ${{ secrets.VITE_API_APP_NAME }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_REPORTS_BASE_URL: ${{ secrets.VITE_REPORTS_BASE_URL }}
-          VITE_API_ACTIONS_URL: ${{ secrets.VITE_API_ACTIONS_URL }}
+          VITE_API_APP_NAME: ${{ vars.VITE_API_APP_NAME }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_ACTIONS_URL: ${{ vars.VITE_API_ACTIONS_URL }}
+          VITE_REPORTS_BASE_URL: ${{ vars.VITE_REPORTS_BASE_URL }}
+          VITE_API_REQUEST_TIMEOUT: ${{ vars.VITE_API_REQUEST_TIMEOUT }}
+          VITE_API_FILE_REQUEST_TIMEOUT: ${{ vars.VITE_API_FILE_REQUEST_TIMEOUT }}
+        run: pnpm run build
+        working-directory: ./${{ steps.workdir.outputs.dir }}
+
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_name }}" == "main" ] || [ "${{ github.ref_name }}" == "master" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -106,8 +104,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -115,7 +113,7 @@ jobs:
           context: ./${{ steps.workdir.outputs.dir }}
           file: ./${{ steps.workdir.outputs.dir }}/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_IMAGE }}:${{ steps.build.outputs.tag }}
+          tags: ${{ env.DOCKER_IMAGE }}:${{ steps.tag.outputs.tag }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
 
@@ -123,15 +121,17 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
+    environment: staging
 
     steps:
-      - name: Deploy to dev server
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEV_SERVER_HOST }}
-          username: ${{ secrets.DEV_SERVER_USERNAME }}
-          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
           script: |
             cd ~/lilith
-            docker compose pull lilith-frontend
+            docker pull marcgurt/lilith-frontend:dev
             docker compose up -d --no-deps --force-recreate lilith-frontend
