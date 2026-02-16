@@ -141,63 +141,11 @@
             <label for="activity-dropdown" class="dropdown-label">
               Activitat a carregar
             </label>
-            <Select
-              id="activity-dropdown"
+            <SelectWorkOrderPhaseDetail
               v-model="selectedDetailId"
-              :options="selectedPhase?.details || []"
-              optionLabel="machineStatusName"
-              optionValue="machineStatusId"
-              placeholder="Selecciona una activitat..."
+              :details="selectedPhase?.details || []"
               class="activity-dropdown"
-            >
-              <template #value="slotProps">
-                <div v-if="slotProps.value" class="selected-activity">
-                  <i :class="PrimeIcons.CHECK" class="activity-check-icon"></i>
-                  <span>{{ getSelectedActivityName(slotProps.value) }}</span>
-                  <span class="time-badge">
-                    <i :class="PrimeIcons.CLOCK"></i>
-                    {{
-                      getSelectedActivityDetail(slotProps.value)?.estimatedTime
-                    }}
-                    min
-                  </span>
-                  <span
-                    class="operator-time-badge"
-                    v-if="
-                      (getSelectedActivityDetail(slotProps.value)
-                        ?.estimatedOperatorTime ?? 0) > 0
-                    "
-                  >
-                    <i :class="PrimeIcons.USER"></i>
-                    {{
-                      getSelectedActivityDetail(slotProps.value)
-                        ?.estimatedOperatorTime
-                    }}
-                    min
-                  </span>
-                </div>
-                <span v-else>{{ slotProps.placeholder }}</span>
-              </template>
-              <template #option="slotProps">
-                <div class="activity-option">
-                  <i :class="PrimeIcons.WRENCH" class="option-icon"></i>
-                  <span class="status-name">{{
-                    slotProps.option.machineStatusName
-                  }}</span>
-                  <span class="time-badge">
-                    <i :class="PrimeIcons.CLOCK"></i>
-                    {{ slotProps.option.estimatedTime }} min
-                  </span>
-                  <span
-                    class="operator-time-badge"
-                    v-if="(slotProps.option.estimatedOperatorTime ?? 0) > 0"
-                  >
-                    <i :class="PrimeIcons.USER"></i>
-                    {{ slotProps.option.estimatedOperatorTime }} min
-                  </span>
-                </div>
-              </template>
-            </Select>
+            />
           </div>
           <Button
             :icon="PrimeIcons.COG"
@@ -221,6 +169,7 @@ import { WorkOrderPhaseService } from "../../../production/services/workorder.se
 import { useToast } from "primevue/usetoast";
 import { formatDateTime } from "../../../../utils/functions";
 import { usePlantWorkcenterStore } from "../../store/workcenter.store";
+import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 
 interface Props {
   visible: boolean;
@@ -283,19 +232,6 @@ const selectedPhase = computed(() => {
 const hasValidPhases = computed(() => {
   return selectedPhase.value !== undefined && !hasLoadedWorkOrders.value;
 });
-
-const getSelectedActivityName = (machineStatusId: string): string => {
-  const activity = selectedPhase.value?.details.find(
-    (d) => d.machineStatusId === machineStatusId,
-  );
-  return activity?.machineStatusName || "";
-};
-
-const getSelectedActivityDetail = (machineStatusId: string) => {
-  return selectedPhase.value?.details.find(
-    (d) => d.machineStatusId === machineStatusId,
-  );
-};
 
 const selectPhase = (phase: WorkOrderPhaseDetailed) => {
   selectedPhaseId.value = phase.phaseId;
@@ -463,57 +399,6 @@ onMounted(() => {
 
 .activity-dropdown {
   width: 100%;
-}
-
-.selected-activity {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-}
-
-.activity-check-icon {
-  color: var(--p-green-600);
-  font-size: 1rem;
-}
-
-.activity-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.option-icon {
-  color: var(--p-primary-color);
-  font-size: 1rem;
-}
-
-.status-name {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.time-badge,
-.operator-time-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: var(--p-blue-100);
-  color: var(--p-blue-700);
-  border-radius: var(--border-radius);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.operator-time-badge {
-  background: var(--purple-100);
-  color: var(--purple-700);
-}
-
-.time-badge i,
-.operator-time-badge i {
-  font-size: 0.8rem;
 }
 
 .load-button {

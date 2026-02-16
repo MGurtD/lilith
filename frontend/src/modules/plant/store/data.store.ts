@@ -14,6 +14,9 @@ export const usePlantDataStore = defineStore("plantDataStore", {
         return state.machineStatuses.find((status) => status.id === id);
       };
     },
+    stoppedStatus: (state): MachineStatus | undefined => {
+      return state.machineStatuses.find((status) => status.stopped === true);
+    },
   },
   actions: {
     async fetchAreasWithWorkcenters() {

@@ -362,5 +362,38 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
         return false;
       }
     },
+    async updatePhaseQuantities(
+      counterOk: number,
+      counterKo: number,
+    ): Promise<boolean> {
+      if (!this.workcenter || !this.workcenterRt?.workorders?.length) {
+        return false;
+      }
+
+      const phaseId = this.workcenterRt.workorders[0].workOrderPhaseId;
+
+      try {
+        const result =
+          await ProductionServices.WorkcenterShift.UpdatePhaseQuantities({
+            workcenterId: this.workcenter.id,
+            workOrderPhaseId: phaseId,
+            quantityOk: counterOk,
+            quantityKo: counterKo,
+          });
+
+        if (result) {
+          // Re-fetch loaded work orders to refresh displayed quantities
+          const phaseIds = this._lastLoadedPhaseIds;
+          if (phaseIds.length > 0) {
+            await this.fetchLoadedWorkOrders(phaseIds);
+          }
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Error updating phase quantities:", error);
+        return false;
+      }
+    },
   },
 });
