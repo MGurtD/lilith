@@ -1,5 +1,7 @@
 # Lilith Frontend
 
+> **Note**: This frontend is part of the [Lilith monorepo](https://github.com/MGurtD/lilith). For full system documentation, see the root README.
+
 A modular Vue 3 + TypeScript SPA for the Lilith platform. It provides domain-centric modules (sales, production, purchase, warehouse, etc.), a shared component and service layer, centralized state via Pinia, and deployment through a pre-built static bundle served by Nginx.
 
 ---
