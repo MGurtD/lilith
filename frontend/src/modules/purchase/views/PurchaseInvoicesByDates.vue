@@ -28,7 +28,7 @@
               <DropdownSupplier label="" v-model="filter.supplierId" />
             </div>
             <div class="filter-field">
-              <label class="block text-900">Gestionades</label>
+              <label class="block text-900 mr-3">Gestionades</label>
               <div class="flex flex-wrap gap-3">
                 <div class="flex align-items-center">
                   <Checkbox
