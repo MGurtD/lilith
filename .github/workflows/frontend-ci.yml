@@ -76,23 +76,21 @@ jobs:
       - name: Determine environment and build
         id: build
         run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          if [ "${{ github.ref }}" == "refs/heads/main" ] || [ "${{ github.ref }}" == "refs/heads/master" ]; then
             echo "Building for production"
-            pnpm run build
             echo "tag=latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/dev" ]; then
             echo "Building for development"
-            pnpm run build-development
             echo "tag=dev" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/test" ]; then
-            echo "Building for preprod"
-            pnpm run build-preprod
+            echo "Building for test"
             echo "tag=test" >> $GITHUB_OUTPUT
           else
             echo "Building for branch"
-            pnpm run build-development
             echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
           fi
+          # Always build to dist/ for Docker
+          pnpm run build
         working-directory: ./${{ steps.workdir.outputs.dir }}
         env:
           VITE_API_APP_NAME: ${{ secrets.VITE_API_APP_NAME }}
