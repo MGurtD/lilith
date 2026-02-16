@@ -130,10 +130,7 @@
           />
           <p>Carregant documents...</p>
         </div>
-        <div
-          v-else-if="invoiceFiles.length === 0"
-          class="file-viewer-no-files"
-        >
+        <div v-else-if="invoiceFiles.length === 0" class="file-viewer-no-files">
           <i
             :class="PrimeIcons.FILE"
             style="font-size: 4rem; color: var(--p-surface-400)"
