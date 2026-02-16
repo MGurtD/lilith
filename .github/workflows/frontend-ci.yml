@@ -82,15 +82,15 @@ jobs:
             echo "tag=latest" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/dev" ]; then
             echo "Building for development"
-            pnpm run build-development
+            pnpm run build
             echo "tag=dev" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref }}" == "refs/heads/test" ]; then
             echo "Building for preprod"
-            pnpm run build-preprod
+            pnpm run build
             echo "tag=test" >> $GITHUB_OUTPUT
           else
             echo "Building for branch"
-            pnpm run build-development
+            pnpm run build
             echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
           fi
         working-directory: ./${{ steps.workdir.outputs.dir }}
