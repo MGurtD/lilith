@@ -419,6 +419,16 @@ namespace Application.Services.Production
                 ClosedAt = request.Timestamp
             });
 
+            // Si hi ha una següent fase, obrir-la
+            if (request.NextWorkOrderPhaseId.HasValue)
+            {
+                var startPhaseResponse = await workOrderPhaseService.StartPhase(request.NextWorkOrderPhaseId.Value);
+                if (!startPhaseResponse.Result)
+                {
+                    return startPhaseResponse;
+                }
+            }
+
             return await workOrderPhaseService.EndPhase(request.WorkOrderPhaseId, request.WorkOrderStatusId);
         }
         #endregion
