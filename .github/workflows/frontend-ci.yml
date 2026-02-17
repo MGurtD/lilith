@@ -10,15 +10,6 @@ on:
     paths:
       - "frontend/**"
       - "lilith-frontend/**"
-      - ".github/workflows/frontend-ci.yml"
-  pull_request:
-    branches:
-      - main
-      - master
-      - dev
-    paths:
-      - "frontend/**"
-      - "lilith-frontend/**"
 
 env:
   DOCKER_IMAGE: marcgurt/lilith-frontend
@@ -97,7 +88,9 @@ jobs:
           if [ "${{ github.ref_name }}" == "main" ] || [ "${{ github.ref_name }}" == "master" ]; then
             echo "tag=latest" >> $GITHUB_OUTPUT
           else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            # Sanitize: replace slashes with dashes (e.g. PR refs like '1/merge' → '1-merge')
+            SANITIZED=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+            echo "tag=$SANITIZED" >> $GITHUB_OUTPUT
           fi
 
       - name: Set up Docker Buildx
@@ -114,7 +107,7 @@ jobs:
         with:
           context: ./${{ steps.workdir.outputs.dir }}
           file: ./${{ steps.workdir.outputs.dir }}/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:${{ steps.tag.outputs.tag }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
