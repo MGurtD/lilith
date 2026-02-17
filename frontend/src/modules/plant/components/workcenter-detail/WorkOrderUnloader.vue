@@ -121,7 +121,10 @@
       </div>
 
       <!-- Options Section -->
-      <div v-if="props.showNextPhaseOption !== false && nextAvailablePhase" class="options-section">
+      <div
+        v-if="props.showNextPhaseOption !== false && nextAvailablePhase"
+        class="options-section"
+      >
         <h4 class="section-title">
           <i :class="PrimeIcons.COG" class="mr-2"></i>
           Opcions
@@ -136,7 +139,8 @@
             <div class="option-content">
               <label for="loadNextPhase" class="option-label">
                 <span class="option-title">
-                  Carregar fase {{ nextAvailablePhase.phaseCode }} - {{ nextAvailablePhase.phaseDescription }}
+                  Carregar fase {{ nextAvailablePhase.phaseCode }} -
+                  {{ nextAvailablePhase.phaseDescription }}
                 </span>
               </label>
               <SelectWorkOrderPhaseDetail
@@ -213,7 +217,9 @@ const loadedWorkOrder = computed(
 );
 const loadedPhase = computed(() => loadedWorkOrder.value?.phases?.[0]);
 const nextAvailablePhase = computed(() => workcenterStore.nextAvailablePhase);
-const nextPhaseDetails = computed(() => nextAvailablePhase.value?.details ?? []);
+const nextPhaseDetails = computed(
+  () => nextAvailablePhase.value?.details ?? [],
+);
 
 // Validation state
 const isValidating = ref(false);
@@ -323,7 +329,10 @@ const onUnload = async (closePhase: boolean) => {
     // Add next phase if selected
     if (formData.loadNextPhase && nextAvailablePhase.value) {
       // Validate activity selection when next phase has details
-      if (nextPhaseDetails.value.length > 0 && !formData.selectedNextMachineStatusId) {
+      if (
+        nextPhaseDetails.value.length > 0 &&
+        !formData.selectedNextMachineStatusId
+      ) {
         toast.add({
           severity: "warn",
           summary: "Activitat requerida",

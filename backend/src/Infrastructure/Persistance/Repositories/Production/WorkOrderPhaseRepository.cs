@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities.Production;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +19,7 @@ namespace Infrastructure.Persistance.Repositories.Production
         {
             return await dbSet
                         .Include(d => d.Details)
+                            .ThenInclude(d => d.MachineStatus)
                         .Include(d => d.BillOfMaterials)
                         .AsNoTracking()
                         .FirstOrDefaultAsync(e => e.Id == id);
