@@ -1,5 +1,7 @@
 # Lilith Backend - Manufacturing ERP System
 
+> **Note**: This backend is part of the [Lilith monorepo](https://github.com/MGurtD/lilith). For full system documentation, see the root README.
+
 A comprehensive manufacturing ERP solution built with .NET 10 and Clean Architecture principles, managing the complete lifecycle from sales and purchases to production planning, inventory control, and financial operations.
 
 **Architecture Grade: A (9.5/10)** - Exceptional Clean Architecture implementation with complete service layer separation across all 51 controllers (completed December 2025). All business logic is now testable without HTTP context, with consistent error handling and full localization support. Key remaining areas for improvement: test coverage and authorization framework.

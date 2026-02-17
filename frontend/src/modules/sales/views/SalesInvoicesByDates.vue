@@ -24,12 +24,16 @@
               />
             </div>
             <div class="filter-field">
-              <label class="block text-900">Gestionades</label>
-              <Checkbox
-                v-model="filter.showManaged"
-                :binary="true"
-                @change="filterInvoices"
-              />
+              <label class="block text-900 mb-2 mr-3">Gestionades</label>
+              <div class="flex flex-wrap gap-3">
+                <div class="flex align-items-center">
+                  <Checkbox
+                    v-model="filter.showManaged"
+                    :binary="true"
+                    @change="filterInvoices"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div class="datatable-buttons">
@@ -92,79 +96,22 @@
       <Column style="width: 2%">
         <template #body="slotProps">
           <i
-            :class="PrimeIcons.EYE"
+            :class="PrimeIcons.DOWNLOAD"
             class="download_column"
-            @click="openFileViewer(slotProps.data)"
+            @click="downloadInvoices(slotProps.data)"
           />
         </template>
       </Column>
     </DataTable>
-
-    <Dialog
-      v-model:visible="fileViewerDialogVisible"
-      :header="fileViewerDialogHeader"
-      :modal="true"
-      :style="{ width: '80vw', height: '85vh' }"
-      :contentStyle="{ height: '100%', padding: '0' }"
-    >
-      <div class="file-viewer-dialog-content">
-        <div v-if="loadingFiles" class="file-viewer-loading">
-          <ProgressSpinner
-            style="width: 50px; height: 50px"
-            strokeWidth="4"
-            animationDuration="1s"
-          />
-          <p>Carregant documents...</p>
-        </div>
-        <div
-          v-else-if="invoiceFiles.length === 0"
-          class="file-viewer-no-files"
-        >
-          <i
-            :class="PrimeIcons.FILE"
-            style="font-size: 4rem; color: var(--p-surface-400)"
-          />
-          <p>Aquesta factura no té documents adjunts</p>
-        </div>
-        <template v-else>
-          <div v-if="invoiceFiles.length > 1" class="file-viewer-navigation">
-            <Button
-              :icon="PrimeIcons.CHEVRON_LEFT"
-              outlined
-              size="small"
-              :disabled="currentFileIndex === 0"
-              @click="currentFileIndex--"
-            />
-            <span class="file-viewer-counter">
-              {{ currentFileIndex + 1 }} / {{ invoiceFiles.length }} -
-              {{ invoiceFiles[currentFileIndex].originalName }}
-            </span>
-            <Button
-              :icon="PrimeIcons.CHEVRON_RIGHT"
-              outlined
-              size="small"
-              :disabled="currentFileIndex === invoiceFiles.length - 1"
-              @click="currentFileIndex++"
-            />
-          </div>
-          <div class="file-viewer-wrapper">
-            <FileViewer :file="invoiceFiles[currentFileIndex]" />
-          </div>
-        </template>
-      </div>
-    </Dialog>
   </div>
 </template>
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import ProgressSpinner from "primevue/progressspinner";
-import FileViewer from "@/components/FileViewer.vue";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { SalesInvoice } from "../types";
-import SharedServices from "../../../services";
 import {
   formatCurrency,
   formatDate,
@@ -173,7 +120,6 @@ import {
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useCustomersStore } from "../store/customers";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
-import type { File } from "@/types";
 
 const toast = useToast();
 const store = useStore();
@@ -288,29 +234,27 @@ const updateSelectedInvoiceStatusToManaged = async () => {
   }
 };
 
-const fileViewerDialogVisible = ref(false);
-const fileViewerDialogHeader = ref("");
-const invoiceFiles = ref<Array<File>>([]);
-const currentFileIndex = ref(0);
-const loadingFiles = ref(false);
-
-const openFileViewer = async (invoice: SalesInvoice) => {
-  fileViewerDialogVisible.value = true;
-  const customerName = customerStore.getCustomerNameById(invoice.customerId);
-  const invoiceDate = formatDate(invoice.invoiceDate);
-  fileViewerDialogHeader.value = `Documents - Factura ${invoice.invoiceNumber} | ${customerName} | ${invoiceDate}`;
-  invoiceFiles.value = [];
-  currentFileIndex.value = 0;
-  loadingFiles.value = true;
-
-  const files = await SharedServices.File.GetEntityFiles(
-    "SalesInvoice",
+const downloadInvoices = async (invoice: SalesInvoice) => {
+  const printed = await invoiceStore.PrintInvoice(
     invoice.id,
+    invoice.invoiceNumber,
   );
-  if (files && files.length > 0) {
-    invoiceFiles.value = files;
+
+  if (printed) {
+    toast.add({
+      severity: "success",
+      summary: "Comptabilització de factures de venta",
+      detail: `Factura ${invoice.invoiceNumber} descarregada`,
+      life: 5000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Comptabilització de factures de venta",
+      detail: `Error al descarregar la factura ${invoice.invoiceNumber}`,
+      life: 5000,
+    });
   }
-  loadingFiles.value = false;
 };
 </script>
 <style scoped>
@@ -325,48 +269,5 @@ const openFileViewer = async (invoice: SalesInvoice) => {
 
 .managed-status {
   color: green;
-}
-
-.filter-field :deep(.p-checkbox) {
-  margin-top: 12px;
-  margin-left: 0.5rem;
-}
-
-.file-viewer-dialog-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.file-viewer-loading,
-.file-viewer-no-files {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  height: 100%;
-  color: var(--p-surface-500);
-}
-
-.file-viewer-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--p-surface-200);
-  background: var(--p-surface-50);
-}
-
-.file-viewer-counter {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--p-surface-600);
-}
-
-.file-viewer-wrapper {
-  flex: 1;
-  overflow: hidden;
 }
 </style>

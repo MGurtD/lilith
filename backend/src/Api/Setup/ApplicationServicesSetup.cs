@@ -1,4 +1,4 @@
-﻿using Application.Services.System;
+using Application.Services.System;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
@@ -84,6 +84,11 @@ public static class ApplicationServicesSetup
         services.AddScoped<IWorkMasterPhaseService, WorkMasterPhaseService>();
         services.AddScoped<IWorkOrderPhaseService, WorkOrderPhaseService>();
         services.AddScoped<IDetailedWorkOrderService, DetailedWorkOrderService>();
+        
+        // Production services - Background jobs
+        services.AddSingleton<IProductionPartChannel, ProductionPartChannel>();
+        services.AddScoped<IProductionPartGeneratorHandler, ProductionPartGeneratorHandler>();
+        services.AddHostedService<ProductionPartGeneratorService>();
         
         // Warehouse services
         services.AddScoped<IWarehouseService, WarehouseService>();

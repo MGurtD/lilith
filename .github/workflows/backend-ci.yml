@@ -8,18 +8,8 @@ on:
       - dev
       - test
     paths:
-      - 'backend/**'
-      - 'lilith-backend/**'
-      - '.github/workflows/backend-ci.yml'
-      - 'docker-compose.yml'
-  pull_request:
-    branches:
-      - main
-      - master
-      - dev
-    paths:
-      - 'backend/**'
-      - 'lilith-backend/**'
+      - "backend/**"
+      - "lilith-backend/**"
 
 env:
   DOCKER_IMAGE: marcgurt/lilith-backend
@@ -27,16 +17,19 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
+    # Dynamic environment: main/master → production, everything else → staging
+    environment: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && 'production' || 'staging' }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
-      
+          dotnet-version: "10.0.x"
+
       - name: Determine working directory
         id: workdir
         run: |
@@ -45,60 +38,63 @@ jobs:
           else
             echo "dir=lilith-backend" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Restore dependencies
         run: dotnet restore
         working-directory: ./${{ steps.workdir.outputs.dir }}
-      
+
       - name: Build
         run: dotnet build --no-restore --configuration Release
         working-directory: ./${{ steps.workdir.outputs.dir }}
-      
+
       - name: Determine Docker tag
         id: tag
         run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          if [ "${{ github.ref_name }}" == "main" ] || [ "${{ github.ref_name }}" == "master" ]; then
             echo "tag=latest" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/dev" ]; then
-            echo "tag=dev" >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" == "refs/heads/test" ]; then
-            echo "tag=test" >> $GITHUB_OUTPUT
           else
-            echo "tag=branch-$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_OUTPUT
+            # Sanitize: replace slashes with dashes (e.g. PR refs like '1/merge' → '1-merge')
+            SANITIZED=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+            echo "tag=$SANITIZED" >> $GITHUB_OUTPUT
           fi
-      
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./${{ steps.workdir.outputs.dir }}
           file: ./${{ steps.workdir.outputs.dir }}/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ env.DOCKER_IMAGE }}:${{ steps.tag.outputs.tag }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
-  
+
   deploy-dev:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/dev'
-    
+    environment: staging
+
     steps:
-      - name: Deploy to dev server
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEV_SERVER_HOST }}
-          username: ${{ secrets.DEV_SERVER_USERNAME }}
-          key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+          host: ${{ secrets.HOST }}
+          port: ${{ secrets.PORT }}
+          username: ${{ secrets.USER }}
+          password: ${{ secrets.PASSWORD }}
           script: |
             cd ~/lilith
-            docker compose pull lilith-backend
+            docker pull marcgurt/lilith-backend:dev
             docker compose up -d --no-deps --force-recreate lilith-backend
