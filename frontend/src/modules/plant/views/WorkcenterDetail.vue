@@ -165,7 +165,9 @@
       :referenceCode="selectedWorkOrderData.referenceCode"
       :quantity="selectedWorkOrderData.quantity"
       :workcenterTypeId="workcenter?.config.workcenterTypeId || ''"
+      :workcenterId="id"
       @phase-detail-selected="handlePhaseDetailSelected"
+      @phase-created="handlePhaseCreated"
     />
 
     <!-- Work Order Unloader Dialog -->
@@ -566,6 +568,15 @@ const handlePhaseDetailSelected = async (data: {
       detail: "No s'ha pogut carregar l'activitat",
       life: 4000,
     });
+  }
+};
+
+const handlePhaseCreated = async () => {
+  // Refresh available work orders list after a phase was created from template
+  if (workcenter.value?.config.workcenterTypeId) {
+    await workcenterStore.fetchAvailableWorkOrders(
+      workcenter.value.config.workcenterTypeId,
+    );
   }
 };
 

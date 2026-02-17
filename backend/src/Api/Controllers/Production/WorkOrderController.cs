@@ -238,6 +238,21 @@ namespace Api.Controllers.Production
         }
 
 
+        [HttpPost("Phase/CreateFromTemplate")]
+        [SwaggerOperation("CreatePhaseFromTemplate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreatePhaseFromTemplate([FromBody] CreatePhaseFromTemplateDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState.ValidationState);
+
+            var response = await phaseService.CreateFromTemplate(request);
+            if (response.Result)
+                return Ok(response);
+            else
+                return BadRequest(response);
+        }
+
         [HttpPost("Phase")]
         [SwaggerOperation("CreateWorkOrderPhase")]
         [ProducesResponseType(StatusCodes.Status200OK)]

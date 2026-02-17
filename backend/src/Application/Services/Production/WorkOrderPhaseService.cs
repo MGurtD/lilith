@@ -614,6 +614,72 @@ public class WorkOrderPhaseService(
 
     #endregion
 
+    #region Create From Template
+
+    public async Task<GenericResponse> CreateFromTemplate(CreatePhaseFromTemplateDto dto)
+    {
+        // 1. Load PhaseTemplate with details
+        var template = await unitOfWork.PhaseTemplates.Get(dto.PhaseTemplateId);
+        if (template is null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("PhaseTemplateNotFound"));
+
+        // 2. Validate WorkOrder exists
+        var workOrder = await unitOfWork.WorkOrders.Get(dto.WorkOrderId);
+        if (workOrder is null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("WorkOrderNotFound", dto.WorkOrderId));
+
+        // 3. Get initial status from WorkOrder lifecycle
+        var initialStatus = await unitOfWork.Lifecycles.GetStatusByName(
+            StatusConstants.Lifecycles.WorkOrder,
+            StatusConstants.Statuses.Creada);
+        if (initialStatus is null)
+        {
+            logger.LogError("Initial status not found in WorkOrder lifecycle");
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Creada));
+        }
+
+        // 4. Create WorkOrderPhase
+        var workOrderPhase = new WorkOrderPhase
+        {
+            Code = dto.Code,
+            Description = dto.Description,
+            WorkOrderId = dto.WorkOrderId,
+            WorkcenterTypeId = dto.WorkcenterTypeId,
+            PreferredWorkcenterId = dto.PreferredWorkcenterId,
+            StatusId = initialStatus.Id,
+            IsExternalWork = false,
+            ExternalWorkCost = 0,
+            TransportCost = 0,
+            ProfitPercentage = 0
+        };
+
+        // 5. Create WorkOrderPhaseDetail for each template detail
+        foreach (var templateDetail in template.Details.OrderBy(d => d.Order))
+        {
+            var phaseDetail = new WorkOrderPhaseDetail
+            {
+                WorkOrderPhaseId = workOrderPhase.Id,
+                MachineStatusId = templateDetail.MachineStatusId,
+                Order = templateDetail.Order,
+                Comment = templateDetail.Comment,
+                EstimatedTime = 0,
+                EstimatedOperatorTime = 0,
+                IsCycleTime = false
+            };
+            workOrderPhase.Details.Add(phaseDetail);
+        }
+
+        // 6. Save via EF cascade insert
+        await unitOfWork.WorkOrders.Phases.Add(workOrderPhase);
+
+        return new GenericResponse(true, workOrderPhase);
+    }
+
+    #endregion
+
     #region Time Metrics
 
     public async Task<GenericResponse> GetPhaseTimeMetrics(Guid phaseId, Guid machineStatusId, Guid? operatorId)

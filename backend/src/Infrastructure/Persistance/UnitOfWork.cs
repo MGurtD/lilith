@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -81,7 +81,8 @@ namespace Infrastructure.Persistance
         public IContractReader<DetailedWorkOrder> DetailedWorkOrders { get; private set; } = new ContractReader<DetailedWorkOrder>(context);
         public IContractReader<ProductionCost> ProductionCosts { get; private set; } = new ContractReader<ProductionCost>(context);
         public IContractReader<WorkcenterShiftHistoricalOperator> WorkcenterShiftHistoricalOperators { get; private set; } = new ContractReader<WorkcenterShiftHistoricalOperator>(context);
-        public IWorkcenterProfitPercentageRepository WorkcenterProfitPercentages { get; private set; } = new WorkcenterProfitPercentageRepository(context); 
+        public IWorkcenterProfitPercentageRepository WorkcenterProfitPercentages { get; private set; } = new WorkcenterProfitPercentageRepository(context);
+        public IPhaseTemplateRepository PhaseTemplates { get; private set; } = new PhaseTemplateRepository(context);
 
         // Warehouse
         public IWarehouseRepository Warehouses { get; private set; } = new WarehouseRepository(context);
