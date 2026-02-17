@@ -270,12 +270,12 @@ git clone <repo-url>
 cd lilith-frontend
 
 # Install & run
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 # Visit http://localhost:8100
 
 # Build production
-npm run build
+pnpm run build
 
 # Docker (after build)
 docker compose up --build
