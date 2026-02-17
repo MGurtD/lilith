@@ -83,6 +83,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IProductionCostService, ProductionCostService>();
         services.AddScoped<IWorkMasterPhaseService, WorkMasterPhaseService>();
         services.AddScoped<IWorkOrderPhaseService, WorkOrderPhaseService>();
+        services.AddScoped<IPhaseTemplateService, PhaseTemplateService>();
         services.AddScoped<IDetailedWorkOrderService, DetailedWorkOrderService>();
         
         // Production services - Background jobs

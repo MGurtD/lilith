@@ -603,3 +603,28 @@ export interface WorkcenterTypeSaturation {
   workcenterTypeId: string;
   estimatedTime: number;
 }
+
+export interface PhaseTemplate {
+  id: string;
+  name: string;
+  description: string;
+  disabled: boolean;
+  details: Array<PhaseTemplateDetail>;
+}
+
+export interface PhaseTemplateDetail {
+  id: string;
+  phaseTemplateId: string;
+  machineStatusId: string;
+  order: number;
+  comment: string;
+}
+
+export interface CreatePhaseFromTemplateDto {
+  phaseTemplateId: string;
+  workOrderId: string;
+  workcenterTypeId: string;
+  preferredWorkcenterId: string;
+  code: string;
+  description: string;
+}

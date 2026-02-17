@@ -24,6 +24,10 @@ import {
   WorkOrderPhaseBillOfMaterialsService,
   DetailedWorkOrderService,
 } from "./workorder.service";
+import {
+  PhaseTemplateService,
+  PhaseTemplateDetailService,
+} from "./phasetemplate.service";
 import { ProductionPartService } from "./productionpart.service";
 import ShiftService from "./shift.service";
 import ProductionCostDashboardService from "./productioncostdashboard.service";
@@ -93,5 +97,9 @@ export default {
   WorkcenterShift: new WorkcenterShiftService("/WorkcenterShift"),
   WorkcenterProfitPercentage: new WorkcenterProfitPercentageService(
     "/WorkcenterProfitPercentage",
+  ),
+  PhaseTemplate: new PhaseTemplateService("/PhaseTemplate"),
+  PhaseTemplateDetail: new PhaseTemplateDetailService(
+    "/PhaseTemplate/Detail",
   ),
 };

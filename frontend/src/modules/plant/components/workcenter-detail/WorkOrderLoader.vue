@@ -155,9 +155,25 @@
             @click="onLoadActivity"
             class="load-button"
           />
+          <Button
+            :icon="PrimeIcons.COPY"
+            label="Crear des de plantilla"
+            severity="info"
+            @click="templateLoaderVisible = true"
+            class="load-button"
+          />
         </div>
       </div>
     </div>
+
+    <!-- Phase Template Loader Dialog -->
+    <PhaseTemplateLoader
+      v-model:visible="templateLoaderVisible"
+      :workOrderId="workOrderId"
+      :workcenterTypeId="workcenterTypeId"
+      :preferredWorkcenterId="workcenterId"
+      @phase-created="onPhaseCreated"
+    />
   </Dialog>
 </template>
 
@@ -170,6 +186,7 @@ import { useToast } from "primevue/usetoast";
 import { formatDateTime } from "../../../../utils/functions";
 import { usePlantWorkcenterStore } from "../../store/workcenter.store";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
+import PhaseTemplateLoader from "./PhaseTemplateLoader.vue";
 
 interface Props {
   visible: boolean;
@@ -178,6 +195,7 @@ interface Props {
   referenceCode: string;
   quantity: number;
   workcenterTypeId: string;
+  workcenterId: string;
 }
 
 const props = defineProps<Props>();
@@ -191,6 +209,7 @@ const emit = defineEmits<{
       machineStatusId: string;
     },
   ): void;
+  (e: "phase-created"): void;
 }>();
 
 const toast = useToast();
@@ -201,6 +220,7 @@ const phases = ref<WorkOrderPhaseDetailed[]>([]);
 const loading = ref(false);
 const selectedDetailId = ref<string>("");
 const selectedPhaseId = ref<string>("");
+const templateLoaderVisible = ref(false);
 
 // Check if there are loaded work orders in the workcenter
 const hasLoadedWorkOrders = computed(() => {
@@ -306,6 +326,12 @@ const loadPhases = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const onPhaseCreated = async () => {
+  templateLoaderVisible.value = false;
+  await loadPhases();
+  emit("phase-created");
 };
 
 watch(

@@ -26,19 +26,20 @@ const { t } = useI18n();
 
 const load = async () => {
   try {
-    formData.value = await getMenuItem(id);
-    isNew.value = false;
-  } catch (error: any) {
-    // If fetch fails (404 or other error), it's a new menu item
-    if (error?.response?.status === 404 || !error?.response) {
-      isNew.value = true;
-      formData.value = { id, sortOrder: 0 };
+    const result = await getMenuItem(id);
+    if (result) {
+      formData.value = result;
+      isNew.value = false;
     } else {
-      // Log unexpected errors
-      console.error("Failed to load menu item:", error);
+      // 404 - menu item does not exist yet
       isNew.value = true;
       formData.value = { id, sortOrder: 0 };
     }
+  } catch (error: unknown) {
+    // Network or unexpected error
+    console.error("Failed to load menu item:", error);
+    isNew.value = true;
+    formData.value = { id, sortOrder: 0 };
   }
 };
 

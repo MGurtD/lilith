@@ -20,9 +20,12 @@ export const getMenuItemsHierarchy = async (): Promise<MenuItemNode[]> => {
   return data;
 };
 
-export const getMenuItem = async (id: string): Promise<MenuItemFlat> => {
-  const { data } = await apiClient.get<MenuItemFlat>(`${baseUrl}/${id}`);
-  return data;
+export const getMenuItem = async (
+  id: string
+): Promise<MenuItemFlat | null> => {
+  const response = await apiClient.get<MenuItemFlat>(`${baseUrl}/${id}`);
+  if (response.status === 404) return null;
+  return response.data;
 };
 
 export const createMenuItem = async (

@@ -10,6 +10,7 @@ import {
   WorkOrderOrder,
   ValidatePreviousPhaseQuantityRequest,
   PhaseTimeMetrics,
+  CreatePhaseFromTemplateDto,
 } from "../types";
 import BaseService from "../../../api/base.service";
 import { NextPhaseInfo } from "../../plant/types";
@@ -177,6 +178,16 @@ export class WorkOrderPhaseService extends BaseService<WorkOrderPhase> {
       return response.data as PhaseTimeMetrics;
     }
     return undefined;
+  }
+
+  async CreateFromTemplate(
+    dto: CreatePhaseFromTemplateDto,
+  ): Promise<GenericResponse<WorkOrderPhase>> {
+    const response = await this.apiClient.post(
+      `/WorkOrder/Phase/CreateFromTemplate`,
+      dto,
+    );
+    return response.data as GenericResponse<WorkOrderPhase>;
   }
 }
 
