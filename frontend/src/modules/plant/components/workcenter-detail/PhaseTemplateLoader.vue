@@ -89,7 +89,7 @@
 
       <!-- Form inputs for code, description and workcenter -->
       <div v-if="selectedTemplate" class="form-section">
-        <div class="form-row">
+        <div class="form-fields">
           <div class="form-field">
             <label class="form-label">Codi de la fase</label>
             <BaseInput v-model="phaseCode" class="w-full" />
@@ -98,8 +98,6 @@
             <label class="form-label">Descripció de la fase</label>
             <BaseInput v-model="phaseDescription" class="w-full" />
           </div>
-        </div>
-        <div class="form-row mt-2">
           <div class="form-field">
             <DropdownWorkcenter
               label="Centre de treball"
@@ -182,7 +180,7 @@ const loadTemplates = async () => {
     const [templateResult] = await Promise.all([
       Services.PhaseTemplate.getAll(),
       !plantModelStore.workcenters || plantModelStore.workcenters.length === 0
-        ? plantModelStore.fetchActiveModel()
+        ? plantModelStore.fetchActiveWorkcenters()
         : Promise.resolve(),
     ]);
     if (templateResult) {
@@ -306,9 +304,24 @@ onMounted(() => {
   border-radius: var(--border-radius);
 }
 
-.form-row {
-  display: flex;
+.form-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+}
+
+/* Tablet portrait: code+desc on first row, workcenter on second */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .form-fields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: one field per row */
+@media (max-width: 640px) {
+  .form-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-field {
