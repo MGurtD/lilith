@@ -196,6 +196,8 @@ const loadTemplates = async () => {
     if (templateResult) {
       // Only show non-disabled templates
       templates.value = templateResult.filter((t) => !t.disabled);
+      // Auto-select first template
+      selectedTemplate.value = templates.value[0] ?? undefined;
     } else {
       templates.value = [];
     }
