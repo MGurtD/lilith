@@ -1,130 +1,92 @@
 <template>
-  <Dialog
-    :visible="visible"
-    modal
-    :closable="true"
-    :style="{ width: '70vw' }"
-    @update:visible="$emit('update:visible', $event)"
-  >
-    <template #header>
-      <div class="w-full flex align-items-center gap-3">
-        <div
-          class="flex align-items-center justify-content-center bg-primary-100 border-circle p-2"
-          style="width: 3rem; height: 3rem"
-        >
-          <i :class="PrimeIcons.COPY" class="text-primary text-xl"></i>
+  <div class="loader-body">
+    <!-- Template selection table -->
+    <DataTable
+      :value="templates"
+      :loading="loading"
+      responsiveLayout="scroll"
+      stripedRows
+      :rowHover="true"
+      class="p-datatable-sm clickable-rows"
+      selectionMode="single"
+      v-model:selection="selectedTemplate"
+      sortField="name"
+      :sortOrder="1"
+    >
+      <Column field="name" header="Nom" :sortable="true" style="width: 30%" />
+      <Column field="description" header="Descripció" style="width: 50%" />
+      <Column header="Detalls" style="width: 20%">
+        <template #body="slotProps">
+          <Tag
+            :value="`${slotProps.data.details?.length || 0} activitats`"
+            severity="info"
+            rounded
+          />
+        </template>
+      </Column>
+      <template #empty>
+        <div class="no-data">
+          <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
+          <p>No s'han trobat plantilles de fase actives</p>
         </div>
-        <div class="flex flex-column">
-          <span class="font-bold text-lg text-900"
-            >Crear fase des de plantilla</span
-          >
-          <span class="text-sm text-500"
-            >Selecciona una plantilla i defineix el codi i la descripció de la
-            nova fase</span
-          >
-        </div>
-      </div>
-    </template>
+      </template>
+    </DataTable>
 
-    <div class="dialog-content">
-      <!-- Template selection table -->
+    <!-- Template details preview -->
+    <div v-if="selectedTemplate" class="template-preview">
+      <span class="font-semibold text-sm text-500 uppercase">Activitats de la plantilla</span>
       <DataTable
-        :value="templates"
-        :loading="loading"
+        :value="selectedTemplate.details"
+        class="p-datatable-sm"
         responsiveLayout="scroll"
         stripedRows
-        :rowHover="true"
-        class="p-datatable-sm clickable-rows"
-        selectionMode="single"
-        v-model:selection="selectedTemplate"
-        sortField="name"
+        sortField="order"
         :sortOrder="1"
       >
-        <Column
-          field="name"
-          header="Nom"
-          :sortable="true"
-          style="width: 30%"
-        />
-        <Column field="description" header="Descripció" style="width: 50%" />
-        <Column header="Detalls" style="width: 20%">
+        <Column field="order" header="Ordre" style="width: 15%" />
+        <Column header="Estat de màquina" style="width: 45%">
           <template #body="slotProps">
-            <Tag
-              :value="`${slotProps.data.details?.length || 0} activitats`"
-              severity="info"
-              rounded
-            />
+            {{ getMachineStatusName(slotProps.data.machineStatusId) }}
           </template>
         </Column>
-        <template #empty>
-          <div class="no-data">
-            <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-            <p>No s'han trobat plantilles de fase actives</p>
-          </div>
-        </template>
+        <Column field="comment" header="Comentari" style="width: 40%" />
       </DataTable>
+    </div>
 
-      <!-- Template details preview -->
-      <div v-if="selectedTemplate" class="template-preview">
-        <span class="font-semibold text-sm text-500 uppercase"
-          >Activitats de la plantilla</span
-        >
-        <DataTable
-          :value="selectedTemplate.details"
-          class="p-datatable-sm"
-          responsiveLayout="scroll"
-          stripedRows
-          sortField="order"
-          :sortOrder="1"
-        >
-          <Column field="order" header="Ordre" style="width: 15%" />
-          <Column header="Estat de màquina" style="width: 45%">
-            <template #body="slotProps">
-              {{ getMachineStatusName(slotProps.data.machineStatusId) }}
-            </template>
-          </Column>
-          <Column field="comment" header="Comentari" style="width: 40%" />
-        </DataTable>
-      </div>
-
-      <!-- Form inputs for code, description and workcenter -->
-      <div v-if="selectedTemplate" class="form-section">
-        <div class="form-fields">
-          <div class="form-field">
-            <label class="form-label">Codi de la fase</label>
-            <BaseInput v-model="phaseCode" class="w-full" />
-          </div>
-          <div class="form-field">
-            <label class="form-label">Descripció de la fase</label>
-            <BaseInput v-model="phaseDescription" class="w-full" />
-          </div>
-          <div class="form-field">
-            <DropdownWorkcenter
-              label="Centre de treball"
-              v-model="selectedWorkcenterId"
-            />
-          </div>
+    <!-- Form inputs -->
+    <div v-if="selectedTemplate" class="form-section">
+      <div class="form-fields">
+        <div class="form-field">
+          <label class="form-label">Codi de la fase</label>
+          <BaseInput v-model="phaseCode" class="w-full" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Descripció de la fase</label>
+          <BaseInput v-model="phaseDescription" class="w-full" />
+        </div>
+        <div class="form-field">
+          <DropdownWorkcenter label="Centre de treball" v-model="selectedWorkcenterId" />
         </div>
       </div>
-
-      <!-- Action button -->
-      <div v-if="selectedTemplate" class="action-section">
-        <Button
-          :icon="PrimeIcons.PLUS"
-          label="Crear fase"
-          severity="success"
-          :loading="creating"
-          :disabled="!phaseCode.trim()"
-          @click="onCreatePhase"
-          class="create-button"
-        />
-      </div>
     </div>
-  </Dialog>
+
+    <!-- Action button -->
+    <div v-if="selectedTemplate" class="action-section">
+      <Button
+        :icon="PrimeIcons.PLUS"
+        label="Crear fase"
+        severity="success"
+        :loading="creating"
+        :disabled="!phaseCode.trim()"
+        @click="onCreatePhase"
+        class="create-button"
+      />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import {
@@ -138,7 +100,6 @@ import { WorkOrderPhaseService } from "../../../production/services/workorder.se
 import DropdownWorkcenter from "../../../production/components/DropdownWorkcenter.vue";
 
 interface Props {
-  visible: boolean;
   workOrderId: string;
   workcenterTypeId: string;
   preferredWorkcenterId: string;
@@ -146,7 +107,6 @@ interface Props {
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-  (e: "update:visible", value: boolean): void;
   (e: "phase-created"): void;
 }>();
 
@@ -174,13 +134,11 @@ const selectedWorkcenterTypeId = computed(() => {
 });
 
 const getMachineStatusName = (machineStatusId: string): string => {
-  const status = dataStore.machineStatuses.find(
-    (s) => s.id === machineStatusId,
-  );
+  const status = dataStore.machineStatuses.find((s) => s.id === machineStatusId);
   return status?.name || machineStatusId;
 };
 
-const loadTemplates = async () => {
+const load = async () => {
   loading.value = true;
   selectedTemplate.value = undefined;
   phaseCode.value = "";
@@ -194,9 +152,7 @@ const loadTemplates = async () => {
         : Promise.resolve(),
     ]);
     if (templateResult) {
-      // Only show non-disabled templates
       templates.value = templateResult.filter((t) => !t.disabled);
-      // Auto-select first template
       selectedTemplate.value = templates.value[0] ?? undefined;
     } else {
       templates.value = [];
@@ -244,8 +200,9 @@ const onCreatePhase = async () => {
         summary: "Fase creada correctament des de la plantilla",
         life: 4000,
       });
+      phaseCode.value = "";
+      phaseDescription.value = "";
       emit("phase-created");
-      emit("update:visible", false);
     } else {
       toast.add({
         severity: "error",
@@ -265,24 +222,14 @@ const onCreatePhase = async () => {
   }
 };
 
-watch(
-  () => props.visible,
-  (newValue) => {
-    if (newValue) {
-      loadTemplates();
-    }
-  },
-);
+// Expose reload so WorkOrderLoader can call it when the tab is activated
+defineExpose({ load });
 
-onMounted(() => {
-  if (props.visible) {
-    loadTemplates();
-  }
-});
+onMounted(() => load());
 </script>
 
 <style scoped>
-.dialog-content {
+.loader-body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -331,14 +278,12 @@ onMounted(() => {
   gap: 1rem;
 }
 
-/* Tablet portrait: code+desc on first row, workcenter on second */
 @media (max-width: 1024px) and (orientation: portrait) {
   .form-fields {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Mobile: one field per row */
 @media (max-width: 640px) {
   .form-fields {
     grid-template-columns: 1fr;
@@ -346,7 +291,6 @@ onMounted(() => {
 }
 
 .form-field {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
