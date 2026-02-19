@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import {
@@ -162,6 +162,16 @@ const creating = ref(false);
 const phaseCode = ref("");
 const phaseDescription = ref("");
 const selectedWorkcenterId = ref<string>(props.preferredWorkcenterId);
+
+const selectedWorkcenterTypeId = computed(() => {
+  if (!selectedWorkcenterId.value || !plantModelStore.workcenters) {
+    return props.workcenterTypeId;
+  }
+  const wc = plantModelStore.workcenters.find(
+    (w) => w.id === selectedWorkcenterId.value,
+  );
+  return wc ? wc.workcenterTypeId : props.workcenterTypeId;
+});
 
 const getMachineStatusName = (machineStatusId: string): string => {
   const status = dataStore.machineStatuses.find(
@@ -210,7 +220,7 @@ const onCreatePhase = async () => {
     const dto: CreatePhaseFromTemplateDto = {
       phaseTemplateId: selectedTemplate.value.id,
       workOrderId: props.workOrderId,
-      workcenterTypeId: props.workcenterTypeId,
+      workcenterTypeId: selectedWorkcenterTypeId.value,
       preferredWorkcenterId: selectedWorkcenterId.value,
       code: phaseCode.value.trim(),
       description: phaseDescription.value.trim(),
