@@ -87,7 +87,7 @@
         </DataTable>
       </div>
 
-      <!-- Form inputs for code and description -->
+      <!-- Form inputs for code, description and workcenter -->
       <div v-if="selectedTemplate" class="form-section">
         <div class="form-row">
           <div class="form-field">
@@ -97,6 +97,14 @@
           <div class="form-field">
             <label class="form-label">Descripció de la fase</label>
             <BaseInput v-model="phaseDescription" class="w-full" />
+          </div>
+        </div>
+        <div class="form-row mt-2">
+          <div class="form-field">
+            <DropdownWorkcenter
+              label="Centre de treball"
+              v-model="selectedWorkcenterId"
+            />
           </div>
         </div>
       </div>
@@ -126,8 +134,10 @@ import {
   CreatePhaseFromTemplateDto,
 } from "../../../production/types";
 import { usePlantDataStore } from "../../store";
+import { usePlantModelStore } from "../../../production/store/plantmodel";
 import Services from "../../../production/services";
 import { WorkOrderPhaseService } from "../../../production/services/workorder.service";
+import DropdownWorkcenter from "../../../production/components/DropdownWorkcenter.vue";
 
 interface Props {
   visible: boolean;
@@ -144,6 +154,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const dataStore = usePlantDataStore();
+const plantModelStore = usePlantModelStore();
 const phaseService = new WorkOrderPhaseService("WorkOrderPhase");
 
 const templates = ref<PhaseTemplate[]>([]);
@@ -152,6 +163,7 @@ const loading = ref(false);
 const creating = ref(false);
 const phaseCode = ref("");
 const phaseDescription = ref("");
+const selectedWorkcenterId = ref<string>(props.preferredWorkcenterId);
 
 const getMachineStatusName = (machineStatusId: string): string => {
   const status = dataStore.machineStatuses.find(
@@ -165,11 +177,17 @@ const loadTemplates = async () => {
   selectedTemplate.value = undefined;
   phaseCode.value = "";
   phaseDescription.value = "";
+  selectedWorkcenterId.value = props.preferredWorkcenterId;
   try {
-    const result = await Services.PhaseTemplate.getAll();
-    if (result) {
+    const [templateResult] = await Promise.all([
+      Services.PhaseTemplate.getAll(),
+      !plantModelStore.workcenters || plantModelStore.workcenters.length === 0
+        ? plantModelStore.fetchActiveModel()
+        : Promise.resolve(),
+    ]);
+    if (templateResult) {
       // Only show non-disabled templates
-      templates.value = result.filter((t) => !t.disabled);
+      templates.value = templateResult.filter((t) => !t.disabled);
     } else {
       templates.value = [];
     }
@@ -195,7 +213,7 @@ const onCreatePhase = async () => {
       phaseTemplateId: selectedTemplate.value.id,
       workOrderId: props.workOrderId,
       workcenterTypeId: props.workcenterTypeId,
-      preferredWorkcenterId: props.preferredWorkcenterId,
+      preferredWorkcenterId: selectedWorkcenterId.value,
       code: phaseCode.value.trim(),
       description: phaseDescription.value.trim(),
     };
