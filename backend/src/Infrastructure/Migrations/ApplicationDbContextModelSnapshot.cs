@@ -2279,6 +2279,42 @@ namespace Infrastructure.Migrations
                     b.ToTable("WorkCenterCosts", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Production.WorkcenterLocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("WorkcenterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id")
+                        .HasName("PK_WorkcenterLocation");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex(new[] { "WorkcenterId", "LocationId" }, "UK_WorkcenterLocation");
+
+                    b.ToTable("WorkcenterLocations", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Production.WorkcenterProfitPercentage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4155,7 +4191,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ExerciseId" }, "IX_SalesInvoices_Exercise");
 
-                    b.ToTable("SalesInvoice");
+                    b.ToTable("SalesInvoice", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesInvoiceDetail", b =>
@@ -4369,7 +4405,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SalesInvoiceId")
                         .HasDatabaseName("IX_SalesInvoiceVerifactuRequest_SalesInvoiceId");
 
-                    b.ToTable("SalesInvoiceVerifactuRequest");
+                    b.ToTable("SalesInvoiceVerifactuRequest", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderDetail", b =>
@@ -4493,7 +4529,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("WorkOrderId");
 
-                    b.ToTable("SalesOrderDetail");
+                    b.ToTable("SalesOrderDetail", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
@@ -4632,7 +4668,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ExerciseId" }, "IDX_SalesOrderHeader_Exercise");
 
-                    b.ToTable("SalesOrderHeader");
+                    b.ToTable("SalesOrderHeader", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.InvoiceSerie", b =>
@@ -5188,6 +5224,10 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
+
+                    b.Property<string>("LocationType")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -5808,6 +5848,25 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("MachineStatus");
+
+                    b.Navigation("Workcenter");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Production.WorkcenterLocation", b =>
+                {
+                    b.HasOne("Domain.Entities.Warehouse.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Production.Workcenter", "Workcenter")
+                        .WithMany("WorkcenterLocations")
+                        .HasForeignKey("WorkcenterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Location");
 
                     b.Navigation("Workcenter");
                 });
@@ -6692,6 +6751,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("BillOfMaterials");
 
                     b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Production.Workcenter", b =>
+                {
+                    b.Navigation("WorkcenterLocations");
                 });
 
             modelBuilder.Entity("Domain.Entities.Production.WorkcenterShift", b =>

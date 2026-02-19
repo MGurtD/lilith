@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -80,6 +80,7 @@ namespace Application.Contracts
         
         //Warehouse
         IWarehouseRepository Warehouses { get; }
+        IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
         IRepository<StockMovement, Guid> StockMovements {get; }

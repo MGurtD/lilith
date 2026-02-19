@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -85,6 +85,7 @@ namespace Infrastructure.Persistance
 
         // Warehouse
         public IWarehouseRepository Warehouses { get; private set; } = new WarehouseRepository(context);
+        public IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; private set; } = new Repository<WorkcenterLocation, Guid>(context);
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
         public IRepository<StockMovement, Guid> StockMovements { get; private set; } = new Repository<StockMovement, Guid>(context);

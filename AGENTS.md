@@ -11,12 +11,10 @@ Guidelines for AI coding agents working in this manufacturing ERP monorepo.
 
 ## Quick Commands
 
-**Note**: Directories may be named `backend/` and `frontend/` OR `lilith-backend/` and `lilith-frontend/` depending on whether the rename migration is complete. Commands below use the new naming (`backend/`, `frontend/`).
-
 ### Backend (backend/)
 
 ```bash
-cd backend  # or 'cd lilith-backend' if not yet renamed
+cd backend
 
 # Build and run
 dotnet build
@@ -36,7 +34,7 @@ dotnet ef database update --project src/Infrastructure/
 ### Frontend (frontend/)
 
 ```bash
-cd frontend  # or 'cd lilith-frontend' if not yet renamed
+cd frontend
 
 # Setup (requires pnpm v10+)
 pnpm install
@@ -213,7 +211,7 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 ## Documentation References
 
 **Backend deep dives:**
-- Architecture: `backend/docs/architecture-layers.md` (or `lilith-backend/docs/` if not renamed)
+- Architecture: `backend/docs/architecture-layers.md`
 - Patterns: `backend/docs/architectural-patterns.md`
 - Domain model: `backend/docs/domain-model.md`
 - Developer guide: `backend/docs/developer-guide.md`
@@ -221,7 +219,7 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 - Request flow: `backend/docs/request-flow.md`
 
 **Frontend guide:**
-- Comprehensive reference: `frontend/AGENTS.md` (or `lilith-frontend/AGENTS.md` if not renamed)
+- Comprehensive reference: `frontend/AGENTS.md`
 
 **Skills (task-specific guides):**
 - See `.opencode/skills/` directory for focused, task-oriented guides
@@ -235,19 +233,19 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 - PostgreSQL 16+
 
 **Connection strings:**
-- Backend: `src/Api/appsettings.Development.json`
-- Frontend: `.env` with `VITE_API_BASE_URL` and `VITE_REPORTS_BASE_URL`
+- Backend: `backend/src/Api/appsettings.Development.json`
+- Frontend: `frontend/.env` with `VITE_API_BASE_URL` and `VITE_REPORTS_BASE_URL`
 
 **First time setup:**
 ```bash
 # Backend
-cd lilith-backend
+cd backend
 dotnet restore
 dotnet ef database update --project src/Infrastructure/
 dotnet run --project src/Api/
 
 # Frontend
-cd lilith-frontend
+cd frontend
 pnpm install
 pnpm run dev
 ```
