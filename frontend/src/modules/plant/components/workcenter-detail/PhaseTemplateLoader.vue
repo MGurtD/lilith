@@ -77,7 +77,7 @@
         label="Crear fase"
         severity="success"
         :loading="creating"
-        :disabled="!phaseCode.trim()"
+        :disabled="!phaseCode.trim() || !phaseDescription.trim()"
         @click="onCreatePhase"
         class="create-button"
       />
@@ -171,7 +171,7 @@ const load = async () => {
 };
 
 const onCreatePhase = async () => {
-  if (!selectedTemplate.value || !phaseCode.value.trim()) return;
+  if (!selectedTemplate.value || !phaseCode.value.trim() || !phaseDescription.value.trim()) return;
 
   if (!/^\d+$/.test(phaseCode.value.trim())) {
     toast.add({
