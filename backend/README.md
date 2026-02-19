@@ -155,6 +155,8 @@ src/
 
 ## Database Migrations
 
+dotnet user-secrets set "ConnectionStrings:Default" "Host=host;Port=port;Database=database;Username=username;Password=password;"
+
 ```bash
 # Create new migration
 dotnet ef migrations add MigrationName --project src/Infrastructure/
