@@ -633,12 +633,12 @@ public class WorkOrderPhaseService(
         // 3. Get initial status from WorkOrder lifecycle
         var initialStatus = await unitOfWork.Lifecycles.GetStatusByName(
             StatusConstants.Lifecycles.WorkOrder,
-            StatusConstants.Statuses.Creada);
+            StatusConstants.Statuses.Llancada);
         if (initialStatus is null)
         {
             logger.LogError("Initial status not found in WorkOrder lifecycle");
             return new GenericResponse(false,
-                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Creada));
+                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Llancada));
         }
 
         // 4. Create WorkOrderPhase
