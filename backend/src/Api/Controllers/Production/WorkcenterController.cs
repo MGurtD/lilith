@@ -1,4 +1,5 @@
-﻿using Application.Contracts;
+using Application.Contracts;
+using Domain.Constants;
 using Domain.Entities.Production;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,7 @@ namespace Api.Controllers.Production
                 return Conflict(response);
             }
         }
-        
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -44,22 +45,29 @@ namespace Api.Controllers.Production
         {
             var entity = await service.GetById(id);
             if (entity is not null)
-            {
                 return Ok(entity);
-            }
             else
-            {
                 return NotFound();
-            }
         }
 
         [HttpGet("workcenterload")]
-        public async Task<IActionResult> GetWorkcenterLoadBetweenDatesByWorkcenterType([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        public async Task<IActionResult> GetWorkcenterLoadBetweenDatesByWorkcenterType(
+            [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             var workorders = await service.GetWorkcenterLoadBetweenDatesByWorkcenterType(startDate, endDate);
             return Ok(workorders);
         }
-        
+
+        [HttpGet("{id:guid}/locations/{locationType}")]
+        public async Task<IActionResult> GetLocationsByType(Guid id, string locationType)
+        {
+            if (!LocationTypeConstants.IsValid(locationType))
+                return BadRequest($"Invalid location type '{locationType}'. Valid values: {string.Join(", ", LocationTypeConstants.All)}");
+
+            var locations = await service.GetLocationsByType(id, locationType);
+            return Ok(locations);
+        }
+
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid Id, Workcenter request)
         {

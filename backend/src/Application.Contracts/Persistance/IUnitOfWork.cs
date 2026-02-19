@@ -81,6 +81,7 @@ namespace Application.Contracts
         
         //Warehouse
         IWarehouseRepository Warehouses { get; }
+        IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
         IRepository<StockMovement, Guid> StockMovements {get; }
