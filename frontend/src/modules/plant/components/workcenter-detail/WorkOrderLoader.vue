@@ -16,164 +16,144 @@
             <i :class="PrimeIcons.COG" class="text-primary text-xl"></i>
           </div>
           <div class="flex flex-column">
-            <span class="font-bold text-lg text-900">Carregar Ordre</span>
-            <span class="text-sm text-500">Selecció de fase i activitat</span>
+            <span class="font-bold text-lg text-900">Gestió de fases</span>
+            <span class="text-sm text-500">Carregar o crear una nova fase</span>
           </div>
         </div>
         <div class="flex gap-4 flex-wrap">
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold">Ordre</span>
-            <span class="font-medium text-900 text-lg">{{
-              workOrderCode
-            }}</span>
+            <span class="font-medium text-900 text-lg">{{ workOrderCode }}</span>
           </div>
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >Referència</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              referenceCode
-            }}</span>
+            <span class="text-xs text-500 uppercase font-semibold">Referència</span>
+            <span class="font-medium text-900 text-lg">{{ referenceCode }}</span>
           </div>
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >Quantitat</span
-            >
+            <span class="text-xs text-500 uppercase font-semibold">Quantitat</span>
             <span class="font-medium text-900 text-lg">{{ quantity }}</span>
           </div>
         </div>
       </div>
     </template>
 
-    <div class="dialog-content">
-      <DataTable
-        :value="phases"
-        :loading="loading"
-        responsiveLayout="scroll"
-        stripedRows
-        :rowHover="true"
-        :rowClass="getRowClass"
-        class="p-datatable-sm clickable-rows"
-        sortField="phaseCode"
-        :sortOrder="1"
-        @row-click="handleRowClick"
-      >
-        <!-- Phase Code -->
-        <Column
-          field="phaseCode"
-          header="Codi"
-          :sortable="true"
-          style="max-width: 50px"
-        />
+    <Tabs v-model:value="activeTab" class="loader-tabs" @update:value="onTabChange">
+      <TabList>
+        <Tab value="load">
+          <i :class="PrimeIcons.COG" class="mr-2" />
+          Carregar fase
+        </Tab>
+        <Tab value="create">
+          <i :class="PrimeIcons.COPY" class="mr-2" />
+          Nova des de plantilla
+        </Tab>
+      </TabList>
 
-        <!-- Phase Description -->
-        <Column
-          field="phaseDescription"
-          header="Descripció"
-          style="min-width: 200px"
-        />
+      <TabPanels>
+        <!-- ── TAB 1: CARREGAR FASE ──────────────────────────────────── -->
+        <TabPanel value="load">
+          <div class="tab-content">
+            <DataTable
+              :value="phases"
+              :loading="loading"
+              responsiveLayout="scroll"
+              stripedRows
+              :rowHover="true"
+              class="p-datatable-sm clickable-rows"
+              selectionMode="single"
+              v-model:selection="selectedPhaseRow"
+              sortField="phaseCode"
+              :sortOrder="1"
+              @row-click="handleRowClick"
+            >
+              <Column field="phaseCode" header="Codi" :sortable="true" style="max-width: 50px" />
+              <Column field="phaseDescription" header="Descripció" style="min-width: 200px" />
+              <Column header="Estat" style="min-width: 150px">
+                <template #body="slotProps">
+                  <Tag :value="slotProps.data.phaseStatus" severity="info" rounded />
+                </template>
+              </Column>
+              <Column header="Inici" style="min-width: 150px">
+                <template #body="slotProps">
+                  <span v-if="slotProps.data.startTime">
+                    {{ formatDateTime(slotProps.data.startTime) }}
+                  </span>
+                </template>
+              </Column>
+              <Column header="Fi" style="min-width: 150px">
+                <template #body="slotProps">
+                  <span v-if="slotProps.data.endTime">
+                    {{ formatDateTime(slotProps.data.endTime) }}
+                  </span>
+                </template>
+              </Column>
+              <Column
+                field="preferredWorkcenterName"
+                header="Màquina Preferida"
+                style="min-width: 180px"
+              />
+              <Column header="Quant.">
+                <template #body="slotProps">
+                  <span class="quantity-ok">{{ slotProps.data.quantityOk }}</span> /
+                  <span class="quantity-ko">{{ slotProps.data.quantityKo }}</span>
+                </template>
+              </Column>
+              <template #empty>
+                <div class="no-data">
+                  <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
+                  <p>No s'han trobat fases per aquesta ordre de fabricació</p>
+                </div>
+              </template>
+            </DataTable>
 
-        <!-- Phase Status -->
-        <Column header="Estat" style="min-width: 150px">
-          <template #body="slotProps">
-            <Tag :value="slotProps.data.phaseStatus" severity="info" rounded />
-          </template>
-        </Column>
+            <InfoPanel
+              v-if="hasLoadedWorkOrders && phases.length > 0"
+              severity="warn"
+              text="No es pot carregar una nova ordre mentre hi hagi fases en procés a la màquina. Finalitza les fases carregades abans de carregar-ne una de nova."
+            />
+            <InfoPanel
+              v-else-if="phases.length === 0"
+              severity="warn"
+              text="No hi ha fases disponibles per carregar en aquest centre de treball"
+            />
 
-        <!-- Start Time -->
-        <Column header="Inici" style="min-width: 150px">
-          <template #body="slotProps">
-            <span v-if="slotProps.data.startTime">
-              {{ formatDateTime(slotProps.data.startTime) }}
-            </span>
-          </template>
-        </Column>
-
-        <!-- End Time -->
-        <Column header="Fi" style="min-width: 150px">
-          <template #body="slotProps">
-            <span v-if="slotProps.data.endTime">
-              {{ formatDateTime(slotProps.data.endTime) }}
-            </span>
-          </template>
-        </Column>
-
-        <!-- Preferred Workcenter -->
-        <Column
-          field="preferredWorkcenterName"
-          header="Màquina Preferida"
-          style="min-width: 180px"
-        />
-
-        <Column header="Quant.">
-          <template #body="slotProps">
-            <span class="quantity-ok">{{ slotProps.data.quantityOk }}</span> /
-            <span class="quantity-ko">{{ slotProps.data.quantityKo }}</span>
-          </template>
-        </Column>
-
-        <template #empty>
-          <div class="no-data">
-            <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-            <p>No s'han trobat fases per aquesta ordre de fabricació</p>
+            <div class="bottom-panel" v-if="!hasLoadedWorkOrders">
+              <div class="panel-content">
+                <div class="dropdown-container">
+                  <label class="dropdown-label">Activitat a carregar</label>
+                  <SelectWorkOrderPhaseDetail
+                    v-model="selectedDetailId"
+                    :details="selectedPhase?.details || []"
+                    class="activity-dropdown"
+                  />
+                </div>
+                <Button
+                  :icon="PrimeIcons.COG"
+                  label="Carregar"
+                  severity="success"
+                  :disabled="!selectedDetailId"
+                  @click="onLoadActivity"
+                  class="action-button"
+                />
+              </div>
+            </div>
           </div>
-        </template>
-      </DataTable>
+        </TabPanel>
 
-      <!-- Warning message when there are loaded work orders -->
-      <InfoPanel
-        v-if="hasLoadedWorkOrders && phases.length > 0"
-        severity="warn"
-        text="No es pot carregar una nova ordre mentre hi hagi fases en procés a la màquina. Finalitza les fases carregades abans de carregar-ne una de nova."
-      />
-
-      <!-- No Valid Phases Message (only when no loaded work orders) -->
-      <InfoPanel
-        v-else-if="phases.length == 0"
-        severity="warn"
-        text="No hi ha fases disponibles per carregar en aquest centre de treball"
-      />
-
-      <!-- Bottom Panel with Dropdown and Button -->
-      <div class="bottom-panel" v-if="!hasLoadedWorkOrders">
-        <div class="panel-content">
-          <div class="dropdown-container">
-            <label for="activity-dropdown" class="dropdown-label">
-              Activitat a carregar
-            </label>
-            <SelectWorkOrderPhaseDetail
-              v-model="selectedDetailId"
-              :details="selectedPhase?.details || []"
-              class="activity-dropdown"
+        <!-- ── TAB 2: NOVA FASE DES DE PLANTILLA ────────────────────── -->
+        <TabPanel value="create">
+          <div class="tab-content">
+            <PhaseTemplateLoader
+              ref="phaseTemplateLoaderRef"
+              :workOrderId="workOrderId"
+              :workcenterTypeId="workcenterTypeId"
+              :preferredWorkcenterId="workcenterId"
+              @phase-created="onPhaseCreated"
             />
           </div>
-          <Button
-            :icon="PrimeIcons.COG"
-            label="Carregar"
-            severity="success"
-            :disabled="!selectedDetailId || hasLoadedWorkOrders"
-            @click="onLoadActivity"
-            class="load-button"
-          />
-          <Button
-            :icon="PrimeIcons.COPY"
-            label="Crear des de plantilla"
-            severity="info"
-            @click="templateLoaderVisible = true"
-            class="load-button"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Phase Template Loader Dialog -->
-    <PhaseTemplateLoader
-      v-model:visible="templateLoaderVisible"
-      :workOrderId="workOrderId"
-      :workcenterTypeId="workcenterTypeId"
-      :preferredWorkcenterId="workcenterId"
-      @phase-created="onPhaseCreated"
-    />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </Dialog>
 </template>
 
@@ -220,15 +200,14 @@ const phases = ref<WorkOrderPhaseDetailed[]>([]);
 const loading = ref(false);
 const selectedDetailId = ref<string>("");
 const selectedPhaseId = ref<string>("");
-const templateLoaderVisible = ref(false);
+const selectedPhaseRow = ref<WorkOrderPhaseDetailed | undefined>(undefined);
+const activeTab = ref<"load" | "create">("load");
+const phaseTemplateLoaderRef = ref<InstanceType<typeof PhaseTemplateLoader> | null>(null);
 
-// Check if there are loaded work orders in the workcenter
 const hasLoadedWorkOrders = computed(() => {
   return workcenterStore.loadedWorkOrdersPhases.length > 0;
 });
 
-// Auto-select first phase with endTime = null and matching workcenterTypeId
-// Important: Sort by phaseCode first to get the first one in order
 const autoSelectedPhase = computed(() => {
   const validPhases = phases.value
     .filter(
@@ -236,11 +215,9 @@ const autoSelectedPhase = computed(() => {
         !phase.endTime && phase.workcenterTypeId === props.workcenterTypeId,
     )
     .sort((a, b) => a.phaseCode.localeCompare(b.phaseCode));
-
   return validPhases[0];
 });
 
-// Get the phase selected by the user (or auto-selected if none chosen)
 const selectedPhase = computed(() => {
   if (selectedPhaseId.value) {
     return phases.value.find((p) => p.phaseId === selectedPhaseId.value);
@@ -248,14 +225,9 @@ const selectedPhase = computed(() => {
   return autoSelectedPhase.value;
 });
 
-// Check if there are valid phases available and no loaded work orders
-const hasValidPhases = computed(() => {
-  return selectedPhase.value !== undefined && !hasLoadedWorkOrders.value;
-});
-
 const selectPhase = (phase: WorkOrderPhaseDetailed) => {
   selectedPhaseId.value = phase.phaseId;
-  // Auto-select first detail when phase is selected
+  selectedPhaseRow.value = phase;
   if (phase.details && phase.details.length > 0) {
     selectedDetailId.value = phase.details[0].machineStatusId || "";
   } else {
@@ -265,17 +237,9 @@ const selectPhase = (phase: WorkOrderPhaseDetailed) => {
 
 const handleRowClick = (event: any) => {
   const phase = event.data as WorkOrderPhaseDetailed;
-  // Only allow selection if phase is valid (same criteria as button visibility)
   if (phase.workcenterTypeId === props.workcenterTypeId) {
     selectPhase(phase);
   }
-};
-
-const getRowClass = (data: WorkOrderPhaseDetailed) => {
-  if (selectedPhaseId.value && data.phaseId === selectedPhaseId.value) {
-    return "selected-phase-row";
-  }
-  return "";
 };
 
 const onLoadActivity = () => {
@@ -287,7 +251,6 @@ const onLoadActivity = () => {
     });
     return;
   }
-
   emit("phase-detail-selected", {
     workOrderId: props.workOrderId,
     workOrderPhaseId: selectedPhase.value.phaseId,
@@ -297,17 +260,14 @@ const onLoadActivity = () => {
 
 const loadPhases = async () => {
   if (!props.workOrderId) return;
-
   loading.value = true;
-  selectedDetailId.value = ""; // Reset selection
-  selectedPhaseId.value = ""; // Reset phase selection
+  selectedDetailId.value = "";
+  selectedPhaseId.value = "";
+  selectedPhaseRow.value = undefined;
   try {
-    const result = await phaseService.GetWorkOrderPhasesDetailed(
-      props.workOrderId,
-    );
+    const result = await phaseService.GetWorkOrderPhasesDetailed(props.workOrderId);
     if (result) {
       phases.value = result;
-      // Auto-select first valid phase
       if (autoSelectedPhase.value) {
         selectPhase(autoSelectedPhase.value);
       }
@@ -318,8 +278,7 @@ const loadPhases = async () => {
     console.error("Error loading work order phases:", error);
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "Error al carregar les fases de l'ordre de fabricació",
+      summary: "Error al carregar les fases de l'ordre de fabricació",
       life: 4000,
     });
     phases.value = [];
@@ -329,17 +288,22 @@ const loadPhases = async () => {
 };
 
 const onPhaseCreated = async () => {
-  templateLoaderVisible.value = false;
   await loadPhases();
+  activeTab.value = "load";
   emit("phase-created");
+};
+
+// Reload the template tab content when the user switches to it
+const onTabChange = (tab: string | number) => {
+  if (tab === "create") {
+    phaseTemplateLoaderRef.value?.load();
+  }
 };
 
 watch(
   () => props.workOrderId,
   () => {
-    if (props.visible && props.workOrderId) {
-      loadPhases();
-    }
+    if (props.visible && props.workOrderId) loadPhases();
   },
 );
 
@@ -347,34 +311,28 @@ watch(
   () => props.visible,
   (newValue) => {
     if (newValue && props.workOrderId) {
+      activeTab.value = "load";
       loadPhases();
     }
   },
 );
 
 onMounted(() => {
-  if (props.visible && props.workOrderId) {
-    loadPhases();
-  }
+  if (props.visible && props.workOrderId) loadPhases();
 });
 </script>
 
 <style scoped>
-.dialog-content {
+.loader-tabs {
   display: flex;
   flex-direction: column;
+}
 
-  height: 100%;
+.tab-content {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-}
-
-.dialog-content :deep(.selected-phase-row) {
-  background: var(--loaded-row-bg) !important;
-  border-left: 4px solid var(--loaded-row-border) !important;
-}
-
-.dialog-content :deep(.p-datatable-tbody > tr > td .p-button) {
-  width: 100%;
+  padding-top: 1rem;
 }
 
 .no-data {
@@ -427,13 +385,21 @@ onMounted(() => {
   width: 100%;
 }
 
-.load-button {
+.action-button {
   min-width: 150px;
   font-size: 1.05rem;
   padding: 0.75rem 1.5rem;
 }
 
-.load-button :deep(.p-button-icon) {
+.action-button :deep(.p-button-icon) {
   font-size: 1.2rem;
+}
+
+:deep(.p-tabpanels) {
+  padding: 0;
+}
+
+:deep(.p-tabpanel) {
+  padding: 0;
 }
 </style>
