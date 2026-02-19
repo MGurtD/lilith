@@ -87,9 +87,9 @@
         </DataTable>
       </div>
 
-      <!-- Form inputs for code and description -->
+      <!-- Form inputs for code, description and workcenter -->
       <div v-if="selectedTemplate" class="form-section">
-        <div class="form-row">
+        <div class="form-fields">
           <div class="form-field">
             <label class="form-label">Codi de la fase</label>
             <BaseInput v-model="phaseCode" class="w-full" />
@@ -97,6 +97,12 @@
           <div class="form-field">
             <label class="form-label">Descripció de la fase</label>
             <BaseInput v-model="phaseDescription" class="w-full" />
+          </div>
+          <div class="form-field">
+            <DropdownWorkcenter
+              label="Centre de treball"
+              v-model="selectedWorkcenterId"
+            />
           </div>
         </div>
       </div>
@@ -118,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import {
@@ -126,8 +132,10 @@ import {
   CreatePhaseFromTemplateDto,
 } from "../../../production/types";
 import { usePlantDataStore } from "../../store";
+import { usePlantModelStore } from "../../../production/store/plantmodel";
 import Services from "../../../production/services";
 import { WorkOrderPhaseService } from "../../../production/services/workorder.service";
+import DropdownWorkcenter from "../../../production/components/DropdownWorkcenter.vue";
 
 interface Props {
   visible: boolean;
@@ -144,6 +152,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const dataStore = usePlantDataStore();
+const plantModelStore = usePlantModelStore();
 const phaseService = new WorkOrderPhaseService("WorkOrderPhase");
 
 const templates = ref<PhaseTemplate[]>([]);
@@ -152,6 +161,17 @@ const loading = ref(false);
 const creating = ref(false);
 const phaseCode = ref("");
 const phaseDescription = ref("");
+const selectedWorkcenterId = ref<string>(props.preferredWorkcenterId);
+
+const selectedWorkcenterTypeId = computed(() => {
+  if (!selectedWorkcenterId.value || !plantModelStore.workcenters) {
+    return props.workcenterTypeId;
+  }
+  const wc = plantModelStore.workcenters.find(
+    (w) => w.id === selectedWorkcenterId.value,
+  );
+  return wc ? wc.workcenterTypeId : props.workcenterTypeId;
+});
 
 const getMachineStatusName = (machineStatusId: string): string => {
   const status = dataStore.machineStatuses.find(
@@ -165,11 +185,19 @@ const loadTemplates = async () => {
   selectedTemplate.value = undefined;
   phaseCode.value = "";
   phaseDescription.value = "";
+  selectedWorkcenterId.value = props.preferredWorkcenterId;
   try {
-    const result = await Services.PhaseTemplate.getAll();
-    if (result) {
+    const [templateResult] = await Promise.all([
+      Services.PhaseTemplate.getAll(),
+      !plantModelStore.workcenters || plantModelStore.workcenters.length === 0
+        ? plantModelStore.fetchActiveWorkcenters()
+        : Promise.resolve(),
+    ]);
+    if (templateResult) {
       // Only show non-disabled templates
-      templates.value = result.filter((t) => !t.disabled);
+      templates.value = templateResult.filter((t) => !t.disabled);
+      // Auto-select first template
+      selectedTemplate.value = templates.value[0] ?? undefined;
     } else {
       templates.value = [];
     }
@@ -194,8 +222,8 @@ const onCreatePhase = async () => {
     const dto: CreatePhaseFromTemplateDto = {
       phaseTemplateId: selectedTemplate.value.id,
       workOrderId: props.workOrderId,
-      workcenterTypeId: props.workcenterTypeId,
-      preferredWorkcenterId: props.preferredWorkcenterId,
+      workcenterTypeId: selectedWorkcenterTypeId.value,
+      preferredWorkcenterId: selectedWorkcenterId.value,
       code: phaseCode.value.trim(),
       description: phaseDescription.value.trim(),
     };
@@ -288,9 +316,24 @@ onMounted(() => {
   border-radius: var(--border-radius);
 }
 
-.form-row {
-  display: flex;
+.form-fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+}
+
+/* Tablet portrait: code+desc on first row, workcenter on second */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .form-fields {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: one field per row */
+@media (max-width: 640px) {
+  .form-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-field {
