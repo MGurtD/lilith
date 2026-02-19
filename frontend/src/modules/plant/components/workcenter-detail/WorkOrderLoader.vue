@@ -59,8 +59,9 @@
               responsiveLayout="scroll"
               stripedRows
               :rowHover="true"
-              :rowClass="getRowClass"
               class="p-datatable-sm clickable-rows"
+              selectionMode="single"
+              v-model:selection="selectedPhaseRow"
               sortField="phaseCode"
               :sortOrder="1"
               @row-click="handleRowClick"
@@ -199,6 +200,7 @@ const phases = ref<WorkOrderPhaseDetailed[]>([]);
 const loading = ref(false);
 const selectedDetailId = ref<string>("");
 const selectedPhaseId = ref<string>("");
+const selectedPhaseRow = ref<WorkOrderPhaseDetailed | undefined>(undefined);
 const activeTab = ref<"load" | "create">("load");
 const phaseTemplateLoaderRef = ref<InstanceType<typeof PhaseTemplateLoader> | null>(null);
 
@@ -225,6 +227,7 @@ const selectedPhase = computed(() => {
 
 const selectPhase = (phase: WorkOrderPhaseDetailed) => {
   selectedPhaseId.value = phase.phaseId;
+  selectedPhaseRow.value = phase;
   if (phase.details && phase.details.length > 0) {
     selectedDetailId.value = phase.details[0].machineStatusId || "";
   } else {
@@ -237,13 +240,6 @@ const handleRowClick = (event: any) => {
   if (phase.workcenterTypeId === props.workcenterTypeId) {
     selectPhase(phase);
   }
-};
-
-const getRowClass = (data: WorkOrderPhaseDetailed) => {
-  if (selectedPhaseId.value && data.phaseId === selectedPhaseId.value) {
-    return "selected-phase-row";
-  }
-  return "";
 };
 
 const onLoadActivity = () => {
@@ -267,6 +263,7 @@ const loadPhases = async () => {
   loading.value = true;
   selectedDetailId.value = "";
   selectedPhaseId.value = "";
+  selectedPhaseRow.value = undefined;
   try {
     const result = await phaseService.GetWorkOrderPhasesDetailed(props.workOrderId);
     if (result) {
@@ -404,10 +401,5 @@ onMounted(() => {
 
 :deep(.p-tabpanel) {
   padding: 0;
-}
-
-.dialog-content :deep(.selected-phase-row) {
-  background: var(--loaded-row-bg) !important;
-  border-left: 4px solid var(--loaded-row-border) !important;
 }
 </style>
