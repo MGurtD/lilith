@@ -217,6 +217,15 @@ const loadTemplates = async () => {
 const onCreatePhase = async () => {
   if (!selectedTemplate.value || !phaseCode.value.trim()) return;
 
+  if (!/^\d+$/.test(phaseCode.value.trim())) {
+    toast.add({
+      severity: "warn",
+      summary: "El codi de la fase ha de ser numèric",
+      life: 4000,
+    });
+    return;
+  }
+
   creating.value = true;
   try {
     const dto: CreatePhaseFromTemplateDto = {
