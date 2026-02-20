@@ -23,21 +23,33 @@
         <div class="flex gap-4 flex-wrap">
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold">Ordre</span>
-            <span class="font-medium text-900 text-lg">{{ workOrderCode }}</span>
+            <span class="font-medium text-900 text-lg">{{
+              workOrderCode
+            }}</span>
           </div>
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold">Referència</span>
-            <span class="font-medium text-900 text-lg">{{ referenceCode }}</span>
+            <span class="text-xs text-500 uppercase font-semibold"
+              >Referència</span
+            >
+            <span class="font-medium text-900 text-lg">{{
+              referenceCode
+            }}</span>
           </div>
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold">Quantitat</span>
+            <span class="text-xs text-500 uppercase font-semibold"
+              >Quantitat</span
+            >
             <span class="font-medium text-900 text-lg">{{ quantity }}</span>
           </div>
         </div>
       </div>
     </template>
 
-    <Tabs v-model:value="activeTab" class="loader-tabs" @update:value="onTabChange">
+    <Tabs
+      v-model:value="activeTab"
+      class="loader-tabs"
+      @update:value="onTabChange"
+    >
       <TabList>
         <Tab value="load">
           <i :class="PrimeIcons.COG" class="mr-2" />
@@ -64,13 +76,47 @@
               v-model:selection="selectedPhaseRow"
               sortField="phaseCode"
               :sortOrder="1"
+              :isRowSelectable="
+                (row: any) =>
+                  row.data.workcenterTypeId === props.workcenterTypeId
+              "
+              :rowClass="getRowClass"
               @row-click="handleRowClick"
             >
-              <Column field="phaseCode" header="Codi" :sortable="true" style="max-width: 50px" />
-              <Column field="phaseDescription" header="Descripció" style="min-width: 200px" />
+              <Column header="" style="width: 2.5rem; text-align: center">
+                <template #body="slotProps">
+                  <i
+                    v-if="slotProps.data.workcenterTypeId === workcenterTypeId"
+                    :class="PrimeIcons.CHECK_CIRCLE"
+                    class="phase-compatible-icon"
+                    title="Compatible amb aquesta màquina"
+                  />
+                  <i
+                    v-else
+                    :class="PrimeIcons.LOCK"
+                    class="phase-incompatible-icon"
+                    title="No compatible amb aquesta màquina"
+                  />
+                </template>
+              </Column>
+              <Column
+                field="phaseCode"
+                header="Codi"
+                :sortable="true"
+                style="max-width: 50px"
+              />
+              <Column
+                field="phaseDescription"
+                header="Descripció"
+                style="min-width: 200px"
+              />
               <Column header="Estat" style="min-width: 150px">
                 <template #body="slotProps">
-                  <Tag :value="slotProps.data.phaseStatus" severity="info" rounded />
+                  <Tag
+                    :value="slotProps.data.phaseStatus"
+                    severity="info"
+                    rounded
+                  />
                 </template>
               </Column>
               <Column header="Inici" style="min-width: 150px">
@@ -94,8 +140,13 @@
               />
               <Column header="Quant.">
                 <template #body="slotProps">
-                  <span class="quantity-ok">{{ slotProps.data.quantityOk }}</span> /
-                  <span class="quantity-ko">{{ slotProps.data.quantityKo }}</span>
+                  <span class="quantity-ok">{{
+                    slotProps.data.quantityOk
+                  }}</span>
+                  /
+                  <span class="quantity-ko">{{
+                    slotProps.data.quantityKo
+                  }}</span>
                 </template>
               </Column>
               <template #empty>
@@ -202,7 +253,9 @@ const selectedDetailId = ref<string>("");
 const selectedPhaseId = ref<string>("");
 const selectedPhaseRow = ref<WorkOrderPhaseDetailed | undefined>(undefined);
 const activeTab = ref<"load" | "create">("load");
-const phaseTemplateLoaderRef = ref<InstanceType<typeof PhaseTemplateLoader> | null>(null);
+const phaseTemplateLoaderRef = ref<InstanceType<
+  typeof PhaseTemplateLoader
+> | null>(null);
 
 const hasLoadedWorkOrders = computed(() => {
   return workcenterStore.loadedWorkOrdersPhases.length > 0;
@@ -235,6 +288,12 @@ const selectPhase = (phase: WorkOrderPhaseDetailed) => {
   }
 };
 
+const getRowClass = (data: WorkOrderPhaseDetailed) => {
+  return data.workcenterTypeId === props.workcenterTypeId
+    ? "phase-row-compatible"
+    : "phase-row-incompatible";
+};
+
 const handleRowClick = (event: any) => {
   const phase = event.data as WorkOrderPhaseDetailed;
   if (phase.workcenterTypeId === props.workcenterTypeId) {
@@ -265,7 +324,9 @@ const loadPhases = async () => {
   selectedPhaseId.value = "";
   selectedPhaseRow.value = undefined;
   try {
-    const result = await phaseService.GetWorkOrderPhasesDetailed(props.workOrderId);
+    const result = await phaseService.GetWorkOrderPhasesDetailed(
+      props.workOrderId,
+    );
     if (result) {
       phases.value = result;
       if (autoSelectedPhase.value) {
@@ -401,5 +462,29 @@ onMounted(() => {
 
 :deep(.p-tabpanel) {
   padding: 0;
+}
+
+:deep(.phase-row-incompatible) {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  color: var(--text-color-secondary);
+}
+
+:deep(.phase-row-incompatible td) {
+  pointer-events: none;
+}
+
+:deep(.phase-row-compatible) {
+  cursor: pointer;
+}
+
+.phase-compatible-icon {
+  color: var(--p-green-500);
+  font-size: 1rem;
+}
+
+.phase-incompatible-icon {
+  color: var(--p-surface-400);
+  font-size: 0.9rem;
 }
 </style>
