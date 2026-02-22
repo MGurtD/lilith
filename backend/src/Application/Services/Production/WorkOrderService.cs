@@ -434,10 +434,14 @@ namespace Application.Services.Production
             
             bool isLastPhase = activePhasesOrdered.FirstOrDefault()?.Id == completedPhaseId;
             
-            // Check if there's a subsequent external work phase
+            // Check if the next immediate phase is an external work phase
             var currentPhaseCodeAsNumber = completedPhase.CodeAsNumber;
-            var hasSubsequentExternalPhase = workOrder.Phases
-                .Any(p => !p.Disabled && p.IsExternalWork && p.CodeAsNumber > currentPhaseCodeAsNumber);
+            var nextPhase = workOrder.Phases
+                .Where(p => !p.Disabled && p.CodeAsNumber > currentPhaseCodeAsNumber)
+                .OrderBy(p => p.CodeAsNumber)
+                .FirstOrDefault();
+
+            var hasSubsequentExternalPhase = nextPhase?.IsExternalWork == true;
             
             // Determine the appropriate status for the work order
             if (hasSubsequentExternalPhase)
