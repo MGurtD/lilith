@@ -577,22 +577,23 @@ public class WorkOrderPhaseService(
             .OrderByDescending(p => p.CodeAsNumber)
             .FirstOrDefault();
 
-        decimal availableQuantity;
-
         if (previousPhase == null)
         {
-            // 4. Es la primera fase: permitir hasta 200% de la cantidad planificada
-            availableQuantity = workOrder.PlannedQuantity * 2;
-        }
-        else
-        {
-            // 5. Leer las QuantityOk directamente de la fase anterior
-            availableQuantity = previousPhase.QuantityOk;
+            // 4. Es la primera fase: no hay límite de cantidad
+            return new GenericResponse(true, new
+            {
+                previousPhaseId = (object?)null,
+                previousPhaseCode = (object?)null,
+                availableQuantity = (object?)null,
+            });
         }
 
-        // 6. Validar que la cantidad solicitada no supere las unidades disponibles
-        // Incluir las unidades ya fabricadas en la fase actual
-        var totalRequested = currentPhase.QuantityOk + request.Quantity;
+        // 5. Leer las QuantityOk directamente de la fase anterior
+        decimal availableQuantity = previousPhase.QuantityOk;
+
+        // 6. Validar que ok+ko solicitados no supere las unidades ok de la fase anterior
+        // Incluir las unidades ya fabricadas (ok+ko) en la fase actual
+        var totalRequested = currentPhase.QuantityOk + currentPhase.QuantityKo + request.Quantity;
         if (totalRequested > availableQuantity)
         {
             logger.LogWarning("ValidatePreviousPhaseQuantity: Insufficient quantity. Requested {Requested}, Available {Available}", totalRequested, availableQuantity);

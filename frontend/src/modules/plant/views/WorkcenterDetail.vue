@@ -69,6 +69,7 @@
             label="Entrar"
             severity="primary"
             class="touch-button"
+            :disabled="!canManageOperators"
             @click="handleOperatorClockIn"
           />
           <Button
@@ -77,6 +78,7 @@
             label="Sortir"
             severity="primary"
             class="touch-button"
+            :disabled="!canManageOperators"
             @click="handleOperatorClockOut"
           />
         </div>
@@ -259,6 +261,11 @@ const unloadNextMachineStatusId = ref<string | undefined>(undefined);
 const unloadShowNextPhaseOption = ref(true);
 
 const workcenter = computed(() => workcenterStore.workcenterView);
+
+// Computed para determinar si la actividad actual permite gestionar operarios
+const canManageOperators = computed(() => {
+  return workcenter.value?.realtime?.statusOperatorsAllowed === true;
+});
 
 // Computed para determinar si el operario está fichado
 const isOperatorClockedIn = computed(() => {
