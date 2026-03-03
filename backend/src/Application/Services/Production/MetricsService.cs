@@ -159,10 +159,13 @@ namespace Application.Services.Production
             var productionMetrics = new ProductionMetrics(0, 0, 0, 0, 0, 0);
 
             // Get operator cost
-            var operatorCostRequest = await GetOperatorCost(productionPart.OperatorId);
-            if (operatorCostRequest.Result)
+            if (productionPart.OperatorId.HasValue)
             {
-                productionMetrics.OperatorCost = (decimal)operatorCostRequest.Content!;
+                var operatorCostRequest = await GetOperatorCost(productionPart.OperatorId.Value);
+                if (operatorCostRequest.Result)
+                {
+                    productionMetrics.OperatorCost = (decimal)operatorCostRequest.Content!;
+                }
             }
 
             // Get workcenter cost

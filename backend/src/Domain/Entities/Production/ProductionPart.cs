@@ -11,7 +11,7 @@ namespace Domain.Entities.Production
         public WorkOrderPhase? WorkOrderPhase { get; set;}
         public Guid WorkOrderPhaseDetailId { get; set; }
         public WorkOrderPhaseDetail? WorkOrderPhaseDetail { get; set;}
-        public Guid OperatorId { get; set; }
+        public Guid? OperatorId { get; set; }
         public Operator? Operator { get; set; }
         public int Quantity { get; set; }
         public decimal OperatorTime { get; set; }
