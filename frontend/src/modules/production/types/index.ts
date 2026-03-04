@@ -582,6 +582,7 @@ export interface PhaseDetailItem {
  * References product/material catalog.
  */
 export interface BillOfMaterialsItem {
+  id: string;
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
