@@ -1,5 +1,6 @@
 using Application.Contracts;
 using Domain.Entities.Warehouse;
+using Domain.Implementations.ReferenceFormat;
 
 namespace Application.Services.Warehouse
 {
@@ -82,8 +83,34 @@ namespace Application.Services.Warehouse
             var stock = _unitOfWork.Stocks.Find(p => p.Quantity > 0);
             return stock;
         }
+        public async Task<IEnumerable<StockResponse>> GetStockByWorkOrderPhaseBillOfMaterialsId(Guid id)
+        {
+            var bom = await _unitOfWork.WorkOrders.Phases.BillOfMaterials.Get(id);
+            if (bom == null) return Enumerable.Empty<StockResponse>();
+
+            var reference = await _unitOfWork.References.Get(bom.ReferenceId);
+            if (reference == null) return Enumerable.Empty<StockResponse>();
+
+            var stock = await _unitOfWork.Warehouses.GetStockByReferenceId(bom.ReferenceId);
+
+            // Filtrar stock segons el format de la referència
+            if (reference.ReferenceFormatId.HasValue)
+            {
+                var format = await _unitOfWork.ReferenceFormats.Get(reference.ReferenceFormatId.Value);
+                if (format != null)
+                {
+                    var stockFilter = ReferenceFormatCalculationFactory.CreateStockFilter(format.Code);
+                    stock = stock.Where(s => stockFilter.IsCompatible(
+                        s.Width, s.Length, s.Height, s.Diameter, s.Thickness,
+                        bom.Width, bom.Length, bom.Height, bom.Diameter, bom.Thickness));
+                }
+            }
+
+            return stock;
+        }
     }
 }
+
 
 
 
