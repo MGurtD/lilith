@@ -121,7 +121,7 @@ const cleanFilter = () => {
   userFilterStore.removeFilter("Workorders", "");
 };
 const filteredWorkorders = computed(() => {
-  let result = workOrderStore.workorders;
+  let result = workOrderStore.workorders ?? [];
   if (filter.value.plannedQuantity) {
     result = result.filter(
       (w) => w.plannedQuantity === filter.value.plannedQuantity,
