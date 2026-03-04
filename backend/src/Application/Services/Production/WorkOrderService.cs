@@ -234,10 +234,11 @@ namespace Application.Services.Production
             return new GenericResponse(true);
         }
 
-        public IEnumerable<WorkOrder> GetBetweenDatesAndStatus(DateTime startDate, DateTime endDate, Guid? statusId)
+        public IEnumerable<WorkOrder> GetBetweenDatesAndStatus(DateTime startDate, DateTime endDate, Guid? statusId, string? code = null)
         {
             var workOrders = unitOfWork.WorkOrders.Find(w => w.PlannedDate >= startDate && w.PlannedDate <= endDate);
             if (statusId.HasValue) workOrders = workOrders.Where(w => w.StatusId == statusId);
+            if (!string.IsNullOrEmpty(code)) workOrders = workOrders.Where(w => w.Code.Contains(code));
 
             return workOrders;
         }

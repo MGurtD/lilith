@@ -4,12 +4,12 @@ import { useStore } from "../store";
 import { globalToast } from "@/utils/global-toast";
 import { parseAxiosError } from "@/utils/error-parser";
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "";
 const requestTimeout =
   (import.meta.env.VITE_API_REQUEST_TIMEOUT as number) ?? 5000;
 
 const apiClient = axios.create({
-  baseURL: baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}`,
+  baseURL: baseUrl && baseUrl.endsWith("/api") ? baseUrl : `${baseUrl}`,
   timeout: requestTimeout,
   headers: {
     "Content-Type": "application/json",
@@ -30,7 +30,7 @@ if (typeof window !== "undefined") {
       globalToast.success(
         "Connexió restaurada",
         "La connexió a Internet s'ha restablert correctament.",
-        5000
+        5000,
       );
       isOfflineToastShown = false;
     }
@@ -73,7 +73,7 @@ apiClient.interceptors.request.use(
   function (error) {
     // Do something with request error
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add a response interceptor
@@ -120,7 +120,7 @@ apiClient.interceptors.response.use(
       globalToast.warn(
         "Sessió expirada",
         "La teva sessió ha expirat. Si us plau, torna a iniciar sessió.",
-        6000
+        6000,
       );
 
       // Redirect to login (only if not already there)
@@ -178,7 +178,7 @@ apiClient.interceptors.response.use(
     // Log to console in development mode
     if (import.meta.env.DEV) {
       console.group(
-        `🔴 API Error [${errorInfo.statusCode}] ${error.config?.url}`
+        `🔴 API Error [${errorInfo.statusCode}] ${error.config?.url}`,
       );
       console.error("Message:", errorInfo.message);
       console.error("Errors:", errorInfo.errors);
@@ -192,7 +192,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export function logException(error: any) {
