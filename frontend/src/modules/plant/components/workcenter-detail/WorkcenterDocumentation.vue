@@ -24,7 +24,7 @@
       <!-- Master: Document List (visible >= 768px) -->
       <div class="documents-panel desktop-only">
         <DataTable
-          :value="workcenterStore.workOrderReferenceDocuments"
+          :value="activePhaseStore.workOrderReferenceDocuments"
           v-model:selection="selectedDocument"
           selectionMode="single"
           @row-select="onDocumentSelect"
@@ -71,10 +71,10 @@
         <span class="drawer-header">Documents</span>
       </template>
       <DataTable
-        :value="workcenterStore.workOrderReferenceDocuments"
-        v-model:selection="selectedDocument"
-        selectionMode="single"
-        @row-select="onMobileDocumentSelect"
+          :value="activePhaseStore.workOrderReferenceDocuments"
+          v-model:selection="selectedDocument"
+          selectionMode="single"
+          @row-select="onMobileDocumentSelect"
         scrollable
         scrollHeight="flex"
         class="drawer-documents-table clickable-rows"
@@ -115,10 +115,10 @@ import Column from "primevue/column";
 import Tag from "primevue/tag";
 import { File } from "../../../../types";
 import FileViewer from "../../../../components/FileViewer.vue";
-import { usePlantWorkcenterStore } from "../../store";
+import { usePlantActivePhaseStore } from "../../store";
 
 // Store
-const workcenterStore = usePlantWorkcenterStore();
+const activePhaseStore = usePlantActivePhaseStore();
 
 // State
 const selectedDocument = ref<File | null>(null);
@@ -126,7 +126,7 @@ const drawerVisible = ref(false);
 
 // Computed
 const documentCount = computed(
-  () => workcenterStore.workOrderReferenceDocuments?.length || 0,
+  () => activePhaseStore.workOrderReferenceDocuments?.length || 0,
 );
 
 // Document selection handler (desktop)
@@ -152,7 +152,7 @@ const getFileType = (file: File): string => {
 
 // Auto-select first document when documents are loaded
 watch(
-  () => workcenterStore.workOrderReferenceDocuments,
+  () => activePhaseStore.workOrderReferenceDocuments,
   (documents) => {
     if (documents && documents.length > 0 && !selectedDocument.value) {
       selectedDocument.value = documents[0];
@@ -165,10 +165,10 @@ watch(
 onMounted(() => {
   // Check if documents are already loaded and select first one
   if (
-    workcenterStore.workOrderReferenceDocuments?.length > 0 &&
+    activePhaseStore.workOrderReferenceDocuments?.length > 0 &&
     !selectedDocument.value
   ) {
-    selectedDocument.value = workcenterStore.workOrderReferenceDocuments[0];
+    selectedDocument.value = activePhaseStore.workOrderReferenceDocuments[0];
   }
 });
 </script>

@@ -163,7 +163,7 @@
 import { watch, computed, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import { usePlantWorkcenterStore } from "../../store";
+import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 
 interface Props {
   visible: boolean;
@@ -178,6 +178,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const workcenterStore = usePlantWorkcenterStore();
+const activePhaseStore = usePlantActivePhaseStore();
 
 // Get loaded work order data from store
 const loadedWorkOrder = computed(
@@ -227,7 +228,7 @@ const onSubmit = async () => {
     // Validate quantity against previous phase
     const totalQuantity = formData.counterOk + formData.counterKo;
     const validation =
-      await workcenterStore.validatePhaseQuantity(totalQuantity);
+      await activePhaseStore.validatePhaseQuantity(totalQuantity);
 
     if (!validation.valid) {
       toast.add({
@@ -240,7 +241,7 @@ const onSubmit = async () => {
     }
 
     // Call the store action to update quantities
-    const result = await workcenterStore.updatePhaseQuantities(
+    const result = await activePhaseStore.updatePhaseQuantities(
       formData.counterOk,
       formData.counterKo,
     );
