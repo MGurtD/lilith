@@ -90,14 +90,17 @@ namespace Api.Controllers.Purchase
             if (moveToWarehouseStatus == null) return NotFound(new GenericResponse(false, localizationService.GetLocalizedString("ReceiptStatusNotFound")));
 
             var warehouseResponse = new GenericResponse(true);
+            var workOrderResponse = new GenericResponse(true);
             if (receipt.StatusId != moveToWarehouseStatus.Id && request.StatusId == moveToWarehouseStatus.Id)
-                warehouseResponse = await service.MoveToWarehose(request);                  
+                warehouseResponse = await service.MoveToWarehose(request);  
+                //afegir canvi d'estat de workorder i de workorderphase                
+                workOrderResponse = await service.ChangeAssociatedWorkOrderStatus(request);
 
             if (receipt.StatusId == moveToWarehouseStatus.Id && request.StatusId != moveToWarehouseStatus.Id)
                 warehouseResponse = await service.RetriveFromWarehose(request);
 
             var globalResponse = new GenericResponse(true);
-            if (warehouseResponse.Result)
+            if (warehouseResponse.Result && workOrderResponse.Result)
             {
                 globalResponse = await service.Update(request);
                 var updatedReceipt = await service.GetById(request.Id);
@@ -105,7 +108,7 @@ namespace Api.Controllers.Purchase
                     await referenceService.UpdatePriceFromReceipt(updatedReceipt);
             }
 
-            if (globalResponse.Result && warehouseResponse.Result) return Ok(globalResponse);
+            if (globalResponse.Result && warehouseResponse.Result && workOrderResponse.Result) return Ok(globalResponse);
             else return BadRequest(globalResponse);
         }
 
