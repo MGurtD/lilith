@@ -11,6 +11,7 @@ import {
   MachineStatusReasonService,
   WorkcenterCostService,
   WorkcenterProfitPercentageService,
+  WorkcenterLocationService,
 } from "../services";
 import {
   Workcenter,
@@ -25,6 +26,7 @@ import {
   MachineStatusReason,
   WorkcenterTypeSaturation,
   WorkcenterProfitPercentage,
+  WorkcenterLocation,
 } from "../types";
 
 const workcenterService = new WorkcenterService("/workcenter");
@@ -41,6 +43,9 @@ const machineStatusReasonService = new MachineStatusReasonService(
 );
 const workcenterProfitPercentageService = new WorkcenterProfitPercentageService(
   "/workcenterprofitpercentage",
+);
+const workcenterLocationService = new WorkcenterLocationService(
+  "/WorkcenterLocation",
 );
 
 export const usePlantModelStore = defineStore("plantmodel", {
@@ -72,6 +77,7 @@ export const usePlantModelStore = defineStore("plantmodel", {
     workcenterProfitPercentages: undefined as
       | Array<WorkcenterProfitPercentage>
       | undefined,
+    workcenterLocations: undefined as Array<WorkcenterLocation> | undefined,
   }),
   getters: {
     getWorkcentersByTypeId: (state) => {
@@ -499,6 +505,23 @@ export const usePlantModelStore = defineStore("plantmodel", {
       const result = await machineStatusReasonService.delete(id);
       if (result && this.machineStatus)
         await this.fetchMachineStatus(this.machineStatus.id);
+      return result;
+    },
+    // WorkcenterLocation
+    async fetchWorkcenterLocationsByWorkcenterId(workcenterId: string) {
+      this.workcenterLocations =
+        await workcenterLocationService.getByWorkcenterId(workcenterId);
+    },
+    async createWorkcenterLocation(entity: WorkcenterLocation) {
+      const result = await workcenterLocationService.create(entity);
+      if (result)
+        await this.fetchWorkcenterLocationsByWorkcenterId(entity.workcenterId);
+      return result;
+    },
+    async deleteWorkcenterLocation(id: string, workcenterId: string) {
+      const result = await workcenterLocationService.delete(id);
+      if (result)
+        await this.fetchWorkcenterLocationsByWorkcenterId(workcenterId);
       return result;
     },
   },

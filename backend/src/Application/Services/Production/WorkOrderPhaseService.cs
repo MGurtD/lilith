@@ -163,19 +163,28 @@ public class WorkOrderPhaseService(
     
     public async Task<IEnumerable<object>> GetExternalPhases(DateTime startTime, DateTime endTime)
     {
-        // Get production status
-        var status = await unitOfWork.Lifecycles.GetStatusByName(
-            StatusConstants.Lifecycles.WorkOrder, 
-            StatusConstants.Statuses.Production);
-        
-        if (status == null)
+        // Get the WorkOrder lifecycle
+        var lifecycle = await unitOfWork.Lifecycles.GetByName(StatusConstants.Lifecycles.WorkOrder);
+        if (lifecycle == null) 
         {
             return [];
         }
 
-        // Find work orders in production within date range
+        // Find all statuses in this lifecycle that have the 'ExternalService' tag
+        var validStatuses = await unitOfWork.LifecycleTags.GetStatusesByTagName(
+            StatusConstants.LifecycleTags.ExternalService, 
+            lifecycle.Id);
+        
+        if (validStatuses == null || validStatuses.Count == 0)
+        {
+            return [];
+        }
+
+        var validStatusIds = validStatuses.Select(s => s.Id).ToList();
+
+        // Find work orders within date range and in any of the valid statuses
         var workOrders = await unitOfWork.WorkOrders.FindAsync(w =>
-            w.StatusId == status.Id &&
+            validStatusIds.Contains(w.StatusId) &&
             w.PlannedDate >= startTime &&
             w.PlannedDate < endTime);
 

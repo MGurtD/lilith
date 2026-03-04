@@ -25,5 +25,22 @@
             else
                 throw new NotImplementedException($"ReferenceFormatCalculation for '{Format}' not implemented");
         }
+
+        public static IReferenceFormatStockFilter CreateStockFilter(string Format)
+        {
+            if (Format == null) throw new ArgumentNullException(nameof(Format));
+
+            if (Format.Equals(ReferenceFormatCodes.TUB))
+                return new ReferenceFormatStockFilter_Tub();
+            else if (Format.Equals(ReferenceFormatCodes.PLACA))
+                return new ReferenceFormatStockFilter_Placa();
+            else if (Format.Equals(ReferenceFormatCodes.RODO))
+                return new ReferenceFormatStockFilter_Rodo();
+            else if (Format.Equals(ReferenceFormatCodes.UNITATS))
+                return new ReferenceFormatStockFilter_Unitats();
+            else
+                throw new NotImplementedException($"ReferenceFormatStockFilter for '{Format}' not implemented");
+        }
     }
 }
+

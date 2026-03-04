@@ -21,6 +21,7 @@ namespace Application.Contracts
             public const string Receipts = "Receipts";
             public const string WorkOrder = "WorkOrder";
             public const string Verifactu = "Verifactu";
+            public const string ExternalService = "ExternalService";
         }
 
         // Status Names (Catalan - as stored in database)
@@ -36,6 +37,7 @@ namespace Application.Contracts
             public const string Production = "Producció";
             public const string Llancada = "Llançada";
             public const string Tancada = "Tancada";
+            public const string Pausada = "Pausa";
             public const string OFCancellada = "Cancel·lada";
             public const string ServeiExtern = "Servei Extern";
 
@@ -76,6 +78,7 @@ namespace Application.Contracts
             public const string Available = "Available";
             public const string Unavailable = "Unavailable";
             public const string Plant = "Plant";
+            public const string ExternalService = "ExternalService";
 
         }
     }

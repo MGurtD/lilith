@@ -14,6 +14,7 @@ export interface Location {
   description: string;
   warehouseId: string;
   disabled: boolean;
+  locationType?: string | null;
 }
 
 export interface Stock {

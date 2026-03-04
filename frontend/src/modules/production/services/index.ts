@@ -35,8 +35,14 @@ import { WorkcenterShiftService } from "./workcentershift.service";
 import { AreaService } from "./area.service";
 import { WorkcenterService } from "./workcenter.service";
 import { WorkcenterProfitPercentageService } from "./workcenterprofitpercentage.service";
+import { WorkcenterLocationService } from "./workcenterlocation.service";
 
-export { AreaService, WorkcenterService, WorkcenterProfitPercentageService };
+export {
+  AreaService,
+  WorkcenterService,
+  WorkcenterProfitPercentageService,
+  WorkcenterLocationService,
+};
 export class EnterpriseService extends BaseService<Enterprise> {}
 export class SiteService extends BaseService<Site> {}
 export class WorkcenterTypeService extends BaseService<WorkcenterType> {}
@@ -102,4 +108,5 @@ export default {
   PhaseTemplateDetail: new PhaseTemplateDetailService(
     "/PhaseTemplate/Detail",
   ),
+  WorkcenterLocation: new WorkcenterLocationService("/WorkcenterLocation"),
 };

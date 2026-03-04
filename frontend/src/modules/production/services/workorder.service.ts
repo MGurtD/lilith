@@ -31,11 +31,13 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     statusId?: string,
     referenceId?: string,
     customerId?: string,
+    code?: string,
   ): Promise<Array<WorkOrder> | undefined> {
     let endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}`;
     if (statusId) endpoint += `&statusId=${statusId}`;
-    if (referenceId) endpoint += `&referenceId=${statusId}`;
+    if (referenceId) endpoint += `&referenceId=${referenceId}`;
     if (customerId) endpoint += `&customerId=${customerId}`;
+    if (code) endpoint += `&code=${code}`;
 
     const response = await this.apiClient.get(endpoint);
     if (response.status === 200) {

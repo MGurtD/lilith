@@ -13,12 +13,13 @@
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
         </div>
       </template>
-      <Column field="name" header="Nom" style="width: 25%"></Column>
+      <Column field="name" header="Nom" style="width: 20%"></Column>
       <Column
         field="description"
         header="Descripció"
-        style="width: 60%"
+        style="width: 45%"
       ></Column>
+      <Column field="locationType" header="Tipus" style="width: 15%"></Column>
       <Column header="Desactivada" style="width: 10%">
         <template #body="slotProps">
           <BooleanColumn :value="slotProps.data.disabled"></BooleanColumn>

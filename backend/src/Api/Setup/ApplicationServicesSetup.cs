@@ -72,6 +72,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IShiftDetailService, ShiftDetailService>();
         services.AddScoped<IWorkcenterCostService, WorkcenterCostService>();
         services.AddScoped<IWorkcenterProfitPercentageService, WorkcenterProfitPercentageService>();
+        services.AddScoped<IWorkcenterLocationService, WorkcenterLocationService>();
 
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();

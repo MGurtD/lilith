@@ -628,3 +628,10 @@ export interface CreatePhaseFromTemplateDto {
   code: string;
   description: string;
 }
+
+export interface WorkcenterLocation {
+  id: string;
+  workcenterId: string;
+  locationId: string;
+  location?: import("../../warehouse/types").Location;
+}

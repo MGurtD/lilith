@@ -70,6 +70,7 @@ export const useWorkOrderStore = defineStore("workorder", {
       statusId?: string,
       referenceId?: string,
       customerId?: string,
+      code?: string,
     ) {
       this.workorders = await Services.WorkOrder.GetBetweenDatesAndStatus(
         startTime,
@@ -77,6 +78,7 @@ export const useWorkOrderStore = defineStore("workorder", {
         statusId,
         referenceId,
         customerId,
+        code,
       );
     },
     async fetchAll() {
