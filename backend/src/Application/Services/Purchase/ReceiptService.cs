@@ -226,6 +226,51 @@ namespace Application.Services.Purchase
             return new GenericResponse(true, detailsToMove);
         }
 
+        public async Task<GenericResponse> ChangeAssociatedWorkOrderStatus(Receipt receipt)
+        {
+            var details = receipt.Details;
+            
+            foreach (var detail in details)
+            {
+                //Anar a buscar el purchaseorderdetailid a aquesta taula "PurchaseOrderReceiptDetails"
+                var poReceiptDetails = await _unitOfWork.PurchaseOrders.Receptions.FindAsync(r => r.ReceiptDetailId == detail.Id);
+                var poReceiptDetail = poReceiptDetails.FirstOrDefault();
+                if (poReceiptDetail == null) continue;
+
+                //El purchaseorderdetail te el workorderphaseId
+                var purchaseOrderDetail = await _unitOfWork.PurchaseOrders.Details.Get(poReceiptDetail.PurchaseOrderDetailId);
+                if (purchaseOrderDetail == null || !purchaseOrderDetail.WorkOrderPhaseId.HasValue) continue;
+
+                var workOrderPhase = await _unitOfWork.WorkOrders.Phases.Get(purchaseOrderDetail.WorkOrderPhaseId.Value);
+                if (workOrderPhase == null) continue;
+
+                //Amb el workorderphaseId anar a buscar el workorder
+                var workOrder = await _unitOfWork.WorkOrders.Get(workOrderPhase.WorkOrderId);
+                if (workOrder == null) continue;
+
+                //Si la quantitat recepcionada es igual a la quantitat del workorderphase, canviar l'estat del workorderphase a tancat
+                //Si la quantitat recepcionada es igual a la quantitat del workorderphase, canviar l'estat de la workorder a en pausa
+                if (purchaseOrderDetail.ReceivedQuantity >= purchaseOrderDetail.Quantity)
+                {
+                    var tancadaStatus = await _unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Tancada);
+                    if (tancadaStatus != null && workOrderPhase.StatusId != tancadaStatus.Id)
+                    {
+                        workOrderPhase.StatusId = tancadaStatus.Id;
+                        await _unitOfWork.WorkOrders.Phases.Update(workOrderPhase);
+                    }
+
+                    var pausadaStatus = await _unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Pausada);
+                    if (pausadaStatus != null && workOrder.StatusId != pausadaStatus.Id)
+                    {
+                        workOrder.StatusId = pausadaStatus.Id;
+                        await _unitOfWork.WorkOrders.Update(workOrder);
+                    }
+                }
+            }
+
+            return new GenericResponse(true);
+        }
+
         public async Task<GenericResponse> RetriveFromWarehose(Receipt receipt)
         {
             var detailsToRetrive = receipt.Details!.Where(d => d.StockMovementId != null);

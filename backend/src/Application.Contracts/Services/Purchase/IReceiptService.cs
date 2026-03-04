@@ -19,6 +19,7 @@ public interface IReceiptService
     Task<GenericResponse> Remove(Guid id);
 
     Task<GenericResponse> MoveToWarehose(Receipt receipt);
+    Task<GenericResponse> ChangeAssociatedWorkOrderStatus(Receipt receipt);
     Task<GenericResponse> RetriveFromWarehose(Receipt receipt);
 
     Task<GenericResponse> AddDetail(ReceiptDetail detail);
