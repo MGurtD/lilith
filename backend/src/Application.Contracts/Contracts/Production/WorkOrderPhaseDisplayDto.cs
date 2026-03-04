@@ -265,6 +265,9 @@ public class PhaseDetailItemDto
 /// </summary>
 public class BillOfMaterialsItemDto
 {
+    /// <summary>BOM item primary key — used to query stock availability</summary>
+    public Guid Id { get; set; }
+
     /// <summary>Reference code (product/material code)</summary>
     public string ReferenceCode { get; set; } = string.Empty;
     

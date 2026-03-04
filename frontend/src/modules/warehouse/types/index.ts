@@ -62,3 +62,28 @@ export interface Inventory {
   thickness: number;
   movementDate: any;
 }
+
+/**
+ * Rich stock read-model returned by GET /Stock/ByBillOfMaterials/{id}.
+ * Includes resolved reference, location and warehouse names.
+ */
+export interface StockResponse {
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  referenceFormatId: string;
+  referenceFormatCode: string;
+  referenceFormatDescription: string;
+  locationId: string;
+  locationName: string;
+  locationDescription: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseDescription: string;
+  quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
+}

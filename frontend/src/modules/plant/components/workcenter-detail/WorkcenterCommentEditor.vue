@@ -51,7 +51,7 @@
 import { ref, computed, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import { usePlantWorkcenterStore } from "../../store/workcenter.store";
+import { usePlantActivePhaseStore } from "../../store";
 
 const props = defineProps<{
   visible: boolean;
@@ -66,7 +66,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
-const workcenterStore = usePlantWorkcenterStore();
+const activePhaseStore = usePlantActivePhaseStore();
 
 const maxLength = 1000;
 const localComment = ref("");
@@ -137,7 +137,7 @@ const handleSave = async () => {
   isSaving.value = true;
 
   try {
-    const success = await workcenterStore.updatePhaseComment(
+    const success = await activePhaseStore.updatePhaseComment(
       props.phaseId,
       localComment.value.trim(),
     );

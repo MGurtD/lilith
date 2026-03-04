@@ -381,6 +381,7 @@ public class WorkOrderPhaseService(
                 {
                     detailedPhase.BillOfMaterials.Add(new BillOfMaterialsItemDto
                     {
+                        Id = bom.Id,
                         ReferenceCode = bom.Reference?.Code ?? string.Empty,
                         ReferenceDescription = bom.Reference?.Description ?? string.Empty,
                         Quantity = bom.Quantity

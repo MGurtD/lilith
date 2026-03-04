@@ -30,6 +30,12 @@
                   <span class="font-bold">Comentaris</span>
                 </div>
               </Tab>
+              <Tab v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
+                <div class="flex align-items-center gap-2">
+                  <i :class="PrimeIcons.BOX"></i>
+                  <span class="font-bold">Materials</span>
+                </div>
+              </Tab>
             </TabList>
             <TabPanels>
               <!-- Available Phases Tab -->
@@ -50,6 +56,11 @@
                 <WorkcenterComments
                   :loadedWorkOrders="workcenterStore.loadedWorkOrdersPhases"
                 />
+              </TabPanel>
+
+              <!-- Materials Tab -->
+              <TabPanel v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
+                <WorkcenterMaterials />
               </TabPanel>
             </TabPanels>
           </Tabs>
@@ -206,10 +217,12 @@ import {
   usePlantWorkcenterStore,
   usePlantOperatorStore,
   usePlantDataStore,
+  usePlantActivePhaseStore,
 } from "../store";
 import WorkcenterRealtimePanel from "../components/workcenter-detail/WorkcenterRealtimePanel.vue";
 import WorkcenterDocumentation from "../components/workcenter-detail/WorkcenterDocumentation.vue";
 import WorkcenterComments from "../components/workcenter-detail/WorkcenterComments.vue";
+import WorkcenterMaterials from "../components/workcenter-detail/WorkcenterMaterials.vue";
 import WorkcenterWorkOrderSelector from "../components/workcenter-detail/WorkcenterWorkOrderSelector.vue";
 import WorkOrderLoader from "../components/workcenter-detail/WorkOrderLoader.vue";
 import WorkOrderUnloader from "../components/workcenter-detail/WorkOrderUnloader.vue";
@@ -234,6 +247,7 @@ const appStore = useStore();
 const workcenterStore = usePlantWorkcenterStore();
 const operatorStore = usePlantOperatorStore();
 const dataStore = usePlantDataStore();
+const activePhaseStore = usePlantActivePhaseStore();
 const { connect } = useWebSocketConnection();
 
 const id = route.params.id as string;
