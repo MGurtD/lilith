@@ -1,6 +1,6 @@
 <template>
   <form v-if="location">
-    <section class="three-columns">
+    <section class="two-columns">
       <BaseInput
         class="mb-2"
         label="Nom"
@@ -19,6 +19,20 @@
           'p-invalid': validation.errors.description,
         }"
       ></BaseInput>
+    </section>
+    <section class="two-columns mt-3">
+      <div>
+        <label class="block text-900 mb-2">Tipologia</label>
+        <Select
+          v-model="location.locationType"
+          :options="locationTypeOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Sense tipus"
+          class="w-full"
+          showClear
+        />
+      </div>
       <div>
         <label class="block text-900 mb-2">Desactivada</label>
         <Checkbox v-model="location.disabled" class="w-full" :binary="true" />
@@ -36,32 +50,28 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
-import { Location } from "../types";
+import { Location, LocationTypeOption, LOCATION_TYPE_OPTIONS } from "../types";
 import * as Yup from "yup";
 import {
   FormValidation,
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
-import { usePlantModelStore } from "../../production/store/plantmodel";
 
 const toast = useToast();
-const plantmodelStore = usePlantModelStore();
 
 const props = defineProps<{
   location: Location;
 }>();
 
-onMounted(async () => {
-  await plantmodelStore.fetchSites();
-});
-
 const emit = defineEmits<{
   (e: "submit", location: Location): void;
   (e: "cancel"): void;
 }>();
+
+const locationTypeOptions: LocationTypeOption[] = LOCATION_TYPE_OPTIONS;
 
 const schema = Yup.object().shape({
   name: Yup.string()

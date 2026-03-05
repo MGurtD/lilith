@@ -17,6 +17,23 @@ export interface Location {
   locationType?: string | null;
 }
 
+export interface LocationTypeOption {
+  value: string;
+  label: string;
+}
+
+export const LOCATION_TYPE_OPTIONS: LocationTypeOption[] = [
+  { value: "Supply", label: "Subministrament" },
+  { value: "Receiving", label: "Recepció" },
+  { value: "Shipping", label: "Expedició" },
+  { value: "Storage", label: "Emmagatzematge" },
+];
+
+export const getLocationTypeLabel = (value: string | null | undefined): string => {
+  if (!value) return "";
+  return LOCATION_TYPE_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
+};
+
 export interface Stock {
   id: string;
   locationId: string;
