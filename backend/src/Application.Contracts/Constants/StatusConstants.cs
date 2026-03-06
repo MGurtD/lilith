@@ -21,7 +21,6 @@ namespace Application.Contracts
             public const string Receipts = "Receipts";
             public const string WorkOrder = "WorkOrder";
             public const string Verifactu = "Verifactu";
-            public const string ExternalService = "ExternalService";
         }
 
         // Status Names (Catalan - as stored in database)

@@ -25,9 +25,9 @@
         :startTime="workcenter.realtime?.statusStartTime"
       />
       <TimeProgressBar
-        v-if="workcenterStore.phaseTimeMetrics"
+        v-if="activePhaseStore.phaseTimeMetrics"
         :estimatedMinutes="
-          workcenterStore.phaseTimeMetrics.estimatedMachineTimeMinutes
+          activePhaseStore.phaseTimeMetrics.estimatedMachineTimeMinutes
         "
         :actualMinutes="actualMachineTimeMinutes"
       />
@@ -70,9 +70,9 @@
           :operator="operator"
         />
         <TimeProgressBar
-          v-if="workcenterStore.phaseTimeMetrics?.operatorId"
+          v-if="activePhaseStore.phaseTimeMetrics?.operatorId"
           :estimatedMinutes="
-            workcenterStore.phaseTimeMetrics.estimatedOperatorTimeMinutes
+            activePhaseStore.phaseTimeMetrics.estimatedOperatorTimeMinutes
           "
           :actualMinutes="actualOperatorTimeMinutes"
         />
@@ -91,7 +91,7 @@ import OperatorDetail from "./OperatorDetail.vue";
 import WorkOrderPhaseDetail from "./WorkOrderPhaseDetail.vue";
 import MachineStatusDetail from "../MachineStatusDetail.vue";
 import TimeProgressBar from "./TimeProgressBar.vue";
-import { usePlantWorkcenterStore, usePlantDataStore } from "../../store";
+import { usePlantWorkcenterStore, usePlantDataStore, usePlantActivePhaseStore } from "../../store";
 
 interface Props {
   workcenter: WorkcenterViewState;
@@ -99,6 +99,7 @@ interface Props {
 
 const props = defineProps<Props>();
 const workcenterStore = usePlantWorkcenterStore();
+const activePhaseStore = usePlantActivePhaseStore();
 const dataStore = usePlantDataStore();
 
 // Timer for updating elapsed time every second
@@ -123,13 +124,13 @@ const currentReason = computed(() => {
 // Time progress computed properties
 const actualMachineTimeMinutes = computed(() => {
   const baseMinutes =
-    workcenterStore.phaseTimeMetrics?.actualMachineTimeMinutes ?? 0;
+    activePhaseStore.phaseTimeMetrics?.actualMachineTimeMinutes ?? 0;
   return baseMinutes + elapsedSeconds.value / 60;
 });
 
 const actualOperatorTimeMinutes = computed(() => {
   const baseMinutes =
-    workcenterStore.phaseTimeMetrics?.actualOperatorTimeMinutes ?? 0;
+    activePhaseStore.phaseTimeMetrics?.actualOperatorTimeMinutes ?? 0;
   return baseMinutes + elapsedSeconds.value / 60;
 });
 
@@ -183,7 +184,7 @@ const stopTimeUpdateInterval = () => {
 
 onMounted(() => {
   // Start timer if metrics are already available
-  if (workcenterStore.phaseTimeMetrics) {
+  if (activePhaseStore.phaseTimeMetrics) {
     startTimeUpdateInterval();
   }
 });
@@ -194,7 +195,7 @@ onUnmounted(() => {
 
 // Watch for metrics changes to start/stop timer and reset elapsed time
 watch(
-  () => workcenterStore.phaseTimeMetrics,
+  () => activePhaseStore.phaseTimeMetrics,
   (newMetrics) => {
     if (newMetrics) {
       // Reset and restart timer when new metrics are loaded

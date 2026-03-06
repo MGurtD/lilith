@@ -54,6 +54,13 @@ function t(text: string) {
 .v-sidebar-menu {
   background-color: var(--p-blue-900);
   width: var(--side-bar-width);
+
+  /* Item height & icon size */
+  --vsm-item-line-height: 22px;
+  --vsm-item-padding: 7px 12px;
+  --vsm-icon-height: 28px;
+  --vsm-icon-width: 28px;
+  --vsm-item-font-size: 14px;
 }
 
 .v-sidebar-menu .vsm--header {

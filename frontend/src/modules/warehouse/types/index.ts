@@ -17,6 +17,23 @@ export interface Location {
   locationType?: string | null;
 }
 
+export interface LocationTypeOption {
+  value: string;
+  label: string;
+}
+
+export const LOCATION_TYPE_OPTIONS: LocationTypeOption[] = [
+  { value: "Supply", label: "Subministrament" },
+  { value: "Receiving", label: "Recepció" },
+  { value: "Shipping", label: "Expedició" },
+  { value: "Storage", label: "Emmagatzematge" },
+];
+
+export const getLocationTypeLabel = (value: string | null | undefined): string => {
+  if (!value) return "";
+  return LOCATION_TYPE_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
+};
+
 export interface Stock {
   id: string;
   locationId: string;
@@ -61,4 +78,29 @@ export interface Inventory {
   diameter: number;
   thickness: number;
   movementDate: any;
+}
+
+/**
+ * Rich stock read-model returned by GET /Stock/ByBillOfMaterials/{id}.
+ * Includes resolved reference, location and warehouse names.
+ */
+export interface StockResponse {
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  referenceFormatId: string;
+  referenceFormatCode: string;
+  referenceFormatDescription: string;
+  locationId: string;
+  locationName: string;
+  locationDescription: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseDescription: string;
+  quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
 }

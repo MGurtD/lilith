@@ -21,7 +21,11 @@
       <template #loading>Carregant ubicacions. Si us plau espera.</template>
       <Column header="Magatzem" style="width: 40%">
         <template #body="slotProps">
-          {{ slotProps.data.location?.description || slotProps.data.location?.name || "-" }}
+          {{
+            slotProps.data.location?.description ||
+            slotProps.data.location?.name ||
+            "-"
+          }}
         </template>
       </Column>
       <Column header="Ubicació" style="width: 50%">
@@ -42,7 +46,7 @@
 
     <Dialog
       v-model:visible="dialogVisible"
-      header="Afegir ubicació"
+      header="Vincular ubicació"
       :closable="true"
       :modal="true"
       :style="{ width: '450px' }"
@@ -134,7 +138,7 @@ const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols eliminar la ubicació '${entity.location?.name || entity.locationId}'?`,
+    message: `Estàs segur que vols desvincular la ubicació '${entity.location?.name || entity.locationId}'?`,
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -192,7 +192,7 @@ import { watch, computed, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { UnloadWorkOrderPhaseRequest } from "../../types";
-import { usePlantWorkcenterStore } from "../../store";
+import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 
 interface Props {
@@ -210,13 +210,14 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const workcenterStore = usePlantWorkcenterStore();
+const activePhaseStore = usePlantActivePhaseStore();
 
 // Get loaded work order data from store
 const loadedWorkOrder = computed(
   () => workcenterStore.loadedWorkOrdersPhases[0],
 );
 const loadedPhase = computed(() => loadedWorkOrder.value?.phases?.[0]);
-const nextAvailablePhase = computed(() => workcenterStore.nextAvailablePhase);
+const nextAvailablePhase = computed(() => activePhaseStore.nextAvailablePhase);
 const nextPhaseDetails = computed(
   () => nextAvailablePhase.value?.details ?? [],
 );
@@ -257,7 +258,7 @@ watch(
     if (newValue) {
       resetForm();
       // Fetch next available phase for this workcenter type
-      await workcenterStore.fetchNextPhaseForWorkcenter();
+      await activePhaseStore.fetchNextPhaseForWorkcenter();
     }
   },
 );
@@ -290,7 +291,7 @@ const onUnload = async (closePhase: boolean) => {
   closingPhase.value = closePhase;
   try {
     // Validate quantity against previous phase
-    const validation = await workcenterStore.validatePhaseQuantity(
+    const validation = await activePhaseStore.validatePhaseQuantity(
       formData.counterOk + formData.counterKo,
     );
 
@@ -305,7 +306,7 @@ const onUnload = async (closePhase: boolean) => {
     }
 
     // Resolve status ID based on clicked button
-    const statusId = await workcenterStore.getPhaseExitStatusId(closePhase);
+    const statusId = await activePhaseStore.getPhaseExitStatusId(closePhase);
 
     if (!statusId) {
       toast.add({

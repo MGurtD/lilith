@@ -2,7 +2,7 @@
   <main>
     <DataTable
       @row-click="onEditRow"
-      :value="locations"
+      :value="filteredLocations"
       tableStyle="min-width: 100%"
     >
       <template #header>
@@ -10,16 +10,30 @@
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
           <span class="text-900 font-bold">Ubicacions</span>
-          <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
+          <div class="flex align-items-center gap-2">
+            <Select
+              v-model="selectedTypeFilter"
+              :options="typeFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Tots els tipus"
+              style="width: 14rem"
+            />
+            <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
+          </div>
         </div>
       </template>
       <Column field="name" header="Nom" style="width: 20%"></Column>
       <Column
         field="description"
         header="Descripció"
-        style="width: 45%"
+        style="width: 40%"
       ></Column>
-      <Column field="locationType" header="Tipus" style="width: 15%"></Column>
+      <Column header="Tipus" style="width: 15%">
+        <template #body="slotProps">
+          {{ getLocationTypeLabel(slotProps.data.locationType) }}
+        </template>
+      </Column>
       <Column header="Desactivada" style="width: 10%">
         <template #body="slotProps">
           <BooleanColumn :value="slotProps.data.disabled"></BooleanColumn>
@@ -55,10 +69,15 @@
 <script setup lang="ts">
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { Warehouse, Location } from "../types";
+import {
+  Warehouse,
+  Location,
+  LOCATION_TYPE_OPTIONS,
+  getLocationTypeLabel,
+} from "../types";
 import { getNewUuid } from "../../../utils/functions";
 import { useConfirm } from "primevue/useconfirm";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import FormLocation from "./FormLocation.vue";
 
@@ -73,6 +92,27 @@ const emit = defineEmits<{
   (e: "delete", location: Location): void;
 }>();
 
+// ── Filtre per tipus ─────────────────────────────────────────────────────────
+const selectedTypeFilter = ref<string | null>(null);
+
+interface TypeFilterOption {
+  value: string | null;
+  label: string;
+}
+
+const typeFilterOptions: TypeFilterOption[] = [
+  { value: null, label: "Tots" },
+  ...LOCATION_TYPE_OPTIONS,
+];
+
+const filteredLocations = computed(() => {
+  if (!selectedTypeFilter.value) return props.locations;
+  return props.locations.filter(
+    (l) => l.locationType === selectedTypeFilter.value
+  );
+});
+
+// ── Diàleg ───────────────────────────────────────────────────────────────────
 const dialogOptions = reactive({
   visible: false,
   title: "Ubicació",
