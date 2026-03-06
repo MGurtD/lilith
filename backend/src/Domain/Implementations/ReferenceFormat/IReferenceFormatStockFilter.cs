@@ -11,5 +11,19 @@ namespace Domain.Implementations.ReferenceFormat
             decimal stockDiameter, decimal stockThickness,
             decimal bomWidth, decimal bomLength, decimal bomHeight,
             decimal bomDiameter, decimal bomThickness);
+
+        /// <summary>
+        /// Calcula la merma que deixaria una peça d'estoc per una quantitat donada del BOM.
+        /// Retorna null si no aplica (el format no calcula merma).
+        /// </summary>
+        decimal? CalculateWaste(
+            decimal stockWidth, decimal stockLength, decimal stockHeight,
+            decimal stockDiameter, decimal stockThickness,
+            decimal bomWidth, decimal bomLength, decimal bomHeight,
+            decimal bomDiameter, decimal bomThickness,
+            decimal bomQuantity)
+        {
+            return null;
+        }
     }
 }

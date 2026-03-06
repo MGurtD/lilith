@@ -103,6 +103,12 @@ namespace Application.Services.Warehouse
                     stock = stock.Where(s => stockFilter.IsCompatible(
                         s.Width, s.Length, s.Height, s.Diameter, s.Thickness,
                         bom.Width, bom.Length, bom.Height, bom.Diameter, bom.Thickness));
+
+                    // Ordenar per merma ascendent (la proposta amb menys merma primer)
+                    stock = stock.OrderBy(s => stockFilter.CalculateWaste(
+                        s.Width, s.Length, s.Height, s.Diameter, s.Thickness,
+                        bom.Width, bom.Length, bom.Height, bom.Diameter, bom.Thickness,
+                        bom.Quantity) ?? decimal.MaxValue);
                 }
             }
 
