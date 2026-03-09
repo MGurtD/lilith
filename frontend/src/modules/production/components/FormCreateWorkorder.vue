@@ -4,6 +4,7 @@
       <label class="block text-900 mb-2">Ruta</label>
       <Select
         v-model="createWorkOrderDto.workMasterId"
+        :virtualScrollerOptions="{ itemSize: 38 }"
         filter
         :options="
           filteredWorkMasters
