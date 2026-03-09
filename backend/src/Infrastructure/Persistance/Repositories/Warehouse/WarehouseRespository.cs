@@ -61,6 +61,7 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             && st.Quantity > 0
                         select new StockResponse
                         {
+                            StockId = st.Id,
                             ReferenceId = r.Id,
                             ReferenceCode = r.Code,
                             ReferenceDescription = r.Description,

@@ -1,4 +1,5 @@
 using Application.Contracts;
+using Domain.Constants;
 using Domain.Entities.Warehouse;
 using Domain.Implementations.ReferenceFormat;
 
@@ -7,10 +8,14 @@ namespace Application.Services.Warehouse
     public class StockService : IStockService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILocalizationService _localizationService;
+        private readonly IWorkcenterLocationService _workcenterLocationService;
 
-        public StockService(IUnitOfWork unitOfWork)
+        public StockService(IUnitOfWork unitOfWork, ILocalizationService localizationService, IWorkcenterLocationService workcenterLocationService)
         {
             _unitOfWork = unitOfWork;
+            _localizationService = localizationService;
+            _workcenterLocationService = workcenterLocationService;
         }
         public async Task<GenericResponse> Create(Stock request)
         {
@@ -113,6 +118,105 @@ namespace Application.Services.Warehouse
             }
 
             return stock;
+        }
+
+        public async Task<GenericResponse> MoveToWorkcenterSupply(MoveStockToWorkcenterSupplyRequest request)
+        {
+            // 1. Validate and get source stock
+            var sourceStock = await _unitOfWork.Stocks.Get(request.StockId);
+            if (sourceStock == null)
+                return new GenericResponse(false, _localizationService.GetLocalizedString("StockNotFound"));
+
+            if (sourceStock.Quantity < request.Quantity)
+                return new GenericResponse(false, _localizationService.GetLocalizedString("StockInsufficientQuantity"));
+
+            // 2. Find the Supply location for the workcenter
+            var workcenterLocations = await _workcenterLocationService.GetByWorkcenterId(request.WorkcenterId);
+            var workcenterLocationsList = workcenterLocations.ToList();
+
+            if (!workcenterLocationsList.Any())
+                return new GenericResponse(false, _localizationService.GetLocalizedString("WorkcenterSupplyLocationNotFound"));
+
+            var supplyLocationId = workcenterLocationsList.First().LocationId;
+            var supplyLocation = await _unitOfWork.Warehouses.Locations.Get(supplyLocationId);
+
+            if (supplyLocation == null || supplyLocation.Disabled)
+                return new GenericResponse(false, _localizationService.GetLocalizedString("WorkcenterSupplyLocationNotFound"));
+
+            // 3. If the stock is already at the supply location, nothing to do
+            if (sourceStock.LocationId == supplyLocation.Id)
+                return new GenericResponse(true, sourceStock);
+
+            // Remember source location name for the movement description
+            var sourceLocationName = sourceStock.Location?.Name ?? "warehouse";
+
+            // 3. Update stock location
+            Stock destinationStock;
+            if (sourceStock.Quantity == request.Quantity)
+            {
+                // Full quantity: relocate the stock record to the supply location
+                sourceStock.LocationId = supplyLocation.Id;
+                await _unitOfWork.Stocks.Update(sourceStock);
+                destinationStock = sourceStock;
+            }
+            else
+            {
+                // Partial quantity: decrease source, find-or-create at destination
+                sourceStock.Quantity -= request.Quantity;
+                await _unitOfWork.Stocks.Update(sourceStock);
+
+                var existingDestination = GetByDimensions(
+                    supplyLocation.Id,
+                    sourceStock.ReferenceId,
+                    sourceStock.Width,
+                    sourceStock.Length,
+                    sourceStock.Height,
+                    sourceStock.Diameter,
+                    sourceStock.Thickness
+                );
+
+                if (existingDestination != null)
+                {
+                    existingDestination.Quantity += request.Quantity;
+                    await _unitOfWork.Stocks.Update(existingDestination);
+                    destinationStock = existingDestination;
+                }
+                else
+                {
+                    destinationStock = new Stock
+                    {
+                        ReferenceId = sourceStock.ReferenceId,
+                        LocationId = supplyLocation.Id,
+                        Quantity = request.Quantity,
+                        Width = sourceStock.Width,
+                        Length = sourceStock.Length,
+                        Height = sourceStock.Height,
+                        Diameter = sourceStock.Diameter,
+                        Thickness = sourceStock.Thickness
+                    };
+                    await _unitOfWork.Stocks.Add(destinationStock);
+                }
+            }
+
+            // 4. Create a single SUPPLY movement for traceability
+            var supplyMovement = new StockMovement
+            {
+                StockId = destinationStock.Id,
+                LocationId = supplyLocation.Id,
+                ReferenceId = destinationStock.ReferenceId,
+                MovementType = StockMovementType.SUPPLY,
+                Quantity = request.Quantity,
+                Width = destinationStock.Width,
+                Length = destinationStock.Length,
+                Height = destinationStock.Height,
+                Diameter = destinationStock.Diameter,
+                Thickness = destinationStock.Thickness,
+                MovementDate = DateTime.UtcNow,
+                Description = _localizationService.GetLocalizedString("Movement.TransferToSupplyDescription", sourceLocationName, supplyLocation.Name)
+            };
+            await _unitOfWork.StockMovements.Add(supplyMovement);
+
+            return new GenericResponse(true, destinationStock);
         }
     }
 }

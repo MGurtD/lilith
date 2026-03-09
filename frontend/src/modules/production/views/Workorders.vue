@@ -24,6 +24,7 @@
     :header="dialogOptions.title"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
+    :style="{ width: '600px' }"
   >
     <FormCreateWorkorder
       :createWorkOrderDto="createWorkOrderDto"

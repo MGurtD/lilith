@@ -13,6 +13,6 @@ namespace Application.Contracts
         Stock? GetByDimensions(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness);
         IEnumerable<Stock> GetAll();
         Task<IEnumerable<StockResponse>> GetStockByWorkOrderPhaseBillOfMaterialsId(Guid id);
-
+        Task<GenericResponse> MoveToWorkcenterSupply(MoveStockToWorkcenterSupplyRequest request);
     }
 }
