@@ -1,14 +1,7 @@
 {
-	"folders": [
-		{
-			"path": "frontend"
-		},
-		{
-			"path": "backend"
-		}
-	],
-	"settings": {
-		"liveServer.settings.multiRootWorkspaceName": "backend",
-		"powershell.cwd": "backend"
-	}
+  "folders": [
+    {
+      "path": ".",
+    },
+  ],
 }

@@ -10,6 +10,7 @@ import {
   WorkOrderOrder,
   ValidatePreviousPhaseQuantityRequest,
   PhaseTimeMetrics,
+  CreatePhaseFromTemplateDto,
 } from "../types";
 import BaseService from "../../../api/base.service";
 import { NextPhaseInfo } from "../../plant/types";
@@ -30,11 +31,13 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     statusId?: string,
     referenceId?: string,
     customerId?: string,
+    code?: string,
   ): Promise<Array<WorkOrder> | undefined> {
     let endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}`;
     if (statusId) endpoint += `&statusId=${statusId}`;
-    if (referenceId) endpoint += `&referenceId=${statusId}`;
+    if (referenceId) endpoint += `&referenceId=${referenceId}`;
     if (customerId) endpoint += `&customerId=${customerId}`;
+    if (code) endpoint += `&code=${code}`;
 
     const response = await this.apiClient.get(endpoint);
     if (response.status === 200) {
@@ -177,6 +180,16 @@ export class WorkOrderPhaseService extends BaseService<WorkOrderPhase> {
       return response.data as PhaseTimeMetrics;
     }
     return undefined;
+  }
+
+  async CreateFromTemplate(
+    dto: CreatePhaseFromTemplateDto,
+  ): Promise<GenericResponse<WorkOrderPhase>> {
+    const response = await this.apiClient.post(
+      `/WorkOrder/Phase/CreateFromTemplate`,
+      dto,
+    );
+    return response.data as GenericResponse<WorkOrderPhase>;
   }
 }
 

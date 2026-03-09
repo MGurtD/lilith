@@ -57,6 +57,22 @@ public class ProductionPartService(
         return new GenericResponse(true, productionPart);
     }
 
+    public async Task<GenericResponse> CreateWithoutCostLookup(ProductionPart productionPart)
+    {
+        // Check if already exists
+        var exists = unitOfWork.ProductionParts.Find(pp => pp.Id == productionPart.Id).Any();
+        if (exists)
+            return new GenericResponse(false, localizationService.GetLocalizedString("EntityAlreadyExists"));
+
+        // Add production part (costs already set by the caller)
+        await unitOfWork.ProductionParts.Add(productionPart);
+
+        // Add to work order
+        await workOrderService.AddProductionPart(productionPart.WorkOrderId, productionPart);
+
+        return new GenericResponse(true, productionPart);
+    }
+
     public async Task<GenericResponse> Update(ProductionPart productionPart)
     {
         var exists = await unitOfWork.ProductionParts.Exists(productionPart.Id);

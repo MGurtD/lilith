@@ -284,6 +284,13 @@ export interface ValidatePreviousPhaseQuantityRequest {
   quantity: number;
 }
 
+export interface UpdatePhaseQuantitiesRequest {
+  workcenterId: string;
+  workOrderPhaseId: string;
+  quantityOk: number;
+  quantityKo: number;
+}
+
 export interface ProductionPart {
   id: string;
   workOrderId: string;
@@ -567,6 +574,7 @@ export interface PhaseDetailItem {
   estimatedTime: number;
   estimatedOperatorTime: number;
   isCycleTime: boolean;
+  order: number;
 }
 
 /**
@@ -574,6 +582,7 @@ export interface PhaseDetailItem {
  * References product/material catalog.
  */
 export interface BillOfMaterialsItem {
+  id: string;
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
@@ -594,4 +603,36 @@ export interface WorkcenterTypeSaturation {
   phaseDescription: string;
   workcenterTypeId: string;
   estimatedTime: number;
+}
+
+export interface PhaseTemplate {
+  id: string;
+  name: string;
+  description: string;
+  disabled: boolean;
+  details: Array<PhaseTemplateDetail>;
+}
+
+export interface PhaseTemplateDetail {
+  id: string;
+  phaseTemplateId: string;
+  machineStatusId: string;
+  order: number;
+  comment: string;
+}
+
+export interface CreatePhaseFromTemplateDto {
+  phaseTemplateId: string;
+  workOrderId: string;
+  workcenterTypeId: string;
+  preferredWorkcenterId: string;
+  code: string;
+  description: string;
+}
+
+export interface WorkcenterLocation {
+  id: string;
+  workcenterId: string;
+  locationId: string;
+  location?: import("../../warehouse/types").Location;
 }

@@ -70,6 +70,9 @@ public interface IWorkOrderPhaseService
     // Quantity Validation
     Task<GenericResponse> ValidatePreviousPhaseQuantity(ValidatePreviousPhaseQuantityRequest request);
 
+    // Create from template
+    Task<GenericResponse> CreateFromTemplate(CreatePhaseFromTemplateDto dto);
+
     // Time Metrics
     /// <summary>
     /// Gets estimated vs actual time metrics for a work order phase.

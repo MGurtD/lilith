@@ -163,19 +163,28 @@ public class WorkOrderPhaseService(
     
     public async Task<IEnumerable<object>> GetExternalPhases(DateTime startTime, DateTime endTime)
     {
-        // Get production status
-        var status = await unitOfWork.Lifecycles.GetStatusByName(
-            StatusConstants.Lifecycles.WorkOrder, 
-            StatusConstants.Statuses.Production);
-        
-        if (status == null)
+        // Get the WorkOrder lifecycle
+        var lifecycle = await unitOfWork.Lifecycles.GetByName(StatusConstants.Lifecycles.WorkOrder);
+        if (lifecycle == null) 
         {
             return [];
         }
 
-        // Find work orders in production within date range
+        // Find all statuses in this lifecycle that have the 'ExternalService' tag
+        var validStatuses = await unitOfWork.LifecycleTags.GetStatusesByTagName(
+            StatusConstants.LifecycleTags.ExternalService, 
+            lifecycle.Id);
+        
+        if (validStatuses == null || validStatuses.Count == 0)
+        {
+            return [];
+        }
+
+        var validStatusIds = validStatuses.Select(s => s.Id).ToList();
+
+        // Find work orders within date range and in any of the valid statuses
         var workOrders = await unitOfWork.WorkOrders.FindAsync(w =>
-            w.StatusId == status.Id &&
+            validStatusIds.Contains(w.StatusId) &&
             w.PlannedDate >= startTime &&
             w.PlannedDate < endTime);
 
@@ -350,7 +359,7 @@ public class WorkOrderPhaseService(
             // Map phase details
             if (phase.Details != null)
             {
-                foreach (var detail in phase.Details.Where(d => !d.Disabled))
+                foreach (var detail in phase.Details.Where(d => !d.Disabled).OrderBy(d => d.Order))
                 {
                     detailedPhase.Details.Add(new PhaseDetailItemDto
                     {
@@ -359,7 +368,8 @@ public class WorkOrderPhaseService(
                         EstimatedTime = detail.EstimatedTime,
                         EstimatedOperatorTime = detail.EstimatedOperatorTime,
                         IsCycleTime = detail.IsCycleTime,
-                        Comment = detail.Comment ?? string.Empty
+                        Comment = detail.Comment ?? string.Empty,
+                        Order = detail.Order
                     });
                 }
             }
@@ -371,6 +381,7 @@ public class WorkOrderPhaseService(
                 {
                     detailedPhase.BillOfMaterials.Add(new BillOfMaterialsItemDto
                     {
+                        Id = bom.Id,
                         ReferenceCode = bom.Reference?.Code ?? string.Empty,
                         ReferenceDescription = bom.Reference?.Description ?? string.Empty,
                         Quantity = bom.Quantity
@@ -420,11 +431,34 @@ public class WorkOrderPhaseService(
         if (nextPhase == null)
             return null;
 
+        var nextPhaseDetails = await unitOfWork.WorkOrders.Phases.Get(nextPhase.Id);
+
+        var details = new List<PhaseDetailItemDto>();
+        if (nextPhaseDetails?.Details != null)
+        {
+            foreach (var detail in nextPhaseDetails.Details
+                         .Where(d => !d.Disabled)
+                         .OrderBy(d => d.Order))
+            {
+                details.Add(new PhaseDetailItemDto
+                {
+                    MachineStatusId = detail.MachineStatusId,
+                    MachineStatusName = detail.MachineStatus?.Name ?? string.Empty,
+                    EstimatedTime = detail.EstimatedTime,
+                    EstimatedOperatorTime = detail.EstimatedOperatorTime,
+                    IsCycleTime = detail.IsCycleTime,
+                    Comment = detail.Comment ?? string.Empty,
+                    Order = detail.Order
+                });
+            }
+        }
+
         return new NextPhaseInfoDto
         {
             PhaseId = nextPhase.Id,
             PhaseCode = nextPhase.Code,
-            PhaseDescription = nextPhase.Description
+            PhaseDescription = nextPhase.Description,
+            Details = details
         };
     }
     
@@ -553,22 +587,23 @@ public class WorkOrderPhaseService(
             .OrderByDescending(p => p.CodeAsNumber)
             .FirstOrDefault();
 
-        decimal availableQuantity;
-
         if (previousPhase == null)
         {
-            // 4. Es la primera fase: permitir hasta 200% de la cantidad planificada
-            availableQuantity = workOrder.PlannedQuantity * 2;
-        }
-        else
-        {
-            // 5. Leer las QuantityOk directamente de la fase anterior
-            availableQuantity = previousPhase.QuantityOk;
+            // 4. Es la primera fase: no hay límite de cantidad
+            return new GenericResponse(true, new
+            {
+                previousPhaseId = (object?)null,
+                previousPhaseCode = (object?)null,
+                availableQuantity = (object?)null,
+            });
         }
 
-        // 6. Validar que la cantidad solicitada no supere las unidades disponibles
-        // Incluir las unidades ya fabricadas en la fase actual
-        var totalRequested = currentPhase.QuantityOk + request.Quantity;
+        // 5. Leer las QuantityOk directamente de la fase anterior
+        decimal availableQuantity = previousPhase.QuantityOk;
+
+        // 6. Validar que ok+ko solicitados no supere las unidades ok de la fase anterior
+        // Incluir las unidades ya fabricadas (ok+ko) en la fase actual
+        var totalRequested = currentPhase.QuantityOk + currentPhase.QuantityKo + request.Quantity;
         if (totalRequested > availableQuantity)
         {
             logger.LogWarning("ValidatePreviousPhaseQuantity: Insufficient quantity. Requested {Requested}, Available {Available}", totalRequested, availableQuantity);
@@ -586,6 +621,72 @@ public class WorkOrderPhaseService(
             currentPhaseQuantityOk = currentPhase.QuantityOk,
             isFirstPhase = previousPhase == null
         });
+    }
+
+    #endregion
+
+    #region Create From Template
+
+    public async Task<GenericResponse> CreateFromTemplate(CreatePhaseFromTemplateDto dto)
+    {
+        // 1. Load PhaseTemplate with details
+        var template = await unitOfWork.PhaseTemplates.Get(dto.PhaseTemplateId);
+        if (template is null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("PhaseTemplateNotFound"));
+
+        // 2. Validate WorkOrder exists
+        var workOrder = await unitOfWork.WorkOrders.Get(dto.WorkOrderId);
+        if (workOrder is null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("WorkOrderNotFound", dto.WorkOrderId));
+
+        // 3. Get initial status from WorkOrder lifecycle
+        var initialStatus = await unitOfWork.Lifecycles.GetStatusByName(
+            StatusConstants.Lifecycles.WorkOrder,
+            StatusConstants.Statuses.Llancada);
+        if (initialStatus is null)
+        {
+            logger.LogError("Initial status not found in WorkOrder lifecycle");
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Llancada));
+        }
+
+        // 4. Create WorkOrderPhase
+        var workOrderPhase = new WorkOrderPhase
+        {
+            Code = dto.Code,
+            Description = dto.Description,
+            WorkOrderId = dto.WorkOrderId,
+            WorkcenterTypeId = dto.WorkcenterTypeId,
+            PreferredWorkcenterId = dto.PreferredWorkcenterId,
+            StatusId = initialStatus.Id,
+            IsExternalWork = false,
+            ExternalWorkCost = 0,
+            TransportCost = 0,
+            ProfitPercentage = 0
+        };
+
+        // 5. Create WorkOrderPhaseDetail for each template detail
+        foreach (var templateDetail in template.Details.OrderBy(d => d.Order))
+        {
+            var phaseDetail = new WorkOrderPhaseDetail
+            {
+                WorkOrderPhaseId = workOrderPhase.Id,
+                MachineStatusId = templateDetail.MachineStatusId,
+                Order = templateDetail.Order,
+                Comment = templateDetail.Comment,
+                EstimatedTime = 0,
+                EstimatedOperatorTime = 0,
+                IsCycleTime = false
+            };
+            workOrderPhase.Details.Add(phaseDetail);
+        }
+
+        // 6. Save via EF cascade insert
+        await unitOfWork.WorkOrders.Phases.Add(workOrderPhase);
+
+        return new GenericResponse(true, workOrderPhase);
     }
 
     #endregion

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Production
 {
-    public class WorkcenterShiftDetailService(IUnitOfWork unitOfWork, IMetricsService metricsService, IWorkOrderPhaseService workOrderPhaseService, ILocalizationService localizationService, ILogger<WorkcenterShiftDetailService> logger) : IWorkcenterShiftDetailService
+    public class WorkcenterShiftDetailService(IUnitOfWork unitOfWork, IMetricsService metricsService, IWorkOrderPhaseService workOrderPhaseService, IProductionPartChannel productionPartChannel, ILocalizationService localizationService, ILogger<WorkcenterShiftDetailService> logger) : IWorkcenterShiftDetailService
     {
         private GenericResponse LogAndReturnError(string message)
         {
@@ -410,6 +410,25 @@ namespace Application.Services.Production
             }
 
             await unitOfWork.CompleteAsync();
+
+            // Encuar generacio de tiquets de produccio en segon pla
+            await productionPartChannel.EnqueueAsync(new GenerateProductionPartsRequest
+            {
+                WorkOrderPhaseId = request.WorkOrderPhaseId,
+                WorkcenterId = request.WorkcenterId,
+                ClosedAt = request.Timestamp
+            });
+
+            // Si hi ha una següent fase, obrir-la
+            if (request.NextWorkOrderPhaseId.HasValue)
+            {
+                var startPhaseResponse = await workOrderPhaseService.StartPhase(request.NextWorkOrderPhaseId.Value);
+                if (!startPhaseResponse.Result)
+                {
+                    return startPhaseResponse;
+                }
+            }
+
             return await workOrderPhaseService.EndPhase(request.WorkOrderPhaseId, request.WorkOrderStatusId);
         }
         #endregion

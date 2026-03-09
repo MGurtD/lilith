@@ -38,10 +38,10 @@ namespace Api.Controllers.Production
         }
 
         [HttpGet]
-        public IActionResult GetWorkOrders(DateTime startTime, DateTime endTime, Guid? statusId, Guid? referenceId, Guid? customerId)
+        public IActionResult GetWorkOrders(DateTime startTime, DateTime endTime, Guid? statusId, Guid? referenceId, Guid? customerId, string? code)
         {
             IEnumerable<WorkOrder> workOrders = [];
-            workOrders = workOrderService.GetBetweenDatesAndStatus(startTime, endTime, statusId);
+            workOrders = workOrderService.GetBetweenDatesAndStatus(startTime, endTime, statusId, code);
 
             if (referenceId.HasValue)
                 workOrders = workOrders.Where(e => e.ReferenceId == referenceId.Value);
@@ -237,6 +237,21 @@ namespace Api.Controllers.Production
             return Ok(nextPhase);
         }
 
+
+        [HttpPost("Phase/CreateFromTemplate")]
+        [SwaggerOperation("CreatePhaseFromTemplate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreatePhaseFromTemplate([FromBody] CreatePhaseFromTemplateDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState.ValidationState);
+
+            var response = await phaseService.CreateFromTemplate(request);
+            if (response.Result)
+                return Ok(response);
+            else
+                return BadRequest(response);
+        }
 
         [HttpPost("Phase")]
         [SwaggerOperation("CreateWorkOrderPhase")]

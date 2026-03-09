@@ -254,6 +254,9 @@ public class PhaseDetailItemDto
 
     /// <summary>Indicates if this detail represents cycle time</summary>
     public bool IsCycleTime { get; set; }
+    
+    /// <summary>Display order</summary>
+    public int Order { get; set; }
 }
 
 /// <summary>
@@ -262,6 +265,9 @@ public class PhaseDetailItemDto
 /// </summary>
 public class BillOfMaterialsItemDto
 {
+    /// <summary>BOM item primary key — used to query stock availability</summary>
+    public Guid Id { get; set; }
+
     /// <summary>Reference code (product/material code)</summary>
     public string ReferenceCode { get; set; } = string.Empty;
     
@@ -286,4 +292,7 @@ public class NextPhaseInfoDto
     
     /// <summary>Phase description</summary>
     public string PhaseDescription { get; set; } = string.Empty;
+
+    /// <summary>Phase operation details</summary>
+    public List<PhaseDetailItemDto> Details { get; set; } = [];
 }

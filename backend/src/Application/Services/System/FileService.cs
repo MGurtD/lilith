@@ -3,6 +3,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using System.Text;
 
 namespace Application.Services.System
 {
@@ -30,7 +31,7 @@ namespace Application.Services.System
                         Entity = entity,
                         EntityId = id,
                         Path = path,
-                        OriginalName = file.FileName,
+                        OriginalName = NormalizeFileName(file.FileName),
                         Size = file.Length,
                         Type = GetTypeFromFormFile(file)
                     };
@@ -171,6 +172,30 @@ namespace Application.Services.System
                 default:
                     return FileType.Document;
             }
+        }
+
+        private static string NormalizeFileName(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return fileName;
+
+            // Normalitza a Unicode NFC (combina caràcters descompostos)
+            var normalized = fileName.Normalize(NormalizationForm.FormC);
+
+            // Elimina caràcters no vàlids per a noms de fitxer
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sb = new StringBuilder(normalized.Length);
+            foreach (var c in normalized)
+            {
+                sb.Append(invalidChars.Contains(c) ? '_' : c);
+            }
+
+            // Redueix underscores/espais múltiples consecutius
+            var result = sb.ToString().Trim();
+            while (result.Contains("__"))
+                result = result.Replace("__", "_");
+
+            return result;
         }
     }
 }

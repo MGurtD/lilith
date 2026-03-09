@@ -7,535 +7,191 @@ description: Complete 11-step workflow for adding new entities to the .NET 10 Cl
 
 Complete workflow for adding entities across all 6 architectural layers.
 
-## Workflow Overview
+## Two Patterns: Generic vs Specific Repository
 
-Entity addition follows this **11-step sequence** across 6 architectural layers.
+**Pattern A: Generic Repository** (80% of cases — simple CRUD entities)
 
-**Estimated time**: 30-40 minutes for simple entity (Pattern A), 45-50 minutes for complex entity (Pattern B)
+- Skip steps 2 and 4
+- Use `IRepository<Entity, Guid>` in IUnitOfWork
+- Use `new Repository<Entity, Guid>(context)` in UnitOfWork
+- Examples: Enterprise, Site, Operator, OperatorType
 
-## Two Patterns: Generic vs Specific
+**Pattern B: Specific Repository** (20% of cases — complex queries needed)
 
-**This project uses TWO patterns** depending on entity complexity:
-
-### Pattern A: Generic Repository (Simple entities - 80% of cases)
-
-Use for entities with **only basic CRUD operations** (User, Enterprise, Site, etc.):
-
-**Steps**: 1, 3, 5, 6, 7-11 (9 steps total)
-
-**What to skip**:
-- ❌ Step 2: NO custom repository interface
-- ❌ Step 4: NO custom repository implementation
-
-**What changes**:
-- ✅ Step 3: Use `IRepository<Entity, Guid>` in IUnitOfWork
-- ✅ Step 5: Use `EntityBuilder.cs` (not `EntityConfiguration.cs`)
-- ✅ Step 6: Initialize with `new Repository<Entity, Guid>(context)`
-
-**Example**: Enterprise, Site, Operator, User
-
-**Time estimate**: ~30-40 minutes
-
-### Pattern B: Specific Repository (Complex entities - 20% of cases)
-
-Use when entity needs **custom queries or operations** (Area, Workcenter, Budget, etc.):
-
-**Steps**: All 11 steps (1-11)
-
-**What changes**:
-- ✅ Step 2: Create in `Persistance/Repositories/{Module}/IEntityRepository.cs` (not `Contracts/`)
-- ✅ Step 5: Use `EntityBuilder.cs` (not `EntityConfiguration.cs`)
-
-**Example**: Area, WorkOrder, Budget, Supplier
-
-**Time estimate**: ~45-50 minutes
-
-**When to use Specific Repository?**
-- Entity needs `.Include()` with multiple navigation properties
-- Custom filtering methods (GetByStatus, GetPending, etc.)
-- Complex joins or aggregations
-- Special business logic in queries
+- All 11 steps
+- Create custom `IEntityRepository` + `EntityRepository`
+- Use when: `Include()` with multiple navigations, custom filtering, complex joins
+- Examples: Area, WorkOrder, Budget, Supplier
 
 ## Checklist
 
-Choose your pattern (Generic vs Specific) and track progress:
-
-### Pattern A: Generic Repository (Simple entities)
-
+### Pattern A (9 steps, ~35 min)
 ```
-Entity Addition Progress (✓ = Verifiable | ⏱ = Time | ⊗ = Skip):
-
-- [ ] 1. Define Entity (Domain) - ⏱ 5 min | ✓ Build succeeds
-- [⊗] 2. Create Repository Interface - SKIP (use generic)
-- [ ] 3. Add to IUnitOfWork - IRepository<Entity, Guid> - ⏱ 2 min | ✓ Build succeeds  
-- [⊗] 4. Implement Repository - SKIP (use generic)
-- [ ] 5. Create Entity Builder (Infrastructure) - ⏱ 5 min | ✓ No EF errors
-- [ ] 6. Update UnitOfWork - new Repository<Entity, Guid>() - ⏱ 2 min | ✓ Build succeeds
-- [ ] 7. Create Service Interface (Application.Contracts) - ⏱ 3 min | ✓ No errors
-- [ ] 8. Implement Service (Application) - ⏱ 10 min | ✓ Build succeeds
-- [ ] 9. Register Service (Api) - ⏱ 1 min | ✓ Check ApplicationServicesSetup.cs
-- [ ] 10. Create Controller (Api) - ⏱ 8 min | ✓ Swagger shows endpoints
-- [ ] 11. Create Migration - ⏱ 3 min | ✓ Database updated
-
-Total: 9 steps | ~39 minutes
+- [ ] 1. Define Entity (Domain)                            ⏱ 5 min
+- [⊗] 2. Repository Interface — SKIP
+- [ ] 3. Add IRepository<Entity, Guid> to IUnitOfWork      ⏱ 2 min
+- [⊗] 4. Repository Implementation — SKIP
+- [ ] 5. Create EntityBuilder.cs (Infrastructure)          ⏱ 5 min
+- [ ] 6. Update UnitOfWork with new Repository<>()         ⏱ 2 min
+- [ ] 7. Create Service Interface (Application.Contracts)  ⏱ 3 min
+- [ ] 8. Implement Service (Application)                   ⏱ 10 min
+- [ ] 9. Register Service in ApplicationServicesSetup.cs   ⏱ 1 min
+- [ ] 10. Create Controller (Api)                          ⏱ 8 min
+- [ ] 11. Create Migration                                 ⏱ 3 min
 ```
 
-### Pattern B: Specific Repository (Complex entities)
-
+### Pattern B (11 steps, ~51 min)
 ```
-Entity Addition Progress (✓ = Verifiable | ⏱ = Time | ⊗ = Skip):
-
-- [ ] 1. Define Entity (Domain) - ⏱ 5 min | ✓ Build succeeds
-- [ ] 2. Create IEntityRepository (Persistance/Repositories/{Module}/) - ⏱ 3 min | ✓ No errors
-- [ ] 3. Add to IUnitOfWork - IEntityRepository - ⏱ 2 min | ✓ Build succeeds
-- [ ] 4. Implement EntityRepository (Infrastructure) - ⏱ 8 min | ✓ Build succeeds
-- [ ] 5. Create Entity Builder (Infrastructure) - ⏱ 5 min | ✓ No EF errors
-- [ ] 6. Update UnitOfWork - new EntityRepository() - ⏱ 3 min | ✓ Build succeeds
-- [ ] 7. Create Service Interface (Application.Contracts) - ⏱ 3 min | ✓ No errors
-- [ ] 8. Implement Service (Application) - ⏱ 10 min | ✓ Build succeeds
-- [ ] 9. Register Service (Api) - ⏱ 1 min | ✓ Check ApplicationServicesSetup.cs
-- [ ] 10. Create Controller (Api) - ⏱ 8 min | ✓ Swagger shows endpoints
-- [ ] 11. Create Migration - ⏱ 3 min | ✓ Database updated
-
-Total: 11 steps | ~51 minutes
+- [ ] 1. Define Entity (Domain)                            ⏱ 5 min
+- [ ] 2. Create IEntityRepository (Application.Contracts)  ⏱ 3 min
+- [ ] 3. Add IEntityRepository to IUnitOfWork              ⏱ 2 min
+- [ ] 4. Implement EntityRepository (Infrastructure)       ⏱ 8 min
+- [ ] 5. Create EntityBuilder.cs (Infrastructure)          ⏱ 5 min
+- [ ] 6. Update UnitOfWork with new EntityRepository()     ⏱ 3 min
+- [ ] 7. Create Service Interface (Application.Contracts)  ⏱ 3 min
+- [ ] 8. Implement Service (Application)                   ⏱ 10 min
+- [ ] 9. Register Service in ApplicationServicesSetup.cs   ⏱ 1 min
+- [ ] 10. Create Controller (Api)                          ⏱ 8 min
+- [ ] 11. Create Migration                                 ⏱ 3 min
 ```
 
-**Verification checkpoints:**
-- **After step 7**: Run `dotnet build` → Should succeed with no errors
-- **After step 10**: Verify service registered in `src/Api/Setup/ApplicationServicesSetup.cs`
-- **After step 11**: Run `dotnet run --project src/Api/` → Check Swagger UI at https://localhost:5001/swagger
-- **After step 12**: Run `dotnet ef migrations list --project src/Infrastructure/` → See your migration listed
+**Verification**: `dotnet build` must succeed after steps 1, 3, 6, 7, 9, 10. Swagger at https://localhost:5001/swagger after step 10.
 
-**Automated validation** (recommended):
+**Automated validation**:
 ```bash
-# Validate all 12 steps automatically
-python .skills/adding-backend-entity/scripts/validate_entity.py YourEntity
-
-# Example
-python .skills/adding-backend-entity/scripts/validate_entity.py Supplier
+python .opencode/skills/adding-backend-entity/scripts/validate_entity.py YourEntity
 ```
-
-The validation script checks all 12 steps and reports missing or incomplete steps. See `scripts/README.md` for details.
-
-## Example Usage Scenarios
-
-### Scenario 1: Simple Entity with Generic Repository (Pattern A)
-
-**User request**: "Create a new Site entity with Name, Address, and EnterpriseId"
-
-**Pattern**: Generic Repository (no custom operations needed)
-
-**Estimated time**: ~30 minutes (9 steps)
-
-**Steps to follow**:
-1. Define Entity in `Domain/Entities/Production/Site.cs`
-2. ~~Skip Step 2~~ (no custom repository interface)
-3. Add to IUnitOfWork: `IRepository<Site, Guid> Sites { get; }`
-4. ~~Skip Step 4~~ (no custom repository implementation)
-5. Create `SiteBuilder.cs` in `Infrastructure/Persistance/EntityConfiguration/Production/`
-6. Update UnitOfWork: `Sites = new Repository<Site, Guid>(context);`
-7-11. Service, Controller, Migration (standard)
-
-**Real project example**: See `Enterprise.cs`, `Operator.cs`, `OperatorType.cs`
-
-### Scenario 2: Complex Entity with Specific Repository (Pattern B)
-
-**User request**: "Create Area entity with custom GetByEnterprise() method"
-
-**Pattern**: Specific Repository (needs custom queries)
-
-**Estimated time**: ~45 minutes (11 steps)
-
-**Steps to follow**:
-1. Define Entity in `Domain/Entities/Production/Area.cs`
-2. Create `IAreaRepository.cs` in `Application.Contracts/Persistance/Repositories/Production/`:
-   ```csharp
-   public interface IAreaRepository : IRepository<Area, Guid>
-   {
-       Task<IEnumerable<Area>> GetByEnterprise(Guid enterpriseId);
-   }
-   ```
-3. Add to IUnitOfWork: `IAreaRepository Areas { get; }`
-4. Implement `AreaRepository.cs` in `Infrastructure/Persistance/Repositories/Production/`:
-   ```csharp
-   public class AreaRepository : Repository<Area, Guid>, IAreaRepository
-   {
-       public AreaRepository(ApplicationDbContext context) : base(context) { }
-       
-       public async Task<IEnumerable<Area>> GetByEnterprise(Guid enterpriseId)
-       {
-           return await dbSet
-               .Include(a => a.Site)
-               .Where(a => a.Site.EnterpriseId == enterpriseId)
-               .ToListAsync();
-       }
-   }
-   ```
-5. Create `AreaBuilder.cs` (not AreaConfiguration.cs!)
-6. Update UnitOfWork: `Areas = new AreaRepository(context);`
-7-11. Service, Controller, Migration (standard)
-
-**Real project example**: See `AreaRepository.cs`, `WorkcenterRepository.cs`
-
-### Scenario 3: Entity with Foreign Key Relationship (Pattern A + Validation)
-
-**User request**: "Create a Workcenter entity belonging to an Area"
-
-**Pattern**: Generic Repository with FK validation in service
-
-**Estimated time**: ~40 minutes (9 steps)
-
-**Steps to follow**:
-1. Define Entity in `Domain/Entities/Production/Workcenter.cs`:
-   ```csharp
-   public Guid AreaId { get; set; }
-   public Area? Area { get; set; }
-   ```
-
-2. ~~Skip Step 2~~ (using generic repository)
-
-3. Add to IUnitOfWork: `IRepository<Workcenter, Guid> Workcenters { get; }`
-
-4. ~~Skip Step 4~~ (no custom implementation)
-
-5. Create `WorkcenterBuilder.cs` with relationship:
-   ```csharp
-   public void Configure(EntityTypeBuilder<Workcenter> builder)
-   {
-       builder.ConfigureBase();
-       
-       builder.HasOne(w => w.Area)
-           .WithMany()
-           .HasForeignKey(w => w.AreaId)
-           .OnDelete(DeleteBehavior.Restrict);  // ← Prevent cascade delete
-   }
-   ```
-
-6. Update UnitOfWork: `Workcenters = new Repository<Workcenter, Guid>(context);`
-
-7. **Service with FK validation**:
-   ```csharp
-   public async Task<GenericResponse> Create(Workcenter workcenter)
-   {
-       // Validate foreign key exists
-       var area = await unitOfWork.Areas.Get(workcenter.AreaId);
-       if (area == null)
-           return new GenericResponse(false,
-               localizationService.GetLocalizedString("AreaNotFound"));
-       
-       await unitOfWork.Workcenters.Add(workcenter);
-       return new GenericResponse(true, workcenter);
-   }
-   ```
-
-8-11. Controller, DI, Migration (standard)
-
-**Key learning**: Even with Pattern A (generic), you can add business validation in the service layer.
-
-**Real project example**: See `Workcenter.cs` and `WorkcenterService.cs`
-
-### Scenario 4: Entity with Lifecycle Status (Pattern B)
-
-**User request**: "Create Budget entity with workflow (Draft → Pending → Accepted/Rejected)"
-
-**Pattern**: Specific Repository (needs custom queries like GetByStatus, GetPendingApproval)
-
-**Estimated time**: ~50 minutes (11 steps)
-
-**Steps to follow**:
-1. Define Entity in `Domain/Entities/Sales/Budget.cs`:
-   ```csharp
-   public Guid? StatusId { get; set; }
-   public Status? Status { get; set; }
-   ```
-
-2. Create `IBudgetRepository.cs` with status queries:
-   ```csharp
-   public interface IBudgetRepository : IRepository<Budget, Guid>
-   {
-       Task<IEnumerable<Budget>> GetByStatus(Guid statusId);
-       Task<IEnumerable<Budget>> GetPendingApproval();
-   }
-   ```
-
-3. Add to IUnitOfWork: `IBudgetRepository Budgets { get; }`
-
-4. Implement `BudgetRepository.cs` with custom queries
-
-5. Create `BudgetBuilder.cs` with Status FK
-
-6. Update UnitOfWork: `Budgets = new BudgetRepository(context);`
-
-7. **Service with lifecycle initialization**:
-   ```csharp
-   public async Task<GenericResponse> Create(Budget budget)
-   {
-       // Get lifecycle and set initial status
-       var lifecycle = unitOfWork.Lifecycles
-           .Find(l => l.Name == StatusConstants.Lifecycles.Budget)
-           .FirstOrDefault();
-       
-       if (lifecycle == null)
-           return new GenericResponse(false,
-               localizationService.GetLocalizedString("LifecycleNotFound"));
-       
-       budget.StatusId = lifecycle.InitialStatusId;
-       
-       await unitOfWork.Budgets.Add(budget);
-       return new GenericResponse(true, budget);
-   }
-   ```
-
-8-11. Controller, DI, Migration (standard)
-
-**Key learning**: ALWAYS use `StatusConstants.Lifecycles.Budget`, never magic strings!
-
-**Real project example**: See `Budget.cs`, `BudgetRepository.cs`, `BudgetService.cs`
-       
-       if (lifecycle == null)
-           return new GenericResponse(false,
-               localizationService.GetLocalizedString("LifecycleNotFound"));
-       
-       budget.StatusId = lifecycle.InitialStatusId;
-       
-       await unitOfWork.Budgets.Add(budget);
-       return new GenericResponse(true, budget);
-   }
-   ```
-
-9-12. Controller, DI, Migration (standard)
-
-**Key learning**: ALWAYS use `StatusConstants.Lifecycles.Budget`, never magic strings!
-
-**Real project example**: See `Budget.cs`, `BudgetRepository.cs`, `BudgetService.cs`
 
 ## Detailed Steps
 
-## 1. Define Entity (Domain)
+### 1. Define Entity (Domain)
 
-Location: `src/Domain/Entities/YourModule/YourEntity.cs`
+`src/Domain/Entities/{Module}/YourEntity.cs`
 
 ```csharp
-namespace Domain.Entities.YourModule;
+namespace Domain.Entities.Production;
 
 public class YourEntity : Entity
 {
     public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public Guid? StatusId { get; set; }
     public Status? Status { get; set; }
 }
 ```
 
-**Key points:**
-- Inherit from `Entity` (provides Id, CreatedOn, UpdatedOn, Disabled)
+- Inherit from `Entity` (Id, CreatedOn, UpdatedOn, Disabled)
 - Non-nullable strings: `= string.Empty;`
-- Nullable navigation: `Status? Status { get; set; }`
-- NO dependencies on any other layer
+- Navigation properties: nullable (`Status? Status`)
+- NO dependencies on other layers
 
-## 2. Create Repository Interface (Application.Contracts) - ONLY for Pattern B
+### 2. Create Repository Interface — Pattern B only
 
-⚠️ **SKIP THIS STEP if using Pattern A (Generic Repository)**
-
-Location: `src/Application.Contracts/Persistance/Repositories/{Module}/IYourEntityRepository.cs`
-
-**Example**: `Application.Contracts/Persistance/Repositories/Production/IAreaRepository.cs`
+`src/Application.Contracts/Persistance/Repositories/{Module}/IYourEntityRepository.cs`
 
 ```csharp
 namespace Application.Contracts.Persistance.Repositories.Production;
 
-public interface IAreaRepository : IRepository<Area, Guid>
+public interface IYourEntityRepository : IRepository<YourEntity, Guid>
 {
-    Task<IEnumerable<Area>> GetByEnterprise(Guid enterpriseId);
-    Task<IEnumerable<Area>> GetActive();
+    Task<IEnumerable<YourEntity>> GetByStatus(Guid statusId);
 }
 ```
 
-**When to create specific interface:**
-- Need custom queries (filtering, complex joins)
-- Need eager loading logic
-- Need business-specific methods
+### 3. Add to IUnitOfWork
 
-**When to skip (Pattern A):**
-- Simple CRUD only
-- No custom queries needed
-- Examples: Enterprise, Site, Operator, OperatorType
+`src/Application.Contracts/Persistance/IUnitOfWork.cs`
 
-## 3. Add to IUnitOfWork (Application.Contracts)
-
-Update: `src/Application.Contracts/Persistance/IUnitOfWork.cs`
-
-**Pattern A (Generic Repository):**
 ```csharp
-public interface IUnitOfWork
-{
-    // ... existing repositories
-    IRepository<Enterprise, Guid> Enterprises { get; }
-    IRepository<Site, Guid> Sites { get; }
-    
-    Task<int> CompleteAsync();
-}
+// Pattern A
+IRepository<YourEntity, Guid> YourEntities { get; }
+
+// Pattern B
+IYourEntityRepository YourEntities { get; }
 ```
 
-**Pattern B (Specific Repository):**
-```csharp
-public interface IUnitOfWork
-{
-    // ... existing repositories
-    IAreaRepository Areas { get; }
-    IWorkcenterRepository Workcenters { get; }
-    
-    Task<int> CompleteAsync();
-}
-```
+Property name is **plural**.
 
-**Key points:**
-- Property name is plural: `Enterprises`, `Areas`
-- Pattern A uses `IRepository<T, Guid>`, Pattern B uses custom interface
+### 4. Implement Repository — Pattern B only
 
-## 4. Implement Repository (Infrastructure) - ONLY for Pattern B
-
-⚠️ **SKIP THIS STEP if using Pattern A (Generic Repository)**
-
-Location: `src/Infrastructure/Persistance/Repositories/{Module}/YourEntityRepository.cs`
-
-**Example**: `Infrastructure/Persistance/Repositories/Production/AreaRepository.cs`
+`src/Infrastructure/Persistance/Repositories/{Module}/YourEntityRepository.cs`
 
 ```csharp
 namespace Infrastructure.Persistance.Repositories.Production;
 
-public class AreaRepository : Repository<Area, Guid>, IAreaRepository
+public class YourEntityRepository : Repository<YourEntity, Guid>, IYourEntityRepository
 {
-    public AreaRepository(ApplicationDbContext context) : base(context)
-    {
-    }
-    
-    public async Task<IEnumerable<Area>> GetByEnterprise(Guid enterpriseId)
+    public YourEntityRepository(ApplicationDbContext context) : base(context) { }
+
+    public async Task<IEnumerable<YourEntity>> GetByStatus(Guid statusId)
     {
         return await dbSet
-            .Include(a => a.Site)
-            .ThenInclude(s => s.Enterprise)
-            .Where(a => a.Site.EnterpriseId == enterpriseId)
-            .OrderBy(a => a.Name)
+            .Include(e => e.Status)
+            .Where(e => e.StatusId == statusId)
             .ToListAsync();
     }
-    
-    public async Task<IEnumerable<Area>> GetActive()
+
+    // Override Get() to include navigation properties
+    public override async Task<YourEntity?> Get(Guid id)
     {
         return await dbSet
-            .Where(a => !a.Disabled)
-            .Include(a => a.Site)
-            .ToListAsync();
+            .Include(e => e.Status)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id);
     }
 }
 ```
 
-**Key points:**
-- Use `Include()` for navigation properties
-- Use `ThenInclude()` for nested relationships
-- Use `AsNoTracking()` for read-only queries
-- Override `Get()` if you need custom eager loading for single-entity retrieval
+### 5. Create Entity Builder
 
-**When to create custom implementation:**
-- Need filtering methods (GetByStatus, GetByDate, etc.)
-- Need complex joins across multiple entities
-- Need custom ordering/pagination
-- Examples: Area, Workcenter, Budget
+`src/Infrastructure/Persistance/EntityConfiguration/{Module}/YourEntityBuilder.cs`
 
-## 5. Configure Entity (Infrastructure) - Create EntityBuilder
-
-Location: `src/Infrastructure/Persistance/EntityConfiguration/{Module}/YourEntityBuilder.cs`
-
-⚠️ **IMPORTANT**: File name is `*Builder.cs`, NOT `*Configuration.cs`!
-
-**Example**: `Infrastructure/Persistance/EntityConfiguration/Production/AreaBuilder.cs`
+⚠️ File name: `*Builder.cs` — NEVER `*Configuration.cs`
 
 ```csharp
 namespace Infrastructure.Persistance.EntityConfiguration.Production;
 
-public class AreaBuilder : IEntityTypeConfiguration<Area>
+public class YourEntityBuilder : IEntityTypeConfiguration<YourEntity>
 {
-    public void Configure(EntityTypeBuilder<Area> builder)
+    public void Configure(EntityTypeBuilder<YourEntity> builder)
     {
-        // Apply base configuration (Id, timestamps, soft delete)
-        builder.ConfigureBase();
+        builder.ConfigureBase(); // Id, timestamps, soft delete
 
-        // Configure properties
-        builder.Property(a => a.Name)
+        builder.Property(e => e.Name)
             .IsRequired()
             .HasMaxLength(200);
-        
-        builder.Property(a => a.Description)
-            .HasMaxLength(500);
 
-        // Configure relationships
-        builder.HasOne(a => a.Site)
+        // Foreign key (use Restrict to prevent cascade)
+        builder.HasOne(e => e.Status)
             .WithMany()
-            .HasForeignKey(a => a.SiteId)
-            .OnDelete(DeleteBehavior.Restrict);  // ← Prevent cascade delete
+            .HasForeignKey(e => e.StatusId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 ```
 
-**Common patterns:**
-- Decimals: `.HasColumnType("decimal(18,4)")`
-- Foreign keys: `.OnDelete(DeleteBehavior.Restrict)` for references (prevents accidental cascade)
-- Collections: `.OnDelete(DeleteBehavior.Cascade)` for owned entities (details deleted with header)
-- Strings: Always set `.HasMaxLength()` to prevent `nvarchar(max)`
+Common types: `decimal(18,4)` for amounts, `HasMaxLength()` always on strings.  
+Entity auto-discovered via `ApplyConfigurationsFromAssembly()` — no DbSet needed.
 
-**Real examples:**
-- `AreaBuilder.cs` - entity with FK to Site
-- `WorkcenterBuilder.cs` - entity with FK to Area
-- `OperatorBuilder.cs` - entity with FK to OperatorType
+### 6. Update UnitOfWork
 
-**Note**: Entity is auto-discovered via `ApplyConfigurationsFromAssembly()` - no DbSet needed!
+`src/Infrastructure/Persistance/UnitOfWork.cs`
 
-## 6. Update UnitOfWork (Infrastructure)
-
-Update: `src/Infrastructure/Persistance/UnitOfWork.cs`
-
-**Pattern A (Generic Repository):**
 ```csharp
-public class UnitOfWork : IUnitOfWork
-{
-    // Add property (matches IUnitOfWork interface)
-    public IRepository<Enterprise, Guid> Enterprises { get; }
-    
-    public UnitOfWork(ApplicationDbContext context)
-    {
-        _context = context;
-        // Initialize with generic Repository<T, TKey>
-        Enterprises = new Repository<Enterprise, Guid>(context);
-        Sites = new Repository<Site, Guid>(context);
-    }
-}
+// Pattern A
+public IRepository<YourEntity, Guid> YourEntities { get; }
+// In constructor:
+YourEntities = new Repository<YourEntity, Guid>(context);
+
+// Pattern B
+public IYourEntityRepository YourEntities { get; }
+// In constructor:
+YourEntities = new YourEntityRepository(context);
 ```
 
-**Pattern B (Specific Repository):**
-```csharp
-public class UnitOfWork : IUnitOfWork
-{
-    // Add property (matches IUnitOfWork interface)
-    public IAreaRepository Areas { get; }
-    
-    public UnitOfWork(ApplicationDbContext context)
-    {
-        _context = context;
-        // Initialize with custom repository implementation
-        Areas = new AreaRepository(context);
-        Workcenters = new WorkcenterRepository(context);
-    }
-}
-```
+### 7. Create Service Interface
 
-**Key points:**
-- Property name matches IUnitOfWork interface (plural: `Enterprises`, `Areas`)
-- Pattern A uses `new Repository<T, Guid>(context)` - generic
-- Pattern B uses `new YourEntityRepository(context)` - specific implementation
-
-## 7. Create Service Interface (Application.Contracts)
-
-Location: `src/Application.Contracts/Services/IYourEntityService.cs`
+`src/Application.Contracts/Services/{Module}/IYourEntityService.cs`
 
 ```csharp
 namespace Application.Contracts;
@@ -550,9 +206,9 @@ public interface IYourEntityService
 }
 ```
 
-## 8. Implement Service (Application)
+### 8. Implement Service
 
-Location: `src/Application/Services/YourEntityService.cs`
+`src/Application/Services/{Module}/YourEntityService.cs`
 
 ```csharp
 namespace Application.Services;
@@ -563,55 +219,56 @@ public class YourEntityService(
 {
     public async Task<GenericResponse> Create(YourEntity entity)
     {
-        // 1. Validate entity doesn't exist
         var exists = unitOfWork.YourEntities.Find(e => e.Id == entity.Id).Any();
         if (exists)
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("EntityAlreadyExists"));
 
-        // 2. Validate related entities (if applicable)
-        if (entity.StatusId.HasValue)
-        {
-            var status = await unitOfWork.Statuses.Get(entity.StatusId.Value);
-            if (status == null)
-                return new GenericResponse(false,
-                    localizationService.GetLocalizedString("StatusNotFound", entity.StatusId));
-        }
-
-        // 3. Persist
         await unitOfWork.YourEntities.Add(entity);
         return new GenericResponse(true, entity);
     }
 
-    public async Task<YourEntity?> GetById(Guid id)
+    public async Task<YourEntity?> GetById(Guid id) =>
+        await unitOfWork.YourEntities.Get(id);
+
+    public IEnumerable<YourEntity> GetAll() =>
+        unitOfWork.YourEntities.GetAll();
+
+    public async Task<GenericResponse> Update(Guid id, YourEntity entity)
     {
-        return await unitOfWork.YourEntities.Get(id);
+        var existing = await unitOfWork.YourEntities.Get(id);
+        if (existing == null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("EntityNotFound", id));
+
+        await unitOfWork.YourEntities.Update(entity);
+        return new GenericResponse(true, entity);
     }
 
-    public IEnumerable<YourEntity> GetAll()
+    public async Task<GenericResponse> Remove(Guid id)
     {
-        return unitOfWork.YourEntities.GetAll();
+        var existing = await unitOfWork.YourEntities.Get(id);
+        if (existing == null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("EntityNotFound", id));
+
+        await unitOfWork.YourEntities.Remove(existing);
+        return new GenericResponse(true);
     }
 }
 ```
 
-**Critical patterns:**
-- ALWAYS inject `ILocalizationService`
-- ALWAYS return `GenericResponse` for write operations
-- ALWAYS use localized error messages
-- Validate before persisting
+### 9. Register Service
 
-## 9. Register Service (Api)
-
-Update: `src/Api/Setup/ApplicationServicesSetup.cs`
+`src/Api/Setup/ApplicationServicesSetup.cs`
 
 ```csharp
 services.AddScoped<IYourEntityService, YourEntityService>();
 ```
 
-## 10. Create Controller (Api)
+### 10. Create Controller
 
-Location: `src/Api/Controllers/YourEntityController.cs`
+`src/Api/Controllers/{Module}/YourEntityController.cs`
 
 ```csharp
 [ApiController]
@@ -620,15 +277,8 @@ public class YourEntityController(
     IYourEntityService service,
     ILocalizationService localization) : ControllerBase
 {
-    [HttpPost]
-    public async Task<IActionResult> Create(YourEntity entity)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var response = await service.Create(entity);
-        return response.Result ? Ok(response.Content) : BadRequest(response);
-    }
+    [HttpGet]
+    public IActionResult GetAll() => Ok(service.GetAll());
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
@@ -637,16 +287,21 @@ public class YourEntityController(
         if (entity == null)
             return NotFound(new GenericResponse(false,
                 localization.GetLocalizedString("EntityNotFound", id)));
-
         return Ok(entity);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(YourEntity entity)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var response = await service.Create(entity);
+        return response.Result ? Ok(response.Content) : BadRequest(response);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(Guid id, YourEntity entity)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
+        if (!ModelState.IsValid) return BadRequest(ModelState);
         var response = await service.Update(id, entity);
         return response.Result ? Ok(response.Content) : BadRequest(response);
     }
@@ -660,357 +315,60 @@ public class YourEntityController(
 }
 ```
 
-**Controller rules:**
-- Validate `ModelState` before calling service
-- Map `GenericResponse.Result` to HTTP status
-- NO business logic in controllers
+### 11. Create Migration
 
-## 11. Create Migration
-
-**Quick commands** (most common):
 ```bash
-# Create migration
+# Create
 dotnet ef migrations add AddYourEntity --project src/Infrastructure/
 
-# Review SQL BEFORE applying (IMPORTANT!)
+# Review SQL BEFORE applying
 dotnet ef migrations script --project src/Infrastructure/
 
-# Apply to database
+# Apply
 dotnet ef database update --project src/Infrastructure/
-
-# Verify migration applied
-dotnet ef migrations list --project src/Infrastructure/
 ```
 
-**Best practices:**
-- ALWAYS review generated SQL before applying
-- Use descriptive names: `AddWorkOrderPhases`, `AddCustomerTypeColumn`
-- Test against dev database first
-- Check migration file in `src/Infrastructure/Migrations/` folder
-
-**Complete reference**: See [references/MIGRATION_COMMANDS.md](references/MIGRATION_COMMANDS.md) for:
-- Rollback commands
-- Viewing SQL without applying
-- Removing unapplied migrations
-- Troubleshooting migration errors
-- List all migrations and their status
+**Complete reference**: See [references/MIGRATION_COMMANDS.md](references/MIGRATION_COMMANDS.md) for rollback, troubleshooting, and advanced commands.
 
 ## Common Pitfalls
 
-### ❌ Mistake 1: Forgetting to Inject ILocalizationService
-
-**Problem**: Service doesn't inject `ILocalizationService` in constructor
-
-```csharp
-// ❌ BAD: Missing ILocalizationService
-public class ProductService(IUnitOfWork unitOfWork) : IProductService
-{
-    public async Task<GenericResponse> Create(Product product)
-    {
-        return new GenericResponse(false, "Product not found");  // Hardcoded!
-    }
-}
-```
-
-**Symptoms**:
-- Error messages always in Catalan
-- Not multilingual
-- Violates localization pattern
-
-**Fix**: Always inject `ILocalizationService`
-```csharp
-// ✅ GOOD: Inject ILocalizationService
-public class ProductService(
-    IUnitOfWork unitOfWork,
-    ILocalizationService localizationService) : IProductService  // ← Add parameter
-{
-    public async Task<GenericResponse> Create(Product product)
-    {
-        return new GenericResponse(false,
-            localizationService.GetLocalizedString("ProductNotFound"));
-    }
-}
-```
-
-### ❌ Mistake 2: Wrong Repository File Location
-
-**Problem**: Created repository interface in wrong directory or forgot subdirectories
-
-```csharp
-// ❌ BAD: Wrong location
-// src/Application.Contracts/Contracts/IAreaRepository.cs  ← WRONG!
-
-// ❌ BAD: Missing module subdirectory
-// src/Application.Contracts/Persistance/Repositories/IAreaRepository.cs  ← Missing Production/
-```
-
-**Symptoms**:
-- Can't find repository interface when adding to IUnitOfWork
-- Inconsistent with project structure
-- Difficult to navigate large projects
-
-**Fix**: Use correct location with module subdirectory
-```csharp
-// ✅ GOOD: Correct location with subdirectory
-// src/Application.Contracts/Persistance/Repositories/Production/IAreaRepository.cs
-// src/Infrastructure/Persistance/Repositories/Production/AreaRepository.cs
-
-namespace Application.Contracts.Persistance.Repositories.Production;
-public interface IAreaRepository : IRepository<Area, Guid> { }
-
-namespace Infrastructure.Persistance.Repositories.Production;
-public class AreaRepository : Repository<Area, Guid>, IAreaRepository { }
-```
-
-**Module subdirectories**: Sales, Purchase, Production, Warehouse, System
-
-### ❌ Mistake 3: Not Overriding Get() in Custom Repository (Pattern B Only)
-
-**Problem**: Repository doesn't override `Get()` to include navigation properties
-
-```csharp
-// ❌ BAD: Using base Get() without Include
-public class ProductRepository : Repository<Product, Guid>, IProductRepository
-{
-    public ProductRepository(ApplicationDbContext context) : base(context)
-    {
-        // No override of Get()
-    }
-}
-```
-
-**Symptoms**:
-- `product.Category` is null even when CategoryId has value
-- Lazy loading doesn't work (not enabled in EF Core by default)
-- Extra database queries when accessing navigation properties
-
-**Fix**: Override `Get()` with `.Include()`
-```csharp
-// ✅ GOOD: Override Get() with eager loading
-public class ProductRepository : Repository<Product, Guid>, IProductRepository
-{
-    public ProductRepository(ApplicationDbContext context) : base(context) { }
-    
-    public override async Task<Product?> Get(Guid id)
-    {
-        return await dbSet
-            .Include(p => p.Category)     // ← Load related entities
-            .Include(p => p.Status)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
-}
-```
-
-### ❌ Mistake 3: Not Overriding Get() in Custom Repository (Pattern B Only)
-
-**Problem**: Repository doesn't override `Get()` to include navigation properties (only applies to Pattern B - custom repositories)
-
-```csharp
-// ❌ BAD: Using base Get() without Include
-public class ProductRepository : Repository<Product, Guid>, IProductRepository
-{
-    public ProductRepository(ApplicationDbContext context) : base(context)
-    {
-        // No override of Get()
-    }
-}
-```
-
-**Symptoms**:
-- `product.Category` is null even when CategoryId has value
-- Lazy loading doesn't work (not enabled in EF Core by default)
-- Extra database queries when accessing navigation properties
-
-**Fix**: Override `Get()` with `.Include()`
-```csharp
-// ✅ GOOD: Override Get() with eager loading
-public class ProductRepository : Repository<Product, Guid>, IProductRepository
-{
-    public ProductRepository(ApplicationDbContext context) : base(context) { }
-    
-    public override async Task<Product?> Get(Guid id)
-    {
-        return await dbSet
-            .Include(p => p.Category)     // ← Load related entities
-            .Include(p => p.Status)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
-}
-```
-
-**Note**: Pattern A (generic repository) doesn't need this - handle eager loading in service if needed.
-
-### ❌ Mistake 4: Using "Configuration.cs" Instead of "Builder.cs"
-
-**Problem**: Created entity configuration with wrong file name
-
-```csharp
-// ❌ BAD: Wrong naming convention
-// src/Infrastructure/Persistance/EntityConfiguration/Production/AreaConfiguration.cs
-
-public class AreaConfiguration : IEntityTypeConfiguration<Area>  // ← Wrong name!
-{
-    public void Configure(EntityTypeBuilder<Area> builder) { }
-}
-```
-
-**Symptoms**:
-- Inconsistent with project conventions
-- Difficult to find files (search for "Builder" won't find "Configuration")
-- Code reviews will request rename
-
-**Fix**: Use `*Builder.cs` naming convention
-```csharp
-// ✅ GOOD: Correct naming convention
-// src/Infrastructure/Persistance/EntityConfiguration/Production/AreaBuilder.cs
-
-public class AreaBuilder : IEntityTypeConfiguration<Area>
-{
-    public void Configure(EntityTypeBuilder<Area> builder)
-    {
-        builder.ConfigureBase();
-        // ... configuration
-    }
-}
-```
-
-**Why "Builder"?**: This project uses "Builder" suffix for all EF Core entity configurations to distinguish from other configuration types.
-
-### ❌ Mistake 5: Using Magic Strings for Lifecycle/Status
-
-**Problem**: Hardcoded strings for lifecycle or status names
-
-```csharp
-// ❌ BAD: Magic strings
-var lifecycle = unitOfWork.Lifecycles
-    .Find(l => l.Name == "Budget")  // Typo-prone!
-    .FirstOrDefault();
-```
-
-**Symptoms**:
-- Null reference when typo occurs
-- No compile-time checking
-- Difficult to refactor
-
-**Fix**: Use `StatusConstants`
-```csharp
-// ✅ GOOD: Type-safe constants
-var lifecycle = unitOfWork.Lifecycles
-    .Find(l => l.Name == StatusConstants.Lifecycles.Budget)
-    .FirstOrDefault();
-
-entity.StatusId = lifecycle.InitialStatusId;
-```
-
-### ❌ Mistake 6: Forgetting to Register Service in DI
-
-**Problem**: Created service but didn't register in `ApplicationServicesSetup.cs`
-
-```csharp
-// Step 9 SKIPPED: Not added to ApplicationServicesSetup.cs
-```
-
-**Symptoms**:
-```
-System.InvalidOperationException: Unable to resolve service for type 'IProductService'
-```
-
-**Fix**: Add to `src/Api/Setup/ApplicationServicesSetup.cs`
-```csharp
-// ✅ GOOD: Register service
-services.AddScoped<IProductService, ProductService>();
-```
-
-### ❌ Mistake 7: Not Testing Migration SQL Before Applying
-
-**Problem**: Applied migration without reviewing generated SQL (Step 11)
-
-```bash
-# ❌ BAD: Apply immediately
-dotnet ef migrations add AddProduct --project src/Infrastructure/
-dotnet ef database update --project src/Infrastructure/  # Applied without review!
-```
-
-**Symptoms**:
-- Wrong column types (string(max) instead of varchar(200))
-- Missing foreign key constraints
-- Incorrect nullable settings
-
-**Fix**: Review SQL before applying
-```bash
-# ✅ GOOD: Review first
-dotnet ef migrations add AddProduct --project src/Infrastructure/
-
-# Review generated SQL
-dotnet ef migrations script --project src/Infrastructure/
-
-# Check migration file in src/Infrastructure/Migrations/
-
-# Then apply
-dotnet ef database update --project src/Infrastructure/
-```
-
-### ❌ Mistake 8: Circular Dependencies Between Layers
-
-**Problem**: Domain layer references Infrastructure
-
-```csharp
-// ❌ BAD: Domain referencing Infrastructure
-using Infrastructure.Persistance;  // ❌ Domain can't reference Infrastructure!
-
-namespace Domain.Entities;
-public class Product : Entity { }
-```
-
-**Symptoms**:
-- Violates Clean Architecture
-- Build errors
-- Tight coupling
-
-**Fix**: Follow dependency rules
-```
-✅ Dependency flow (arrows show "depends on"):
-API → Application → Application.Contracts → Domain
-  ↘    ↓                                      ↑
-    Infrastructure ─────────────────────────┘
-
-Domain has NO dependencies
-Infrastructure depends on Domain
-Application depends on Application.Contracts
-API depends on everything (composition root)
-```
+| # | Mistake | Symptom | Fix |
+|---|---------|---------|-----|
+| 1 | Missing `ILocalizationService` | Hardcoded error strings, not multilingual | Always inject in service constructor |
+| 2 | Wrong repository location | Interface not found, inconsistent structure | Pattern B repos: `Application.Contracts/Persistance/Repositories/{Module}/` |
+| 3 | Not overriding `Get()` in Pattern B | Navigation properties null | Override `Get()` with `.Include()` |
+| 4 | Using `*Configuration.cs` | Build inconsistency, reviewer rejections | Always use `*Builder.cs` suffix |
+| 5 | Magic strings for lifecycle/status | NullRef on typos, no compile-time check | Use `StatusConstants.Lifecycles.X` |
+| 6 | Forgetting DI registration | `InvalidOperationException: Unable to resolve IYourEntityService` | Add `AddScoped<>` in `ApplicationServicesSetup.cs` |
+| 7 | Applying migration without reviewing SQL | Wrong column types, missing constraints | Always `migrations script` before `database update` |
+| 8 | Domain referencing Infrastructure | Build error, Clean Architecture violation | Dependencies only flow inward |
 
 ## Common Patterns
 
 ### Entity with Details (Header-Detail)
 
-**Entity configuration:**
 ```csharp
+// Builder
 builder.HasMany(h => h.Details)
     .WithOne()
     .HasForeignKey(d => d.HeaderId)
-    .OnDelete(DeleteBehavior.Cascade);
-```
+    .OnDelete(DeleteBehavior.Cascade); // Cascade on owned details
 
-**Repository with nested repository:**
-```csharp
-public class YourHeaderRepository : Repository<YourHeader, Guid>, IYourHeaderRepository
+// Repository
+public class HeaderRepository : Repository<Header, Guid>, IHeaderRepository
 {
-    public IRepository<YourDetail, Guid> Details { get; }
-    
-    public YourHeaderRepository(ApplicationDbContext context) : base(context)
+    public IRepository<Detail, Guid> Details { get; }
+    public HeaderRepository(ApplicationDbContext context) : base(context)
     {
-        Details = new Repository<YourDetail, Guid>(context);
+        Details = new Repository<Detail, Guid>(context);
     }
 }
 ```
 
 ### Entity with Lifecycle Status
 
-**Service initialization:**
 ```csharp
+// Service - initialize with lifecycle's initial status
 var lifecycle = unitOfWork.Lifecycles
     .Find(l => l.Name == StatusConstants.Lifecycles.YourEntity)
     .FirstOrDefault();
@@ -1023,21 +381,19 @@ if (lifecycle == null)
 entity.StatusId = lifecycle.InitialStatusId;
 ```
 
-**Remember**: ALWAYS use `StatusConstants`, never magic strings.
+## Detailed Scenarios
+
+See [references/SCENARIOS.md](references/SCENARIOS.md) for complete worked examples:
+- Scenario 1: Simple entity (Pattern A) — Site with Name + Address
+- Scenario 2: Complex entity (Pattern B) — Area with custom GetByEnterprise()
+- Scenario 3: Entity with FK relationship — Workcenter belonging to Area
+- Scenario 4: Entity with lifecycle status — Budget with workflow
+
+**When to read scenarios**: Implementing a specific entity type for the first time, or unsure which pattern to apply.
 
 ## Troubleshooting
 
-**Migration errors:**
-- Ensure PostgreSQL is running
-- Verify connection string in `appsettings.Development.json`
-- Check all foreign keys reference existing tables
-
-**Build errors:**
-- Run `dotnet restore`
-- Check project references
-- Ensure correct `using` statements
-
-**Runtime errors:**
-- Service not registered? Check `ApplicationServicesSetup.cs`
-- Tool not found? Ensure interface and implementation match
-- Null reference? Check navigation property includes in repository
+- **Migration fails**: Ensure PostgreSQL is running, check connection string in `appsettings.Development.json`
+- **Build error**: Run `dotnet restore`, check correct `using` statements
+- **Service not found at runtime**: Check `ApplicationServicesSetup.cs` registration
+- **Navigation property null**: Override `Get()` with `.Include()` in repository (Pattern B)

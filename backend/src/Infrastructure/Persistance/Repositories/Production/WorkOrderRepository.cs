@@ -110,7 +110,7 @@ namespace Infrastructure.Persistance.Repositories.Production
                 .Include(wo => wo.Phases)
                     .ThenInclude(p => p.PreferredWorkcenter)
                 .Include(wo => wo.Phases)
-                    .ThenInclude(p => p.Details)
+                    .ThenInclude(p => p.Details.OrderBy(d => d.Order))
                         .ThenInclude(d => d.MachineStatus)
                 .Include(wo => wo.Phases)
                     .ThenInclude(p => p.BillOfMaterials)

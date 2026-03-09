@@ -33,6 +33,9 @@ const Shifts = () => import("./views/Shifts.vue");
 
 const CostDashboard = () => import("./views/CostDashboard.vue");
 
+const PhaseTemplates = () => import("./views/PhaseTemplates.vue");
+const PhaseTemplate = () => import("./views/PhaseTemplate.vue");
+
 const WorkcenterShift = () => import("./views/WorkcenterShift.vue");
 const WorkorderPlanning = () => import("./views/WorkorderPlanning.vue");
 const WorkcenterSaturation = () => import("./views/WorkcenterSaturation.vue");
@@ -187,5 +190,15 @@ export default [
     path: "/workcentersaturation",
     name: "workcentersaturation",
     component: WorkcenterSaturation,
+  },
+  {
+    path: "/phasetemplate",
+    name: "PhaseTemplates",
+    component: PhaseTemplates,
+  },
+  {
+    path: "/phasetemplate/:id",
+    name: "PhaseTemplate",
+    component: PhaseTemplate,
   },
 ] as Array<RouteRecordRaw>;

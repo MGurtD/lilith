@@ -1,6 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-using System.Xml;
 using Domain.Entities.Production;
 
 namespace Infrastructure.Persistance.EntityConfiguration.Production
@@ -30,7 +29,7 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                              ApplicationDbContextConstants.DECIMAL_SCALE);
             builder
-                .Property(b => b.MultiWoAvailable)                
+                .Property(b => b.MultiWoAvailable)
                 .HasDefaultValue(false)
                 .HasColumnType("boolean");
             builder

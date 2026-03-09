@@ -1,4 +1,4 @@
-﻿using Application.Services.System;
+using Application.Services.System;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
@@ -72,6 +72,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IShiftDetailService, ShiftDetailService>();
         services.AddScoped<IWorkcenterCostService, WorkcenterCostService>();
         services.AddScoped<IWorkcenterProfitPercentageService, WorkcenterProfitPercentageService>();
+        services.AddScoped<IWorkcenterLocationService, WorkcenterLocationService>();
 
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
@@ -83,7 +84,13 @@ public static class ApplicationServicesSetup
         services.AddScoped<IProductionCostService, ProductionCostService>();
         services.AddScoped<IWorkMasterPhaseService, WorkMasterPhaseService>();
         services.AddScoped<IWorkOrderPhaseService, WorkOrderPhaseService>();
+        services.AddScoped<IPhaseTemplateService, PhaseTemplateService>();
         services.AddScoped<IDetailedWorkOrderService, DetailedWorkOrderService>();
+        
+        // Production services - Background jobs
+        services.AddSingleton<IProductionPartChannel, ProductionPartChannel>();
+        services.AddScoped<IProductionPartGeneratorHandler, ProductionPartGeneratorHandler>();
+        services.AddHostedService<ProductionPartGeneratorService>();
         
         // Warehouse services
         services.AddScoped<IWarehouseService, WarehouseService>();

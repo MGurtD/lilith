@@ -1,5 +1,6 @@
 using Application.Contracts;
 using Domain.Entities.Production;
+using Domain.Entities.Warehouse;
 
 namespace Application.Contracts;
 
@@ -12,4 +13,5 @@ public interface IWorkcenterService
     Task<GenericResponse> Create(Workcenter workcenter);
     Task<GenericResponse> Update(Workcenter workcenter);
     Task<GenericResponse> Remove(Guid id);
+    Task<IEnumerable<Location>> GetLocationsByType(Guid workcenterId, string locationType);
 }

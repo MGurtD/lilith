@@ -153,7 +153,7 @@ import { BaseInputType } from "../../../types/component";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useReferenceStore } from "../../shared/store/reference";
 import { Reference, ReferenceCategoryEnum } from "../../shared/types";
-import { useExerciseStore } from "@/modules/shared/store/exercise";
+import { useExerciseStore } from "../../shared/store/exercise";
 
 const props = defineProps<{
   workmaster: WorkMaster;

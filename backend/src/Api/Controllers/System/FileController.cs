@@ -53,9 +53,10 @@ namespace Api.Controllers
             var contentType = Application.Services.System.FileService.GetContentType(file.Path);
             
             // CRITICAL: Use 'inline' disposition to prevent Android from renaming files
-            // Encode filename using RFC 2231 for better compatibility with special characters
+            // Use filename*=UTF-8'' for Unicode support (RFC 2231)
+            // Don't include filename= with non-ASCII characters to avoid header errors
             var encodedFileName = Uri.EscapeDataString(fileName);
-            Response.Headers.Append("Content-Disposition", $"inline; filename=\"{fileName}\"; filename*=UTF-8''{encodedFileName}");
+            Response.Headers.Append("Content-Disposition", $"inline; filename*=UTF-8''{encodedFileName}");
             Response.Headers.Append("Content-Type", contentType);
             Response.Headers.Append("X-Content-Type-Options", "nosniff");
             

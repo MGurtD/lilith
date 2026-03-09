@@ -1,53 +1,21 @@
 <template>
   <TableWorkorders
-    :workorders="workOrderStore.workorders"
+    :workorders="filteredWorkorders"
     @edit="editRow"
     @delete="deleteButton"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="filterConfig"
+        :model-value="filter"
+        @filter="filterData"
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter-3">
-          <div class="filter-field">
-            <ExerciseDatePicker :exercises="exerciseStore.exercises" />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900">Client</label>
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900">Estat</label>
-            <DropdownLifecycle
-              label=""
-              name="WorkOrder"
-              v-model="filter.statusId"
-            />
-          </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterData"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+        <template #prepend>
+          <ExerciseDatePicker :exercises="exerciseStore.exercises" />
+        </template>
+      </TableFilter>
     </template>
   </TableWorkorders>
 
@@ -56,6 +24,7 @@
     :header="dialogOptions.title"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
+    :style="{ width: '600px' }"
   >
     <FormCreateWorkorder
       :createWorkOrderDto="createWorkOrderDto"
@@ -64,14 +33,13 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
-import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
 import FormCreateWorkorder from "../components/FormCreateWorkorder.vue";
 import TableWorkorders from "../components/TableWorkorders.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -84,6 +52,8 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useWorkOrderStore } from "../store/workorder";
 import { useWorkMasterStore } from "../store/workmaster";
 import { useUserFilterStore } from "../../../store/userfilter";
+import { useCustomersStore } from "../../sales/store/customers";
+import { FilterConfig } from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const store = useStore();
@@ -95,23 +65,75 @@ const workOrderStore = useWorkOrderStore();
 const referenceStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
 const lifecycleStore = useLifecyclesStore();
+const customersStore = useCustomersStore();
 
 const filter = ref({
   referenceId: undefined,
-  statusId: undefined,
+  statusId: undefined as string | undefined, // Type correction for compatibility
   customerId: undefined,
+  plannedQuantity: undefined,
+  code: undefined,
 });
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "customerId",
+    label: "Client",
+    type: "select",
+    options: customersStore.customers || [],
+    optionLabel: "comercialName",
+    optionValue: "id",
+    placeholder: "Selecciona un client",
+    row: 0,
+  },
+  {
+    key: "statusId",
+    label: "Estat",
+    type: "select",
+    options: lifecycleStore.lifecycle?.statuses || [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: "Selecciona un estat",
+    row: 0,
+  },
+  {
+    key: "code",
+    label: "Codi",
+    type: "text",
+    placeholder: "Codi",
+    row: 1,
+  },
+  {
+    key: "plannedQuantity",
+    label: "Quantitat planificada",
+    type: "number",
+    placeholder: "Quantitat planificada",
+    row: 1,
+  },
+]);
+
 const cleanFilter = () => {
   filter.value.referenceId = undefined;
   filter.value.statusId = undefined;
   filter.value.customerId = undefined;
+  filter.value.code = undefined;
+  filter.value.plannedQuantity = undefined;
 
   userFilterStore.removeFilter("Workorders", "");
 };
+const filteredWorkorders = computed(() => {
+  let result = workOrderStore.workorders ?? [];
+  if (filter.value.plannedQuantity) {
+    result = result.filter(
+      (w) => w.plannedQuantity === filter.value.plannedQuantity,
+    );
+  }
+  return result;
+});
 const filterData = async () => {
   if (store.exercisePicker.dates) {
     const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0]
+      store.exercisePicker.dates[0],
     );
     const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
 
@@ -120,7 +142,8 @@ const filterData = async () => {
       endTime,
       filter.value.statusId,
       filter.value.referenceId,
-      filter.value.customerId
+      filter.value.customerId,
+      filter.value.code,
     );
   } else {
     toast.add({
@@ -150,7 +173,11 @@ const createWorkOrderDto = ref({
 onMounted(async () => {
   await referenceStore.fetchReferencesByModule("sales");
   await exerciseStore.fetchActive();
-  lifecycleStore.fetchOneByName("WorkOrder");
+  // We need to fetch customers for the filter
+  if (!customersStore.customers) await customersStore.fetchCustomers();
+
+  // We need to wait for lifecycle to populate filter options
+  await lifecycleStore.fetchOneByName("WorkOrder");
   workMasterStore.fetchAllActives();
 
   store.setMenuItem({

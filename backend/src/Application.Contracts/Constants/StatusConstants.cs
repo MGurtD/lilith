@@ -36,6 +36,7 @@ namespace Application.Contracts
             public const string Production = "Producció";
             public const string Llancada = "Llançada";
             public const string Tancada = "Tancada";
+            public const string Pausada = "Pausa";
             public const string OFCancellada = "Cancel·lada";
             public const string ServeiExtern = "Servei Extern";
 
@@ -76,6 +77,7 @@ namespace Application.Contracts
             public const string Available = "Available";
             public const string Unavailable = "Unavailable";
             public const string Plant = "Plant";
+            public const string ExternalService = "ExternalService";
 
         }
     }

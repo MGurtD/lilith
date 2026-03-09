@@ -30,6 +30,12 @@
                   <span class="font-bold">Comentaris</span>
                 </div>
               </Tab>
+              <Tab v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
+                <div class="flex align-items-center gap-2">
+                  <i :class="PrimeIcons.BOX"></i>
+                  <span class="font-bold">Materials</span>
+                </div>
+              </Tab>
             </TabList>
             <TabPanels>
               <!-- Available Phases Tab -->
@@ -51,6 +57,11 @@
                   :loadedWorkOrders="workcenterStore.loadedWorkOrdersPhases"
                 />
               </TabPanel>
+
+              <!-- Materials Tab -->
+              <TabPanel v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
+                <WorkcenterMaterials />
+              </TabPanel>
             </TabPanels>
           </Tabs>
         </section>
@@ -69,6 +80,7 @@
             label="Entrar"
             severity="primary"
             class="touch-button"
+            :disabled="!canManageOperators"
             @click="handleOperatorClockIn"
           />
           <Button
@@ -77,6 +89,7 @@
             label="Sortir"
             severity="primary"
             class="touch-button"
+            :disabled="!canManageOperators"
             @click="handleOperatorClockOut"
           />
         </div>
@@ -130,6 +143,14 @@
         <span class="group-label">Fase</span>
         <div class="group-buttons">
           <Button
+            :icon="PrimeIcons.PLUS"
+            label="Afegir qtt."
+            severity="primary"
+            class="touch-button"
+            @click="phaseQuantitiesVisible = true"
+            :disabled="!hasLoadedPhase"
+          />
+          <Button
             :icon="PrimeIcons.CHECK_CIRCLE"
             label="Finalitzar"
             severity="primary"
@@ -157,7 +178,9 @@
       :referenceCode="selectedWorkOrderData.referenceCode"
       :quantity="selectedWorkOrderData.quantity"
       :workcenterTypeId="workcenter?.config.workcenterTypeId || ''"
+      :workcenterId="id"
       @phase-detail-selected="handlePhaseDetailSelected"
+      @phase-created="handlePhaseCreated"
     />
 
     <!-- Work Order Unloader Dialog -->
@@ -172,7 +195,14 @@
       :plannedQuantity="unloadWorkOrderData.plannedQuantity"
       :phaseDescription="unloadWorkOrderData.phaseDescription"
       :workcenterTypeId="workcenter?.config.workcenterTypeId || ''"
+      :nextMachineStatusId="unloadNextMachineStatusId"
+      :showNextPhaseOption="unloadShowNextPhaseOption"
       @phase-unloaded="handlePhaseUnloaded"
+    />
+
+    <!-- Phase Quantities Dialog -->
+    <WorkOrderPhaseQuantities
+      v-model:visible="phaseQuantitiesVisible"
     />
   </div>
 </template>
@@ -187,13 +217,16 @@ import {
   usePlantWorkcenterStore,
   usePlantOperatorStore,
   usePlantDataStore,
+  usePlantActivePhaseStore,
 } from "../store";
 import WorkcenterRealtimePanel from "../components/workcenter-detail/WorkcenterRealtimePanel.vue";
 import WorkcenterDocumentation from "../components/workcenter-detail/WorkcenterDocumentation.vue";
 import WorkcenterComments from "../components/workcenter-detail/WorkcenterComments.vue";
+import WorkcenterMaterials from "../components/workcenter-detail/WorkcenterMaterials.vue";
 import WorkcenterWorkOrderSelector from "../components/workcenter-detail/WorkcenterWorkOrderSelector.vue";
 import WorkOrderLoader from "../components/workcenter-detail/WorkOrderLoader.vue";
 import WorkOrderUnloader from "../components/workcenter-detail/WorkOrderUnloader.vue";
+import WorkOrderPhaseQuantities from "../components/workcenter-detail/WorkOrderPhaseQuantities.vue";
 import MachineStatusSelector from "../components/MachineStatusSelector.vue";
 import { WorkOrderWithPhases } from "../../production/types";
 import {
@@ -214,6 +247,7 @@ const appStore = useStore();
 const workcenterStore = usePlantWorkcenterStore();
 const operatorStore = usePlantOperatorStore();
 const dataStore = usePlantDataStore();
+const activePhaseStore = usePlantActivePhaseStore();
 const { connect } = useWebSocketConnection();
 
 const id = route.params.id as string;
@@ -221,6 +255,7 @@ const activeTab = ref("0");
 const statusSelectorVisible = ref(false);
 const workOrderLoaderVisible = ref(false);
 const workOrderUnloaderVisible = ref(false);
+const phaseQuantitiesVisible = ref(false);
 const selectedWorkOrderData = ref({
   workOrderId: "",
   workOrderCode: "",
@@ -236,8 +271,15 @@ const unloadWorkOrderData = ref({
   plannedQuantity: 0,
   phaseDescription: "",
 });
+const unloadNextMachineStatusId = ref<string | undefined>(undefined);
+const unloadShowNextPhaseOption = ref(true);
 
 const workcenter = computed(() => workcenterStore.workcenterView);
+
+// Computed para determinar si la actividad actual permite gestionar operarios
+const canManageOperators = computed(() => {
+  return workcenter.value?.realtime?.statusOperatorsAllowed === true;
+});
 
 // Computed para determinar si el operario está fichado
 const isOperatorClockedIn = computed(() => {
@@ -398,6 +440,53 @@ const handleCloseMachine = async () => {
     });
     return;
   }
+
+  // If there's a loaded phase, open unloader dialog
+  if (hasLoadedPhase.value) {
+    // Populate unload dialog data (same as handleWorkOrderPhaseClose)
+    const currentActivePhase = workcenter.value!.realtime!.workorders[0];
+    const loadedWorkOrder = workcenterStore.loadedWorkOrdersPhases?.[0];
+
+    if (!loadedWorkOrder) {
+      toast.add({
+        severity: "error",
+        summary: "No s'han pogut carregar les dades de l'ordre",
+        life: 4000,
+      });
+      return;
+    }
+
+    const currentPhase = loadedWorkOrder.phases.find(
+      (p) => p.phaseId === currentActivePhase.workOrderPhaseId,
+    );
+
+    if (!currentPhase) {
+      toast.add({
+        severity: "error",
+        summary: "No s'ha pogut trobar la fase actual",
+        life: 4000,
+      });
+      return;
+    }
+
+    unloadWorkOrderData.value = {
+      workOrderId: loadedWorkOrder.workOrderId,
+      workOrderCode: loadedWorkOrder.workOrderCode,
+      workOrderPhaseId: currentActivePhase.workOrderPhaseId,
+      currentPhaseStatusId: currentPhase.phaseStatusId,
+      referenceCode: loadedWorkOrder.salesReferenceDisplay,
+      plannedQuantity: loadedWorkOrder.plannedQuantity,
+      phaseDescription: currentPhase.phaseDescription,
+    };
+
+    // Set next machine status to CLOSED and hide next phase option
+    unloadNextMachineStatusId.value = closedStatus.value.id;
+    unloadShowNextPhaseOption.value = false;
+    workOrderUnloaderVisible.value = true;
+    return;
+  }
+
+  // No phase loaded - just change machine status directly
   const result = await workcenterStore.changeMachineStatus(
     closedStatus.value.id,
   );
@@ -503,6 +592,15 @@ const handlePhaseDetailSelected = async (data: {
   }
 };
 
+const handlePhaseCreated = async () => {
+  // Refresh available work orders list after a phase was created from template
+  if (workcenter.value?.config.workcenterTypeId) {
+    await workcenterStore.fetchAvailableWorkOrders(
+      workcenter.value.config.workcenterTypeId,
+    );
+  }
+};
+
 const handleWorkOrderPhaseClose = async () => {
   if (
     !workcenter.value?.realtime?.workorders ||
@@ -553,6 +651,11 @@ const handleWorkOrderPhaseClose = async () => {
     plannedQuantity: loadedWorkOrder.plannedQuantity,
     phaseDescription: currentPhase.phaseDescription,
   };
+
+  // Set next machine status to PAUSA (stopped) and show next phase option
+  const stoppedStatus = dataStore.machineStatuses.find((s) => s.stopped === true);
+  unloadNextMachineStatusId.value = stoppedStatus?.id;
+  unloadShowNextPhaseOption.value = true;
 
   workOrderUnloaderVisible.value = true;
 };

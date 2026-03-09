@@ -11,5 +11,7 @@ namespace Application.Contracts
         Task<IEnumerable<Domain.Entities.Warehouse.Warehouse>> GetAllWithLocations();
 
         Task<Location?> GetDefaultLocation();
+
+        Task<IEnumerable<StockResponse>> GetStockByReferenceId(Guid referenceId);
     }
 }

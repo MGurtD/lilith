@@ -10,7 +10,7 @@ public interface IWorkOrderService
     Task<GenericResponse> Start(Guid id);
     Task<GenericResponse> End(Guid id);
     Task<GenericResponse> Delete(Guid id); 
-    IEnumerable<WorkOrder> GetBetweenDatesAndStatus(DateTime startDate, DateTime endDate, Guid? statusId);
+    IEnumerable<WorkOrder> GetBetweenDatesAndStatus(DateTime startDate, DateTime endDate, Guid? statusId, string? code = null);
     Task<IEnumerable<WorkOrderPhaseEstimationDto>>GetWorkcenterLoadBetweenDatesByWorkcenterType(DateTime startDate, DateTime endDate);
     IEnumerable<DetailedWorkOrder> GetWorkOrderDetails(Guid id);
     Task<IEnumerable<WorkOrder>> GetBySalesOrderId(Guid salesOrderId);

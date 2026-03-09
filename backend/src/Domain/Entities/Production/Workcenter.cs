@@ -1,4 +1,4 @@
-﻿namespace Domain.Entities.Production;
+namespace Domain.Entities.Production;
 
 public class Workcenter : Entity
 {
@@ -13,4 +13,5 @@ public class Workcenter : Entity
     public Shift? Shift { get; set; }
     public decimal ProfitPercentage { get; set; } = decimal.Zero;
     public bool MultiWoAvailable { get; set; } = false;
+    public ICollection<WorkcenterLocation> WorkcenterLocations { get; set; } = [];
 }

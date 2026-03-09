@@ -5,7 +5,7 @@ Monorepo for the Lilith ERP system, a comprehensive manufacturing management sol
 ## 📁 Repository Structure
 
 ```
-lilith/
+crisp-engine/
 ├── backend/              # .NET 10 Web API (Clean Architecture)
 ├── frontend/             # Vue 3 + TypeScript SPA
 ├── .github/workflows/    # CI/CD pipelines
@@ -13,8 +13,6 @@ lilith/
 ├── .env.example         # Environment variables template
 └── AGENTS.md            # AI coding agent guidelines
 ```
-
-**Note**: If you see `lilith-backend/` and `lilith-frontend/` directories instead of `backend/` and `frontend/`, these need to be renamed manually due to file locks. See [Setup](#-setup) section.
 
 ## 🚀 Quick Start
 
@@ -172,8 +170,8 @@ dotnet ef database update PreviousMigrationName --project src/Infrastructure/
 
 GitHub Actions workflows with path-based triggers:
 
-- **`.github/workflows/backend-ci.yml`** - Triggers on `backend/**` or `lilith-backend/**` changes
-- **`.github/workflows/frontend-ci.yml`** - Triggers on `frontend/**` or `lilith-frontend/**` changes
+- **`.github/workflows/backend-ci.yml`** - Triggers on `backend/**` changes
+- **`.github/workflows/frontend-ci.yml`** - Triggers on `frontend/**` changes
 
 **Workflows:**
 1. Build and test (on push/PR)
@@ -227,18 +225,9 @@ This provides:
 
 ## 🐛 Known Issues
 
-1. **Directory naming**: If directories are still named `lilith-backend/` and `lilith-frontend/`, they need manual rename:
-   ```bash
-   # Close VS Code and stop all dev servers first
-   mv lilith-backend backend
-   mv lilith-frontend frontend
-   git add -A
-   git commit -m "refactor: rename directories to backend/ and frontend/"
-   ```
+1. **No automated tests**: Critical debt - test infrastructure needs implementation
 
-2. **No automated tests**: Critical debt - test infrastructure needs implementation
-
-3. **Line endings**: Git may warn about LF/CRLF conversions on Windows
+2. **Line endings**: Git may warn about LF/CRLF conversions on Windows
 
 ## 🤝 Contributing
 
@@ -259,7 +248,3 @@ This is a monorepo managed with standard Git workflows:
 - **Backend API Docs**: https://localhost:5001/swagger
 - **Frontend Dev Server**: http://localhost:8100
 - **Production**: [Your production URL]
-
----
-
-**Monorepo structure note**: This project was converted from two separate repositories (`lilith-backend` and `lilith-frontend`) into a unified monorepo for better semantic coupling and streamlined development.
