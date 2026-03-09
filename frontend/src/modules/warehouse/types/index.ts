@@ -85,6 +85,7 @@ export interface Inventory {
  * Includes resolved reference, location and warehouse names.
  */
 export interface StockResponse {
+  stockId: string;
   referenceId: string;
   referenceCode: string;
   referenceDescription: string;
@@ -104,3 +105,10 @@ export interface StockResponse {
   diameter: number;
   thickness: number;
 }
+
+export interface MoveStockToWorkcenterSupplyRequest {
+  stockId: string;
+  workcenterId: string;
+  quantity: number;
+}
+

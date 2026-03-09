@@ -4,6 +4,9 @@ namespace Application.Contracts
 {
     public class StockResponse : Contract
     {
+        // Stock Info
+        public Guid StockId { get; set; }
+
         // Reference Info
         public Guid ReferenceId { get; set; }
         public string ReferenceCode { get; set; } = String.Empty;

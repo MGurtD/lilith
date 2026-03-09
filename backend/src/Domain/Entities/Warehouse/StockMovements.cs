@@ -7,6 +7,7 @@ namespace Domain.Entities.Warehouse
     {
         public static string INPUT = "INPUT";
         public static string OUTPUT = "OUTPUT";
+        public static string SUPPLY = "SUPPLY";
     }
 
     public class StockMovement : Entity

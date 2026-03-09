@@ -64,5 +64,16 @@ namespace Api.Controllers.Warehouse
             else return BadRequest(response);
         }
 
+        [HttpPost("MoveToWorkcenterSupply")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> MoveToWorkcenterSupply([FromBody] MoveStockToWorkcenterSupplyRequest request)
+        {
+            var response = await service.MoveToWorkcenterSupply(request);
+
+            if (response.Result) return Ok(response);
+            else return BadRequest(response);
+        }
+
     }
 }

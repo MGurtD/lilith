@@ -53,12 +53,7 @@
           <span class="stock-popover-ref">{{ selectedBomCode }}</span>
         </div>
 
-        <div v-if="loadingStock" class="stock-loading">
-          <i class="pi pi-spin pi-spinner"></i>
-          <span>Carregant...</span>
-        </div>
-
-        <div v-else-if="stockItems.length === 0" class="stock-empty">
+        <div v-if="stockItems.length === 0" class="stock-empty">
           <i class="pi pi-exclamation-circle"></i>
           <span>Sense estoc disponible</span>
         </div>
@@ -80,6 +75,20 @@
               <span class="font-semibold">{{ slotProps.data.quantity }}</span>
             </template>
           </Column>
+          <Column header="Moure" style="width: 80px; text-align: center">
+            <template #body="slotProps">
+              <Button
+                icon="pi pi-arrow-right"
+                text
+                rounded
+                severity="secondary"
+                :loading="movingStockId === slotProps.data.stockId"
+                :disabled="movingStockId !== null"
+                @click="moveStock(slotProps.data)"
+                v-tooltip.top="'Moure a ubicació d\'aprovisionament'"
+              />
+            </template>
+          </Column>
         </DataTable>
       </div>
     </Popover>
@@ -88,6 +97,8 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRoute } from "vue-router";
+import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -98,27 +109,67 @@ import type { BillOfMaterialsItem } from "../../../production/types";
 import type { StockResponse } from "../../../warehouse/types";
 import WarehouseServices from "../../../warehouse/services";
 
+const route = useRoute();
+const toast = useToast();
 const activePhaseStore = usePlantActivePhaseStore();
 
+const workcenterId = route.params.id as string;
 const stockPopover = ref<InstanceType<typeof Popover> | null>(null);
 const stockItems = ref<StockResponse[]>([]);
-const loadingStock = ref(false);
 const loadingBomId = ref<string | null>(null);
 const selectedBomCode = ref("");
+const movingStockId = ref<string | null>(null);
 
 async function showStock(event: Event, bom: BillOfMaterialsItem) {
   selectedBomCode.value = bom.referenceCode;
-  stockItems.value = [];
   loadingBomId.value = bom.id;
-  loadingStock.value = true;
 
-  stockPopover.value?.show(event);
+  const target = event.currentTarget as HTMLElement;
 
   try {
     stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(bom.id);
   } finally {
-    loadingStock.value = false;
     loadingBomId.value = null;
+  }
+
+  stockPopover.value?.show({ currentTarget: target } as Event);
+}
+
+async function moveStock(stockItem: StockResponse) {
+  movingStockId.value = stockItem.stockId;
+  
+  try {
+    const result = await WarehouseServices.Stock.moveToWorkcenterSupply({
+      stockId: stockItem.stockId,
+      workcenterId: workcenterId,
+      quantity: stockItem.quantity,
+    });
+
+    if (result) {
+      toast.add({
+        severity: "success",
+        summary: "Stock mogut correctament",
+        detail: `${stockItem.quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
+        life: 4000,
+      });
+      
+      // Refresh stock data
+      const bomId = activePhaseStore.billOfMaterials.find(
+        (bom) => bom.referenceCode === selectedBomCode.value
+      )?.id;
+      if (bomId) {
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(bomId);
+      }
+    } else {
+      toast.add({
+        severity: "error",
+        summary: "Error al moure l'stock",
+        detail: "No s'ha pogut moure l'stock a la ubicació d'aprovisionament",
+        life: 4000,
+      });
+    }
+  } finally {
+    movingStockId.value = null;
   }
 }
 </script>
