@@ -132,7 +132,7 @@ async function showStock(event: Event, bom: BillOfMaterialsItem) {
     loadingBomId.value = null;
   }
 
-  stockPopover.value?.show({ currentTarget: target } as Event);
+  stockPopover.value?.show({ currentTarget: target } as unknown as Event);
 }
 
 async function moveStock(stockItem: StockResponse) {
