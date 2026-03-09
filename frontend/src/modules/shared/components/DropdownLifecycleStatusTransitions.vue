@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useLifecyclesStore } from "../store/lifecycle";
 
 const props = defineProps<{
@@ -45,24 +45,14 @@ const currentStatusDescription = computed(() => {
   return status?.name || "";
 });
 
-async function loadTransitions(statusId: string) {
-  if (!statusId) return;
+onMounted(async () => {
+  if (!props.statusId) return;
 
   isLoading.value = true;
   try {
-    await store.fetchAvailableTransitions(statusId);
+    await store.fetchAvailableTransitions(props.statusId);
   } finally {
     isLoading.value = false;
   }
-}
-
-onMounted(() => loadTransitions(props.statusId));
-
-watch(
-  () => props.statusId,
-  (newStatusId) => {
-    emit("update:modelValue", undefined as unknown as string);
-    loadTransitions(newStatusId);
-  },
-);
+});
 </script>
