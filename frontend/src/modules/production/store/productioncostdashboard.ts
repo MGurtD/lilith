@@ -21,7 +21,7 @@ export const useProductionCostDashboardStore = defineStore(
       },
       async fetchGroupedByWorkcenter(startTime: string, endTime: string) {
         this.productionCostDashboardGrouped =
-          await services.ProductionCostDashboardService.GetGroupedByMonthAndWorkcenterType(
+          await services.ProductionCostDashboardService.GetGroupedByMonthAndWorkcenter(
             startTime,
             endTime
           );
