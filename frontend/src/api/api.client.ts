@@ -3,6 +3,7 @@ import { useApiStore } from "../store/backend";
 import { useStore } from "../store";
 import { globalToast } from "@/utils/global-toast";
 import { parseAxiosError } from "@/utils/error-parser";
+import { attachBearerToken, handle401 } from "./auth.interceptor";
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "";
 const requestTimeout =
@@ -52,6 +53,10 @@ apiClient.interceptors.request.use(
   function (config) {
     const store = useApiStore();
     store.isWaiting = true;
+
+    // Attach JWT Bearer token
+    attachBearerToken(config);
+
     // Attach language headers and optional culture override
     const appStore = useStore();
     if (!config.headers) config.headers = {} as any;
@@ -67,11 +72,9 @@ apiClient.interceptors.request.use(
       } as any;
     }
 
-    // Do something before request is sent
     return config;
   },
   function (error) {
-    // Do something with request error
     return Promise.reject(error);
   },
 );
@@ -112,28 +115,9 @@ apiClient.interceptors.response.use(
     // Store error info for components that might need it
     store.setErrorInfo(errorInfo);
 
-    // Special handling for 401 Unauthorized - redirect to login
+    // Special handling for 401 Unauthorized - attempt token refresh
     if (errorInfo.statusCode === 401) {
-      const appStore = useStore();
-      appStore.removeAuthorization();
-
-      globalToast.warn(
-        "Sessió expirada",
-        "La teva sessió ha expirat. Si us plau, torna a iniciar sessió.",
-        6000,
-      );
-
-      // Redirect to login (only if not already there)
-      if (
-        window.location.pathname !== "/" &&
-        window.location.pathname !== "/login"
-      ) {
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1000);
-      }
-
-      return Promise.reject(error);
+      return handle401(error, apiClient);
     }
 
     // Build toast message

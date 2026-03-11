@@ -8,6 +8,17 @@ import ShoopfloorRoutes from "./modules/plant/routes";
 import AnalyticsRoutes from "./modules/analytics/routes";
 import VerifactuRoutes from "./modules/verifactu/routes";
 
+// Extend RouteMeta with auth-related fields
+declare module "vue-router" {
+  interface RouteMeta {
+    /** Route accessible without authentication */
+    public?: boolean;
+    /** Roles allowed to access this route (empty = any authenticated user) */
+    roles?: string[];
+  }
+}
+
+const Login = () => import("./views/Login.vue");
 const Home = () => import("./views/Home.vue");
 const Users = () => import("./views/Users.vue");
 const User = () => import("./views/User.vue");
@@ -20,15 +31,17 @@ const Profile = () => import("./views/Profile.vue");
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: "/login", name: "Login", component: Login, meta: { public: true } },
+
     { path: "/", name: "Home", component: Home },
 
-    { path: "/users", name: "Users", component: Users },
-    { path: "/user/:id", name: "User", component: User },
+    { path: "/users", name: "Users", component: Users, meta: { roles: ["Admin"] } },
+    { path: "/user/:id", name: "User", component: User, meta: { roles: ["Admin"] } },
     { path: "/reports", name: "Reports", component: Reports },
-    { path: "/menuitems", name: "MenuItems", component: MenuItems },
-    { path: "/menuitem/:id", name: "MenuItem", component: MenuItem },
-    { path: "/profiles", name: "Profiles", component: Profiles },
-    { path: "/profile/:id", name: "Profile", component: Profile },
+    { path: "/menuitems", name: "MenuItems", component: MenuItems, meta: { roles: ["Admin"] } },
+    { path: "/menuitem/:id", name: "MenuItem", component: MenuItem, meta: { roles: ["Admin"] } },
+    { path: "/profiles", name: "Profiles", component: Profiles, meta: { roles: ["Admin"] } },
+    { path: "/profile/:id", name: "Profile", component: Profile, meta: { roles: ["Admin"] } },
     ...SharedRoutes,
     ...SalesRoutes,
     ...PurchaseRoutes,
@@ -40,7 +53,7 @@ const router = createRouter({
   ],
 });
 
-// PWA: Redirigir a /plant cuando la app está instalada como PWA
+// PWA: Redirigir a /plant quan l'app està instal·lada com a PWA
 router.beforeEach((to, from, next) => {
   // Detectar si es PWA instalada (múltiples métodos para compatibilidad)
   const isPWAStandalone = window.matchMedia(
@@ -57,6 +70,56 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
+});
+
+// Auth: Redirigir a /login si l'usuari no està autenticat
+router.beforeEach((to, _from, next) => {
+  const isPublic = to.meta?.public === true;
+  const isAuthenticated = !!localStorage.getItem("temges.authorization");
+
+  if (!isPublic && !isAuthenticated) {
+    // Redirigir a login conservant la destinació original
+    next({ name: "Login", query: { redirect: to.fullPath } });
+  } else if (to.name === "Login" && isAuthenticated) {
+    // Ja autenticat, redirigir a l'inici
+    next({ path: "/" });
+  } else {
+    next();
+  }
+});
+
+// Role guard (soft check — logs warning but does not block navigation)
+// To enforce: change console.warn to next({ path: "/unauthorized" }) or next(false)
+router.beforeEach((to, _from, next) => {
+  const requiredRoles = to.meta?.roles;
+  if (!requiredRoles || requiredRoles.length === 0) {
+    next();
+    return;
+  }
+
+  try {
+    const raw = localStorage.getItem("temges.authorization");
+    if (raw) {
+      const auth = JSON.parse(raw);
+      if (auth?.token) {
+        // Decode JWT payload without importing jwt-decode (lightweight)
+        const payload = JSON.parse(atob(auth.token.split(".")[1]));
+        const userRole = payload?.role as string | undefined;
+        if (userRole && requiredRoles.some((r) => r.toLowerCase() === userRole.toLowerCase())) {
+          next();
+          return;
+        }
+      }
+    }
+  } catch {
+    // Ignore decode errors
+  }
+
+  // Soft check: log warning but allow navigation
+  console.warn(
+    `[Router] Ruta "${to.path}" requereix rols [${requiredRoles.join(", ")}] — l'usuari no té el rol adequat.`
+  );
+  next();
 });
 
 export default router;

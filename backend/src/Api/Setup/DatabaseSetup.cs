@@ -1,5 +1,4 @@
 ﻿using Infrastructure.Persistance;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Setup;
@@ -15,9 +14,6 @@ public static class DatabaseSetup
             options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-        services
-            .AddIdentity<IdentityUser, IdentityRole>(options => options.SignIn.RequireConfirmedEmail = false)
-            .AddEntityFrameworkStores<ApplicationDbContext>();
 
         return services;
     }
