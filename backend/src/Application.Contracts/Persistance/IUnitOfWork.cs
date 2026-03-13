@@ -14,6 +14,7 @@ namespace Application.Contracts
         // Authentication
         IRepository<Role, Guid> Roles { get; }
         IRepository<User, Guid> Users { get; }
+        IRepository<ApiKey, Guid> ApiKeys { get; }
         IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; }
         IRepository<UserFilter, Guid> UserFilters { get; }
         IRepository<Profile, Guid> Profiles { get; }

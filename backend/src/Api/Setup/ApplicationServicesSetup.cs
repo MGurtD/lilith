@@ -18,6 +18,7 @@ public static class ApplicationServicesSetup
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
@@ -96,6 +97,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IWarehouseService, WarehouseService>();
         
         services.AddHostedService<BudgetBackgroundService>();
+        services.AddHostedService<RefreshTokenCleanupService>();
 
         return services;
     }

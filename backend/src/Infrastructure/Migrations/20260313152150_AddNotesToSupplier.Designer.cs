@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313152150_AddNotesToSupplier")]
+    partial class AddNotesToSupplier
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4340,7 +4343,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ExerciseId" }, "IX_SalesInvoices_Exercise");
 
-                    b.ToTable("SalesInvoice", (string)null);
+                    b.ToTable("SalesInvoice");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesInvoiceDetail", b =>
@@ -4554,7 +4557,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("SalesInvoiceId")
                         .HasDatabaseName("IX_SalesInvoiceVerifactuRequest_SalesInvoiceId");
 
-                    b.ToTable("SalesInvoiceVerifactuRequest", (string)null);
+                    b.ToTable("SalesInvoiceVerifactuRequest");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderDetail", b =>
@@ -4678,7 +4681,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("WorkOrderId");
 
-                    b.ToTable("SalesOrderDetail", (string)null);
+                    b.ToTable("SalesOrderDetail");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
@@ -4817,7 +4820,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex(new[] { "ExerciseId" }, "IDX_SalesOrderHeader_Exercise");
 
-                    b.ToTable("SalesOrderHeader", (string)null);
+                    b.ToTable("SalesOrderHeader");
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.InvoiceSerie", b =>

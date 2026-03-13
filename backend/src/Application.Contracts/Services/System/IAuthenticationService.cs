@@ -10,5 +10,6 @@ namespace Application.Contracts
         Task<AuthResponse> RefreshToken(TokenRequest request);
         Task<bool> Enable(Guid id);
         Task<AuthResponse> Logout(Guid userId);
+        Task<int> PurgeExpiredRefreshTokens();
     }
 }

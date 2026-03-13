@@ -146,6 +146,18 @@ namespace Application.Services.System
             };
         }
 
+        public async Task<int> PurgeExpiredRefreshTokens()
+        {
+            var expired = await unitOfWork.UserRefreshTokens.FindAsync(
+                t => t.ExpiryDate < DateTime.UtcNow || t.Used || t.Revoked);
+
+            if (expired.Count == 0)
+                return 0;
+
+            await unitOfWork.UserRefreshTokens.RemoveRange(expired);
+            return expired.Count;
+        }
+
         private async Task<AuthResponse> GenerateJwtToken(User user)
         {
             var signKey = Encoding.ASCII.GetBytes(settings.Value.JwtConfig.Secret);
@@ -226,22 +238,12 @@ namespace Application.Services.System
                 }
 
                 var expValue = principal.Claims.FirstOrDefault(t => t.Type == JwtRegisteredClaimNames.Exp)?.Value;
-                if (string.IsNullOrWhiteSpace(expValue) || !long.TryParse(expValue, out var utcExpiryDate))
+                if (string.IsNullOrWhiteSpace(expValue) || !long.TryParse(expValue, out _))
                 {
                     return new AuthResponse()
                     {
                         Result = false,
                         Errors = new List<string>() { localizationService.GetLocalizedString("AuthInvalidParameters") }
-                    };
-                }
-
-                var expiryDate = UnixTimeStampToDateTime(utcExpiryDate);
-                if (expiryDate > DateTime.UtcNow)
-                {
-                    return new AuthResponse()
-                    {
-                        Result = false,
-                        Errors = new List<string>() { localizationService.GetLocalizedString("AuthTokenValid", expiryDate) }
                     };
                 }
 
@@ -340,10 +342,5 @@ namespace Application.Services.System
             }
         }
 
-        private DateTime UnixTimeStampToDateTime(long unixTimeStamp)
-        {
-            var dateTimeValue = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return dateTimeValue.AddSeconds(unixTimeStamp).ToUniversalTime();
-        }
     }
 }
