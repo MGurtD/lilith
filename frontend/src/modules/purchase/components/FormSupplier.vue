@@ -3,7 +3,6 @@
     <section class="three-columns">
       <BaseInput
         name="comercialName"
-        class="mb-2"
         label="Nom Comercial"
         id="comercialName"
         v-model="supplier.comercialName"
@@ -12,7 +11,6 @@
         }"
       ></BaseInput>
       <BaseInput
-        class="mb-2"
         label="Nom Fiscal"
         id="taxName"
         v-model="supplier.taxName"
@@ -137,6 +135,11 @@
     <div>
       <label class="block text-900 mb-2">Observacions</label>
       <Textarea v-model="supplier.observations" class="w-full" />
+    </div>
+
+    <div class="mt-2">
+      <label class="block text-900 mb-2">Notes</label>
+      <Textarea v-model="supplier.notes" class="w-full" />
     </div>
 
     <div class="mt-2">
