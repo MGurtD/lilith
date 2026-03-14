@@ -243,6 +243,9 @@
     "ErrorResponse.Validation": "Error de validación",
     "ErrorResponse.Unauthorized": "Autenticación requerida",
     "ErrorResponse.Forbidden": "Acceso denegado",
-    "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso"
+    "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso",
+    "ApiKey.InvalidFormat": "Formato de clave API inválido",
+    "ApiKey.NotFoundOrDisabled": "Clave API no válida o desactivada",
+    "ApiKey.Expired": "Clave API caducada"
   }
 }

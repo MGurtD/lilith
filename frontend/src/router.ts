@@ -27,6 +27,7 @@ const MenuItems = () => import("./views/MenuItems.vue");
 const MenuItem = () => import("./views/MenuItem.vue");
 const Profiles = () => import("./views/Profiles.vue");
 const Profile = () => import("./views/Profile.vue");
+const ApiKeys = () => import("./views/ApiKeys.vue");
 
 const router = createRouter({
   history: createWebHistory(),
@@ -42,6 +43,7 @@ const router = createRouter({
     { path: "/menuitem/:id", name: "MenuItem", component: MenuItem, meta: { roles: ["Admin"] } },
     { path: "/profiles", name: "Profiles", component: Profiles, meta: { roles: ["Admin"] } },
     { path: "/profile/:id", name: "Profile", component: Profile, meta: { roles: ["Admin"] } },
+    { path: "/apikeys", name: "ApiKeys", component: ApiKeys },
     ...SharedRoutes,
     ...SalesRoutes,
     ...PurchaseRoutes,

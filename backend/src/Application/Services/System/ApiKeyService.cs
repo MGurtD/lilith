@@ -80,7 +80,7 @@ namespace Application.Services.System
                 .Replace('/', '_')
                 .TrimEnd('=');
 
-            return $"lilith_{prefix}_{secret}";
+            return $"rs_{prefix}_{secret}";
         }
 
         private static string HashApiKey(string apiKey)
