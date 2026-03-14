@@ -237,9 +237,17 @@ export const useStore = defineStore("applicationStore", {
     async changeLanguage(code: string) {
       this.setLanguage(code);
       if (this.authorization?.token && this.authorization?.refreshToken) {
-        // temporary override so server uses culture priority #1
-        this.setCultureOverride(code);
-        // refresh token to get new JWT with updated locale (backend should honor Accept-Language)
+        // Step 1: Persist the new language to the DB so the next JWT will carry it
+        if (this.user) {
+          const updatedUser: User = { ...this.user, preferredLanguage: code };
+          const service = new UserService();
+          await service.Update(updatedUser);
+          // Keep local user state in sync
+          this.user = updatedUser;
+        }
+
+        // Step 2: Refresh the token — backend re-reads user.PreferredLanguage from DB
+        // and bakes the new locale claim into the fresh JWT
         try {
           const { AuthenticationService } = await import(
             "../services/authentications.service"
@@ -253,9 +261,7 @@ export const useStore = defineStore("applicationStore", {
             await this.setAuthorization(refreshed as AuthenticationResponse);
           }
         } catch {
-          // ignore
-        } finally {
-          this.setCultureOverride(undefined);
+          // ignore — UI language already updated via setLanguage above
         }
       }
     },
