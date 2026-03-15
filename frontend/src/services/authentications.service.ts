@@ -78,6 +78,7 @@ export class AuthenticationService {
       return response.data;
     } catch (err) {
       logException(err);
+      throw err;
     }
   }
 

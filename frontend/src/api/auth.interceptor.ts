@@ -1,4 +1,8 @@
-import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
+import type {
+  AxiosError,
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+} from "axios";
 import { AuthenticationService } from "@/services/authentications.service";
 import type { AuthenticationResponse } from "@/types";
 
@@ -7,14 +11,22 @@ import type { AuthenticationResponse } from "@/types";
  *
  * - Attaches the JWT Bearer token to every outgoing request.
  * - On 401 responses, attempts a single token refresh and retries the request.
- * - If the refresh fails, clears the session and redirects to login.
+ * - If refresh fails due to invalid credentials, clears the session and redirects to login.
+ * - If refresh fails due to communication issues, keeps the session intact.
  *
  * Uses a singleton promise to prevent multiple concurrent refresh attempts
  * (e.g. when several API calls fail with 401 simultaneously).
  */
 
 let isRefreshing = false;
-let refreshPromise: Promise<AuthenticationResponse | null> | null = null;
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+type RefreshFailureReason = "invalid_auth" | "communication";
+
+interface RefreshResult {
+  auth: AuthenticationResponse | null;
+  failureReason?: RefreshFailureReason;
+}
 
 function getStoredAuth(): AuthenticationResponse | null {
   try {
@@ -41,19 +53,30 @@ export function attachBearerToken(config: InternalAxiosRequestConfig): InternalA
  * Attempt to refresh the token. Returns the new auth response or null on failure.
  * Uses a singleton promise so concurrent 401s only trigger one refresh.
  */
-async function doRefresh(): Promise<AuthenticationResponse | null> {
+function isAuthFailureStatus(status?: number): boolean {
+  return status === 400 || status === 401;
+}
+
+function getRefreshFailureReason(error: unknown): RefreshFailureReason {
+  const axiosError = error as AxiosError | undefined;
+  const status = axiosError?.response?.status;
+  return isAuthFailureStatus(status) ? "invalid_auth" : "communication";
+}
+
+async function doRefresh(): Promise<RefreshResult> {
   const auth = getStoredAuth();
-  if (!auth?.token || !auth?.refreshToken) return null;
+  if (!auth?.token || !auth?.refreshToken)
+    return { auth: null, failureReason: "invalid_auth" };
 
   const service = new AuthenticationService();
   try {
     const response = await service.Refresh(auth.token, auth.refreshToken);
     if (response?.result && response.token) {
-      return response as AuthenticationResponse;
+      return { auth: response as AuthenticationResponse };
     }
-    return null;
-  } catch {
-    return null;
+    return { auth: null, failureReason: "invalid_auth" };
+  } catch (error) {
+    return { auth: null, failureReason: getRefreshFailureReason(error) };
   }
 }
 
@@ -84,18 +107,22 @@ export async function handle401(error: any, client: AxiosInstance): Promise<any>
     });
   }
 
-  const newAuth = await refreshPromise;
-  if (newAuth) {
+  const refreshResult = await refreshPromise;
+  if (refreshResult?.auth) {
     // Persist the new tokens
-    localStorage.setItem("temges.authorization", JSON.stringify(newAuth));
+    localStorage.setItem("temges.authorization", JSON.stringify(refreshResult.auth));
 
     // Retry the original request with the new token
-    originalRequest.headers.Authorization = `Bearer ${newAuth.token}`;
+    originalRequest.headers.Authorization = `Bearer ${refreshResult.auth.token}`;
     return client(originalRequest);
   }
 
-  // Refresh failed - clear session
-  clearSessionAndRedirect();
+  // Refresh failed due to invalid/expired credentials: clear session.
+  // Communication failures must not force logout.
+  if (refreshResult?.failureReason === "invalid_auth") {
+    clearSessionAndRedirect();
+  }
+
   return Promise.reject(error);
 }
 
