@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -6,6 +7,8 @@ namespace Api.Setup;
 
 public static class JwtSetup
 {
+    private const string PolicySchemeName = "JwtOrApiKey";
+
     public static IServiceCollection AddJwtSetup(this IServiceCollection services, bool isDevelopment, string jwtSecret)
     {
         // JWT Service    
@@ -19,18 +22,30 @@ public static class JwtSetup
             RequireExpirationTime = !isDevelopment,
             ValidateLifetime = true,
         };
+
         services
             .AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = PolicySchemeName;
+                options.DefaultScheme = PolicySchemeName;
+                options.DefaultChallengeScheme = PolicySchemeName;
+            })
+            // PolicyScheme: route to ApiKey handler if X-Api-Key header present, otherwise JWT
+            .AddPolicyScheme(PolicySchemeName, PolicySchemeName, policyOptions =>
+            {
+                policyOptions.ForwardDefaultSelector = context =>
+                    context.Request.Headers.ContainsKey("X-Api-Key")
+                        ? ApiKeyAuthenticationHandler.SchemeName
+                        : JwtBearerDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(jwt =>
             {
-                jwt.SaveToken = true; // After authentication, token will be saved
+                jwt.SaveToken = true;
                 jwt.TokenValidationParameters = tokenValidationParameters;
-            });
+            })
+            .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(
+                ApiKeyAuthenticationHandler.SchemeName, _ => { });
+
         services.AddSingleton(tokenValidationParameters);
 
         return services;

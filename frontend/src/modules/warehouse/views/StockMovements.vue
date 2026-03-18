@@ -51,16 +51,21 @@
           </div>
         </div>
       </template>
-      <Column header="Data" field="movementDate" sortable style="width: 15%">
+      <Column header="Data" field="movementDate" sortable style="width: 10%">
         <template #body="slotProps">
           {{ formatDateTime(slotProps.data.movementDate) }}
         </template>
       </Column>
-      <Column header="Referència" style="width: 20%">
+      <Column header="Referència" style="width: 15%">
         <template #body="slotProps">
           {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
         </template></Column
       >
+      <Column header="Ubicació" style="width: 10%">
+        <template #body="slotProps">
+          {{ slotProps.data.location?.name }}
+        </template>
+      </Column>
       <Column field="width" header="Ample (x) mm" style="width: 5%"></Column>
       <Column field="length" header="Llarg (y) mm" style="width: 5%"></Column>
       <Column field="height" header="Alt (z) mm" style="width: 5%"></Column>

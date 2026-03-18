@@ -158,7 +158,7 @@
     "ReferenceFormat.NotImplemented": "ReferenceFormatCalculation para '{0}' no implementado",
     "Movement.AlbaranDescription": "Albarán {0}",
     "Movement.ReturnDescription": "Retorno albarán {0}",
-    "Movement.TransferToSupplyDescription": "Aprovisionamiento desde {0} a {1}",
+    "Movement.TransferToSupplyDescription": "Aprovisionamiento a {0}",
     "Movement.TransferFromLocationDescription": "Transferencia desde {0}",
     "Common.IdNotExist": "Id {0} inexistente",
     "Common.ErrorRetrievingData": "Error al recuperar los datos",
@@ -243,6 +243,9 @@
     "ErrorResponse.Validation": "Error de validación",
     "ErrorResponse.Unauthorized": "Autenticación requerida",
     "ErrorResponse.Forbidden": "Acceso denegado",
-    "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso"
+    "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso",
+    "ApiKey.InvalidFormat": "Formato de clave API inválido",
+    "ApiKey.NotFoundOrDisabled": "Clave API no válida o desactivada",
+    "ApiKey.Expired": "Clave API caducada"
   }
 }

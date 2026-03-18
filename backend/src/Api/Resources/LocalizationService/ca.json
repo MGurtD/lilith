@@ -158,7 +158,7 @@
     "ReferenceFormat.NotImplemented": "ReferenceFormatCalculation per '{0}' no implementat",
     "Movement.AlbaranDescription": "Albarà {0}",
     "Movement.ReturnDescription": "Retorn albarà {0}",
-    "Movement.TransferToSupplyDescription": "Aprovisionament des de {0} a {1}",
+    "Movement.TransferToSupplyDescription": "Aprovisionament a {0}",
     "Movement.TransferFromLocationDescription": "Transferència des de {0}",
     "Common.IdNotExist": "Id {0} inexistent",
     "Common.ErrorRetrievingData": "Error al recuperar les dades",
@@ -243,6 +243,9 @@
     "ErrorResponse.Validation": "Error de validació",
     "ErrorResponse.Unauthorized": "Autenticació requerida",
     "ErrorResponse.Forbidden": "Accés denegat",
-    "ErrorResponse.Conflict": "Conflicte amb l'estat actual del recurs"
+    "ErrorResponse.Conflict": "Conflicte amb l'estat actual del recurs",
+    "ApiKey.InvalidFormat": "Format de clau API invàlid",
+    "ApiKey.NotFoundOrDisabled": "Clau API no vàlida o desactivada",
+    "ApiKey.Expired": "Clau API caducada"
   }
 }

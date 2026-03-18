@@ -1,30 +1,47 @@
-import { AxiosInstance } from "axios";
+import axios, { type AxiosInstance } from "axios";
 import apiClient, { logException } from "@/api/api.client";
+
+const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "";
+
+/**
+ * Plain Axios instance WITHOUT interceptors for the refresh endpoint.
+ * This prevents infinite loops when the main client's 401 interceptor
+ * triggers a refresh that itself might get a 401.
+ */
+const plainClient = axios.create({
+  baseURL: baseUrl,
+  timeout: 10000,
+  headers: { "Content-Type": "application/json" },
+});
 
 export class AuthenticationService {
   public apiClient: AxiosInstance;
   private resource: string;
+
   constructor() {
     this.apiClient = apiClient;
     this.resource = "/Authentication";
   }
 
-  public async Login(UserLogin: UserLogin) {
+  public async Login(userLogin: UserLogin) {
     try {
-      let response = await this.apiClient.post(
+      const response = await this.apiClient.post(
         `${this.resource}/Login`,
-        UserLogin
+        userLogin,
       );
-
       return response.data;
-    } catch (error) {}
+    } catch (error) {
+      // Error handled by interceptor
+    }
   }
 
-  public async ChangePassword(UserLogin: UserLogin): Promise<boolean> {
+  public async ChangePassword(
+    request: ChangePasswordRequest,
+  ): Promise<boolean> {
     try {
-      let response = await this.apiClient.post(
+      const response = await this.apiClient.post(
         `${this.resource}/ChangePassword`,
-        UserLogin
+        request,
       );
       return response.status === 200;
     } catch (err) {
@@ -33,28 +50,49 @@ export class AuthenticationService {
     return false;
   }
 
-  public async Register(UserRegister: UserRegister) {
+  public async Register(userRegister: UserRegister) {
     try {
-      let response = await this.apiClient.post(
+      const response = await this.apiClient.post(
         `${this.resource}/Register`,
-        UserRegister
+        userRegister,
       );
-
       return response.data;
     } catch (error) {
       console.error(error);
     }
   }
 
-  public async Refresh(refreshToken: string) {
+  /**
+   * Refresh the JWT token using the expired token + refresh token.
+   * Uses a plain Axios client to avoid triggering the 401 interceptor.
+   */
+  public async Refresh(
+    token: string,
+    refreshToken: string,
+  ): Promise<any | undefined> {
     try {
-      const response = await this.apiClient.post(`${this.resource}/Refresh`, {
-        refreshToken,
-      });
+      const response = await plainClient.post(
+        `${this.resource}/RefreshToken`,
+        { token, refreshToken },
+      );
       return response.data;
     } catch (err) {
       logException(err);
+      throw err;
     }
+  }
+
+  /**
+   * Logout: revoke all refresh tokens for the current user.
+   */
+  public async Logout(): Promise<boolean> {
+    try {
+      const response = await this.apiClient.post(`${this.resource}/Logout`);
+      return response.status === 200;
+    } catch (err) {
+      logException(err);
+    }
+    return false;
   }
 }
 
@@ -70,6 +108,11 @@ export interface UserRegister {
 export interface UserLogin {
   username: string;
   password: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface Role {

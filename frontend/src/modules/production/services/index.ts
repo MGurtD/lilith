@@ -36,6 +36,7 @@ import { AreaService } from "./area.service";
 import { WorkcenterService } from "./workcenter.service";
 import { WorkcenterProfitPercentageService } from "./workcenterprofitpercentage.service";
 import { WorkcenterLocationService } from "./workcenterlocation.service";
+import { WorkOrderStockService } from "./workorderstock.service";
 
 export {
   AreaService,
@@ -109,4 +110,5 @@ export default {
     "/PhaseTemplate/Detail",
   ),
   WorkcenterLocation: new WorkcenterLocationService("/WorkcenterLocation"),
+  WorkOrderStock: new WorkOrderStockService("/WorkOrderStock"),
 };

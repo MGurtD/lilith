@@ -19,6 +19,7 @@ export const useStore = defineStore("applicationStore", {
     return {
       authorization: undefined as AuthenticationResponse | undefined,
       user: undefined as User | undefined,
+      role: undefined as string | undefined,
       isWaiting: false,
       sidebar: {
         collapsed: false,
@@ -196,9 +197,11 @@ export const useStore = defineStore("applicationStore", {
       localStorage.setItem(localStorageAuthKey, JSON.stringify(response));
 
       const jwtDecoded = jwtDecode(this.authorization.token) as JwtDecoded;
+      // Decode role from JWT
+      this.role = jwtDecoded.role;
       // Apply locale from JWT if present
-      if ((jwtDecoded as any)?.locale) {
-        this.setLanguage((jwtDecoded as any).locale as string);
+      if (jwtDecoded.locale) {
+        this.setLanguage(jwtDecoded.locale);
       }
       if (jwtDecoded.id) {
         const service = new UserService();
@@ -213,29 +216,52 @@ export const useStore = defineStore("applicationStore", {
         }
       }
     },
-    removeAuthorization() {
+    async removeAuthorization() {
+      // Revoke refresh tokens on the server (best-effort)
+      try {
+        const { AuthenticationService } = await import(
+          "../services/authentications.service"
+        );
+        const authService = new AuthenticationService();
+        await authService.Logout();
+      } catch {
+        // Ignore — local cleanup is more important
+      }
+
       this.authorization = undefined;
+      this.user = undefined;
+      this.role = undefined;
       localStorage.removeItem(localStorageAuthKey);
     },
     // Language change flow: update app and refresh token if available
     async changeLanguage(code: string) {
       this.setLanguage(code);
-      if (this.authorization?.refreshToken) {
-        // temporary override so server uses culture priority #1
-        this.setCultureOverride(code);
-        // refresh token to get new JWT with updated locale (backend should honor Accept-Language)
+      if (this.authorization?.token && this.authorization?.refreshToken) {
+        // Step 1: Persist the new language to the DB so the next JWT will carry it
+        if (this.user) {
+          const updatedUser: User = { ...this.user, preferredLanguage: code };
+          const service = new UserService();
+          await service.Update(updatedUser);
+          // Keep local user state in sync
+          this.user = updatedUser;
+        }
+
+        // Step 2: Refresh the token — backend re-reads user.PreferredLanguage from DB
+        // and bakes the new locale claim into the fresh JWT
         try {
-          /*
+          const { AuthenticationService } = await import(
+            "../services/authentications.service"
+          );
           const auth = new AuthenticationService();
-          const refreshed = await auth.Refresh(this.authorization.refreshToken);
+          const refreshed = await auth.Refresh(
+            this.authorization.token,
+            this.authorization.refreshToken,
+          );
           if (refreshed?.token) {
             await this.setAuthorization(refreshed as AuthenticationResponse);
           }
-            */
         } catch {
-          // ignore
-        } finally {
-          this.setCultureOverride(undefined);
+          // ignore — UI language already updated via setLanguage above
         }
       }
     },
@@ -247,4 +273,5 @@ export interface JwtDecoded {
   id: string;
   sub: string;
   locale?: string;
+  role?: string;
 }

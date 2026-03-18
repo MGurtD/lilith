@@ -158,7 +158,7 @@
     "ReferenceFormat.NotImplemented": "ReferenceFormatCalculation for '{0}' not implemented",
     "Movement.AlbaranDescription": "Delivery note {0}",
     "Movement.ReturnDescription": "Return delivery note {0}",
-    "Movement.TransferToSupplyDescription": "Supply from {0} to {1}",
+    "Movement.TransferToSupplyDescription": "Supply to {0}",
     "Movement.TransferFromLocationDescription": "Transfer from {0}",
     "Common.IdNotExist": "Id {0} does not exist",
     "Common.ErrorRetrievingData": "Error retrieving data",
@@ -243,6 +243,9 @@
     "ErrorResponse.Validation": "Validation error",
     "ErrorResponse.Unauthorized": "Authentication required",
     "ErrorResponse.Forbidden": "Access denied",
-    "ErrorResponse.Conflict": "Conflict with the current state of the resource"
+    "ErrorResponse.Conflict": "Conflict with the current state of the resource",
+    "ApiKey.InvalidFormat": "Invalid API key format",
+    "ApiKey.NotFoundOrDisabled": "API key not found or disabled",
+    "ApiKey.Expired": "API key has expired"
   }
 }

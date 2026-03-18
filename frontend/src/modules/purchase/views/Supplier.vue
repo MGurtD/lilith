@@ -31,7 +31,9 @@
         />
       </TabPanel>
       <TabPanel value="2" v-if="formMode === FormActionMode.EDIT">
-        <SupplierContacts
+        <TableSupplierContacts
+          title="Contactes"
+          :formActionMode="formMode"
           @create="addContact"
           @update="editContact"
           @delete="removeContact"
@@ -53,7 +55,7 @@ import { useStore } from "../../../store";
 
 import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
-import SupplierContacts from "../components/TableSupplierContacts.vue";
+import TableSupplierContacts from "../components/TableSupplierContacts.vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import TableSupplierReferences from "../components/TableSupplierReferences.vue";
 
