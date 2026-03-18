@@ -586,6 +586,11 @@ export interface BillOfMaterialsItem {
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
 }
 
 export interface WorkcenterProfitPercentage {

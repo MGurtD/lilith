@@ -46,11 +46,23 @@ export interface Stock {
   thickness: number;
 }
 
+export interface StockListItem extends Stock {
+  referenceCode: string;
+  referenceDescription: string;
+  referenceDisplay: string;
+  locationName: string;
+  locationDescription: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseDescription: string;
+}
+
 export interface StockMovement {
   id: string;
   stockId: string;
   movementType: string;
   locationId: null | string;
+  location: Location | null;
   referenceId: string;
   quantity: number;
   width: number;
@@ -109,6 +121,13 @@ export interface StockResponse {
 export interface MoveStockToWorkcenterSupplyRequest {
   stockId: string;
   workcenterId: string;
+  workOrderPhaseId: string;
   quantity: number;
 }
+
+export const StockMovementEntity = {
+  WorkOrderPhase: "WorkOrderPhase",
+  DeliveryNote: "DeliveryNote",
+  Receipt: "Receipt",
+} as const;
 

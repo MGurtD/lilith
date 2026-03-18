@@ -1,5 +1,13 @@
 const messages = {
   ca: {
+    measurements: {
+      width: "Ample",
+      length: "Llarg",
+      height: "Alt",
+      diameter: "Diam.",
+      thickness: "Gruix",
+      none: "Sense mesures",
+    },
     common: {
       success: "Èxit",
       error: "Error",
@@ -502,6 +510,14 @@ const messages = {
     },
   },
   es: {
+    measurements: {
+      width: "Ancho",
+      length: "Largo",
+      height: "Alto",
+      diameter: "Diám.",
+      thickness: "Grosor",
+      none: "Sin medidas",
+    },
     common: {
       success: "Éxito",
       error: "Error",
@@ -926,6 +942,14 @@ const messages = {
     },
   },
   en: {
+    measurements: {
+      width: "Width",
+      length: "Length",
+      height: "Height",
+      diameter: "Diam.",
+      thickness: "Thickness",
+      none: "No dimensions",
+    },
     common: {
       success: "Success",
       error: "Error",

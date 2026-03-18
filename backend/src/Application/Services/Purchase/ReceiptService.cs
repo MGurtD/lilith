@@ -4,39 +4,29 @@ using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
 using Domain.Implementations.ReferenceFormat;
 
-
 namespace Application.Services.Purchase
 {
-    public class ReceiptService : IReceiptService
+    public class ReceiptService(
+        IUnitOfWork unitOfWork,
+        IStockMovementService stockMovementService,
+        IExerciseService exerciseService,
+        IPurchaseOrderService orderService,
+        ILocalizationService localizationService
+    ) : IReceiptService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IStockMovementService _stockMovementService;
-        private readonly IExerciseService _exerciseService;
-        private readonly IPurchaseOrderService _orderService;
-        private readonly ILocalizationService _localizationService;
-
-        public ReceiptService(IUnitOfWork unitOfWork, IStockMovementService stockMovementService, IExerciseService exerciseService, IPurchaseOrderService orderService, ILocalizationService localizationService)
-        {
-            _unitOfWork = unitOfWork;
-            _stockMovementService = stockMovementService;
-            _exerciseService = exerciseService;
-            _orderService = orderService;
-            _localizationService = localizationService;
-        }
-
         public async Task<Receipt?> GetById(Guid id)
         {
-            return await _unitOfWork.Receipts.Get(id);
+            return await unitOfWork.Receipts.Get(id);
         }
 
         public async Task<IEnumerable<Receipt>> GetReceiptsByReferenceId(Guid referenceId)
         {
-            return await _unitOfWork.Receipts.GetReceiptsByReferenceId(referenceId);
+            return await unitOfWork.Receipts.GetReceiptsByReferenceId(referenceId);
         }
 
         public IEnumerable<Receipt> GetBetweenDates(DateTime startDate, DateTime endDate)
         {
-            var receipts = _unitOfWork.Receipts.Find(p => p.Date >= startDate && p.Date <= endDate);
+            var receipts = unitOfWork.Receipts.Find(p => p.Date >= startDate && p.Date <= endDate);
             return receipts;
         }
 
@@ -47,13 +37,13 @@ namespace Application.Services.Purchase
 
         public IEnumerable<Receipt> GetBetweenDatesAndSupplier(DateTime startDate, DateTime endDate, Guid supplierId)
         {
-            var receipts = _unitOfWork.Receipts.Find(p => p.Date >= startDate && p.Date <= endDate && p.SupplierId == supplierId);
+            var receipts = unitOfWork.Receipts.Find(p => p.Date >= startDate && p.Date <= endDate && p.SupplierId == supplierId);
             return receipts;
         }
 
         public IEnumerable<Receipt> GetByInvoice(Guid invoiceId)
         {
-            var receipts = _unitOfWork.Receipts.Find(p => p.PurchaseInvoiceId == invoiceId);
+            var receipts = unitOfWork.Receipts.Find(p => p.PurchaseInvoiceId == invoiceId);
             return receipts;
         }
 
@@ -64,26 +54,26 @@ namespace Application.Services.Purchase
 
         public IEnumerable<Receipt> GetBySupplier(Guid supplierId, bool withoutInvoice)
         {
-            var receipts = _unitOfWork.Receipts.Find(p => p.SupplierId == supplierId);
+            var receipts = unitOfWork.Receipts.Find(p => p.SupplierId == supplierId);
             receipts = withoutInvoice ? receipts.Where(r => r.PurchaseInvoiceId == null) : receipts;
             return receipts;
         }
 
         public async Task<GenericResponse> Create(CreatePurchaseDocumentRequest createRequest)
         {
-            var exercise = await _unitOfWork.Exercices.Get(createRequest.ExerciseId);
-            if (exercise == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseNotFound"));
+            var exercise = await unitOfWork.Exercices.Get(createRequest.ExerciseId);
+            if (exercise == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseNotFound"));
 
-            var status = _unitOfWork.Lifecycles.Find(l => l.Name == StatusConstants.Lifecycles.Receipts).FirstOrDefault();
-            if (status == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("LifecycleNotFound", StatusConstants.Lifecycles.Receipts));
-            if (!status.InitialStatusId.HasValue) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("LifecycleNoInitialStatus", StatusConstants.Lifecycles.Receipts));
+            var status = unitOfWork.Lifecycles.Find(l => l.Name == StatusConstants.Lifecycles.Receipts).FirstOrDefault();
+            if (status == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNotFound", StatusConstants.Lifecycles.Receipts));
+            if (!status.InitialStatusId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNoInitialStatus", StatusConstants.Lifecycles.Receipts));
 
-            var counterObj = await _exerciseService.GetNextCounter(exercise.Id, "receipt");
-            if (counterObj == null || counterObj.Content == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseCounterError"));
+            var counterObj = await exerciseService.GetNextCounter(exercise.Id, "receipt");
+            if (counterObj == null || counterObj.Content == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterError"));
 
             var receiptCounter = counterObj.Content.ToString();
             var receipt = new Receipt()
@@ -95,7 +85,7 @@ namespace Application.Services.Purchase
                 Number = receiptCounter!,
                 StatusId = status.InitialStatusId.Value
             };
-            await _unitOfWork.Receipts.Add(receipt);
+            await unitOfWork.Receipts.Add(receipt);
 
             return new GenericResponse(true);
         }
@@ -104,39 +94,40 @@ namespace Application.Services.Purchase
             // Netejar dependencies per evitar col·lisions de EF
             receipt.Details?.Clear();
 
-            var exists = await _unitOfWork.Receipts.Exists(receipt.Id);
-            if (!exists) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("Common.IdNotExist", receipt.Id));
+            var exists = await unitOfWork.Receipts.Exists(receipt.Id);
+            if (!exists)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", receipt.Id));
 
-            await _unitOfWork.Receipts.Update(receipt);
+            await unitOfWork.Receipts.Update(receipt);
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> Remove(Guid id)
         {
-            var receipt = await _unitOfWork.Receipts.Get(id);
-            if (receipt == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("Common.IdNotExist", id));
+            var receipt = await unitOfWork.Receipts.Get(id);
+            if (receipt == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", id));
 
-            await _unitOfWork.Receipts.Remove(receipt);
+            await unitOfWork.Receipts.Remove(receipt);
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> CalculateDetailWeightAndPrice(ReceiptDetail detail)
         {
-            detail.Reference ??= await _unitOfWork.References.Get(detail.ReferenceId);
-            if (detail.Reference is null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ReferenceNotExistent"));
-            if (!detail.Reference.ReferenceFormatId.HasValue) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ReferenceNoFormat"));
-            if (!detail.Reference.ReferenceTypeId.HasValue) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ReferenceNoType"));
-            
-            var referenceType = await _unitOfWork.ReferenceTypes.Get(detail.Reference.ReferenceTypeId.Value);
+            detail.Reference ??= await unitOfWork.References.Get(detail.ReferenceId);
+            if (detail.Reference is null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ReferenceNotExistent"));
+            if (!detail.Reference.ReferenceFormatId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ReferenceNoFormat"));
+            if (!detail.Reference.ReferenceTypeId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ReferenceNoType"));
 
-            try {
+            var referenceType = await unitOfWork.ReferenceTypes.Get(detail.Reference.ReferenceTypeId.Value);
+
+            try
+            {
                 // Obtenir calculadora segons el format
-                var format = await _unitOfWork.ReferenceFormats.Get(detail.Reference.ReferenceFormatId.Value);
+                var format = await unitOfWork.ReferenceFormats.Get(detail.Reference.ReferenceFormatId.Value);
                 var dimensionsCalculator = ReferenceFormatCalculationFactory.Create(format!.Code);
                 // Assignar dimensions a la calculadoras
                 var dimensions = new ReferenceDimensions();
@@ -151,7 +142,9 @@ namespace Application.Services.Purchase
                 detail.Amount = detail.KilogramPrice * detail.TotalWeight;
 
                 return new GenericResponse(true, detail);
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 return new GenericResponse(false, e.Message);
             }
         }
@@ -160,67 +153,62 @@ namespace Application.Services.Purchase
         {
             detail.Reference = null;
 
-            await _unitOfWork.Receipts.Details.Add(detail);
+            await unitOfWork.Receipts.Details.Add(detail);
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> UpdateDetail(ReceiptDetail detail)
         {
-            var exists = await _unitOfWork.Receipts.Details.Exists(detail.Id);
-            if (!exists) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("Common.IdNotExist", detail.Id));
+            var exists = await unitOfWork.Receipts.Details.Exists(detail.Id);
+            if (!exists)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", detail.Id));
 
             detail.Reference = null;
-            await _unitOfWork.Receipts.Details.Update(detail);
+            await unitOfWork.Receipts.Details.Update(detail);
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
             // Obtenir detall
-            var detail = await _unitOfWork.Receipts.Details.Get(id);
-            if (detail == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("Common.IdNotExist", id));
+            var detail = await unitOfWork.Receipts.Details.Get(id);
+            if (detail == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", id));
 
             // Comprobar si el detall té recepcions associades
-            var reception = (await _unitOfWork.PurchaseOrders.Receptions.FindAsync(r => r.ReceiptDetailId == id)).FirstOrDefault();
+            var reception = (await unitOfWork.PurchaseOrders.Receptions.FindAsync(r => r.ReceiptDetailId == id)).FirstOrDefault();
             if (reception != null)
             {
-                var response = await _orderService.RemoveReception(reception);
+                var response = await orderService.RemoveReception(reception);
                 if (!response.Result) return response;
-            }            
+            }
 
-            await _unitOfWork.Receipts.Details.Remove(detail);
+            await unitOfWork.Receipts.Details.Remove(detail);
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> MoveToWarehose(Receipt receipt)
         {
-            var defaultLocation = await _unitOfWork.Warehouses.GetDefaultLocation();
-            if (defaultLocation == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
-
             var detailsToMove = receipt.Details!.Where(d => d.StockMovementId == null);
             foreach (var detail in detailsToMove)
             {
                 var stockMovement = new StockMovement
                 {
-                    LocationId = defaultLocation.Id,
                     MovementDate = DateTime.Now,
                     CreatedOn = DateTime.Now,
                     MovementType = StockMovementType.INPUT,
-                    Description = _localizationService.GetLocalizedString("Movement.AlbaranDescription", receipt.Number)
+                    Description = localizationService.GetLocalizedString("Movement.AlbaranDescription", receipt.Number)
                 };
                 stockMovement.SetFromReceiptDetail(detail);
 
                 if (detail.Reference!.CategoryName != ReferenceCategories.Service)
                 {
-                    await _stockMovementService.Create(stockMovement);
+                    await stockMovementService.Create(stockMovement);
                     detail.StockMovementId = stockMovement.Id;
                 }
 
                 detail.Reference = null;
-                await _unitOfWork.Receipts.Details.Update(detail);
+                await unitOfWork.Receipts.Details.Update(detail);
             }
 
             return new GenericResponse(true, detailsToMove);
@@ -229,41 +217,41 @@ namespace Application.Services.Purchase
         public async Task<GenericResponse> ChangeAssociatedWorkOrderStatus(Receipt receipt)
         {
             var details = receipt.Details;
-            
+
             foreach (var detail in details)
             {
                 //Anar a buscar el purchaseorderdetailid a aquesta taula "PurchaseOrderReceiptDetails"
-                var poReceiptDetails = await _unitOfWork.PurchaseOrders.Receptions.FindAsync(r => r.ReceiptDetailId == detail.Id);
+                var poReceiptDetails = await unitOfWork.PurchaseOrders.Receptions.FindAsync(r => r.ReceiptDetailId == detail.Id);
                 var poReceiptDetail = poReceiptDetails.FirstOrDefault();
                 if (poReceiptDetail == null) continue;
 
                 //El purchaseorderdetail te el workorderphaseId
-                var purchaseOrderDetail = await _unitOfWork.PurchaseOrders.Details.Get(poReceiptDetail.PurchaseOrderDetailId);
+                var purchaseOrderDetail = await unitOfWork.PurchaseOrders.Details.Get(poReceiptDetail.PurchaseOrderDetailId);
                 if (purchaseOrderDetail == null || !purchaseOrderDetail.WorkOrderPhaseId.HasValue) continue;
 
-                var workOrderPhase = await _unitOfWork.WorkOrders.Phases.Get(purchaseOrderDetail.WorkOrderPhaseId.Value);
+                var workOrderPhase = await unitOfWork.WorkOrders.Phases.Get(purchaseOrderDetail.WorkOrderPhaseId.Value);
                 if (workOrderPhase == null) continue;
 
                 //Amb el workorderphaseId anar a buscar el workorder
-                var workOrder = await _unitOfWork.WorkOrders.Get(workOrderPhase.WorkOrderId);
+                var workOrder = await unitOfWork.WorkOrders.Get(workOrderPhase.WorkOrderId);
                 if (workOrder == null) continue;
 
                 //Si la quantitat recepcionada es igual a la quantitat del workorderphase, canviar l'estat del workorderphase a tancat
                 //Si la quantitat recepcionada es igual a la quantitat del workorderphase, canviar l'estat de la workorder a en pausa
                 if (purchaseOrderDetail.ReceivedQuantity >= purchaseOrderDetail.Quantity)
                 {
-                    var tancadaStatus = await _unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Tancada);
+                    var tancadaStatus = await unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Tancada);
                     if (tancadaStatus != null && workOrderPhase.StatusId != tancadaStatus.Id)
                     {
                         workOrderPhase.StatusId = tancadaStatus.Id;
-                        await _unitOfWork.WorkOrders.Phases.Update(workOrderPhase);
+                        await unitOfWork.WorkOrders.Phases.Update(workOrderPhase);
                     }
 
-                    var pausadaStatus = await _unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Pausada);
+                    var pausadaStatus = await unitOfWork.Lifecycles.GetStatusByName(StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Pausada);
                     if (pausadaStatus != null && workOrder.StatusId != pausadaStatus.Id)
                     {
                         workOrder.StatusId = pausadaStatus.Id;
-                        await _unitOfWork.WorkOrders.Update(workOrder);
+                        await unitOfWork.WorkOrders.Update(workOrder);
                     }
                 }
             }
@@ -280,8 +268,8 @@ namespace Application.Services.Purchase
 
                 detail.Reference = null;
                 detail.StockMovementId = null;
-                await _unitOfWork.Receipts.Details.Update(detail);
-                await _stockMovementService.Remove(oldStockMovementId);
+                await unitOfWork.Receipts.Details.Update(detail);
+                await stockMovementService.Remove(oldStockMovementId);
             }
 
             return new GenericResponse(true, detailsToRetrive);
@@ -289,22 +277,22 @@ namespace Application.Services.Purchase
 
         public async Task<List<PurchaseOrderReceiptDetail>> GetReceptions(Guid id)
         {
-            return await _unitOfWork.Receipts.GetReceptions(id);
+            return await unitOfWork.Receipts.GetReceptions(id);
         }
 
-        public async Task<GenericResponse> AddReceptions(AddReceptionsRequest request)         
+        public async Task<GenericResponse> AddReceptions(AddReceptionsRequest request)
         {
             // Obtenir els detalls de la comanda
-            var orderDetails = await _unitOfWork.PurchaseOrders.GetOrderDetailsFromReceptions(request.Receptions.Select(r => r.PurchaseOrderDetailId).ToList());
+            var orderDetails = await unitOfWork.PurchaseOrders.GetOrderDetailsFromReceptions(request.Receptions.Select(r => r.PurchaseOrderDetailId).ToList());
 
             foreach (var reception in request.Receptions)
             {
                 var detail = orderDetails.FirstOrDefault(orderDetails => orderDetails.Id == reception.PurchaseOrderDetailId);
-                if (detail == null) 
-                    return new GenericResponse(false, _localizationService.GetLocalizedString("ReceiptDetailNotFound", reception.PurchaseOrderDetailId));
+                if (detail == null)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("ReceiptDetailNotFound", reception.PurchaseOrderDetailId));
 
                 // Actualizar detall de la comanda
-                var orderDetailResponse = await _orderService.AddReceivedQuantityAndCalculateStatus(detail, (int)reception.Quantity);
+                var orderDetailResponse = await orderService.AddReceivedQuantityAndCalculateStatus(detail, (int)reception.Quantity);
                 if (!orderDetailResponse.Result) return orderDetailResponse;
 
                 // Crear detall al albarà
@@ -314,14 +302,14 @@ namespace Application.Services.Purchase
                     ReceiptId = request.ReceiptId,
                     ReferenceId = detail.ReferenceId,
                     Description = detail.Description,
-                    Quantity = (int) reception.Quantity,
+                    Quantity = (int)reception.Quantity,
                     UnitPrice = reception.UnitPrice > 0 ? reception.UnitPrice : detail.UnitPrice,
                     Amount = reception.Price,
-                };              
-                await _unitOfWork.Receipts.Details.Add(receiptDetail);
+                };
+                await unitOfWork.Receipts.Details.Add(receiptDetail);
 
                 // Afegir recepció a la comanda
-                await _unitOfWork.PurchaseOrders.Receptions.Add(new PurchaseOrderReceiptDetail
+                await unitOfWork.PurchaseOrders.Receptions.Add(new PurchaseOrderReceiptDetail
                 {
                     PurchaseOrderDetailId = detail.Id,
                     ReceiptDetailId = receiptDetail.Id,
@@ -332,12 +320,12 @@ namespace Application.Services.Purchase
             }
 
             // Crear moviments de magatzem
-            var receipt = await _unitOfWork.Receipts.Get(request.ReceiptId);
-            if (receipt == null) 
-                return new GenericResponse(false, _localizationService.GetLocalizedString("ReceiptNotFound", request.ReceiptId));
+            var receipt = await unitOfWork.Receipts.Get(request.ReceiptId);
+            if (receipt == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ReceiptNotFound", request.ReceiptId));
 
             // Recalcular l'estat de la comanda
-            return await _orderService.DeterminateStatus(orderDetails.First().PurchaseOrderId);
+            return await orderService.DeterminateStatus(orderDetails.First().PurchaseOrderId);
         }
 
     }

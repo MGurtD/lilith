@@ -62,7 +62,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();
-        
+
         // Production services - Group A Simple CRUD
         services.AddScoped<ISiteService, SiteService>();
         services.AddScoped<IAreaService, AreaService>();
@@ -78,7 +78,7 @@ public static class ApplicationServicesSetup
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
         services.AddScoped<IProductionPartService, ProductionPartService>();
-        
+
         // Production services - Group C Specialized
         services.AddScoped<IWorkcenterService, WorkcenterService>();
         services.AddScoped<IOperatorService, OperatorService>();
@@ -87,15 +87,16 @@ public static class ApplicationServicesSetup
         services.AddScoped<IWorkOrderPhaseService, WorkOrderPhaseService>();
         services.AddScoped<IPhaseTemplateService, PhaseTemplateService>();
         services.AddScoped<IDetailedWorkOrderService, DetailedWorkOrderService>();
-        
+        services.AddScoped<IWorkOrderStockService, WorkOrderStockService>();
+
         // Production services - Background jobs
         services.AddSingleton<IProductionPartChannel, ProductionPartChannel>();
         services.AddScoped<IProductionPartGeneratorHandler, ProductionPartGeneratorHandler>();
         services.AddHostedService<ProductionPartGeneratorService>();
-        
+
         // Warehouse services
         services.AddScoped<IWarehouseService, WarehouseService>();
-        
+
         services.AddHostedService<BudgetBackgroundService>();
         services.AddHostedService<RefreshTokenCleanupService>();
 
