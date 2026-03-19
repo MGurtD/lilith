@@ -16,10 +16,10 @@ public static class JwtSetup
         var tokenValidationParameters = new TokenValidationParameters()
         {
             IssuerSigningKey = new SymmetricSecurityKey(signKey),
-            ValidateIssuer = !isDevelopment,
+            ValidateIssuer = false,
             ValidateIssuerSigningKey = true,
-            ValidateAudience = !isDevelopment,
-            RequireExpirationTime = !isDevelopment,
+            ValidateAudience = false,
+            RequireExpirationTime = true,
             ValidateLifetime = true,
         };
 
