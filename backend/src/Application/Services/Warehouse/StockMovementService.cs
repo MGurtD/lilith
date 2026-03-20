@@ -92,20 +92,35 @@ namespace Application.Services.Warehouse
             if (request.LocationId == null)
                 return new GenericResponse(false, _localizationService.GetLocalizedString("StockDefaultLocationNotDefined"));
 
-            var newStock = new Stock
-            {
-                ReferenceId = request.ReferenceId,
-                LocationId = request.LocationId.Value,
-                Quantity = request.Quantity,
-                Width = request.Width,
-                Length = request.Length,
-                Height = request.Height,
-                Diameter = request.Diameter,
-                Thickness = request.Thickness
-            };
-            await _unitOfWork.Stocks.Add(newStock);
+            // Comprovar si existeix stock de la referencia
+            var stock = (await _unitOfWork.Stocks.FindAsync(s => s.ReferenceId == request.ReferenceId))
+                           .FirstOrDefault();
 
-            request.StockId = newStock.Id;
+            if (stock == null)
+            {
+                var newStock = new Stock
+                {
+                    ReferenceId = request.ReferenceId,
+                    LocationId = request.LocationId.Value,
+                    Quantity = request.Quantity,
+                    Width = request.Width,
+                    Length = request.Length,
+                    Height = request.Height,
+                    Diameter = request.Diameter,
+                    Thickness = request.Thickness
+                };
+                await _unitOfWork.Stocks.Add(newStock);
+
+                request.StockId = newStock.Id;
+            }
+            else
+            {
+                stock.LocationId = request.LocationId.Value;
+                stock.Quantity += request.Quantity;
+                await _unitOfWork.Stocks.Update(stock);
+
+                request.StockId = stock.Id;
+            }
 
             await _unitOfWork.StockMovements.Add(request);
             return new GenericResponse(true, request);
