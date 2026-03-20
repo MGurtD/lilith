@@ -6,7 +6,9 @@ namespace Application.Services.Production;
 public class WorkOrderStockService(
     IUnitOfWork unitOfWork,
     ILocalizationService localizationService,
-    IWorkcenterLocationService workcenterLocationService) : IWorkOrderStockService
+    IWorkcenterLocationService workcenterLocationService,
+    IWarehouseService warehouseService,
+    IStockMovementService stockMovementService) : IWorkOrderStockService
 {
     public async Task<GenericResponse> MoveToWorkcenterSupply(MoveStockToWorkcenterSupplyRequest request)
     {
@@ -48,7 +50,7 @@ public class WorkOrderStockService(
             StockId = sourceStock.Id,
             LocationId = sourceLocationId,
             ReferenceId = sourceStock.ReferenceId,
-            MovementType = StockMovementType.OUTPUT,
+            MovementType = StockMovementType.SUPPLY,
             Quantity = request.Quantity * -1,
             Width = sourceStock.Width,
             Length = sourceStock.Length,
@@ -67,7 +69,7 @@ public class WorkOrderStockService(
             StockId = sourceStock.Id,
             LocationId = supplyLocation.Id,
             ReferenceId = sourceStock.ReferenceId,
-            MovementType = StockMovementType.INPUT,
+            MovementType = StockMovementType.SUPPLY,
             Quantity = request.Quantity,
             Width = sourceStock.Width,
             Length = sourceStock.Length,
@@ -82,5 +84,34 @@ public class WorkOrderStockService(
 
         await unitOfWork.StockMovements.AddRange([outputMovement, inputMovement]);
         return new GenericResponse(true, sourceStock);
+    }
+
+    public async Task<GenericResponse> CreateProductionMovement(CreateProductionMovementRequest request)
+    {
+        // 1. Get WorkOrder
+        var workOrder = await unitOfWork.WorkOrders.Get(request.WorkOrderId);
+        if (workOrder == null)
+            return new GenericResponse(false, localizationService.GetLocalizedString("WorkOrderNotFound", request.WorkOrderId));
+
+        // 2. Get default warehouse location
+        var defaultLocationId = await warehouseService.GetDefaultLocation();
+        if (defaultLocationId == null)
+            return new GenericResponse(false, localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
+
+        // 3. Build the PRODUCTION stock movement
+        var stockMovement = new StockMovement
+        {
+            ReferenceId = workOrder.ReferenceId,
+            LocationId = defaultLocationId,
+            MovementType = StockMovementType.PRODUCTION,
+            Quantity = request.Quantity,
+            MovementDate = DateTime.UtcNow,
+            Description = localizationService.GetLocalizedString("Movement.ProductionDescription", workOrder.Code),
+            Entity = StockMovementEntities.WorkOrder,
+            EntityId = workOrder.Id
+        };
+
+        // 4. Create stock movement (creates/updates Stock record and records the movement)
+        return await stockMovementService.Create(stockMovement);
     }
 }
