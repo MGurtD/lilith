@@ -88,7 +88,15 @@ public class WorkOrderStockService(
 
     public async Task<GenericResponse> CreateProductionMovement(CreateProductionMovementRequest request)
     {
-        // 1. Get WorkOrder
+        // 1. Check if a production movement already exists for this WorkOrder
+        var existingMovement = unitOfWork.StockMovements.Find(m =>
+            m.Entity == StockMovementEntities.WorkOrder
+            && m.EntityId == request.WorkOrderId
+            && m.MovementType == StockMovementType.PRODUCTION).Any();
+        if (existingMovement)
+            return new GenericResponse(true);
+
+        // 2. Get WorkOrder
         var workOrder = await unitOfWork.WorkOrders.Get(request.WorkOrderId);
         if (workOrder == null)
             return new GenericResponse(false, localizationService.GetLocalizedString("WorkOrderNotFound", request.WorkOrderId));
@@ -105,13 +113,13 @@ public class WorkOrderStockService(
             LocationId = defaultLocationId,
             MovementType = StockMovementType.PRODUCTION,
             Quantity = request.Quantity,
-            MovementDate = DateTime.UtcNow,
+            MovementDate = DateTime.Now,
             Description = localizationService.GetLocalizedString("Movement.ProductionDescription", workOrder.Code),
             Entity = StockMovementEntities.WorkOrder,
             EntityId = workOrder.Id
         };
 
         // 4. Create stock movement (creates/updates Stock record and records the movement)
-        return await stockMovementService.Create(stockMovement);
+        return await stockMovementService.CreateProductionMovement(stockMovement);
     }
 }
