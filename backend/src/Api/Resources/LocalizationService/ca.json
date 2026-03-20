@@ -160,6 +160,7 @@
     "Movement.ReturnDescription": "Retorn albarà {0}",
     "Movement.TransferToSupplyDescription": "Aprovisionament a {0}",
     "Movement.TransferFromLocationDescription": "Transferència des de {0}",
+    "Movement.ProductionDescription": "Producció OF {0}",
     "Common.IdNotExist": "Id {0} inexistent",
     "Common.ErrorRetrievingData": "Error al recuperar les dades",
     "Common.ErrorCreatingEntity": "Error al crear l'entitat",

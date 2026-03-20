@@ -106,4 +106,10 @@ public class WarehouseService(IUnitOfWork unitOfWork, ILocalizationService local
         await unitOfWork.Warehouses.Locations.Remove(location);
         return new GenericResponse(true, location);
     }
+
+    public async Task<Guid?> GetDefaultLocation()
+    {
+        var location = await unitOfWork.Warehouses.GetDefaultLocation();
+        return location?.Id;
+    }
 }

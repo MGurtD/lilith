@@ -8,6 +8,8 @@ namespace Domain.Entities.Warehouse
         public const string INPUT = "INPUT";
         public const string OUTPUT = "OUTPUT";
         public const string SUPPLY = "SUPPLY";
+        public const string CONSUMPTION = "CONSUMPTION";
+        public const string PRODUCTION = "PRODUCTION";
     }
 
     public class StockMovement : Entity

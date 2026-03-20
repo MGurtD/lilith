@@ -160,6 +160,7 @@
     "Movement.ReturnDescription": "Return delivery note {0}",
     "Movement.TransferToSupplyDescription": "Supply to {0}",
     "Movement.TransferFromLocationDescription": "Transfer from {0}",
+    "Movement.ProductionDescription": "Production WO {0}",
     "Common.IdNotExist": "Id {0} does not exist",
     "Common.ErrorRetrievingData": "Error retrieving data",
     "Common.ErrorCreatingEntity": "Error creating entity",

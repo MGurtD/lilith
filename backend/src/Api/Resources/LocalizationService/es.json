@@ -160,6 +160,7 @@
     "Movement.ReturnDescription": "Retorno albarán {0}",
     "Movement.TransferToSupplyDescription": "Aprovisionamiento a {0}",
     "Movement.TransferFromLocationDescription": "Transferencia desde {0}",
+    "Movement.ProductionDescription": "Producción OF {0}",
     "Common.IdNotExist": "Id {0} inexistente",
     "Common.ErrorRetrievingData": "Error al recuperar los datos",
     "Common.ErrorCreatingEntity": "Error al crear la entidad",
