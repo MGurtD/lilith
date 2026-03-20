@@ -39,6 +39,14 @@ jobs:
             echo "dir=lilith-backend" >> $GITHUB_OUTPUT
           fi
 
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: ./${{ steps.workdir.outputs.dir }}
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+        working-directory: ./${{ steps.workdir.outputs.dir }}
+
       - name: Determine Docker tag
         id: tag
         run: |

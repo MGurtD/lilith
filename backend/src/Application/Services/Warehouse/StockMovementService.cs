@@ -92,28 +92,16 @@ namespace Application.Services.Warehouse
             if (request.LocationId == null)
                 return new GenericResponse(false, _localizationService.GetLocalizedString("StockDefaultLocationNotDefined"));
 
-            var movementLocation = request.LocationId.Value;
+            // Comprovar si existeix stock de la referencia
+            var stock = (await _unitOfWork.Stocks.FindAsync(s => s.ReferenceId == request.ReferenceId))
+                           .FirstOrDefault();
 
-            if (request.Quantity < 0) request.Quantity *= -1;
-
-            var stock = GetByDimensions(movementLocation, request.ReferenceId,
-                                        request.Width, request.Length, request.Height,
-                                        request.Diameter, request.Thickness);
-
-            if (stock != null)
-            {
-                stock.LocationId = movementLocation;
-                stock.Quantity += request.Quantity;
-                await _unitOfWork.Stocks.Update(stock);
-
-                request.StockId = stock.Id;
-            }
-            else
+            if (stock == null)
             {
                 var newStock = new Stock
                 {
                     ReferenceId = request.ReferenceId,
-                    LocationId = movementLocation,
+                    LocationId = request.LocationId.Value,
                     Quantity = request.Quantity,
                     Width = request.Width,
                     Length = request.Length,
@@ -125,8 +113,15 @@ namespace Application.Services.Warehouse
 
                 request.StockId = newStock.Id;
             }
+            else
+            {
+                stock.LocationId = request.LocationId.Value;
+                stock.Quantity += request.Quantity;
+                await _unitOfWork.Stocks.Update(stock);
 
-            request.LocationId = movementLocation;
+                request.StockId = stock.Id;
+            }
+
             await _unitOfWork.StockMovements.Add(request);
             return new GenericResponse(true, request);
         }
