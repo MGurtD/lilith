@@ -87,6 +87,50 @@ namespace Application.Services.Warehouse
             return new GenericResponse(true, request);
         }
 
+        public async Task<GenericResponse> CreateProductionMovement(StockMovement request)
+        {
+            if (request.LocationId == null)
+                return new GenericResponse(false, _localizationService.GetLocalizedString("StockDefaultLocationNotDefined"));
+
+            var movementLocation = request.LocationId.Value;
+
+            if (request.Quantity < 0) request.Quantity *= -1;
+
+            var stock = GetByDimensions(movementLocation, request.ReferenceId,
+                                        request.Width, request.Length, request.Height,
+                                        request.Diameter, request.Thickness);
+
+            if (stock != null)
+            {
+                stock.LocationId = movementLocation;
+                stock.Quantity += request.Quantity;
+                await _unitOfWork.Stocks.Update(stock);
+
+                request.StockId = stock.Id;
+            }
+            else
+            {
+                var newStock = new Stock
+                {
+                    ReferenceId = request.ReferenceId,
+                    LocationId = movementLocation,
+                    Quantity = request.Quantity,
+                    Width = request.Width,
+                    Length = request.Length,
+                    Height = request.Height,
+                    Diameter = request.Diameter,
+                    Thickness = request.Thickness
+                };
+                await _unitOfWork.Stocks.Add(newStock);
+
+                request.StockId = newStock.Id;
+            }
+
+            request.LocationId = movementLocation;
+            await _unitOfWork.StockMovements.Add(request);
+            return new GenericResponse(true, request);
+        }
+
         public async Task<GenericResponse> Remove(Guid id)
         {
             if (_defaultLocationId == null)
