@@ -435,11 +435,12 @@ namespace Application.Services.Production
 
             // Check if this is the last active non-external phase
             var activePhasesOrdered = workOrder.Phases
-                .Where(p => p.Disabled == false && p.IsExternalWork == false)
+                .Where(p => p.Disabled == false)
                 .OrderByDescending(p => p.CodeAsNumber)
                 .ToList();
 
             bool isLastPhase = activePhasesOrdered.FirstOrDefault()?.Id == completedPhaseId;
+            bool isLastInternalPhase = activePhasesOrdered.FirstOrDefault(p => !p.IsExternalWork)?.Id == completedPhaseId;
 
             // Check if the next immediate phase is an external work phase
             var currentPhaseCodeAsNumber = completedPhase.CodeAsNumber;
@@ -470,34 +471,96 @@ namespace Application.Services.Production
             }
             else if (isLastPhase)
             {
-                // If last phase and no subsequent external phases, close the work order
-                var outStatus = await unitOfWork.Lifecycles.StatusRepository.Get(phaseOutStatusId);
-                if (outStatus == null)
-                    return new GenericResponse(false,
-                        localizationService.GetLocalizedString("StatusNotFound"));
-
-                // Create PRODUCTION stock movement for the completed work order
-                var lastPhase = activePhasesOrdered.First();
-                var producedQuantity = (int)lastPhase.QuantityOk;
-                var productionMovementResult = await workOrderStockService.CreateProductionMovement(
-                    new CreateProductionMovementRequest
-                    {
-                        WorkOrderId = workOrder.Id,
-                        Quantity = producedQuantity
-                    });
-                if (!productionMovementResult.Result)
-                    return productionMovementResult;
-
-                workOrder.StatusId = outStatus.Id;
+                workOrder.StatusId = phaseOutStatusId;
                 workOrder.EndTime = DateTime.Now;
 
                 workOrder.Phases = []; // Clear phases to avoid tracking issues
                 await unitOfWork.WorkOrders.Update(workOrder);
             }
 
+            if (isLastPhase)
+            {
+                // Create PRODUCTION stock movement for the completed work order
+                var lastInternalPhase = activePhasesOrdered.FirstOrDefault(p => !p.IsExternalWork);
+                if (lastInternalPhase != null)
+                {
+                    var producedQuantity = (int)lastInternalPhase.QuantityOk;
+                    var productionMovementResult = await workOrderStockService.CreateProductionMovement(
+                        new CreateProductionMovementRequest
+                        {
+                            WorkOrderId = workOrder.Id,
+                            Quantity = producedQuantity
+                        });
+                    if (!productionMovementResult.Result)
+                        return productionMovementResult;
+                }
+            }
+
             return new GenericResponse(true);
         }
 
+        public async Task<GenericResponse> UpdateExternalWorkOrderStatus(Guid workOrderId, Guid completedPhaseId)
+        {
+            // Get WorkOrder with all phases
+            var workOrder = await unitOfWork.WorkOrders.Get(workOrderId);
+            if (workOrder == null)
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("WorkOrderNotFound", workOrderId));
+
+            // Get active phases ordered by code descending to determine last phase
+            var activePhasesOrdered = workOrder.Phases
+                .Where(p => p.Disabled == false)
+                .OrderByDescending(p => p.CodeAsNumber)
+                .ToList();
+
+            bool isLastPhase = activePhasesOrdered.FirstOrDefault()?.Id == completedPhaseId;
+
+            if (isLastPhase)
+            {
+                // Close the work order
+                var closedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                    StatusConstants.Lifecycles.WorkOrder,
+                    StatusConstants.Statuses.Tancada);
+                if (closedStatus == null)
+                    return new GenericResponse(false,
+                        localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Tancada));
+
+                workOrder.StatusId = closedStatus.Id;
+                workOrder.EndTime = DateTime.Now;
+
+                // Create PRODUCTION stock movement using QuantityOk from last non-external phase
+                var lastInternalPhase = activePhasesOrdered.FirstOrDefault(p => !p.IsExternalWork);
+                if (lastInternalPhase != null)
+                {
+                    var producedQuantity = (int)lastInternalPhase.QuantityOk;
+                    var productionMovementResult = await workOrderStockService.CreateProductionMovement(
+                        new CreateProductionMovementRequest
+                        {
+                            WorkOrderId = workOrder.Id,
+                            Quantity = producedQuantity
+                        });
+                    if (!productionMovementResult.Result)
+                        return productionMovementResult;
+                }
+            }
+            else
+            {
+                // Pause the work order — more phases remain
+                var pausedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                    StatusConstants.Lifecycles.WorkOrder,
+                    StatusConstants.Statuses.Pausada);
+                if (pausedStatus == null)
+                    return new GenericResponse(false,
+                        localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Pausada));
+
+                workOrder.StatusId = pausedStatus.Id;
+            }
+
+            workOrder.Phases = []; // Clear phases to avoid EF tracking issues
+            await unitOfWork.WorkOrders.Update(workOrder);
+
+            return new GenericResponse(true);
+        }
     }
 }
 

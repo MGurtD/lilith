@@ -157,6 +157,34 @@ public class WorkOrderPhaseService(
         return new GenericResponse(true);
     }
 
+    public async Task<GenericResponse> EndExternalPhase(Guid phaseId)
+    {
+        // Get phase
+        var phase = await unitOfWork.WorkOrders.Phases.Get(phaseId);
+        if (phase == null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
+
+        // Resolve "Tancada" status
+        var closedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+            StatusConstants.Lifecycles.WorkOrder,
+            StatusConstants.Statuses.Tancada);
+        if (closedStatus == null)
+        {
+            logger.LogError("Closed status '{Status}' not found in WorkOrder lifecycle", StatusConstants.Statuses.Tancada);
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Tancada));
+        }
+
+        // Close the phase
+        phase.StatusId = closedStatus.Id;
+        phase.EndTime = DateTime.Now;
+        await unitOfWork.WorkOrders.Phases.Update(phase);
+
+        // Delegate WorkOrder status update
+        return await workOrderService.UpdateExternalWorkOrderStatus(phase.WorkOrderId, phaseId);
+    }
+
     #endregion
 
     #region Special Queries
