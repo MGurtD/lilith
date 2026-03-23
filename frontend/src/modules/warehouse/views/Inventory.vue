@@ -4,11 +4,8 @@
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
-    paginator
+    :paginator="(inventoryStore.inventories?.length ?? 0) > 20"
     :rows="20"
-    :rowsPerPageOptions="[10, 20, 50]"
-    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-    currentPageReportTemplate="{first} a {last} de {totalRecords} entrades"
   >
     <template #header>
       <div

@@ -8,8 +8,6 @@ public class PurchaseOrder : Entity
     public Supplier? Supplier { get; set; }
     public Guid ExerciseId { get; set; }
     public Exercise? Exercise { get; set; }
-    //public Guid? SiteId { get; set; }
-    //public Site? Site { get; set; }
     public Guid StatusId { get; set; }
     public Status? Status { get; set; }
 

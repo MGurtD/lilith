@@ -13,7 +13,7 @@ namespace Application.Services.Production
         public async Task<IEnumerable<OperatorType>> GetAll()
         {
             var operatorTypes = await unitOfWork.OperatorTypes.GetAll();
-            return operatorTypes.OrderBy(o => o.Name);
+            return operatorTypes.OrderBy(o => o.Description);
         }
 
         public async Task<GenericResponse> Create(OperatorType operatorType)

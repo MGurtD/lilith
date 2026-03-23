@@ -8,8 +8,8 @@ namespace Api.Controllers.Purchase
     [ApiController]
     [Route("api/[controller]")]
     public class ReceiptController(
-        IReceiptService service, 
-        IReferenceService referenceService, 
+        IReceiptService service,
+        IReferenceService referenceService,
         ILifecycleService lifecycleService,
         ILocalizationService localizationService) : ControllerBase
     {
@@ -90,17 +90,23 @@ namespace Api.Controllers.Purchase
             if (moveToWarehouseStatus == null) return NotFound(new GenericResponse(false, localizationService.GetLocalizedString("ReceiptStatusNotFound")));
 
             var warehouseResponse = new GenericResponse(true);
-            var workOrderResponse = new GenericResponse(true);
+            // Recepción: si el canvi d'estat és a "Recepcionat", moure a magatzem
             if (receipt.StatusId != moveToWarehouseStatus.Id && request.StatusId == moveToWarehouseStatus.Id)
-                warehouseResponse = await service.MoveToWarehose(request);  
-                //afegir canvi d'estat de workorder i de workorderphase                
-                workOrderResponse = await service.ChangeAssociatedWorkOrderStatus(request);
+            {
+                warehouseResponse = await service.MoveToWarehose(request);
 
+                //afegir canvi d'estat de workorder i de workorderphase                
+                await service.ChangeAssociatedWorkOrderStatus(request);
+            }
+
+            // Si el canvi d'estat és des de "Recepcionat", retirar de magatzem
             if (receipt.StatusId == moveToWarehouseStatus.Id && request.StatusId != moveToWarehouseStatus.Id)
+            {
                 warehouseResponse = await service.RetriveFromWarehose(request);
+            }
 
             var globalResponse = new GenericResponse(true);
-            if (warehouseResponse.Result && workOrderResponse.Result)
+            if (warehouseResponse.Result)
             {
                 globalResponse = await service.Update(request);
                 var updatedReceipt = await service.GetById(request.Id);
@@ -108,7 +114,7 @@ namespace Api.Controllers.Purchase
                     await referenceService.UpdatePriceFromReceipt(updatedReceipt);
             }
 
-            if (globalResponse.Result && warehouseResponse.Result && workOrderResponse.Result) return Ok(globalResponse);
+            if (globalResponse.Result && warehouseResponse.Result) return Ok(globalResponse);
             else return BadRequest(globalResponse);
         }
 

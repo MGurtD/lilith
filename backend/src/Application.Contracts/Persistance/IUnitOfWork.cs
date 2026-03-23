@@ -30,7 +30,6 @@ namespace Application.Contracts
         ILifecycleRepository Lifecycles { get; }
         ILifecycleTagRepository LifecycleTags { get; }
         IRepository<StatusLifecycleTag, Guid> StatusLifecycleTags { get; }
-        // Removed Languages repository (now JSON based catalog)
 
         // Purchase
         IRepository<SupplierType, Guid> SupplierTypes { get; }
