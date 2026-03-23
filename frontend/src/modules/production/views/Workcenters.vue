@@ -13,22 +13,26 @@
       >
         <div class="datatable-filter">
           <div class="filter-field">
-            <label class="block text-900 mb-2">Tipus</label>
+            <label>Tipus</label>
             <Select
               v-model="filter.workcenterTypeId"
               :options="plantmodelStore.workcenterTypes"
               optionValue="id"
               optionLabel="name"
+              placeholder="Tots"
+              :showClear="true"
               class="w-full"
             />
           </div>
           <div class="filter-field">
-            <label class="block text-900 mb-2">Àrea</label>
+            <label>Àrea</label>
             <Select
               v-model="filter.areaId"
               :options="plantmodelStore.areas"
               optionValue="id"
               optionLabel="name"
+              placeholder="Totes"
+              :showClear="true"
               class="w-full"
             />
           </div>
@@ -100,8 +104,8 @@ const shiftStore = useShiftStore();
 
 onMounted(async () => {
   await plantmodelStore.fetchWorkcenters();
-  await plantmodelStore.fetchWorkcenterTypes();
-  await plantmodelStore.fetchAreas();
+  await plantmodelStore.fetchActiveWorkcenterTypes();
+  await plantmodelStore.fetchActiveAreas();
   await shiftStore.fetchAllShifts();
 
   store.setMenuItem({
