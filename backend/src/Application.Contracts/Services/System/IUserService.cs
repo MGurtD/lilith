@@ -11,5 +11,6 @@ public interface IUserService
 
     // Write operations - return GenericResponse
     Task<GenericResponse> CreateUser(User user);
+    Task<GenericResponse> CreateManagedUser(CreateManagedUserRequest request);
     Task<GenericResponse> UpdateUser(User user);
 }
