@@ -19,9 +19,9 @@ export const useSalesOrderStore = defineStore({
   }),
   getters: {},
   actions: {
-    async Create(createRequest: CreateSalesHeaderRequest) {
-      const created = await SalesServices.SalesOrder.Create(createRequest);
-      return created;
+    async Create(createRequest: CreateSalesHeaderRequest): Promise<GenericResponse<SalesOrderHeader>> {
+      const response = await SalesServices.SalesOrder.Create(createRequest);
+      return response;
     },
     async CreateFromBudget(
       budget: Budget,

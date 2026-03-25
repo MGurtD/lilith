@@ -12,10 +12,10 @@ import { GenericResponse } from "../../../types";
 export class SalesOrderDetailService extends BaseService<SalesOrderDetail> {}
 
 export class SalesOrderHeaderService extends BaseService<SalesOrderHeader> {
-  async Create(request: CreateSalesHeaderRequest): Promise<boolean> {
+  async Create(request: CreateSalesHeaderRequest): Promise<GenericResponse<SalesOrderHeader>> {
     const endpoint = `${this.resource}`;
     const response = await this.apiClient.post(endpoint, request);
-    return response.status === 200;
+    return response.data as GenericResponse<SalesOrderHeader>;
   }
   async CreateFromBudget(
     budget: Budget

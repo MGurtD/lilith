@@ -6,12 +6,13 @@ import {
 } from "../types";
 import apiClient from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
+import { GenericResponse } from "../../../types";
 
 export class BudgetService extends BaseService<Budget> {
-  async Create(request: CreateSalesHeaderRequest): Promise<boolean> {
+  async Create(request: CreateSalesHeaderRequest): Promise<GenericResponse<Budget>> {
     const endpoint = `${this.resource}`;
     const response = await this.apiClient.post(endpoint, request);
-    return response.status === 200;
+    return response.data as GenericResponse<Budget>;
   }
 
   async GetBetweenDates(
