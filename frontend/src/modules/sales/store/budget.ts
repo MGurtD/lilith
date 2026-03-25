@@ -6,6 +6,7 @@ import {
   SalesOrderHeader,
 } from "../types";
 import SalesServices from "../services";
+import { GenericResponse } from "../../../types";
 
 export const useBudgetStore = defineStore({
   id: "budget",
@@ -55,9 +56,9 @@ export const useBudgetStore = defineStore({
     async GetAssociatedSalesOrders(budgetId: string) {
       this.order = await SalesServices.SalesOrder.GetFromBudgetId(budgetId);
     },
-    async Create(createRequest: CreateSalesHeaderRequest) {
-      const created = await SalesServices.Budget.Create(createRequest);
-      return created;
+    async Create(createRequest: CreateSalesHeaderRequest): Promise<GenericResponse<Budget>> {
+      const response = await SalesServices.Budget.Create(createRequest);
+      return response;
     },
     async Update(id: string, budget: Budget) {
       const updated = await SalesServices.Budget.update(id, budget);
