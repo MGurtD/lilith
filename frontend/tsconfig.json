@@ -12,14 +12,12 @@
     "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
     "noEmit": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": [
-    "src/modules/plant/components/workcenter-detail/WorkOrderPhasePlannedSelector.vue"
-  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

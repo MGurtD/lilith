@@ -24,7 +24,7 @@
             :type="BaseInputType.TEXT"
             :disabled="true"
             label="Comanda"
-            :value="budgetStore.order?.number"
+            :modelValue="budgetStore.order?.number ?? ''"
           />
         </div>
       </section>
@@ -87,7 +87,7 @@
             :type="BaseInputType.TEXT"
             label="Notes"
             id="notes"
-            v-model="budget.notes"
+            :modelValue="budget.notes"
             disabled
           />
         </div>
