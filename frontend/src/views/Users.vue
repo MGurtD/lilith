@@ -10,34 +10,48 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Usuaris</span>
-          <Button label="Nou usuari" icon="pi pi-plus" @click="showCreateDialog = true" />
+          <span class="text-900 font-bold">{{
+            t("usersView.tableTitle")
+          }}</span>
+          <Button
+            :label="t('usersView.newButton')"
+            icon="pi pi-plus"
+            @click="showCreateDialog = true"
+          />
         </div>
       </template>
       <Column
         field="username"
-        header="Nom d'usuari"
+        :header="t('usersView.columns.username')"
         sortable
         style="width: 20%"
       ></Column>
       <Column
         field="firstName"
-        header="Nom"
+        :header="t('usersView.columns.firstName')"
         sortable
         style="width: 20%"
       ></Column>
       <Column
         field="lastName"
-        header="Cognoms"
+        :header="t('usersView.columns.lastName')"
         sortable
         style="width: 20%"
       ></Column>
-      <Column header="Perfil" sortable style="width: 15%">
+      <Column
+        :header="t('usersView.columns.profile')"
+        sortable
+        style="width: 15%"
+      >
         <template #body="slotProps">
           {{ getProfileName(slotProps.data.profileId, slotProps.data.profile) }}
         </template>
       </Column>
-      <Column header="Desactivat" sortable style="width: 20%">
+      <Column
+        :header="t('usersView.columns.disabled')"
+        sortable
+        style="width: 20%"
+      >
         <template #body="slotProps">
           <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
         </template>
@@ -46,7 +60,7 @@
 
     <Dialog
       v-model:visible="showCreateDialog"
-      header="Nou usuari"
+      :header="t('usersView.createDialog.header')"
       :modal="true"
       :style="{ width: '70rem', maxWidth: '95vw' }"
     >
@@ -65,6 +79,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { UserService } from "../services/user.service";
 import { useStore } from "../store";
 import { PrimeIcons } from "@primevue/core/api";
@@ -78,6 +93,8 @@ import LanguageService from "@/services/language.service";
 import CreateUserForm from "@/components/forms/CreateUserForm.vue";
 import { useToast } from "primevue/usetoast";
 import type { CreateManagedUserRequest } from "@/services/user.service";
+
+const { t } = useI18n();
 
 const service = new UserService();
 const roleService = new RoleService();
@@ -102,7 +119,7 @@ const fetchProfiles = async () => {
   if (profiles.value) {
     profileMap.value = profiles.value.reduce(
       (acc, p) => ({ ...acc, [p.id]: p.name }),
-      {} as Record<string, string>
+      {} as Record<string, string>,
     );
   }
 };
@@ -136,7 +153,7 @@ const createUser = async (request: CreateManagedUserRequest) => {
 
   toast.add({
     severity: "success",
-    summary: "Usuari creat correctament",
+    summary: t("usersView.toasts.created"),
     life: 5000,
   });
 
@@ -147,9 +164,14 @@ const createUser = async (request: CreateManagedUserRequest) => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.USERS,
-    title: "Gestió d'usuaris",
+    title: t("usersView.pageTitle"),
   });
 
-  await Promise.all([fetchUsers(), fetchProfiles(), fetchRoles(), fetchLanguages()]);
+  await Promise.all([
+    fetchUsers(),
+    fetchProfiles(),
+    fetchRoles(),
+    fetchLanguages(),
+  ]);
 });
 </script>

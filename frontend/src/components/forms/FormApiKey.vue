@@ -68,36 +68,31 @@ const submit = () => {
 
 <template>
   <div class="form-apikey">
-    <div class="flex justify-content-end mr-3 mb-3">
-      <Button
-        size="small"
-        :label="t('apiKeys.form.submitButton')"
-        icon="pi pi-key"
-        :loading="submitting"
-        @click="submit"
-      />
-    </div>
     <div class="formgrid grid">
       <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t('apiKeys.form.name') }} <span class="p-error">*</span></label>
+        <label class="block mb-2"
+          >{{ t("apiKeys.form.name") }} <span class="p-error">*</span></label
+        >
         <InputText v-model="form.name" class="w-full" />
         <small class="p-error" v-if="errors.name">{{ errors.name[0] }}</small>
       </div>
       <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t('apiKeys.form.description') }}</label>
+        <label class="block mb-2">{{ t("apiKeys.form.description") }}</label>
         <InputText v-model="form.description" class="w-full" />
       </div>
       <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t('apiKeys.form.scopes') }}</label>
+        <label class="block mb-2">{{ t("apiKeys.form.scopes") }}</label>
         <InputText
           v-model="form.scopes"
           class="w-full"
           :placeholder="t('apiKeys.form.scopesPlaceholder')"
         />
-        <small class="text-color-secondary">{{ t('apiKeys.form.scopesHelp') }}</small>
+        <small class="text-color-secondary">{{
+          t("apiKeys.form.scopesHelp")
+        }}</small>
       </div>
       <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t('apiKeys.form.expiresOn') }}</label>
+        <label class="block mb-2">{{ t("apiKeys.form.expiresOn") }}</label>
         <DatePicker
           v-model="form.expiresOn"
           dateFormat="dd/mm/yy"
@@ -105,6 +100,15 @@ const submit = () => {
           :showButtonBar="true"
         />
       </div>
+    </div>
+    <div class="flex justify-content-end mt-4">
+      <Button
+        size="small"
+        :label="t('apiKeys.form.submitButton')"
+        icon="pi pi-key"
+        :loading="submitting"
+        @click="submit"
+      />
     </div>
   </div>
 </template>

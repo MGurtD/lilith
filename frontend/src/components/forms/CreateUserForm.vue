@@ -4,19 +4,19 @@
       <BaseInput
         id="username"
         v-model="model.username"
-        label="Nom d'usuari"
+        :label="t('forms.user.usernameLabel') as string"
         :class="{ 'p-invalid': validation.errors.username }"
       />
       <BaseInput
         id="firstName"
         v-model="model.firstName"
-        label="Nom"
+        :label="t('forms.user.firstNameLabel') as string"
         :class="{ 'p-invalid': validation.errors.firstName }"
       />
       <BaseInput
         id="lastName"
         v-model="model.lastName"
-        label="Cognoms"
+        :label="t('forms.user.lastNameLabel') as string"
         :class="{ 'p-invalid': validation.errors.lastName }"
       />
     </section>
@@ -25,11 +25,13 @@
       <BaseInput
         id="email"
         v-model="model.email"
-        label="Correu electrònic"
+        :label="t('forms.user.emailLabel') as string"
         :class="{ 'p-invalid': validation.errors.email }"
       />
       <div>
-        <label class="block text-900 mb-2">Rol</label>
+        <label class="block text-900 mb-2">{{
+          t("forms.user.roleLabel")
+        }}</label>
         <Select
           v-model="model.roleId"
           :options="roles"
@@ -40,7 +42,9 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Idioma</label>
+        <label class="block text-900 mb-2">{{
+          t("forms.user.languageLabel")
+        }}</label>
         <Select
           v-model="model.preferredLanguage"
           :options="languages"
@@ -54,7 +58,9 @@
 
     <section class="three-columns">
       <div>
-        <label class="block text-900 mb-2">Perfil</label>
+        <label class="block text-900 mb-2">{{
+          t("forms.user.profileLabel")
+        }}</label>
         <Select
           v-model="model.profileId"
           :options="profiles"
@@ -68,14 +74,14 @@
         :type="BaseInputType.PASSWORD"
         id="password"
         v-model="model.password"
-        label="Contrasenya"
+        :label="t('forms.user.passwordLabel') as string"
         :class="{ 'p-invalid': validation.errors.password }"
       />
       <BaseInput
         :type="BaseInputType.PASSWORD"
         id="repeatPassword"
         v-model="model.repeatPassword"
-        label="Repeteix la contrasenya"
+        :label="t('forms.user.passwordRepeatLabel') as string"
         :class="{ 'p-invalid': validation.errors.repeatPassword }"
       />
     </section>
@@ -83,11 +89,11 @@
     <div class="flex justify-content-end gap-2 mt-4">
       <Button
         type="button"
-        label="Cancel.lar"
+        :label="t('forms.user.cancelButton')"
         severity="secondary"
         @click="emit('cancel')"
       />
-      <Button type="submit" label="Crear usuari" />
+      <Button type="submit" :label="t('forms.user.createButton')" />
     </div>
   </form>
 </template>
@@ -95,6 +101,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import * as Yup from "yup";
+import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import BaseInput from "@/components/BaseInput.vue";
 import { BaseInputType } from "@/types/component";
@@ -108,6 +115,8 @@ const props = defineProps<{
   profiles: Profile[];
   initialLanguage: string;
 }>();
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "submit", payload: CreateManagedUserRequest): void;
@@ -129,20 +138,33 @@ const model = ref<CreateManagedUserRequest>({
 });
 
 const schema = Yup.object().shape({
-  username: Yup.string().required("El nom d'usuari és obligatori"),
-  firstName: Yup.string().required("El nom és obligatori"),
-  lastName: Yup.string().required("Els cognoms són obligatoris"),
+  username: Yup.string().required(
+    t("forms.user.validation.usernameRequired") as string,
+  ),
+  firstName: Yup.string().required(
+    t("forms.user.validation.firstNameRequired") as string,
+  ),
+  lastName: Yup.string().required(
+    t("forms.user.validation.lastNameRequired") as string,
+  ),
   email: Yup.string()
-    .required("El correu electrònic és obligatori")
-    .email("El format del correu electrònic no és vàlid"),
-  preferredLanguage: Yup.string().required("L'idioma és obligatori"),
-  roleId: Yup.string().required("El rol és obligatori"),
+    .required(t("forms.user.validation.emailRequired") as string)
+    .email(t("forms.user.validation.emailInvalid") as string),
+  preferredLanguage: Yup.string().required(
+    t("forms.user.validation.languageRequired") as string,
+  ),
+  roleId: Yup.string().required(
+    t("forms.user.validation.roleRequired") as string,
+  ),
   password: Yup.string()
-    .required("La contrasenya és obligatòria")
-    .min(5, "La contrasenya ha de tenir almenys 5 caràcters"),
+    .required(t("forms.user.validation.passwordRequired") as string)
+    .min(5, t("forms.user.validation.passwordMin") as string),
   repeatPassword: Yup.string()
-    .required("Has de repetir la contrasenya")
-    .oneOf([Yup.ref("password")], "Les contrasenyes no coincideixen"),
+    .required(t("forms.user.validation.repeatPasswordRequired") as string)
+    .oneOf(
+      [Yup.ref("password")],
+      t("forms.user.validation.passwordMismatch") as string,
+    ),
 });
 
 const validation = ref<FormValidationResult>({
@@ -156,7 +178,7 @@ const submit = () => {
     const errors = Object.values(validation.value.errors).flat().join("\n");
     toast.add({
       severity: "warn",
-      summary: "Revisa el formulari",
+      summary: t("forms.user.validation.reviewForm") as string,
       detail: errors,
       life: 6000,
     });

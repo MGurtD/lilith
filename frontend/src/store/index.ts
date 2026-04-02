@@ -13,6 +13,17 @@ import { useExerciseStore } from "../modules/shared/store/exercise";
 
 const localStorageAuthKey = "temges.authorization";
 const localStorageLangKey = "app.lang";
+const defaultLocale = "ca";
+const supportedLocales = ["ca", "es", "en"] as const;
+
+const normalizeLocale = (locale?: string | null) => {
+  const normalized = (locale || defaultLocale).slice(0, 2).toLowerCase();
+  return supportedLocales.includes(
+    normalized as (typeof supportedLocales)[number],
+  )
+    ? normalized
+    : defaultLocale;
+};
 
 export const useStore = defineStore("applicationStore", {
   state: () => {
@@ -168,14 +179,11 @@ export const useStore = defineStore("applicationStore", {
     // Language helpers
     async initLanguage() {
       const fromLs = localStorage.getItem(localStorageLangKey);
-      const fromNavigator = (navigator.language || "ca")
-        .slice(0, 2)
-        .toLowerCase();
-      const lang = (fromLs || fromNavigator || "ca").toLowerCase();
+      const lang = normalizeLocale(fromLs);
       this.setLanguage(lang);
     },
     setLanguage(code: string) {
-      const normalized = (code || "ca").slice(0, 2).toLowerCase();
+      const normalized = normalizeLocale(code);
       this.language.current = normalized;
       localStorage.setItem(localStorageLangKey, normalized);
     },
@@ -219,9 +227,8 @@ export const useStore = defineStore("applicationStore", {
     async removeAuthorization() {
       // Revoke refresh tokens on the server (best-effort)
       try {
-        const { AuthenticationService } = await import(
-          "../services/authentications.service"
-        );
+        const { AuthenticationService } =
+          await import("../services/authentications.service");
         const authService = new AuthenticationService();
         await authService.Logout();
       } catch {
@@ -249,9 +256,8 @@ export const useStore = defineStore("applicationStore", {
         // Step 2: Refresh the token — backend re-reads user.PreferredLanguage from DB
         // and bakes the new locale claim into the fresh JWT
         try {
-          const { AuthenticationService } = await import(
-            "../services/authentications.service"
-          );
+          const { AuthenticationService } =
+            await import("../services/authentications.service");
           const auth = new AuthenticationService();
           const refreshed = await auth.Refresh(
             this.authorization.token,
