@@ -6,6 +6,7 @@ namespace Application.Contracts
     public interface IBudgetService
     {
         Task<GenericResponse> Create(CreateHeaderRequest createRequest);
+        Task<GenericResponse> Accept(Guid id);
 
         Task<Budget?> GetById(Guid id);
         IEnumerable<Budget> GetBetweenDates(DateTime startDate, DateTime endDate);

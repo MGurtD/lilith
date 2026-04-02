@@ -9,6 +9,24 @@ import SalesServices from "../services";
 import { GenericResponse } from "../../../types";
 import { convertDateTimeToJSON } from "../../../utils/functions";
 
+const normalizeDateForApi = (value: unknown) => {
+  if (!value) return value;
+
+  if (value instanceof Date) {
+    return convertDateTimeToJSON(new Date(value));
+  }
+
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      return value;
+    }
+
+    return convertDateTimeToJSON(value) ?? value;
+  }
+
+  return value;
+};
+
 export const useSalesOrderStore = defineStore({
   id: "salesOrder",
   state: () => ({
@@ -19,20 +37,28 @@ export const useSalesOrderStore = defineStore({
   }),
   getters: {},
   actions: {
-    async Create(createRequest: CreateSalesHeaderRequest): Promise<GenericResponse<SalesOrderHeader>> {
+    async Create(
+      createRequest: CreateSalesHeaderRequest,
+    ): Promise<GenericResponse<SalesOrderHeader>> {
       const response = await SalesServices.SalesOrder.Create(createRequest);
       return response;
     },
     async CreateFromBudget(
       budget: Budget,
     ): Promise<GenericResponse<SalesOrderHeader>> {
-      budget.date = convertDateTimeToJSON(budget.date);
-      if (budget.acceptanceDate) {
-        budget.acceptanceDate = convertDateTimeToJSON(budget.acceptanceDate);
-      }
+      const payload: Budget = {
+        ...budget,
+        date: normalizeDateForApi(budget.date),
+        acceptanceDate: normalizeDateForApi(budget.acceptanceDate),
+        details: budget.details?.map((detail) => ({ ...detail })),
+      };
 
-      const response = await SalesServices.SalesOrder.CreateFromBudget(budget);
+      const response = await SalesServices.SalesOrder.CreateFromBudget(payload);
       return response;
+    },
+    async GetFromBudgetId(budgetId: string) {
+      const data = await SalesServices.SalesOrder.GetFromBudgetId(budgetId);
+      return data;
     },
     async GetById(id: string) {
       const data = await SalesServices.SalesOrder.getById(id);
