@@ -38,6 +38,10 @@ try
             .AddSwaggerSetup()
             .AddLocalizationSetup(); // Add localization services
 
+        // OpenTelemetry: logs, traces, metrics → Grafana Cloud
+        if (appSettings.OpenTelemetry?.Enabled == true)
+            builder.AddOpenTelemetrySetup(appSettings.OpenTelemetry);
+
         // Language catalog singleton
         builder.Services.AddSingleton<ILanguageCatalog, LanguageCatalog>();
 
