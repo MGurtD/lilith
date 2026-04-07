@@ -6,6 +6,7 @@ import {
   PhaseTimeMetrics,
   BillOfMaterialsItem,
 } from "../../production/types";
+import { StockMovement } from "../../warehouse/types";
 import { NextPhaseInfo } from "../types";
 import ProductionServices from "../../production/services";
 import SharedServices from "../../shared/services";
@@ -20,6 +21,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     nextAvailablePhase: null as NextPhaseInfo | null,
     phaseTimeMetrics: undefined as PhaseTimeMetrics | undefined,
     billOfMaterials: [] as BillOfMaterialsItem[],
+    phaseConsumptions: [] as StockMovement[],
     bomProvisioningById: {} as Record<string, boolean>,
     materialsProvisioningLoading: false,
     materialsProvisioningLoaded: false,
@@ -37,6 +39,9 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     },
     hasBillOfMaterials(): boolean {
       return this.billOfMaterials.length > 0;
+    },
+    hasMaterialsConsumed(): boolean {
+      return this.phaseConsumptions.length > 0;
     },
   },
   actions: {
@@ -178,12 +183,16 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
         // Carregar materials (BOM) de la fase activa
         await this.fetchBillOfMaterials();
 
+        // Comprovar si la fase ja té consums registrats
+        await this.fetchPhaseConsumptions();
+
         // Carregar mètriques de temps (últim)
         await this.fetchPhaseTimeMetrics();
       } else {
         this.workOrderReferenceDocuments = [];
         this.phaseTimeMetrics = undefined;
         this.billOfMaterials = [];
+        this.phaseConsumptions = [];
       }
     },
     async fetchWorkInstructionDocuments(referenceId: string) {
@@ -422,6 +431,21 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
         return false;
       }
     },
+    async fetchPhaseConsumptions() {
+      const phaseId = this.activePhase?.phaseId;
+      if (!phaseId || this.billOfMaterials.length === 0) {
+        this.phaseConsumptions = [];
+        return;
+      }
+
+      try {
+        this.phaseConsumptions =
+          await ProductionServices.WorkOrderStock.getPhaseConsumptions(phaseId);
+      } catch (error) {
+        console.error("Error fetching phase consumptions:", error);
+        this.phaseConsumptions = [];
+      }
+    },
     /**
      * Neteja tot l'estat de la fase activa.
      */
@@ -430,6 +454,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
       this.nextAvailablePhase = null;
       this.phaseTimeMetrics = undefined;
       this.billOfMaterials = [];
+      this.phaseConsumptions = [];
       this.invalidateMaterialsProvisioning();
     },
   },

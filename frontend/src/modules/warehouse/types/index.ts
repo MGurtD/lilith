@@ -78,7 +78,7 @@ export interface Inventory {
   id: string;
   stockId: string;
   movementType: string;
-  locationId: string;
+  locationId: string | null;
   locationName?: string; // Optional for UI purposes
   referenceId: string;
   referenceName?: string; // Optional for UI purposes
@@ -123,6 +123,29 @@ export interface MoveStockToWorkcenterSupplyRequest {
   workcenterId: string;
   workOrderPhaseId: string;
   quantity: number;
+}
+
+export interface ReturnStockFromSupplyRequest {
+  stockId: string;
+  workcenterId: string;
+  workOrderPhaseId: string;
+  quantity: number;
+}
+
+export interface ConsumeStockItem {
+  stockId: string;
+  quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
+}
+
+export interface ConsumePhaseStockRequest {
+  workcenterId: string;
+  workOrderPhaseId: string;
+  consumedItems: ConsumeStockItem[];
 }
 
 export const StockMovementEntity = {
