@@ -11,7 +11,16 @@
     :sortOrder="1"
   >
     <template #header>
-      <slot name="header"></slot>
+      <div class="header-container">
+        <slot name="header"></slot>
+        <Button
+          v-if="budgetStore.order === undefined"
+          label="Ponderar costs"
+          icon="pi pi-calculator"
+          size="small"
+          @click="onDistributeCosts"
+        />
+      </div>
     </template>
     <Column field="destination" header="Destinació" style="width: 25%" />
     <Column field="description" header="Descripció" style="width: 20%" />
@@ -78,4 +87,15 @@ const onDeleteRow = (event: any, transport: BudgetTransport) => {
     },
   });
 };
+
+const onDistributeCosts = async () => {
+  await budgetStore.DistributeTransportCosts(props.budget.id);
+};
 </script>
+<style scoped>
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>

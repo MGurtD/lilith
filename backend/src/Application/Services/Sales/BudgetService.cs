@@ -239,6 +239,25 @@ namespace Application.Services.Sales
             await unitOfWork.Budgets.Update(budget);
             return new GenericResponse(true, transport);
         }
+ 
+        public async Task<GenericResponse> DistributeTransportCosts(Guid budgetId)
+        {
+            var budget = await unitOfWork.Budgets.Get(budgetId);
+            if (budget == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", budgetId));
+            }
+                        
+            var totalWeight = budget.Details.Sum(d => d.DetailWeight);                        
+            var transportCostPerKg = budget.TransportCost / totalWeight;            
+            foreach (var detail in budget.Details)
+            {
+                detail.TransportCost = detail.DetailWeight * transportCostPerKg;
+                detail.Amount = detail.Amount + detail.TransportCost;
+            }
+            await unitOfWork.Budgets.Update(budget);
+            return new GenericResponse(true);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities.Sales;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -143,6 +143,18 @@ namespace Api.Controllers.Sales
         public async Task<IActionResult> RemoveTransport(Guid id)
         {
             var response = await service.RemoveTransport(id);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("Transport/DistributeCosts/{id:guid}")]
+        [SwaggerOperation("BudgetDistributeTransportCosts")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DistributeTransportCosts(Guid id)
+        {
+            var response = await service.DistributeTransportCosts(id);
 
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);

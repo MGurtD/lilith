@@ -21,5 +21,6 @@ namespace Application.Contracts
         Task<GenericResponse> AddTransport(BudgetTransport transport);
         Task<GenericResponse> UpdateTransport(BudgetTransport transport);
         Task<GenericResponse> RemoveTransport(Guid id);
+        Task<GenericResponse> DistributeTransportCosts(Guid budgetId);
     }
 }

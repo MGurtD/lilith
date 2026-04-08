@@ -80,4 +80,10 @@ export class BudgetService extends BaseService<Budget> {
     const response = await apiClient.delete(endpoint);
     return response.status === 200;
   }
+
+  async DistributeTransportCosts(budgetId: string): Promise<boolean> {
+    const endpoint = `${this.resource}/Transport/DistributeCosts/${budgetId}`;
+    const response = await apiClient.put(endpoint, {});
+    return response.status === 200;
+  }
 }

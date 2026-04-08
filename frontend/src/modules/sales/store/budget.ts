@@ -95,5 +95,10 @@ export const useBudgetStore = defineStore({
       if (deleted) await this.GetById(transport.budgetId);
       return deleted;
     },
+    async DistributeTransportCosts(budgetId: string): Promise<boolean> {
+      const result = await SalesServices.Budget.DistributeTransportCosts(budgetId);
+      if (result) await this.GetById(budgetId);
+      return result;
+    },
   },
 });
