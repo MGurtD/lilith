@@ -213,7 +213,9 @@ namespace Application.Services.Sales
             var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
             if (budget == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound"));
+            budget.TransportCost += transport.Price;
             await unitOfWork.Budgets.Transports.Add(transport);
+            await unitOfWork.Budgets.Update(budget);
             return new GenericResponse(true, transport);
         }
         public async Task<GenericResponse> UpdateTransport(BudgetTransport transport)
@@ -229,8 +231,12 @@ namespace Application.Services.Sales
             var transport = unitOfWork.Budgets.Transports.Find(t => t.Id == id).FirstOrDefault();
             if (transport == null) 
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetTransportNotFound", id));
+            var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
+            if (budget == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound"));
+            budget.TransportCost -= transport.Price;
             await unitOfWork.Budgets.Transports.Remove(transport);
-
+            await unitOfWork.Budgets.Update(budget);
             return new GenericResponse(true, transport);
         }
     }
