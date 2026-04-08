@@ -1613,6 +1613,12 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("EnterpriseId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("Latitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Longitude")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -3294,6 +3300,15 @@ namespace Infrastructure.Migrations
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
 
+                    b.Property<decimal>("DistanceFromSite")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Latitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Longitude")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Observations")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3561,6 +3576,14 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("StatusId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("TotalWeight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("TransportCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
+
                     b.Property<DateTime>("UpdatedOn")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp without time zone")
@@ -3608,6 +3631,10 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("varchar");
+
+                    b.Property<decimal>("DetailWeight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
 
                     b.Property<bool>("Disabled")
                         .ValueGeneratedOnAdd()
@@ -3690,6 +3717,65 @@ namespace Infrastructure.Migrations
                     b.HasIndex("WorkMasterId");
 
                     b.ToTable("BudgetDetails", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetTransport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BudgetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("Distance")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
+
+                    b.Property<Guid>("TransportRateDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<decimal>("Volume")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BudgetId");
+
+                    b.ToTable("BudgetTransports", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.Customer", b =>
@@ -3814,6 +3900,17 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
+
+                    b.Property<decimal>("DistanceFromSite")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Latitude")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("Longitude")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("Main")
                         .HasColumnType("boolean");
@@ -5284,6 +5381,120 @@ namespace Infrastructure.Migrations
                     b.ToTable("Taxes", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Transport.TransportRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id")
+                        .HasName("PK_TransportRate");
+
+                    b.HasIndex(new[] { "Name", "ValidFrom", "ValidTo" }, "UK_TransportRate_Name_Dates")
+                        .IsUnique();
+
+                    b.ToTable("TransportRate", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Transport.TransportRateDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("MaxDistance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MaxVolume")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MaxWeight")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MinDistance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MinVolume")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("MinWeight")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("Price")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("TransportRateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_TransportRateDetail");
+
+                    b.HasIndex("TransportRateId");
+
+                    b.ToTable("TransportRateDetail", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Warehouse.Location", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6344,6 +6555,15 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkMaster");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetTransport", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.Budget", null)
+                        .WithMany("Transports")
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.Customer", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.CustomerType", "Type")
@@ -6721,6 +6941,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Status");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Transport.TransportRateDetail", b =>
+                {
+                    b.HasOne("Domain.Entities.Transport.TransportRate", "TransportRate")
+                        .WithMany("Details")
+                        .HasForeignKey("TransportRateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TransportRate");
+                });
+
             modelBuilder.Entity("Domain.Entities.Warehouse.Location", b =>
                 {
                     b.HasOne("Domain.Entities.Warehouse.Warehouse", null)
@@ -6889,6 +7120,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Sales.Budget", b =>
                 {
                     b.Navigation("Details");
+
+                    b.Navigation("Transports");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.Customer", b =>
@@ -6946,6 +7179,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("LifecycleTags");
 
                     b.Navigation("Transitions");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Transport.TransportRate", b =>
+                {
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("Domain.Entities.Warehouse.Warehouse", b =>

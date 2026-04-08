@@ -18,5 +18,8 @@ namespace Application.Contracts
         Task<GenericResponse> RemoveDetail(Guid id);
         Task<GenericResponse> RejectOutdatedBudgets();
 
+        Task<GenericResponse> AddTransport(BudgetTransport transport);
+        Task<GenericResponse> UpdateTransport(BudgetTransport transport);
+        Task<GenericResponse> RemoveTransport(Guid id);
     }
 }

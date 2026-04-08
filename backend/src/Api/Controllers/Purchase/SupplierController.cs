@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities.Purchase;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,6 +29,14 @@ namespace Api.Controllers.Purchase
         public async Task<IActionResult> GetAll()
         {
             var entities = await service.GetAllSuppliers();
+            return Ok(entities);
+        }
+
+        [Route("Logistic")]
+        [HttpGet]
+        public IActionResult GetLogisticSuppliers()
+        {
+            var entities = service.GetLogisticSuppliers();
             return Ok(entities);
         }
 

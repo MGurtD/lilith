@@ -111,5 +111,41 @@ namespace Api.Controllers.Sales
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);
         }
+
+        [HttpPost("Transport")]
+        [SwaggerOperation("BudgetTransportCreate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AddTransport(BudgetTransport transport)
+        {
+            var response = await service.AddTransport(transport);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("Transport/{id:guid}")]
+        [SwaggerOperation("BudgetTransportUpdate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateTransport(Guid id, [FromBody] BudgetTransport transport)
+        {
+            var response = await service.UpdateTransport(transport);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpDelete("Transport/{id:guid}")]
+        [SwaggerOperation("BudgetTransportDelete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RemoveTransport(Guid id)
+        {
+            var response = await service.RemoveTransport(id);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
     }
 }

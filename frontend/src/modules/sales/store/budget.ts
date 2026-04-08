@@ -80,5 +80,20 @@ export const useBudgetStore = defineStore({
       const deleted = await SalesServices.Budget.DeleteDetail(detail);
       return deleted;
     },
+    async CreateTransport(transport: any): Promise<boolean> {
+      const created = await SalesServices.Budget.CreateTransport(transport);
+      if (created) await this.GetById(transport.budgetId);
+      return created;
+    },
+    async UpdateTransport(transport: any): Promise<boolean> {
+      const updated = await SalesServices.Budget.UpdateTransport(transport);
+      if (updated) await this.GetById(transport.budgetId);
+      return updated;
+    },
+    async DeleteTransport(transport: any): Promise<boolean> {
+      const deleted = await SalesServices.Budget.DeleteTransport(transport.id);
+      if (deleted) await this.GetById(transport.budgetId);
+      return deleted;
+    },
   },
 });

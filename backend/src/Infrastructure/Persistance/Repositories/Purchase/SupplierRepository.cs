@@ -1,4 +1,5 @@
-﻿using Application.Contracts;
+using Application.Contracts;
+using Domain.Constants;
 using Domain.Entities.Purchase;
 using Microsoft.EntityFrameworkCore;
 
@@ -49,6 +50,13 @@ namespace Infrastructure.Persistance.Repositories.Purchase
         public IEnumerable<SupplierReference> GetSupplierReferences(Guid id)
         {
             return _supplierReferenceRepository.Find(r => r.SupplierId == id);
+        }
+
+        public IEnumerable<Supplier> GetLogisticSuppliers()
+        {
+            return dbSet.Include(s => s.Type)
+                        .Where(s => s.Type != null && s.Type.Name == SupplierTypeConstants.Logistic)
+                        .ToList();
         }
 
         public async Task<SupplierReference?> GetSupplierReferenceById(Guid supplierReferenceId)

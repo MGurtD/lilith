@@ -1,4 +1,4 @@
-# Lilith ERP - Manufacturing Management System
+# Lilith ERP - Manufacturing Management system
 
 Monorepo for the Lilith ERP system, a comprehensive manufacturing management solution covering Sales, Purchase, Production, and Warehouse operations.
 
@@ -36,6 +36,7 @@ Backend runs on: `https://localhost:5001`
 Swagger UI: `https://localhost:5001/swagger`
 
 **Hot reload during development:**
+
 ```bash
 dotnet watch run --project src/Api/
 ```
@@ -51,6 +52,7 @@ pnpm run dev
 Frontend runs on: `http://localhost:8100`
 
 **Production build:**
+
 ```bash
 pnpm run typecheck    # Type checking
 pnpm run build        # Build to dist/
@@ -68,6 +70,7 @@ docker-compose up -d
 ```
 
 Services:
+
 - **Backend API**: `http://localhost:5000`
 - **Frontend**: `http://localhost:8080`
 - **PostgreSQL**: `localhost:5432`
@@ -89,6 +92,7 @@ Domain (Pure Core)
 ```
 
 **Key patterns:**
+
 - **Primary constructors** for dependency injection
 - **Repository pattern** with `IUnitOfWork`
 - **Service layer** for all business logic
@@ -96,6 +100,7 @@ Domain (Pure Core)
 - **ILocalizationService** for multilingual support (ca/es/en)
 
 **Tech stack:**
+
 - ASP.NET Core 10 Web API
 - Entity Framework Core 10
 - PostgreSQL 16
@@ -111,6 +116,7 @@ Component → Pinia Store → Service Layer → API
 ```
 
 **Key patterns:**
+
 - **Composition API** with `<script setup>` (never Options API)
 - **BaseService<T>** for inherited CRUD operations
 - **Pinia stores** for state + service orchestration
@@ -118,6 +124,7 @@ Component → Pinia Store → Service Layer → API
 - **Lazy-loaded routes** for code splitting
 
 **Tech stack:**
+
 - Vue 3 (Composition API)
 - TypeScript 5
 - Pinia (state management)
@@ -140,11 +147,13 @@ Component → Pinia Store → Service Layer → API
 **PostgreSQL 16** with Entity Framework Core migrations
 
 **Key conventions:**
+
 - **UUID primary keys** (client-generated via `Guid.NewGuid()` / `getNewUuid()`)
 - **Soft deletes** via `Disabled` field (never physical deletion)
 - **Audit timestamps**: `CreatedOn`, `UpdatedOn` (auto-managed)
 
 **Migrations:**
+
 ```bash
 cd backend
 
@@ -163,6 +172,7 @@ dotnet ef database update PreviousMigrationName --project src/Infrastructure/
 ⚠️ **Critical architectural debt**: No automated tests are currently configured for either backend or frontend.
 
 **Planned testing stack:**
+
 - Backend: xUnit + FluentAssertions
 - Frontend: Vitest + Vue Test Utils
 
@@ -174,6 +184,7 @@ GitHub Actions workflows with path-based triggers:
 - **`.github/workflows/frontend-ci.yml`** - Triggers on `frontend/**` changes
 
 **Workflows:**
+
 1. Build and test (on push/PR)
 2. Deploy to production (on push to `main`/`master`)
 3. Docker image build and push
@@ -183,6 +194,7 @@ GitHub Actions workflows with path-based triggers:
 ### Code Style
 
 **Backend (C#):**
+
 - Primary constructors for DI
 - Always async/await for I/O
 - Always inject ILocalizationService
@@ -191,6 +203,7 @@ GitHub Actions workflows with path-based triggers:
 - Nullable reference types enabled
 
 **Frontend (TypeScript):**
+
 - Always use Composition API with `<script setup>`
 - PascalCase for component files
 - Always use `@/` path alias
@@ -201,11 +214,13 @@ GitHub Actions workflows with path-based triggers:
 ### VS Code Workspace
 
 Open the workspace file for optimal multi-root setup:
+
 ```bash
 code lilith.code-workspace
 ```
 
 This provides:
+
 - Separate settings for backend and frontend
 - Proper TypeScript/C# tooling
 - Recommended extensions

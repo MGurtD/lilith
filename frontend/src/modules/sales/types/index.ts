@@ -51,6 +51,19 @@ export interface CustomerAddress {
   disabled: boolean;
   observations: string;
   customerId: string;
+  distanceFromSite?: number;
+}
+
+export interface BudgetTransport {
+  id: string;
+  budgetId: string;
+  transportRateDetailId: string;
+  weight: number;
+  volume: number;
+  distance: number;
+  price: number;
+  description: string;
+  destination: string;
 }
 
 export interface Budget {
@@ -64,7 +77,9 @@ export interface Budget {
   acceptanceDate: any;
   statusId: string;
   notes: string;
+  totalWeight: number;
   details: Array<BudgetDetail> | undefined;
+  transports: Array<BudgetTransport> | undefined;
   userNotes: string;
 }
 
