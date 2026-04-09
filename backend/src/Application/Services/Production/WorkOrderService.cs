@@ -440,7 +440,6 @@ namespace Application.Services.Production
                 .ToList();
 
             bool isLastPhase = activePhasesOrdered.FirstOrDefault()?.Id == completedPhaseId;
-            bool isLastInternalPhase = activePhasesOrdered.FirstOrDefault(p => !p.IsExternalWork)?.Id == completedPhaseId;
 
             // Check if the next immediate phase is an external work phase
             var currentPhaseCodeAsNumber = completedPhase.CodeAsNumber;
@@ -450,6 +449,8 @@ namespace Application.Services.Production
                 .FirstOrDefault();
 
             var hasSubsequentExternalPhase = nextPhase?.IsExternalWork == true;
+
+            var workOrderModified = false;
 
             // Determine the appropriate status for the work order
             if (hasSubsequentExternalPhase)
@@ -466,16 +467,13 @@ namespace Application.Services.Production
                 }
 
                 workOrder.StatusId = externalServiceStatus.Id;
-                workOrder.Phases = []; // Clear phases to avoid tracking issues
-                await unitOfWork.WorkOrders.Update(workOrder);
+                workOrderModified = true;
             }
             else if (isLastPhase)
             {
                 workOrder.StatusId = phaseOutStatusId;
                 workOrder.EndTime = DateTime.Now;
-
-                workOrder.Phases = []; // Clear phases to avoid tracking issues
-                await unitOfWork.WorkOrders.Update(workOrder);
+                workOrderModified = true;
             }
 
             if (isLastPhase)
@@ -485,6 +483,9 @@ namespace Application.Services.Production
                 if (lastInternalPhase != null)
                 {
                     var producedQuantity = (int)lastInternalPhase.QuantityOk;
+                    workOrder.TotalQuantity = producedQuantity;
+                    workOrderModified = true;
+
                     var productionMovementResult = await workOrderStockService.CreateProductionMovement(
                         new CreateProductionMovementRequest
                         {
@@ -494,6 +495,12 @@ namespace Application.Services.Production
                     if (!productionMovementResult.Result)
                         return productionMovementResult;
                 }
+            }
+
+            if (workOrderModified)
+            {
+                workOrder.Phases = []; // Clear phases to avoid tracking issues
+                await unitOfWork.WorkOrders.Update(workOrder);
             }
 
             return new GenericResponse(true);
@@ -533,6 +540,7 @@ namespace Application.Services.Production
                 if (lastInternalPhase != null)
                 {
                     var producedQuantity = (int)lastInternalPhase.QuantityOk;
+                    workOrder.TotalQuantity = producedQuantity;
                     var productionMovementResult = await workOrderStockService.CreateProductionMovement(
                         new CreateProductionMovementRequest
                         {

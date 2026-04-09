@@ -7,6 +7,7 @@ public class AppSettings
     public FileManagmentSettings FileManagment { get; set; } = new();
     public VerifactuSettings? Verifactu { get; set; }
     public GeolocalizationSettings? Geolocalization { get; set; }
+    public OpenTelemetrySettings? OpenTelemetry { get; set; }
     public void Validate()
     {
         ConnectionStrings.Validate();
@@ -14,6 +15,8 @@ public class AppSettings
         FileManagment.Validate();
         if (Verifactu != null)
             Verifactu?.Validate();
+        if (OpenTelemetry != null)
+            OpenTelemetry?.Validate();
         if (Geolocalization != null)
             Geolocalization?.Validate();
     }
@@ -109,5 +112,33 @@ public class CertificateSettings
             throw new ArgumentException("Verifactu:Certificate:Path configuration key is required");
         if (string.IsNullOrWhiteSpace(Password))
             throw new ArgumentException("Verifactu:Certificate:Password configuration key is required");
+    }
+}
+
+public class OpenTelemetrySettings
+{
+    public bool Enabled { get; set; }
+    public string ServiceName { get; set; } = "lilith-backend";
+    public string ServiceVersion { get; set; } = "1.0.0";
+    public string Endpoint { get; set; } = string.Empty;
+    public string InstanceId { get; set; } = string.Empty;
+    public string ApiToken { get; set; } = string.Empty;
+
+    public void Validate()
+    {
+        if (!Enabled) return;
+        if (string.IsNullOrWhiteSpace(Endpoint))
+            throw new ArgumentException("OpenTelemetry:Endpoint configuration key is required when enabled");
+        if (string.IsNullOrWhiteSpace(InstanceId))
+            throw new ArgumentException("OpenTelemetry:InstanceId configuration key is required when enabled");
+        if (string.IsNullOrWhiteSpace(ApiToken))
+            throw new ArgumentException("OpenTelemetry:ApiToken configuration key is required when enabled");
+    }
+
+    public string GetAuthorizationHeader()
+    {
+        var credentials = Convert.ToBase64String(
+            System.Text.Encoding.UTF8.GetBytes($"{InstanceId}:{ApiToken}"));
+        return $"Basic {credentials}";
     }
 }

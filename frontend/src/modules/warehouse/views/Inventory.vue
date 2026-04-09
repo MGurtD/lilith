@@ -15,21 +15,18 @@
           <div class="filter-field flex gap-4">
             <label>Referencia</label>
             <BaseInput
-              class="mb-2"
               label=""
               v-model="filter.referenceName"
               @update:modelValue="filterMovements"
             />
           </div>
-          <div class="filter-field flex gap-4">
-            <label>Ubicació</label>
-            <BaseInput
-              class="mb-2"
-              label=""
-              v-model="filter.locationName"
-              @update:modelValue="filterMovements"
-            />
-          </div>
+          <div class="filter-field flex gap-2">
+              <label>Ubicació</label>
+              <DropdownWarehousesWithLocations
+                label=""
+                v-model="filter.locationId"
+              />
+            </div>
         </div>
         <div class="flex gap-2 flex-shrink-0">
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="newMovement" />
@@ -42,14 +39,13 @@
         </div>
       </div>
     </template>
-    <Column field="referenceName" header="Producte" style="width: 28%">
+    <Column field="referenceName" header="Referència" style="width: 28%">
     </Column>
     <Column field="locationName" header="Ubicació"></Column>
     <Column field="oldQuantity" header="Uds."></Column>
     <Column header="Recompte" style="width: 12%">
       <template #body="slotProps">
         <BaseInput
-          class="mb-2"
           label=""
           id="newQuantity"
           v-model="slotProps.data.newQuantity"
@@ -75,6 +71,7 @@ import BaseInput from "../../../components/BaseInput.vue";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
+import { useReferenceStore } from "../../shared/store/reference";
 
 import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -82,6 +79,7 @@ import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
+import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
 import { getNewUuid } from "../../../utils/functions";
 
 const store = useStore();
@@ -90,10 +88,11 @@ const toast = useToast();
 const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
+const referenceStore = useReferenceStore();
 
 const filter = ref({
   referenceName: "",
-  locationName: "",
+  locationId: undefined as string | undefined,
 });
 
 onMounted(async () => {
@@ -128,6 +127,7 @@ const refreshData = async () => {
     } as Inventory;
     inventoryStore.inventories?.push(invent);
   });
+  filterMovements();
 };
 
 const filterMovements = () => {
@@ -138,11 +138,9 @@ const filterMovements = () => {
         .includes(filter.value.referenceName.toLowerCase()),
     );
   }
-  if (filter.value.locationName) {
-    inventoryStore.inventories = inventoryStore.inventories?.filter((inv) =>
-      inv.locationName
-        ?.toLowerCase()
-        .includes(filter.value.locationName.toLowerCase()),
+  if (filter.value.locationId) {
+    inventoryStore.inventories = inventoryStore.inventories?.filter(
+      (inv) => inv.locationId === filter.value.locationId,
     );
   }
 };
@@ -151,6 +149,7 @@ const isDialogVisible = ref(false);
 const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
+  inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };
@@ -161,7 +160,7 @@ const newMovement = () => {
     id: getNewUuid(),
     stockId: getNewUuid(),
     movementType: "",
-    locationId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    locationId: null,
     referenceId: "",
     oldQuantity: 0,
     newQuantity: 0,
@@ -175,62 +174,30 @@ const newMovement = () => {
 };
 
 const saveMovement = async () => {
-  let stock = {
-    id: "",
-    stockId: "",
-    movementType: "",
-    locationId: "",
-    location: null,
-    referenceId: "",
-    quantity: 0,
-    width: 0,
-    length: 0,
-    height: 0,
-    diameter: 0,
-    thickness: 0,
-    movementDate: new Date(),
-    description: "",
-  } as StockMovement;
-  let promises = [] as Array<Promise<boolean>>;
+  const promises = [] as Array<Promise<boolean>>;
 
   inventoryStore.inventories
     ?.filter((el) => el.newQuantity != el.oldQuantity)
-    .forEach(async (m) => {
-      if (m.newQuantity < m.oldQuantity) {
-        stock = {
-          id: m.id,
-          stockId: m.stockId,
-          movementType: "OUTPUT",
-          locationId: m.locationId,
-          location: null,
-          referenceId: m.referenceId,
-          quantity: m.newQuantity - m.oldQuantity,
-          width: m.width,
-          length: m.length,
-          height: m.height,
-          diameter: m.diameter,
-          thickness: m.thickness,
-          movementDate: m.movementDate,
-          description: "Sortida per inventari",
-        };
-      } else if (m.newQuantity > m.oldQuantity) {
-        stock = {
-          id: m.id,
-          stockId: m.stockId,
-          movementType: "INPUT",
-          locationId: m.locationId,
-          location: null,
-          referenceId: m.referenceId,
-          quantity: m.newQuantity - m.oldQuantity,
-          width: m.width,
-          length: m.length,
-          height: m.height,
-          diameter: m.diameter,
-          thickness: m.thickness,
-          movementDate: m.movementDate,
-          description: "Entrada per inventari",
-        };
-      }
+    .forEach((m) => {
+      const isOutput = m.newQuantity < m.oldQuantity;
+      const stock: StockMovement = {
+        id: m.id,
+        stockId: m.stockId,
+        movementType: isOutput ? "OUTPUT" : "INPUT",
+        locationId: m.locationId || null,
+        location: null,
+        referenceId: m.referenceId,
+        quantity: m.newQuantity - m.oldQuantity,
+        width: m.width,
+        length: m.length,
+        height: m.height,
+        diameter: m.diameter,
+        thickness: m.thickness,
+        movementDate: m.movementDate,
+        description: isOutput
+          ? "Sortida per inventari"
+          : "Entrada per inventari",
+      };
 
       promises.push(stockMovementStore.create(stock));
     });

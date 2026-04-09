@@ -13,6 +13,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { formatDimensions } from "@/utils/functions";
 
 interface Props {
   width: number;
@@ -25,19 +26,15 @@ interface Props {
 const props = defineProps<Props>();
 const { t } = useI18n();
 
-const formattedDimensions = computed(() => {
-  const dimensions = [
-    { label: t("measurements.width"), value: props.width },
-    { label: t("measurements.length"), value: props.length },
-    { label: t("measurements.height"), value: props.height },
-    { label: t("measurements.diameter"), value: props.diameter },
-    { label: t("measurements.thickness"), value: props.thickness },
-  ]
-    .filter((dimension) => dimension.value > 0)
-    .map((dimension) => `${dimension.label} ${dimension.value}`);
-
-  return dimensions.length > 0 ? dimensions : [t("measurements.none")];
-});
+const formattedDimensions = computed(() =>
+  formatDimensions(t, {
+    width: props.width,
+    length: props.length,
+    height: props.height,
+    diameter: props.diameter,
+    thickness: props.thickness,
+  }),
+);
 </script>
 
 <style scoped>

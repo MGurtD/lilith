@@ -14,7 +14,7 @@ export const useInventoryStore = defineStore({
                 id: id,
                 stockId: "",
                 movementType: "",
-                locationId: "",
+                locationId: null,
                 referenceId: "",
                 oldQuantity: 0.0,
                 newQuantity: 0.0,

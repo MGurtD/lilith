@@ -21,9 +21,15 @@
           <div class="reference-cell">
             <span class="font-semibold">{{ slotProps.data.referenceCode }}</span>
             <Tag
-              v-if="isMaterialProvisioned(slotProps.data.id)"
-              value="Aprovisionat"
+              v-if="activePhaseStore.hasMaterialsConsumed"
+              value="Consumit"
               severity="success"
+              icon="pi pi-check-circle"
+            />
+            <Tag
+              v-else-if="isMaterialProvisioned(slotProps.data.id)"
+              value="Aprovisionat"
+              severity="warn"
               icon="pi pi-check-circle"
             />
           </div>
@@ -81,11 +87,14 @@
     </div>
 
     <AvailableStockDialog
+      v-if="selectedBomItem"
       v-model:visible="stockDialogVisible"
-      :bom-code="selectedBomCode"
+      :bom-item="selectedBomItem"
       :stock-items="stockItems"
       :moving-stock-id="movingStockId"
+      :workcenter-location-ids="workcenterStore.associatedLocationIds"
       @move-stock="moveStock"
+      @return-stock="returnStock"
     />
   </div>
 </template>
@@ -99,7 +108,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
-import { usePlantActivePhaseStore } from "../../store";
+import { usePlantActivePhaseStore, usePlantWorkcenterStore } from "../../store";
 import type { BillOfMaterialsItem } from "../../../production/types";
 import type { StockResponse } from "../../../warehouse/types";
 import WarehouseServices from "../../../warehouse/services";
@@ -110,13 +119,13 @@ import DimensionChips from "./DimensionChips.vue";
 const route = useRoute();
 const toast = useToast();
 const activePhaseStore = usePlantActivePhaseStore();
+const workcenterStore = usePlantWorkcenterStore();
 
 const workcenterId = route.params.id as string;
 const stockDialogVisible = ref(false);
 const stockItems = ref<StockResponse[]>([]);
 const loadingBomId = ref<string | null>(null);
-const selectedBomId = ref("");
-const selectedBomCode = ref("");
+const selectedBomItem = ref<BillOfMaterialsItem | null>(null);
 const movingStockId = ref<string | null>(null);
 
 function isMaterialProvisioned(bomId: string): boolean {
@@ -124,8 +133,7 @@ function isMaterialProvisioned(bomId: string): boolean {
 }
 
 async function showStock(bom: BillOfMaterialsItem) {
-  selectedBomId.value = bom.id;
-  selectedBomCode.value = bom.referenceCode;
+  selectedBomItem.value = bom;
   loadingBomId.value = bom.id;
 
   try {
@@ -136,7 +144,8 @@ async function showStock(bom: BillOfMaterialsItem) {
   }
 }
 
-async function moveStock(stockItem: StockResponse) {
+async function moveStock(payload: { stockItem: StockResponse; quantity: number }) {
+  const { stockItem, quantity } = payload;
   const workOrderPhaseId = activePhaseStore.activePhase?.phaseId;
   if (!workOrderPhaseId) {
     toast.add({
@@ -155,26 +164,74 @@ async function moveStock(stockItem: StockResponse) {
       stockId: stockItem.stockId,
       workcenterId: workcenterId,
       workOrderPhaseId: workOrderPhaseId,
-      quantity: stockItem.quantity,
+      quantity: quantity,
     });
 
     if (result) {
       toast.add({
         severity: "success",
         summary: "Stock mogut correctament",
-        detail: `${stockItem.quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
+        detail: `${quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
         life: 4000,
       });
 
-      if (selectedBomId.value) {
-        await activePhaseStore.refreshMaterialProvisioning(selectedBomId.value);
-        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomId.value);
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
       }
     } else {
       toast.add({
         severity: "error",
         summary: "Error al moure l'stock",
         detail: "No s'ha pogut moure l'stock a la ubicació d'aprovisionament",
+        life: 4000,
+      });
+    }
+  } finally {
+    movingStockId.value = null;
+  }
+}
+
+async function returnStock(payload: { stockItem: StockResponse; quantity: number }) {
+  const { stockItem, quantity } = payload;
+  const workOrderPhaseId = activePhaseStore.activePhase?.phaseId;
+  if (!workOrderPhaseId) {
+    toast.add({
+      severity: "error",
+      summary: "Error al retornar l'stock",
+      detail: "No s'ha pogut determinar la fase activa",
+      life: 4000,
+    });
+    return;
+  }
+
+  movingStockId.value = stockItem.stockId;
+
+  try {
+    const result = await ProductionServices.WorkOrderStock.returnFromWorkcenterSupply({
+      stockId: stockItem.stockId,
+      workcenterId: workcenterId,
+      workOrderPhaseId: workOrderPhaseId,
+      quantity: quantity,
+    });
+
+    if (result) {
+      toast.add({
+        severity: "success",
+        summary: "Stock retornat correctament",
+        detail: `${quantity} unitats de ${stockItem.referenceCode} retornades a la ubicació per defecte`,
+        life: 4000,
+      });
+
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
+      }
+    } else {
+      toast.add({
+        severity: "error",
+        summary: "Error al retornar l'stock",
+        detail: "No s'ha pogut retornar l'stock a la ubicació per defecte",
         life: 4000,
       });
     }

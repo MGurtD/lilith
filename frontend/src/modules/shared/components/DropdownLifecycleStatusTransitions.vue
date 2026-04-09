@@ -4,6 +4,7 @@
       label
     }}</label>
     <Select
+      ref="selectRef"
       showClear
       :options="store.availableTransitions"
       :placeholder="
@@ -38,6 +39,7 @@ const emit = defineEmits<{
 
 const store = useLifecyclesStore();
 const isLoading = ref(false);
+const selectRef = ref();
 
 const currentStatusDescription = computed(() => {
   if (!props.statusId || !store.lifecycle?.statuses) return "";
@@ -45,7 +47,7 @@ const currentStatusDescription = computed(() => {
   return status?.name || "";
 });
 
-onMounted(async () => {
+const reloadTransitions = async () => {
   if (!props.statusId) return;
 
   isLoading.value = true;
@@ -54,5 +56,14 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+onMounted(async () => {
+  await reloadTransitions();
+});
+
+defineExpose({
+  reloadTransitions,
+  focus: () => selectRef.value?.focus?.(),
 });
 </script>

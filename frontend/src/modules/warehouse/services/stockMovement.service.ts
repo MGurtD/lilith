@@ -32,4 +32,18 @@ export class StockMovementService extends BaseService<StockMovement> {
       return response.data as Array<StockMovement>;
     }
   }
+
+  async getByWorkOrderId(
+    workOrderId: string
+  ): Promise<Array<StockMovement> | undefined> {
+    try {
+      const endpoint = `${this.resource}/ByWorkOrder/${workOrderId}`;
+      const response = await this.apiClient.get(endpoint);
+      if (response.status === 200) {
+        return response.data as Array<StockMovement>;
+      }
+    } catch (err) {
+      logException(err);
+    }
+  }
 }

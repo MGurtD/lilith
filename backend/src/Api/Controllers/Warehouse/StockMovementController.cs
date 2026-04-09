@@ -31,5 +31,13 @@ namespace Api.Controllers.Warehouse
             else return BadRequest();
         }
 
+        [HttpGet("ByWorkOrder/{workOrderId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetByWorkOrder(Guid workOrderId)
+        {
+            var stockMovements = await service.GetByWorkOrderId(workOrderId);
+            return Ok(stockMovements);
+        }
+
     }
 }

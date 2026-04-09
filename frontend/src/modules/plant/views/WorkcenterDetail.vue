@@ -402,6 +402,14 @@ onMounted(async () => {
   connect(WS_ENDPOINTS.WORKCENTER(id), { debug: true });
 });
 
+// When phase is unloaded, reset to "Fases disponibles" tab so the user
+// doesn't see a blank panel (the previously-active tab no longer exists).
+watch(hasLoadedPhase, (loaded) => {
+  if (!loaded) {
+    activeTab.value = "0";
+  }
+});
+
 watch(
   [
     activeTab,
