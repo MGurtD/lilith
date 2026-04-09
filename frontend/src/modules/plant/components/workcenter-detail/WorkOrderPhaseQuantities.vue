@@ -60,80 +60,14 @@
     </template>
 
     <div class="dialog-content">
-      <!-- Produced Quantity Section (Informative) -->
-      <div class="info-section">
-        <div class="produced-units-row">
-          <div class="produced-column">
-            <h4 class="section-title">
-              <i :class="PrimeIcons.CHECK_CIRCLE" class="mr-2"></i>
-              Quantitat produ&iuml;da
-            </h4>
-            <div class="produced-unit-card ok">
-              <span class="produced-value">{{
-                loadedPhase?.quantityOk ?? 0
-              }}</span>
-            </div>
-          </div>
-          <div class="produced-column">
-            <h4 class="section-title">
-              <i
-                :class="PrimeIcons.EXCLAMATION_TRIANGLE"
-                class="mr-2"
-              ></i>
-              Quantitat defectuosa
-            </h4>
-            <div class="produced-unit-card ko">
-              <span class="produced-value">{{
-                loadedPhase?.quantityKo ?? 0
-              }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add More Quantity Section (Input) -->
-      <div class="input-section">
-        <h4 class="section-title">
-          <i :class="PrimeIcons.PLUS_CIRCLE" class="mr-2"></i>
-          Afegir m&eacute;s quantitat
-        </h4>
-        <p class="section-hint">
-          Introdueix la quantitat addicional produ&iuml;da en aquesta
-          sessi&oacute;
-        </p>
-        <div class="counters-row">
-          <div class="counter-field">
-            <InputNumber
-              v-model="formData.counterOk"
-              :min="0"
-              :useGrouping="false"
-              class="w-full"
-              showButtons
-              buttonLayout="horizontal"
-              :step="1"
-              decrementButtonClass="p-button-secondary"
-              incrementButtonClass="p-button-secondary"
-              incrementButtonIcon="pi pi-plus"
-              decrementButtonIcon="pi pi-minus"
-            />
-          </div>
-          <div class="counter-field">
-            <InputNumber
-              v-model="formData.counterKo"
-              :min="0"
-              :useGrouping="false"
-              class="w-full"
-              showButtons
-              buttonLayout="horizontal"
-              :step="1"
-              decrementButtonClass="p-button-secondary"
-              incrementButtonClass="p-button-secondary"
-              incrementButtonIcon="pi pi-plus"
-              decrementButtonIcon="pi pi-minus"
-            />
-          </div>
-        </div>
-      </div>
+      <PhaseQuantityForm
+        :quantity-ok="loadedPhase?.quantityOk ?? 0"
+        :quantity-ko="loadedPhase?.quantityKo ?? 0"
+        :counter-ok="formData.counterOk"
+        :counter-ko="formData.counterKo"
+        @update:counter-ok="formData.counterOk = $event"
+        @update:counter-ko="formData.counterKo = $event"
+      />
 
       <!-- Action Buttons -->
       <div class="actions-panel">
@@ -164,6 +98,7 @@ import { watch, computed, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
+import PhaseQuantityForm from "./PhaseQuantityForm.vue";
 
 interface Props {
   visible: boolean;
@@ -275,83 +210,6 @@ const onSubmit = async () => {
   border-top: 1px solid var(--p-surface-border);
 }
 
-.section-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-color);
-  display: flex;
-  align-items: center;
-}
-
-.section-hint {
-  margin: 0 0 1rem 0;
-  font-size: 0.85rem;
-  color: var(--text-color-secondary);
-}
-
-/* Produced Units Section */
-.info-section {
-  background: var(--p-surface-50);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.produced-units-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.produced-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.produced-unit-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border-radius: 8px;
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-}
-
-.produced-unit-card.ok {
-  border-left: 4px solid var(--p-green-500);
-}
-
-.produced-unit-card.ko {
-  border-left: 4px solid var(--p-red-500);
-}
-
-.produced-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-color);
-}
-
-/* Input Section */
-.input-section {
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.counters-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.counter-field {
-  display: flex;
-  flex-direction: column;
-}
-
 /* Actions Panel */
 .actions-panel {
   display: flex;
@@ -364,11 +222,6 @@ const onSubmit = async () => {
 }
 
 @media (max-width: 768px) {
-  .produced-units-row,
-  .counters-row {
-    grid-template-columns: 1fr;
-  }
-
   .actions-panel {
     flex-direction: column;
   }

@@ -126,6 +126,17 @@ namespace Application.Services.Warehouse
             return new GenericResponse(true, request);
         }
 
+        public async Task<IEnumerable<StockMovement>> GetByWorkOrderId(Guid workOrderId)
+        {
+            var workOrder = await _unitOfWork.WorkOrders.GetDetailed(workOrderId);
+            if (workOrder == null)
+                return Enumerable.Empty<StockMovement>();
+
+            var phaseIds = workOrder.Phases.Select(p => p.Id).ToList();
+
+            return _unitOfWork.StockMovements.GetByEntityReferences(workOrderId, phaseIds);
+        }
+
         public async Task<GenericResponse> Remove(Guid id)
         {
             if (_defaultLocationId == null)

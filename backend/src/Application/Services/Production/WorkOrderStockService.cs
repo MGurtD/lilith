@@ -1,6 +1,5 @@
 using Application.Contracts;
 using Domain.Entities.Warehouse;
-using Domain.Implementations.ReferenceFormat;
 
 namespace Application.Services.Production;
 
@@ -12,6 +11,19 @@ public class WorkOrderStockService(
     IStockMovementService stockMovementService,
     IStockService stockService) : IWorkOrderStockService
 {
+    /// <summary>
+    /// Resolves the WorkOrder.Code from a WorkOrderPhaseId.
+    /// Returns empty string if the phase or work order is not found.
+    /// </summary>
+    private async Task<string> GetWorkOrderCodeByPhaseId(Guid workOrderPhaseId)
+    {
+        var phase = await unitOfWork.WorkOrders.Phases.Get(workOrderPhaseId);
+        if (phase == null) return string.Empty;
+
+        var workOrder = await unitOfWork.WorkOrders.Get(phase.WorkOrderId);
+        return workOrder?.Code ?? string.Empty;
+    }
+
     public async Task<GenericResponse> MoveToWorkcenterSupply(MoveStockToWorkcenterSupplyRequest request)
     {
         // 1. Validate quantity
@@ -45,8 +57,15 @@ public class WorkOrderStockService(
 
         var sourceLocationId = sourceStock.LocationId;
         var sourceStockId = sourceStock.Id;
-        var description = localizationService.GetLocalizedString("Movement.TransferToSupplyDescription", supplyLocation.Name);
         var isFullMove = request.Quantity == sourceStock.Quantity;
+
+        // Resolve WO code and source location name for descriptions
+        var woCode = await GetWorkOrderCodeByPhaseId(request.WorkOrderPhaseId);
+        var sourceLocation = await unitOfWork.Warehouses.Locations.Get(sourceLocationId);
+        var sourceLocationName = sourceLocation?.Name ?? string.Empty;
+
+        var outputDescription = localizationService.GetLocalizedString("Movement.SupplyOutputDescription", supplyLocation.Name, woCode);
+        var inputDescription = localizationService.GetLocalizedString("Movement.SupplyInputDescription", sourceLocationName, woCode);
 
         // 5. Check if stock with same dimensions already exists at supply location
         var existingDestinationStock = stockService.GetByDimensions(
@@ -125,8 +144,8 @@ public class WorkOrderStockService(
             Height = sourceStock.Height,
             Diameter = sourceStock.Diameter,
             Thickness = sourceStock.Thickness,
-            MovementDate = DateTime.UtcNow,
-            Description = description,
+            MovementDate = DateTime.Now,
+            Description = outputDescription,
             Entity = StockMovementEntities.WorkOrderPhase,
             EntityId = request.WorkOrderPhaseId
         };
@@ -144,8 +163,8 @@ public class WorkOrderStockService(
             Height = sourceStock.Height,
             Diameter = sourceStock.Diameter,
             Thickness = sourceStock.Thickness,
-            MovementDate = DateTime.UtcNow,
-            Description = description,
+            MovementDate = DateTime.Now,
+            Description = inputDescription,
             Entity = StockMovementEntities.WorkOrderPhase,
             EntityId = request.WorkOrderPhaseId
         };
@@ -190,8 +209,15 @@ public class WorkOrderStockService(
 
         var supplyLocationId = sourceStock.LocationId;
         var sourceStockId = sourceStock.Id;
-        var description = localizationService.GetLocalizedString("Movement.ReturnFromSupplyDescription", defaultLocation.Name);
         var isFullReturn = request.Quantity == sourceStock.Quantity;
+
+        // Resolve WO code and supply location name for descriptions
+        var woCode = await GetWorkOrderCodeByPhaseId(request.WorkOrderPhaseId);
+        var supplyLocation = await unitOfWork.Warehouses.Locations.Get(supplyLocationId);
+        var supplyLocationName = supplyLocation?.Name ?? string.Empty;
+
+        var outputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyOutputDescription", supplyLocationName, woCode);
+        var inputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyInputDescription", defaultLocation.Name, woCode);
 
         // 6. Check if stock with same dimensions already exists at default location
         var existingDestinationStock = stockService.GetByDimensions(
@@ -263,8 +289,8 @@ public class WorkOrderStockService(
             Height = sourceStock.Height,
             Diameter = sourceStock.Diameter,
             Thickness = sourceStock.Thickness,
-            MovementDate = DateTime.UtcNow,
-            Description = description,
+            MovementDate = DateTime.Now,
+            Description = outputDescription,
             Entity = StockMovementEntities.WorkOrderPhase,
             EntityId = request.WorkOrderPhaseId
         };
@@ -282,8 +308,8 @@ public class WorkOrderStockService(
             Height = sourceStock.Height,
             Diameter = sourceStock.Diameter,
             Thickness = sourceStock.Thickness,
-            MovementDate = DateTime.UtcNow,
-            Description = description,
+            MovementDate = DateTime.Now,
+            Description = inputDescription,
             Entity = StockMovementEntities.WorkOrderPhase,
             EntityId = request.WorkOrderPhaseId
         };
@@ -295,7 +321,7 @@ public class WorkOrderStockService(
     public async Task<GenericResponse> ConsumePhaseStock(ConsumePhaseStockRequest request)
     {
         // 1. Validate request
-        if (request.ConsumedItems == null || request.ConsumedItems.Count == 0)
+        if (request.Entries == null || request.Entries.Count == 0)
             return new GenericResponse(false, localizationService.GetLocalizedString("Movement.Consumption.NoItems"));
 
         // 2. Get workcenter supply location IDs
@@ -305,7 +331,7 @@ public class WorkOrderStockService(
         if (workcenterLocationIds.Count == 0)
             return new GenericResponse(false, localizationService.GetLocalizedString("WorkcenterSupplyLocationNotFound"));
 
-        // 3. Get default warehouse location for auto-return of unconsumed stock
+        // 3. Get default warehouse location for returning remaining pieces
         var defaultLocationId = await warehouseService.GetDefaultLocation();
         if (defaultLocationId == null)
             return new GenericResponse(false, localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
@@ -314,15 +340,17 @@ public class WorkOrderStockService(
         if (defaultLocation == null || defaultLocation.Disabled)
             return new GenericResponse(false, localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
 
+        // Resolve WO code for descriptions
+        var woCode = await GetWorkOrderCodeByPhaseId(request.WorkOrderPhaseId);
+        var consumptionDescription = localizationService.GetLocalizedString("Movement.ConsumptionDescription", woCode);
+        var residueReturnDescription = localizationService.GetLocalizedString("Movement.ResidueReturnDescription", defaultLocation.Name, woCode);
+
         var allMovements = new List<StockMovement>();
 
-        // 4. Process each consumed item
-        foreach (var item in request.ConsumedItems)
+        // 4. Process each stock entry
+        foreach (var entry in request.Entries)
         {
-            if (item.Quantity <= 0)
-                return new GenericResponse(false, localizationService.GetLocalizedString("QuantityMustBeGreaterThanZero"));
-
-            var sourceStock = await unitOfWork.Stocks.Get(item.StockId);
+            var sourceStock = await unitOfWork.Stocks.Get(entry.StockId);
             if (sourceStock == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("StockNotFound"));
 
@@ -330,162 +358,101 @@ public class WorkOrderStockService(
             if (!workcenterLocationIds.Contains(sourceStock.LocationId))
                 return new GenericResponse(false, localizationService.GetLocalizedString("StockNotAtSupplyLocation"));
 
-            if (sourceStock.Quantity < item.Quantity)
-                return new GenericResponse(false, localizationService.GetLocalizedString("StockInsufficientQuantity"));
-
             var sourceLocationId = sourceStock.LocationId;
-            var description = localizationService.GetLocalizedString("Movement.ConsumptionDescription");
+            var sourceQuantity = sourceStock.Quantity;
 
-            // Reduce source stock quantity
-            sourceStock.Quantity -= item.Quantity;
-
-            if (sourceStock.Quantity == 0)
-            {
-                // Source depleted: keep record with quantity 0 at default location
-                // to preserve FK integrity with existing StockMovements
-                sourceStock.LocationId = defaultLocation.Id;
-            }
-
+            // 4a. Always consume the FULL source stock quantity.
+            //     The entire provisioned material enters the production process.
+            //     Remaining pieces (if any) will be returned as new/residue stock.
+            sourceStock.Quantity = 0;
+            sourceStock.LocationId = defaultLocation.Id;
             await unitOfWork.Stocks.Update(sourceStock);
 
-            // Create CONSUMPTION movement for consumed stock leaving the supply location
-            var consumptionMovement = new StockMovement
+            allMovements.Add(new StockMovement
             {
                 StockId = sourceStock.Id,
                 LocationId = sourceLocationId,
                 ReferenceId = sourceStock.ReferenceId,
                 MovementType = StockMovementType.CONSUMPTION,
-                Quantity = item.Quantity * -1,
-                Width = item.Width,
-                Length = item.Length,
-                Height = item.Height,
-                Diameter = item.Diameter,
-                Thickness = item.Thickness,
-                MovementDate = DateTime.UtcNow,
-                Description = description,
+                Quantity = sourceQuantity * -1,
+                Width = sourceStock.Width,
+                Length = sourceStock.Length,
+                Height = sourceStock.Height,
+                Diameter = sourceStock.Diameter,
+                Thickness = sourceStock.Thickness,
+                MovementDate = DateTime.Now,
+                Description = consumptionDescription,
                 Entity = StockMovementEntities.WorkOrderPhase,
                 EntityId = request.WorkOrderPhaseId
-            };
+            });
 
-            allMovements.Add(consumptionMovement);
-
-            // 4b. Calculate dimensional residue per consumed item.
-            //     If consumed dimensions are smaller than the source stock dimensions,
-            //     the leftover piece (residue) is returned to the default location
-            //     without subtracting cutting waste.
-            var residueWidth = sourceStock.Width;
-            var residueLength = sourceStock.Length;
-            var residueHeight = sourceStock.Height;
-            var residueDiameter = sourceStock.Diameter;
-            var residueThickness = sourceStock.Thickness;
-            var hasResidue = false;
-
-            // Get the reference format to determine the cutting axis
-            var reference = await unitOfWork.References.Get(sourceStock.ReferenceId);
-            if (reference?.ReferenceFormatId != null)
+            // 4b. Return each remaining piece to the default location
+            if (entry.RemainingPieces != null)
             {
-                var format = await unitOfWork.ReferenceFormats.Get(reference.ReferenceFormatId.Value);
-                if (format != null)
+                foreach (var piece in entry.RemainingPieces)
                 {
-                    var formatCode = format.Code;
+                    if (piece.Quantity <= 0) continue;
 
-                    if (formatCode == ReferenceFormatCodes.RODO || formatCode == ReferenceFormatCodes.TUB)
+                    // Find or create stock at default location with the piece's dimensions
+                    var existingStock = stockService.GetByDimensions(
+                        defaultLocation.Id,
+                        sourceStock.ReferenceId,
+                        piece.Width,
+                        piece.Length,
+                        piece.Height,
+                        piece.Diameter,
+                        piece.Thickness);
+
+                    Guid destinationStockId;
+
+                    if (existingStock != null)
                     {
-                        // Cutting axis: length. Diameter (and thickness for TUB) stay the same.
-                        if (item.Length < sourceStock.Length && item.Length > 0)
-                        {
-                            residueLength = sourceStock.Length - item.Length;
-                            hasResidue = residueLength > 0;
-                        }
+                        existingStock.Quantity += piece.Quantity;
+                        await unitOfWork.Stocks.Update(existingStock);
+                        destinationStockId = existingStock.Id;
                     }
-                    else if (formatCode == ReferenceFormatCodes.PLACA)
+                    else
                     {
-                        // PLACA: check all 3 axes (width, length, height)
-                        if (item.Width < sourceStock.Width && item.Width > 0)
+                        var newStock = new Stock
                         {
-                            residueWidth = sourceStock.Width - item.Width;
-                            if (residueWidth > 0) hasResidue = true;
-                            else residueWidth = 0;
-                        }
-                        if (item.Length < sourceStock.Length && item.Length > 0)
-                        {
-                            residueLength = sourceStock.Length - item.Length;
-                            if (residueLength > 0) hasResidue = true;
-                            else residueLength = 0;
-                        }
-                        if (item.Height < sourceStock.Height && item.Height > 0)
-                        {
-                            residueHeight = sourceStock.Height - item.Height;
-                            if (residueHeight > 0) hasResidue = true;
-                            else residueHeight = 0;
-                        }
+                            ReferenceId = sourceStock.ReferenceId,
+                            LocationId = defaultLocation.Id,
+                            Quantity = piece.Quantity,
+                            Width = piece.Width,
+                            Length = piece.Length,
+                            Height = piece.Height,
+                            Diameter = piece.Diameter,
+                            Thickness = piece.Thickness
+                        };
+                        await unitOfWork.Stocks.Add(newStock);
+                        destinationStockId = newStock.Id;
                     }
-                    // UNITATS: no dimensional residue
-                }
-            }
 
-            if (hasResidue)
-            {
-                var returnDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyDescription", defaultLocation.Name);
-
-                // Find or create stock at default location with residue dimensions
-                var existingResidueStock = stockService.GetByDimensions(
-                    defaultLocation.Id,
-                    sourceStock.ReferenceId,
-                    residueWidth,
-                    residueLength,
-                    residueHeight,
-                    residueDiameter,
-                    residueThickness);
-
-                Guid residueStockId;
-
-                if (existingResidueStock != null)
-                {
-                    existingResidueStock.Quantity += item.Quantity;
-                    await unitOfWork.Stocks.Update(existingResidueStock);
-                    residueStockId = existingResidueStock.Id;
-                }
-                else
-                {
-                    var newResidueStock = new Stock
+                    // INPUT movement for remaining piece arriving at default location
+                    allMovements.Add(new StockMovement
                     {
-                        ReferenceId = sourceStock.ReferenceId,
+                        StockId = destinationStockId,
                         LocationId = defaultLocation.Id,
-                        Quantity = item.Quantity,
-                        Width = residueWidth,
-                        Length = residueLength,
-                        Height = residueHeight,
-                        Diameter = residueDiameter,
-                        Thickness = residueThickness
-                    };
-                    await unitOfWork.Stocks.Add(newResidueStock);
-                    residueStockId = newResidueStock.Id;
+                        ReferenceId = sourceStock.ReferenceId,
+                        MovementType = StockMovementType.INPUT,
+                        Quantity = piece.Quantity,
+                        Width = piece.Width,
+                        Length = piece.Length,
+                        Height = piece.Height,
+                        Diameter = piece.Diameter,
+                        Thickness = piece.Thickness,
+                        MovementDate = DateTime.Now,
+                        Description = residueReturnDescription,
+                        Entity = StockMovementEntities.WorkOrderPhase,
+                        EntityId = request.WorkOrderPhaseId
+                    });
                 }
-
-                // INPUT movement for residue arriving at default location
-                allMovements.Add(new StockMovement
-                {
-                    StockId = residueStockId,
-                    LocationId = defaultLocation.Id,
-                    ReferenceId = sourceStock.ReferenceId,
-                    MovementType = StockMovementType.INPUT,
-                    Quantity = item.Quantity,
-                    Width = residueWidth,
-                    Length = residueLength,
-                    Height = residueHeight,
-                    Diameter = residueDiameter,
-                    Thickness = residueThickness,
-                    MovementDate = DateTime.UtcNow,
-                    Description = returnDescription,
-                    Entity = StockMovementEntities.WorkOrderPhase,
-                    EntityId = request.WorkOrderPhaseId
-                });
             }
         }
 
         // 5. Auto-return: find remaining stock at workcenter supply locations
-        //    scoped to the BOM references of the finalized phase only
+        //    scoped to the BOM references of the finalized phase only.
+        //    This catches any provisioned stock NOT mentioned in request.Entries.
         var phaseBom = unitOfWork.WorkOrders.Phases.BillOfMaterials
             .Find(b => b.WorkOrderPhaseId == request.WorkOrderPhaseId)
             .ToList();
@@ -503,9 +470,15 @@ public class WorkOrderStockService(
 
         foreach (var remainingStock in allSupplyStock)
         {
-            var returnDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyDescription", defaultLocation.Name);
             var returnSourceLocationId = remainingStock.LocationId;
             var returnQuantity = remainingStock.Quantity;
+
+            // Resolve supply location name for auto-return descriptions
+            var returnSupplyLocation = await unitOfWork.Warehouses.Locations.Get(returnSourceLocationId);
+            var returnSupplyLocationName = returnSupplyLocation?.Name ?? string.Empty;
+
+            var autoReturnOutputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyOutputDescription", returnSupplyLocationName, woCode);
+            var autoReturnInputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyInputDescription", defaultLocation.Name, woCode);
 
             var existingDestinationStock = stockService.GetByDimensions(
                 defaultLocation.Id,
@@ -551,8 +524,8 @@ public class WorkOrderStockService(
                 Height = remainingStock.Height,
                 Diameter = remainingStock.Diameter,
                 Thickness = remainingStock.Thickness,
-                MovementDate = DateTime.UtcNow,
-                Description = returnDescription,
+                MovementDate = DateTime.Now,
+                Description = autoReturnOutputDescription,
                 Entity = StockMovementEntities.WorkOrderPhase,
                 EntityId = request.WorkOrderPhaseId
             });
@@ -570,8 +543,8 @@ public class WorkOrderStockService(
                 Height = remainingStock.Height,
                 Diameter = remainingStock.Diameter,
                 Thickness = remainingStock.Thickness,
-                MovementDate = DateTime.UtcNow,
-                Description = returnDescription,
+                MovementDate = DateTime.Now,
+                Description = autoReturnInputDescription,
                 Entity = StockMovementEntities.WorkOrderPhase,
                 EntityId = request.WorkOrderPhaseId
             });

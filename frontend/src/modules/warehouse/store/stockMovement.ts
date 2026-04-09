@@ -12,7 +12,7 @@ export const useStockMovementStore = defineStore({
   actions: {
     async create(createRequest: StockMovement) {
       const created =
-        StockMovementService.StockMovementService.create(createRequest);
+        await StockMovementService.StockMovementService.create(createRequest);
       return created;
     },
     async getBetweenDates(
@@ -25,6 +25,12 @@ export const useStockMovementStore = defineStore({
           startTime,
           endTime,
           locationId
+        );
+    },
+    async getByWorkOrderId(workOrderId: string) {
+      this.stockMovements =
+        await StockMovementService.StockMovementService.getByWorkOrderId(
+          workOrderId
         );
     },
   },

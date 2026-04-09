@@ -87,9 +87,9 @@
     </div>
 
     <AvailableStockDialog
+      v-if="selectedBomItem"
       v-model:visible="stockDialogVisible"
-      :bom-code="selectedBomCode"
-      :bom-quantity="selectedBomQuantity"
+      :bom-item="selectedBomItem"
       :stock-items="stockItems"
       :moving-stock-id="movingStockId"
       :workcenter-location-ids="workcenterStore.associatedLocationIds"
@@ -125,9 +125,7 @@ const workcenterId = route.params.id as string;
 const stockDialogVisible = ref(false);
 const stockItems = ref<StockResponse[]>([]);
 const loadingBomId = ref<string | null>(null);
-const selectedBomId = ref("");
-const selectedBomCode = ref("");
-const selectedBomQuantity = ref(0);
+const selectedBomItem = ref<BillOfMaterialsItem | null>(null);
 const movingStockId = ref<string | null>(null);
 
 function isMaterialProvisioned(bomId: string): boolean {
@@ -135,9 +133,7 @@ function isMaterialProvisioned(bomId: string): boolean {
 }
 
 async function showStock(bom: BillOfMaterialsItem) {
-  selectedBomId.value = bom.id;
-  selectedBomCode.value = bom.referenceCode;
-  selectedBomQuantity.value = bom.quantity;
+  selectedBomItem.value = bom;
   loadingBomId.value = bom.id;
 
   try {
@@ -179,9 +175,9 @@ async function moveStock(payload: { stockItem: StockResponse; quantity: number }
         life: 4000,
       });
 
-      if (selectedBomId.value) {
-        await activePhaseStore.refreshMaterialProvisioning(selectedBomId.value);
-        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomId.value);
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
       }
     } else {
       toast.add({
@@ -227,9 +223,9 @@ async function returnStock(payload: { stockItem: StockResponse; quantity: number
         life: 4000,
       });
 
-      if (selectedBomId.value) {
-        await activePhaseStore.refreshMaterialProvisioning(selectedBomId.value);
-        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomId.value);
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
       }
     } else {
       toast.add({

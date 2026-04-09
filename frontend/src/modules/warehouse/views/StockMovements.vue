@@ -74,10 +74,14 @@
         style="width: 25%"
       ></Column>
       <Column
-        field="movementType"
         header="Tipus de moviment"
+        field="movementType"
         style="width: 10%"
-      ></Column>
+      >
+        <template #body="slotProps">
+          <TagMovementType :movementType="slotProps.data.movementType" />
+        </template>
+      </Column>
       <Column field="quantity" header="Quantitat" style="width: 10%"></Column>
     </DataTable>
   </div>
@@ -85,6 +89,7 @@
 <script setup lang="ts">
 import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
+import TagMovementType from "../../../components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
 import { useStockMovementStore } from "../store/stockMovement";

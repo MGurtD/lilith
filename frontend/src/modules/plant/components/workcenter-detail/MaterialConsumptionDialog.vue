@@ -10,8 +10,8 @@
     <div class="consumption-dialog">
       <div class="consumption-dialog-header">
         <span class="consumption-dialog-caption">
-          Informa el material restant després de la fabricació. El sistema
-          calcularà el consum automàticament i retornarà el sobrant al magatzem.
+          Per defecte, tot el material aprovisionat serà consumit. Si queda
+          material sobrant, prem «Afegir peça» per declarar-lo.
         </span>
       </div>
 
@@ -27,168 +27,276 @@
           class="consumption-bom-group"
         >
           <!-- BOM item header -->
-          <div class="consumption-bom-header">
-            <div class="consumption-bom-info">
-              <i class="pi pi-box"></i>
-              <span class="font-semibold">{{ group.bomCode }}</span>
-              <span class="text-500">{{ group.bomDescription }}</span>
-              <span class="consumption-bom-qty"
-                >Quantitat: {{ group.bomQuantity }}</span
-              >
-              <div
-                v-if="group.bomMeasures.length > 0"
-                class="consumption-bom-measures"
-              >
-                <span
-                  v-for="measure in group.bomMeasures"
-                  :key="measure"
-                  class="consumption-bom-measure-chip"
-                >
-                  {{ measure }}
-                </span>
-              </div>
-            </div>
-            <div class="consumption-bom-format">
-              {{ group.formatDescription }}
-            </div>
-          </div>
+          <BomMaterialHeader
+            :reference-code="group.bomCode"
+            :reference-description="group.bomDescription"
+            :quantity="group.bomQuantity"
+            :width="group.bomWidth"
+            :length="group.bomLength"
+            :height="group.bomHeight"
+            :diameter="group.bomDiameter"
+            :thickness="group.bomThickness"
+            :format-description="group.formatDescription"
+          />
 
           <!-- Provisioned stock items -->
-          <DataTable
-            :value="group.lines"
-            size="small"
-            scrollable
-            class="consumption-table"
+          <div
+            v-for="line in group.lines"
+            :key="line.lineId"
+            class="stock-card"
           >
-            <Column header="Ubicació" style="min-width: 120px">
-              <template #body="slotProps">
-                <span>{{ slotProps.data.locationName }}</span>
-              </template>
-            </Column>
-            <Column header="Mesures estoc" style="min-width: 180px">
-              <template #body="slotProps">
+            <!-- Stock card header -->
+            <div class="stock-card-header">
+              <div class="stock-card-info">
+                <span class="stock-card-label">Estoc aprovisionat:</span>
+                <span class="stock-card-qty"
+                  >{{ line.availableQuantity }} ut.</span
+                >
                 <div
-                  v-if="slotProps.data.originalMeasures.length > 0"
+                  v-if="line.originalMeasures.length > 0"
                   class="stock-measures"
                 >
                   <span
-                    v-for="measure in slotProps.data.originalMeasures"
+                    v-for="measure in line.originalMeasures"
                     :key="measure"
                     class="stock-measure-chip"
                   >
                     {{ measure }}
                   </span>
                 </div>
-                <span v-else class="text-500">Sense mesures</span>
-              </template>
-            </Column>
+              </div>
+              <div class="stock-card-summary">
+                <span
+                  v-if="line.pieces.length === 0"
+                  class="consumed-badge consumed-badge--full"
+                >
+                  Consum total: {{ line.availableQuantity }} ut.
+                </span>
+                <span
+                  v-else-if="isFragmentation(line)"
+                  class="consumed-badge consumed-badge--fragment"
+                >
+                  Fragmentació: {{ line.pieces.length }} peces
+                </span>
+                <span
+                  v-else-if="getConsumedQuantity(line) > 0"
+                  class="consumed-badge"
+                >
+                  Consum: {{ getConsumedQuantity(line) }} ut. · Retorn:
+                  {{ getTotalRemaining(line) }} ut.
+                </span>
+                <span
+                  v-else-if="hasDimensionalChange(line)"
+                  class="consumed-badge"
+                >
+                  Retall dimensional
+                </span>
+                <span v-else class="consumed-badge consumed-badge--full">
+                  Consum total: {{ line.availableQuantity }} ut.
+                </span>
+              </div>
+            </div>
 
-            <Column
-              header="Disponible"
-              style="width: 90px; text-align: right"
-            >
-              <template #body="slotProps">
-                <span class="font-semibold">{{
-                  slotProps.data.availableQuantity
-                }}</span>
-              </template>
-            </Column>
-
-            <!-- Remaining quantity input -->
-            <Column header="Qttat. restant" style="width: 140px">
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="slotProps.data.remainingQuantity"
-                  :min="0"
-                  :max="slotProps.data.availableQuantity"
-                  :disabled="submitting"
-                  showButtons
-                  buttonLayout="horizontal"
-                  incrementButtonIcon="pi pi-plus"
-                  decrementButtonIcon="pi pi-minus"
-                  inputClass="stock-qty-input"
-                  class="stock-qty-spinner"
-                />
-              </template>
-            </Column>
-
-            <!-- Dynamic remaining dimension inputs based on format -->
-            <Column
-              v-if="showField(group.formatCode, 'length')"
-              header="Llarg. restant"
-              style="width: 130px"
-            >
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="slotProps.data.remainingLength"
-                  :min="0"
-                  :max="slotProps.data.originalLength"
-                  :minFractionDigits="0"
-                  :maxFractionDigits="2"
-                  :disabled="submitting"
-                  inputClass="dimension-input"
-                  class="w-full"
-                />
-              </template>
-            </Column>
-            <Column
-              v-if="showField(group.formatCode, 'width')"
-              header="Ample restant"
-              style="width: 130px"
-            >
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="slotProps.data.remainingWidth"
-                  :min="0"
-                  :max="slotProps.data.originalWidth"
-                  :minFractionDigits="0"
-                  :maxFractionDigits="2"
-                  :disabled="submitting"
-                  inputClass="dimension-input"
-                  class="w-full"
-                />
-              </template>
-            </Column>
-            <Column
-              v-if="showField(group.formatCode, 'height')"
-              header="Alçada restant"
-              style="width: 130px"
-            >
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="slotProps.data.remainingHeight"
-                  :min="0"
-                  :max="slotProps.data.originalHeight"
-                  :minFractionDigits="0"
-                  :maxFractionDigits="2"
-                  :disabled="submitting"
-                  inputClass="dimension-input"
-                  class="w-full"
-                />
-              </template>
-            </Column>
-
-            <!-- Computed consumption summary -->
-            <Column header="Consum calculat" style="min-width: 180px">
-              <template #body="slotProps">
-                <div class="computed-consumption">
-                  <span
-                    v-if="getConsumedQuantity(slotProps.data) > 0"
-                    class="consumed-badge"
-                  >
-                    {{ getConsumedQuantity(slotProps.data) }} ut.
-                    <template
-                      v-if="getConsumedDimensions(slotProps.data, group.formatCode).length > 0"
-                    >
-                      &mdash;
-                      {{ getConsumedDimensions(slotProps.data, group.formatCode).join(" × ") }}
-                    </template>
-                  </span>
-                  <span v-else class="no-consumption-badge">Sense consum</span>
+            <!-- Remaining pieces section -->
+            <div class="remaining-pieces">
+              <!-- UNITATS: simple remaining quantity -->
+              <template v-if="group.formatCode === 'UNITATS'">
+                <div
+                  v-if="line.pieces.length > 0"
+                  class="piece-row piece-row-simple"
+                >
+                  <div class="piece-field">
+                    <label class="piece-field-label">Quantitat a retornar</label>
+                    <InputNumber
+                      v-model="line.pieces[0].quantity"
+                      :min="0"
+                      :max="line.availableQuantity"
+                      :disabled="submitting"
+                      showButtons
+                      buttonLayout="horizontal"
+                      incrementButtonIcon="pi pi-plus"
+                      decrementButtonIcon="pi pi-minus"
+                      inputClass="stock-qty-input"
+                      class="stock-qty-spinner"
+                    />
+                  </div>
+                  <div class="piece-actions">
+                    <Button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      text
+                      rounded
+                      size="small"
+                      :disabled="submitting"
+                      @click="removeAllPieces(line)"
+                      v-tooltip.top="'Consumir tot'"
+                    />
+                  </div>
+                </div>
+                <div v-else class="remaining-pieces-empty">
+                  <Button
+                    icon="pi pi-plus"
+                    label="Declarar sobrant"
+                    severity="secondary"
+                    size="small"
+                    outlined
+                    :disabled="submitting"
+                    @click="addUnitatsPiece(line)"
+                  />
                 </div>
               </template>
-            </Column>
-          </DataTable>
+
+              <!-- Dimensional formats: rows per remaining piece -->
+              <template v-else>
+                <div
+                  v-for="(piece, pieceIdx) in line.pieces"
+                  :key="pieceIdx"
+                  class="piece-row"
+                >
+                  <div class="piece-field piece-field-qty">
+                    <label class="piece-field-label">Quantitat</label>
+                    <InputNumber
+                      v-model="piece.quantity"
+                      :min="1"
+                      :max="line.availableQuantity"
+                      :disabled="submitting"
+                      showButtons
+                      buttonLayout="horizontal"
+                      incrementButtonIcon="pi pi-plus"
+                      decrementButtonIcon="pi pi-minus"
+                      inputClass="stock-qty-input"
+                      class="stock-qty-spinner"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showField(group.formatCode, 'width')"
+                    class="piece-field"
+                  >
+                    <label class="piece-field-label">Ample (mm)</label>
+                    <InputNumber
+                      v-model="piece.width"
+                      :min="0"
+                      :max="line.originalWidth"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      :disabled="submitting"
+                      inputClass="dimension-input"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showField(group.formatCode, 'length')"
+                    class="piece-field"
+                  >
+                    <label class="piece-field-label">Llargada (mm)</label>
+                    <InputNumber
+                      v-model="piece.length"
+                      :min="0"
+                      :max="line.originalLength"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      :disabled="submitting"
+                      inputClass="dimension-input"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showField(group.formatCode, 'height')"
+                    class="piece-field"
+                  >
+                    <label class="piece-field-label">Alçada (mm)</label>
+                    <InputNumber
+                      v-model="piece.height"
+                      :min="0"
+                      :max="line.originalHeight"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      :disabled="submitting"
+                      inputClass="dimension-input"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showField(group.formatCode, 'diameter')"
+                    class="piece-field"
+                  >
+                    <label class="piece-field-label">Diàmetre (mm)</label>
+                    <InputNumber
+                      v-model="piece.diameter"
+                      :min="0"
+                      :max="line.originalDiameter"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      :disabled="submitting"
+                      inputClass="dimension-input"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div
+                    v-if="showField(group.formatCode, 'thickness')"
+                    class="piece-field"
+                  >
+                    <label class="piece-field-label">Gruix (mm)</label>
+                    <InputNumber
+                      v-model="piece.thickness"
+                      :min="0"
+                      :max="line.originalThickness"
+                      :minFractionDigits="0"
+                      :maxFractionDigits="2"
+                      :disabled="submitting"
+                      inputClass="dimension-input"
+                      class="w-full"
+                    />
+                  </div>
+
+                  <div class="piece-actions">
+                    <Button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      text
+                      rounded
+                      size="small"
+                      :disabled="submitting"
+                      @click="removePiece(line, pieceIdx)"
+                    />
+                  </div>
+                </div>
+
+                <!-- Add piece button -->
+                <div class="remaining-pieces-add">
+                  <Button
+                    icon="pi pi-plus"
+                    label="Afegir peça"
+                    severity="secondary"
+                    size="small"
+                    outlined
+                    :disabled="submitting"
+                    @click="addPiece(line, group.formatCode)"
+                  />
+                </div>
+              </template>
+
+              <!-- Validation warning (UNITATS only: cannot return more than provisioned) -->
+              <div
+                v-if="
+                  group.formatCode === 'UNITATS' &&
+                  getTotalRemaining(line) > line.availableQuantity
+                "
+                class="piece-warning"
+              >
+                <i class="pi pi-exclamation-triangle"></i>
+                La quantitat a retornar supera l'estoc aprovisionat ({{
+                  line.availableQuantity
+                }}
+                ut.)
+              </div>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -205,7 +313,7 @@
           icon="pi pi-check"
           label="Confirmar consum"
           severity="success"
-          :disabled="submitting || !hasAnyConsumption"
+          :disabled="submitting || !isValid"
           :loading="submitting"
           @click="onConfirm"
         />
@@ -216,19 +324,20 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import { useToast } from "primevue/usetoast";
 import type { BillOfMaterialsItem } from "../../../production/types";
 import type {
   StockResponse,
-  ConsumeStockItem,
+  ConsumeStockEntry,
 } from "../../../warehouse/types";
 import WarehouseServices from "../../../warehouse/services";
 import { usePlantWorkcenterStore } from "../../store";
+import { formatDimensions } from "@/utils/functions";
+import BomMaterialHeader from "./BomMaterialHeader.vue";
 
 interface Props {
   visible: boolean;
@@ -240,10 +349,11 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
-  (e: "confirm", items: ConsumeStockItem[]): void;
+  (e: "confirm", entries: ConsumeStockEntry[]): void;
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const workcenterStore = usePlantWorkcenterStore();
 
 const loading = ref(false);
@@ -254,24 +364,28 @@ const dialogVisible = computed({
   set: (value) => emit("update:visible", value),
 });
 
-// ----- Line model -----
+// ----- Data model -----
+interface PieceInput {
+  quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
+}
+
 interface ConsumptionLine {
   lineId: string;
   stockId: string;
-  locationName: string;
   originalMeasures: string[];
   availableQuantity: number;
-  // Original dimensions (read-only reference)
   originalWidth: number;
   originalLength: number;
   originalHeight: number;
   originalDiameter: number;
   originalThickness: number;
-  // Remaining dimensions (user input)
-  remainingQuantity: number;
-  remainingWidth: number;
-  remainingLength: number;
-  remainingHeight: number;
+  /** Remaining pieces to return. Empty = full consumption (default). */
+  pieces: PieceInput[];
 }
 
 interface BomGroup {
@@ -279,7 +393,11 @@ interface BomGroup {
   bomCode: string;
   bomDescription: string;
   bomQuantity: number;
-  bomMeasures: string[];
+  bomWidth: number;
+  bomLength: number;
+  bomHeight: number;
+  bomDiameter: number;
+  bomThickness: number;
   formatCode: string;
   formatDescription: string;
   provisionedItems: StockResponse[];
@@ -289,17 +407,17 @@ interface BomGroup {
 const bomGroups = ref<BomGroup[]>([]);
 
 // ----- Format-driven field visibility -----
-// Only editable cutting axes are shown; diameter/thickness are invariant
 function showField(
   formatCode: string,
-  field: "width" | "length" | "height",
+  field: "width" | "length" | "height" | "diameter" | "thickness",
 ): boolean {
   switch (formatCode) {
     case "UNITATS":
       return false;
     case "RODO":
+      return field === "diameter" || field === "length";
     case "TUB":
-      return field === "length";
+      return field === "diameter" || field === "length" || field === "thickness";
     case "PLACA":
       return field === "width" || field === "height" || field === "length";
     default:
@@ -308,54 +426,74 @@ function showField(
 }
 
 // ----- Measures display -----
-function getBomMeasures(bom: BillOfMaterialsItem): string[] {
-  return [
-    { label: "Ample", value: bom.width },
-    { label: "Llarg", value: bom.length },
-    { label: "Alt", value: bom.height },
-    { label: "Diam.", value: bom.diameter },
-    { label: "Gruix", value: bom.thickness },
-  ]
-    .filter((m) => m.value > 0)
-    .map((m) => `${m.label} ${m.value}`);
-}
-
 function getStockMeasures(stock: StockResponse): string[] {
-  return [
-    { label: "Ample", value: stock.width },
-    { label: "Llarg", value: stock.length },
-    { label: "Alt", value: stock.height },
-    { label: "Diam.", value: stock.diameter },
-    { label: "Gruix", value: stock.thickness },
-  ]
-    .filter((m) => m.value > 0)
-    .map((m) => `${m.label} ${m.value}`);
+  return formatDimensions(t, {
+    width: stock.width,
+    length: stock.length,
+    height: stock.height,
+    diameter: stock.diameter,
+    thickness: stock.thickness,
+  });
 }
 
-// ----- Computed consumption helpers -----
+// ----- Piece helpers -----
+function addPiece(line: ConsumptionLine, _formatCode: string) {
+  // Fragmentation allowed: a physical piece can break into multiple fragments,
+  // each with dimensions <= original. No quantity-sum guard needed.
+  line.pieces.push({
+    quantity: 1,
+    width: line.originalWidth,
+    length: line.originalLength,
+    height: line.originalHeight,
+    diameter: line.originalDiameter,
+    thickness: line.originalThickness,
+  });
+}
+
+function addUnitatsPiece(line: ConsumptionLine) {
+  line.pieces.push({
+    quantity: 1,
+    width: 0,
+    length: 0,
+    height: 0,
+    diameter: 0,
+    thickness: 0,
+  });
+}
+
+function removePiece(line: ConsumptionLine, pieceIdx: number) {
+  line.pieces.splice(pieceIdx, 1);
+}
+
+function removeAllPieces(line: ConsumptionLine) {
+  line.pieces.splice(0, line.pieces.length);
+}
+
+// ----- Quantity helpers -----
+function getTotalRemaining(line: ConsumptionLine): number {
+  return line.pieces.reduce((sum, p) => sum + p.quantity, 0);
+}
+
 function getConsumedQuantity(line: ConsumptionLine): number {
-  return line.availableQuantity - line.remainingQuantity;
+  return line.availableQuantity - getTotalRemaining(line);
 }
 
-function getConsumedDimensions(
-  line: ConsumptionLine,
-  formatCode: string,
-): string[] {
-  const dims: string[] = [];
+/** True when any remaining piece has dimensions different from the original stock */
+function hasDimensionalChange(line: ConsumptionLine): boolean {
+  return line.pieces.some(
+    (p) =>
+      p.quantity > 0 &&
+      (p.width !== line.originalWidth ||
+        p.length !== line.originalLength ||
+        p.height !== line.originalHeight ||
+        p.diameter !== line.originalDiameter ||
+        p.thickness !== line.originalThickness),
+  );
+}
 
-  if (formatCode === "RODO" || formatCode === "TUB") {
-    const consumedLength = line.originalLength - line.remainingLength;
-    if (consumedLength > 0) dims.push(`${consumedLength} llarg`);
-  } else if (formatCode === "PLACA") {
-    const consumedWidth = line.originalWidth - line.remainingWidth;
-    const consumedLength = line.originalLength - line.remainingLength;
-    const consumedHeight = line.originalHeight - line.remainingHeight;
-    if (consumedWidth > 0) dims.push(`${consumedWidth} ample`);
-    if (consumedLength > 0) dims.push(`${consumedLength} llarg`);
-    if (consumedHeight > 0) dims.push(`${consumedHeight} alt`);
-  }
-
-  return dims;
+/** True when returning more pieces than originally provisioned (piece split/break) */
+function isFragmentation(line: ConsumptionLine): boolean {
+  return getTotalRemaining(line) > line.availableQuantity;
 }
 
 // ----- Load provisioned stock when dialog opens -----
@@ -387,7 +525,6 @@ async function loadProvisionedStock() {
         bom.id,
       );
 
-      // Filter to only provisioned stock (at workcenter supply locations)
       const provisioned = allStock.filter((s) =>
         associatedLocationIds.includes(s.locationId),
       );
@@ -401,20 +538,15 @@ async function loadProvisionedStock() {
       const lines: ConsumptionLine[] = provisioned.map((stock) => ({
         lineId: nextLineId(),
         stockId: stock.stockId,
-        locationName: stock.locationName,
         originalMeasures: getStockMeasures(stock),
         availableQuantity: stock.quantity,
-        // Store original dimensions
         originalWidth: stock.width,
         originalLength: stock.length,
         originalHeight: stock.height,
         originalDiameter: stock.diameter,
         originalThickness: stock.thickness,
-        // Default remaining = 0 (assume full consumption)
-        remainingQuantity: 0,
-        remainingWidth: 0,
-        remainingLength: 0,
-        remainingHeight: 0,
+        // Empty pieces = full consumption by default
+        pieces: [],
       }));
 
       groups.push({
@@ -422,7 +554,11 @@ async function loadProvisionedStock() {
         bomCode: bom.referenceCode,
         bomDescription: bom.referenceDescription,
         bomQuantity: bom.quantity,
-        bomMeasures: getBomMeasures(bom),
+        bomWidth: bom.width,
+        bomLength: bom.length,
+        bomHeight: bom.height,
+        bomDiameter: bom.diameter,
+        bomThickness: bom.thickness,
         formatCode,
         formatDescription,
         provisionedItems: provisioned,
@@ -445,59 +581,32 @@ async function loadProvisionedStock() {
 }
 
 // ----- Validation -----
-const hasAnyConsumption = computed(() => {
-  return bomGroups.value.some((group) =>
-    group.lines.some((line) => getConsumedQuantity(line) > 0),
-  );
-});
+const isValid = computed(() => {
+  // Must have at least one group loaded
+  if (bomGroups.value.length === 0) return false;
 
-function validate(): boolean {
   for (const group of bomGroups.value) {
     for (const line of group.lines) {
-      if (line.remainingQuantity > line.availableQuantity) {
-        toast.add({
-          severity: "warn",
-          summary: "Quantitat invàlida",
-          detail: `La quantitat restant de ${group.bomCode} supera la disponible (${line.availableQuantity})`,
-          life: 5000,
-        });
-        return false;
+      // UNITATS: cannot return more than provisioned (no fragmentation concept)
+      if (group.formatCode === "UNITATS") {
+        if (getTotalRemaining(line) > line.availableQuantity) return false;
       }
 
-      if (line.remainingLength > line.originalLength) {
-        toast.add({
-          severity: "warn",
-          summary: "Mesura invàlida",
-          detail: `La llargada restant de ${group.bomCode} supera l'original (${line.originalLength})`,
-          life: 5000,
-        });
-        return false;
-      }
-
-      if (line.remainingWidth > line.originalWidth) {
-        toast.add({
-          severity: "warn",
-          summary: "Mesura invàlida",
-          detail: `L'ample restant de ${group.bomCode} supera l'original (${line.originalWidth})`,
-          life: 5000,
-        });
-        return false;
-      }
-
-      if (line.remainingHeight > line.originalHeight) {
-        toast.add({
-          severity: "warn",
-          summary: "Mesura invàlida",
-          detail: `L'alçada restant de ${group.bomCode} supera l'original (${line.originalHeight})`,
-          life: 5000,
-        });
-        return false;
+      // Validate each piece individually
+      for (const piece of line.pieces) {
+        if (piece.quantity <= 0) return false;
+        // Dimensions cannot exceed originals
+        if (piece.width > line.originalWidth) return false;
+        if (piece.length > line.originalLength) return false;
+        if (piece.height > line.originalHeight) return false;
+        if (piece.diameter > line.originalDiameter) return false;
+        if (piece.thickness > line.originalThickness) return false;
       }
     }
   }
 
   return true;
-}
+});
 
 // ----- Actions -----
 function onCancel() {
@@ -505,33 +614,31 @@ function onCancel() {
 }
 
 function onConfirm() {
-  if (!validate()) return;
+  if (!isValid.value) return;
 
-  const items: ConsumeStockItem[] = [];
+  const entries: ConsumeStockEntry[] = [];
 
   for (const group of bomGroups.value) {
     for (const line of group.lines) {
-      const consumedQty = getConsumedQuantity(line);
-      if (consumedQty <= 0) continue;
+      const remainingPieces = line.pieces
+        .filter((p) => p.quantity > 0)
+        .map((p) => ({
+          quantity: p.quantity,
+          width: p.width,
+          length: p.length,
+          height: p.height,
+          diameter: p.diameter,
+          thickness: p.thickness,
+        }));
 
-      // Calculate consumed dimensions = original - remaining
-      const consumedLength = line.originalLength - line.remainingLength;
-      const consumedWidth = line.originalWidth - line.remainingWidth;
-      const consumedHeight = line.originalHeight - line.remainingHeight;
-
-      items.push({
+      entries.push({
         stockId: line.stockId,
-        quantity: consumedQty,
-        width: consumedWidth > 0 ? consumedWidth : line.originalWidth,
-        length: consumedLength > 0 ? consumedLength : line.originalLength,
-        height: consumedHeight > 0 ? consumedHeight : line.originalHeight,
-        diameter: line.originalDiameter,
-        thickness: line.originalThickness,
+        remainingPieces,
       });
     }
   }
 
-  emit("confirm", items);
+  emit("confirm", entries);
 }
 
 // Expose submitting for parent control
@@ -570,60 +677,45 @@ defineExpose({ submitting });
   gap: 0.5rem;
 }
 
-.consumption-bom-header {
+/* Stock card */
+.stock-card {
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-left: 0.5rem;
+}
+
+.stock-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
-  border-radius: 6px;
-  background: var(--p-green-50);
-  color: var(--p-green-700);
-  border: 1px solid var(--p-green-200);
+  background: var(--surface-50);
+  border-bottom: 1px solid var(--surface-border);
 }
 
-.consumption-bom-info {
+.stock-card-info {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.consumption-bom-qty {
+.stock-card-label {
   font-size: 0.85rem;
-  background: var(--p-green-100);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-}
-
-.consumption-bom-measures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.consumption-bom-measure-chip {
-  font-size: 0.8rem;
-  background: var(--p-green-100);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-}
-
-.consumption-bom-format {
-  font-size: 0.82rem;
   font-weight: 600;
+  color: var(--text-color);
 }
 
-.consumption-table {
-  width: 100%;
+.stock-card-qty {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--p-primary-color);
 }
 
-.consumption-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--surface-border);
+.stock-card-summary {
+  flex-shrink: 0;
 }
 
 .stock-measures {
@@ -638,27 +730,82 @@ defineExpose({ submitting });
   padding: 0.2rem 0.55rem;
   font-size: 0.78rem;
   color: var(--text-color-secondary);
-  background: var(--surface-50);
+  background: var(--surface-0);
 }
 
-.stock-qty-spinner {
-  width: 100%;
+/* Remaining pieces section */
+.remaining-pieces {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-:deep(.stock-qty-input) {
-  width: 3rem !important;
-  text-align: center;
-  font-weight: 600;
-}
-
-:deep(.dimension-input) {
-  width: 100% !important;
-  text-align: right;
-}
-
-.computed-consumption {
+.remaining-pieces-empty {
   display: flex;
   align-items: center;
+}
+
+.remaining-pieces-add {
+  display: flex;
+  align-items: center;
+}
+
+/* Piece row */
+.piece-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  background: var(--surface-0);
+}
+
+.piece-row-simple {
+  border: none;
+  padding: 0.25rem 0;
+}
+
+.piece-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.piece-field-qty {
+  flex: 0 0 auto;
+}
+
+.piece-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+}
+
+.piece-field:not(.piece-field-qty) {
+  flex: 1;
+}
+
+.piece-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding-bottom: 0.1rem;
+}
+
+.piece-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  color: var(--p-red-700);
+  background: var(--p-red-50);
+  border: 1px solid var(--p-red-200);
+  border-radius: 6px;
 }
 
 .consumed-badge {
@@ -674,9 +821,38 @@ defineExpose({ submitting });
   border: 1px solid var(--p-orange-200);
 }
 
-.no-consumption-badge {
-  font-size: 0.82rem;
-  color: var(--text-color-secondary);
-  font-style: italic;
+.consumed-badge--full {
+  background: var(--p-green-50);
+  color: var(--p-green-700);
+  border: 1px solid var(--p-green-200);
+}
+
+.consumed-badge--fragment {
+  background: var(--p-blue-50);
+  color: var(--p-blue-700);
+  border: 1px solid var(--p-blue-200);
+}
+
+.consumption-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.stock-qty-spinner {
+  width: 100%;
+}
+
+:deep(.stock-qty-input) {
+  width: 3rem !important;
+  text-align: center;
+  font-weight: 600;
+}
+
+:deep(.dimension-input) {
+  width: 100% !important;
+  text-align: right;
 }
 </style>

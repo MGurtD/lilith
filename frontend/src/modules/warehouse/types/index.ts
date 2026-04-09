@@ -64,6 +64,7 @@ export interface StockMovement {
   locationId: null | string;
   location: Location | null;
   referenceId: string;
+  reference?: { id: string; code: string; description: string } | null;
   quantity: number;
   width: number;
   length: number;
@@ -72,6 +73,8 @@ export interface StockMovement {
   thickness: number;
   movementDate: any;
   description: string;
+  entity?: string | null;
+  entityId?: string | null;
 }
 
 export interface Inventory {
@@ -132,8 +135,7 @@ export interface ReturnStockFromSupplyRequest {
   quantity: number;
 }
 
-export interface ConsumeStockItem {
-  stockId: string;
+export interface RemainingPiece {
   quantity: number;
   width: number;
   length: number;
@@ -142,15 +144,21 @@ export interface ConsumeStockItem {
   thickness: number;
 }
 
+export interface ConsumeStockEntry {
+  stockId: string;
+  remainingPieces: RemainingPiece[];
+}
+
 export interface ConsumePhaseStockRequest {
   workcenterId: string;
   workOrderPhaseId: string;
-  consumedItems: ConsumeStockItem[];
+  entries: ConsumeStockEntry[];
 }
 
 export const StockMovementEntity = {
   WorkOrderPhase: "WorkOrderPhase",
   DeliveryNote: "DeliveryNote",
   Receipt: "Receipt",
+  WorkOrder: "WorkOrder",
 } as const;
 

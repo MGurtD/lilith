@@ -143,7 +143,7 @@ import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 import MaterialConsumptionDialog from "./MaterialConsumptionDialog.vue";
-import type { ConsumeStockItem } from "../../../warehouse/types";
+import type { ConsumeStockEntry } from "../../../warehouse/types";
 import ProductionServices from "../../../production/services";
 
 interface Props {
@@ -231,7 +231,7 @@ const onCancel = () => {
   emit("update:visible", false);
 };
 
-const onConsumptionConfirmed = async (consumedItems: ConsumeStockItem[]) => {
+const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
   if (!pendingUnloadRequest.value) return;
 
   try {
@@ -240,7 +240,7 @@ const onConsumptionConfirmed = async (consumedItems: ConsumeStockItem[]) => {
       await ProductionServices.WorkOrderStock.consumePhaseStock({
         workcenterId: formData.workcenterId,
         workOrderPhaseId: formData.workOrderPhaseId,
-        consumedItems,
+        entries,
       });
 
     if (!success) {

@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { Inventory } from "../types";
 import * as Yup from "yup";
 import {
@@ -100,6 +100,12 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const referenceStore = useReferenceStore();
+
+onMounted(async () => {
+  if (!referenceStore.references || referenceStore.references.length === 0) {
+    await referenceStore.fetchReferences();
+  }
+});
 
 const schema = Yup.object().shape({
   newQuantity: Yup.number()

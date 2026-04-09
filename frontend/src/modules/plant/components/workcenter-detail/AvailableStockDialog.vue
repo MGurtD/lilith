@@ -8,14 +8,22 @@
   >
     <div class="stock-dialog">
       <div class="stock-dialog-header">
-        <div>
-          <span class="stock-dialog-title">Material seleccionat</span>
-          <div class="stock-dialog-ref">{{ bomCode }}</div>
-        </div>
         <span class="stock-dialog-caption">
           Selecciona la quantitat i l'acció a realitzar sobre l'estoc.
         </span>
       </div>
+
+      <BomMaterialHeader
+        :reference-code="bomItem.referenceCode"
+        :reference-description="bomItem.referenceDescription"
+        :quantity="bomItem.quantity"
+        :width="bomItem.width"
+        :length="bomItem.length"
+        :height="bomItem.height"
+        :diameter="bomItem.diameter"
+        :thickness="bomItem.thickness"
+        :format-description="formatDescription"
+      />
 
       <div v-if="stockItems.length === 0" class="stock-empty">
         <i class="pi pi-exclamation-circle"></i>
@@ -35,7 +43,6 @@
             scrollable
             class="stock-table"
           >
-            <Column field="warehouseName" header="Magatzem" style="min-width: 140px" />
             <Column header="Ubicació" style="min-width: 180px">
               <template #body="slotProps">
                 <div class="stock-location-cell">
@@ -113,7 +120,6 @@
             scrollable
             class="stock-table"
           >
-            <Column field="warehouseName" header="Magatzem" style="min-width: 140px" />
             <Column header="Ubicació" style="min-width: 180px">
               <template #body="slotProps">
                 <div class="stock-location-cell">
@@ -150,7 +156,7 @@
               <template #body="slotProps">
                 <InputNumber
                   v-model="moveQuantities[slotProps.data.stockId]"
-                  :min="1"
+                  :min="0"
                   :max="slotProps.data.quantity"
                   :disabled="movingStockId !== null"
                   showButtons
@@ -185,17 +191,20 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
+import type { BillOfMaterialsItem } from "../../../production/types";
 import type { StockResponse } from "../../../warehouse/types";
+import { formatDimensions } from "@/utils/functions";
+import BomMaterialHeader from "./BomMaterialHeader.vue";
 
 interface Props {
   visible: boolean;
-  bomCode: string;
-  bomQuantity: number;
+  bomItem: BillOfMaterialsItem;
   stockItems: StockResponse[];
   movingStockId: string | null;
   workcenterLocationIds: string[];
@@ -208,9 +217,16 @@ const emit = defineEmits<{
   (e: "return-stock", payload: { stockItem: StockResponse; quantity: number }): void;
 }>();
 
+const { t } = useI18n();
+
 const dialogVisible = computed({
   get: () => props.visible,
   set: (value) => emit("update:visible", value),
+});
+
+/** Derive format description from the first stock item (all share the same reference format). */
+const formatDescription = computed(() => {
+  return props.stockItems[0]?.referenceFormatDescription ?? "";
 });
 
 const supplyStockItems = computed(() =>
@@ -233,9 +249,13 @@ watch(
   (items) => {
     // Clear previous quantities
     Object.keys(moveQuantities).forEach((key) => delete moveQuantities[key]);
-    // Pre-fill with BOM required quantity, capped by available
     items.forEach((item) => {
-      moveQuantities[item.stockId] = Math.min(props.bomQuantity, item.quantity);
+      // Supply stock: pre-fill with BOM quantity capped by available
+      // Available stock: start at 0 so the user explicitly chooses
+      const isSupply = props.workcenterLocationIds.includes(item.locationId);
+      moveQuantities[item.stockId] = isSupply
+        ? Math.min(props.bomItem.quantity, item.quantity)
+        : 0;
     });
   },
   { immediate: true },
@@ -250,6 +270,8 @@ function handleMoveStock(stockItem: StockResponse) {
   const quantity = moveQuantities[stockItem.stockId];
   if (!isValidQuantity(stockItem.stockId, stockItem.quantity)) return;
   emit("move-stock", { stockItem, quantity });
+  // Reset only this row so user must explicitly choose again
+  moveQuantities[stockItem.stockId] = 0;
 }
 
 function handleReturnStock(stockItem: StockResponse) {
@@ -259,17 +281,13 @@ function handleReturnStock(stockItem: StockResponse) {
 }
 
 function getStockMeasures(stockItem: StockResponse): string[] {
-  const measures = [
-    { label: "Ample", value: stockItem.width },
-    { label: "Llarg", value: stockItem.length },
-    { label: "Alt", value: stockItem.height },
-    { label: "Diam.", value: stockItem.diameter },
-    { label: "Gruix", value: stockItem.thickness },
-  ]
-    .filter((measure) => measure.value > 0)
-    .map((measure) => `${measure.label} ${measure.value}`);
-
-  return measures.length > 0 ? measures : ["Sense mesures"];
+  return formatDimensions(t, {
+    width: stockItem.width,
+    length: stockItem.length,
+    height: stockItem.height,
+    diameter: stockItem.diameter,
+    thickness: stockItem.thickness,
+  });
 }
 </script>
 
@@ -281,29 +299,12 @@ function getStockMeasures(stockItem: StockResponse): string[] {
 }
 
 .stock-dialog-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--surface-border);
 }
 
-.stock-dialog-title {
-  display: block;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.stock-dialog-ref {
-  margin-top: 0.25rem;
-  font-size: 0.85rem;
-  color: var(--text-color-secondary);
-}
-
 .stock-dialog-caption {
-  max-width: 280px;
-  text-align: right;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-color-secondary);
 }
 
@@ -382,17 +383,5 @@ function getStockMeasures(stockItem: StockResponse): string[] {
   width: 3rem !important;
   text-align: center;
   font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .stock-dialog-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .stock-dialog-caption {
-    max-width: none;
-    text-align: left;
-  }
 }
 </style>

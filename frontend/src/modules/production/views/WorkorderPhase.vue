@@ -2,6 +2,7 @@
   <header>
     <FormWorkOrderPhase
       v-if="workorder && workorderPhase"
+      ref="workorderPhaseForm"
       :workorder="workorder"
       :phase="workorderPhase"
       @submit="onWorkOrderPhaseSubmit"
@@ -111,6 +112,8 @@ const workorderStore = useWorkOrderStore();
 const { workorder, workorderPhase } = storeToRefs(workorderStore);
 const id = ref("");
 const phaseId = ref("");
+const workorderPhaseForm =
+  ref<InstanceType<typeof FormWorkOrderPhase> | null>(null);
 
 const dialogOptions = reactive({
   visible: false,
@@ -149,6 +152,9 @@ const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
   const updated = await workorderStore.updatePhase(phaseId.value, phase);
 
   if (updated) {
+    await loadViewData();
+    await workorderPhaseForm.value?.reloadLifecycleTransitions();
+
     toast.add({
       severity: "success",
       summary: "Fase actualitzada",

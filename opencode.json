@@ -6,7 +6,8 @@
         "task": {
           "*": "deny",
           "backend": "allow",
-          "frontend": "allow"
+          "frontend": "allow",
+          "explore": "allow"
         }
       }
     }

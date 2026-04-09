@@ -38,38 +38,80 @@
         <Checkbox v-model="workmaster.disabled" class="w-full" :binary="true" />
       </div>
     </section>
-    <section class="six-columns">
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Cost Operari:</label>
-        <span class="summary-field">{{
-          formatCurrency(workmaster.operatorCost)
-        }}</span>
-      </div>
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Cost Màquina:</label>
-        <span class="summary-field">{{
-          formatCurrency(workmaster.machineCost)
-        }}</span>
-      </div>
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Cost Material:</label>
-        <span class="summary-field">{{
-          formatCurrency(workmaster.materialCost)
-        }}</span>
-      </div>
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Cost Extern:</label>
-        <span class="summary-field">{{
-          formatCurrency(workmaster.externalCost)
-        }}</span>
-      </div>
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Cost Total:</label>
-        <span class="summary-field">{{ formatCurrency(totalCost) }}</span>
-      </div>
-      <div class="mt-1">
-        <label class="block text-900 mb-2">Pes Total:</label>
-        <span class="summary-field">{{ workmaster.totalWeight }} KG</span>
+    <section class="costs-container">
+      <div class="costs-section">
+        <h4 class="costs-section-title">
+          <i class="pi pi-euro" />
+          Costos
+        </h4>
+        <div class="costs-grid">
+          <div class="cost-card">
+            <div class="cost-card-icon">
+              <i class="pi pi-user" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Cost Operari</span>
+              <span class="cost-card-value">{{
+                formatCurrency(workmaster.operatorCost)
+              }}</span>
+            </div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-card-icon">
+              <i class="pi pi-cog" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Cost Màquina</span>
+              <span class="cost-card-value">{{
+                formatCurrency(workmaster.machineCost)
+              }}</span>
+            </div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-card-icon">
+              <i class="pi pi-box" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Cost Material</span>
+              <span class="cost-card-value">{{
+                formatCurrency(workmaster.materialCost)
+              }}</span>
+            </div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-card-icon">
+              <i class="pi pi-truck" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Cost Extern</span>
+              <span class="cost-card-value">{{
+                formatCurrency(workmaster.externalCost)
+              }}</span>
+            </div>
+          </div>
+          <div class="cost-card cost-card-total">
+            <div class="cost-card-icon">
+              <i class="pi pi-calculator" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Cost Total</span>
+              <span class="cost-card-value">{{
+                formatCurrency(totalCost)
+              }}</span>
+            </div>
+          </div>
+          <div class="cost-card">
+            <div class="cost-card-icon">
+              <i class="pi pi-objects-column" />
+            </div>
+            <div class="cost-card-content">
+              <span class="cost-card-label">Pes Total</span>
+              <span class="cost-card-value"
+                >{{ workmaster.totalWeight }} KG</span
+              >
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </form>
@@ -164,3 +206,98 @@ const calculateCost = () => {
   }
 };
 </script>
+
+<style scoped>
+.costs-container {
+  margin-top: 0.5rem;
+}
+
+.costs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.costs-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.cost-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--p-content-background, #fff);
+  transition: box-shadow 0.15s ease;
+}
+
+.cost-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cost-card-total {
+  background: var(--p-primary-50, #eef2ff);
+  border-color: var(--p-primary-200, #c7d2fe);
+}
+
+.cost-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: var(--p-surface-100, #f1f5f9);
+  color: var(--p-primary-color, #3b82f6);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cost-card-total .cost-card-icon {
+  background: var(--p-primary-100, #dbeafe);
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+.cost-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cost-card-label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+}
+
+.cost-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.cost-card-total .cost-card-value {
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+@media (max-width: 1200px) {
+  .costs-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .costs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
