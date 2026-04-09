@@ -36,6 +36,18 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
             builder
+                .Property(b => b.TransportCost)                
+                .IsRequired()
+                .HasColumnType("decimal")
+                .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
+                              ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
+            builder
+                .Property(b => b.TotalWeight)                
+                .IsRequired()
+                .HasColumnType("decimal")
+                .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
+                              ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
+            builder
                 .Property(b => b.Notes)
                 .HasColumnType("varchar")
                 .HasMaxLength(4000);

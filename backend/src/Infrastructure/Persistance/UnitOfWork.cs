@@ -6,11 +6,13 @@ using Domain.Entities.Purchase;
 using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
+using Domain.Entities.Transport;
 using Infrastructure.Persistance.Repositories;
 using Infrastructure.Persistance.Repositories.Production;
 using Infrastructure.Persistance.Repositories.Purchase; // contains LifecycleRepository as per current project structure
 using Infrastructure.Persistance.Repositories.Sales;
 using Infrastructure.Persistance.Repositories.Warehouse;
+using Infrastructure.Persistance.Repositories.Transport;
 
 namespace Infrastructure.Persistance
 {
@@ -49,6 +51,8 @@ namespace Infrastructure.Persistance
         public IExpenseRepository Expenses { get; private set; } = new ExpenseRepository(context);
         public IRepository<ReferenceFormat, Guid> ReferenceFormats { get; private set; } = new Repository<ReferenceFormat, Guid>(context);
         public IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; private set; } = new ContractReader<ConsolidatedExpense>(context);
+        public ITransportRateRepository TransportRates { get; private set; } = new TransportRateRepository(context);
+        public IRepository<TransportRateDetail, Guid> TransportRateDetails { get; private set; } = new Repository<TransportRateDetail, Guid>(context);
 
         // Sales
         public IRepository<CustomerType, Guid> CustomerTypes { get; private set; } = new Repository<CustomerType, Guid>(context);

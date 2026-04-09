@@ -13,6 +13,10 @@
         <i :class="PrimeIcons.USERS" class="mr-2"></i>
         <span>Contactes</span>
       </Tab>
+      <Tab value="3" v-if="formMode === FormActionMode.EDIT && isLogisticSupplier">
+        <i :class="PrimeIcons.TRUCK" class="mr-2"></i>
+        <span>Tarifes de transport</span>
+      </Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -39,11 +43,17 @@
           @delete="removeContact"
         />
       </TabPanel>
+      <TabPanel value="3" v-if="formMode === FormActionMode.EDIT && isLogisticSupplier">
+        <TableTransportRates
+          v-if="supplier"
+          :supplierId="supplier.id"
+        />
+      </TabPanel>
     </TabPanels>
   </Tabs>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useSuppliersStore } from "../store/suppliers";
 import { PrimeIcons } from "@primevue/core/api";
@@ -58,13 +68,24 @@ import { FormActionMode } from "../../../types/component";
 import TableSupplierContacts from "../components/TableSupplierContacts.vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import TableSupplierReferences from "../components/TableSupplierReferences.vue";
+import TableTransportRates from "../components/TableTransportRates.vue";
+import { useTransportRateStore } from "../store/transportRate";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
 const supplierStore = useSuppliersStore();
 const referenceStore = useReferenceStore();
+const transportRateStore = useTransportRateStore();
 const { supplier } = storeToRefs(supplierStore);
+
+const isLogisticSupplier = computed(() => {
+  if (!supplier.value || !supplierStore.supplierTypes) return false;
+  const type = supplierStore.supplierTypes.find(
+    (t) => t.id === supplier.value!.supplierTypeId
+  );
+  return type?.name === "Logistica";
+});
 
 const loadView = async () => {
   const supplierId = route.params.id as string;
@@ -83,6 +104,8 @@ const loadView = async () => {
   } else {
     formMode.value = FormActionMode.EDIT;
     pageTitle = `Proveïdor ${supplier.value.comercialName}`;
+    // Carregar tarifes si és logística
+    await transportRateStore.fetchTransportRatesBySupplierId(supplierId);
   }
 
   store.setMenuItem({

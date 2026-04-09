@@ -13,6 +13,7 @@ namespace Application.Contracts
         Task<SupplierReference?> GetSupplierReferenceBySupplierIdAndReferenceId(Guid supplierId, Guid referenceId);
         IEnumerable<SupplierReference> GetSupplierReferences(Guid supplierReferenceId);
         IEnumerable<Supplier> GetReferenceSuppliers(Guid referenceId);
+        IEnumerable<Supplier> GetLogisticSuppliers();
         Task<SupplierReference?> GetSupplierReferenceBySupplierAndId(Guid referenceId, Guid supplierId);
 
         Task<List<SupplierReference>> GetSuppliersReferencesFromReference(Guid referenceId);

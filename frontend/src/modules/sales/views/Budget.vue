@@ -12,7 +12,8 @@
   <Tabs value="0">
     <TabList>
       <Tab value="0">Detall</Tab>
-      <Tab value="1">Notes</Tab>
+      <Tab value="1">Transport</Tab>
+      <Tab value="2">Notes</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -48,6 +49,38 @@
         </TableBudgetDetails>
       </TabPanel>
       <TabPanel value="1">
+        <TableBudgetTransports
+          v-if="budget && budget.transports"
+          :budget="budget"
+          :transports="budget.transports"
+          @edit="
+            (trans: BudgetTransport) =>
+              openBudgetTransportDialog(FormActionMode.EDIT, trans)
+          "
+          @delete="deleteBudgetTransport"
+        >
+          <template #header>
+            <div
+              class="flex flex-wrap align-items-center justify-content-between gap-2"
+            >
+              <span class="text-l text-900 font-bold"
+                >Transports del pressupost</span
+              >
+              <section v-if="!budgetStore.order">
+                <Button
+                  :size="'small'"
+                  label="Afegir transport"
+                  @click="
+                    openBudgetTransportDialog(FormActionMode.CREATE, {} as any)
+                  "
+                  class="mr-2"
+                />
+              </section>
+            </div>
+          </template>
+        </TableBudgetTransports>
+      </TabPanel>
+      <TabPanel value="2">
         <section v-if="budget" class="mt-2">
           <div>
             <label class="block text-900 mb-2">Notes Internes</label>
@@ -92,6 +125,25 @@
       @submit="onBudgetDetailSubmit"
     />
   </Dialog>
+  <Dialog
+    :closable="true"
+    :style="{ width: '50%' }"
+    :maximizable="true"
+    v-model:visible="isTransportDialogVisible"
+    :header="transportDialogTitle"
+    :modal="true"
+    v-if="budget"
+  >
+    <FormBudgetTransport
+      v-if="budget && budgetTransport"
+      :formAction="formTransportMode"
+      :header="budget"
+      :transport="budgetTransport"
+      :customerId="budget.customerId"
+      :readonly="false"
+      @submit="onBudgetTransportSubmit"
+    />
+  </Dialog>
   <!--:readonly="budgetStore.order !== null"-->
 </template>
 <script setup lang="ts">
@@ -99,7 +151,12 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
-import { Budget, BudgetDetail, SalesOrderDetail } from "../types";
+import {
+  Budget,
+  BudgetDetail,
+  BudgetTransport,
+  SalesOrderDetail,
+} from "../types";
 import { useStore } from "../../../store";
 import { BaseInputType } from "../../../types/component";
 import {
@@ -121,6 +178,8 @@ import { useBudgetStore } from "../store/budget";
 import TableBudgetDetails from "../components/TableBudgetDetails.vue";
 import FormBudget from "../components/FormBudget.vue";
 import FormBudgetOrderDetail from "../components/FormBudgetOrderDetail.vue";
+import TableBudgetTransports from "../components/TableBudgetTransports.vue";
+import FormBudgetTransport from "../components/FormBudgetTransport.vue";
 import { useSalesOrderStore } from "../store/order";
 
 const formMode = ref(FormActionMode.EDIT);
@@ -158,6 +217,11 @@ const detailDialogTitle = "Línia del pressupost";
 const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
 const budgetDetail = ref(undefined as undefined | BudgetDetail);
+
+const transportDialogTitle = "Transport del pressupost";
+const isTransportDialogVisible = ref(false);
+const formTransportMode = ref(FormActionMode.EDIT);
+const budgetTransport = ref(undefined as undefined | BudgetTransport);
 
 const loadView = async () => {
   const budgetId = route.params.id as string;
@@ -289,6 +353,46 @@ const deleteSalesOrderDetails = async (detail: BudgetDetail) => {
   const afterDelete = budget.value!.details!.filter((i) => i.id !== detail.id);
   budget.value!.details = afterDelete;
   isDetailDialogVisible.value = false;
+};
+
+const openBudgetTransportDialog = (
+  formMode: FormActionMode,
+  transport: BudgetTransport,
+) => {
+  if (formMode === FormActionMode.CREATE) {
+    transport = {
+      id: getNewUuid(),
+      budgetId: budget.value!.id,
+      transportRateDetailId: "",
+      weight: 0,
+      volume: 0,
+      distance: 0,
+      price: 0,
+    } as BudgetTransport;
+  }
+  budgetTransport.value = Object.assign({}, transport);
+  formTransportMode.value = formMode;
+  isTransportDialogVisible.value = true;
+};
+
+const onBudgetTransportSubmit = async (transport: BudgetTransport) => {
+  if (formTransportMode.value === FormActionMode.CREATE) {
+    await budgetStore.CreateTransport(transport);
+  } else if (formTransportMode.value === FormActionMode.EDIT) {
+    await budgetStore.UpdateTransport(transport);
+  }
+  isTransportDialogVisible.value = false;
+};
+
+const deleteBudgetTransport = async (transport: BudgetTransport) => {
+  if (formMode.value === FormActionMode.EDIT) {
+    await budgetStore.DeleteTransport(transport);
+  } else {
+    const afterDelete = budget.value!.transports!.filter(
+      (i) => i.id !== transport.id,
+    );
+    budget.value!.transports = afterDelete;
+  }
 };
 
 const createSalesOrder = async () => {

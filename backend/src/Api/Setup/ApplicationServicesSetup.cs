@@ -5,7 +5,10 @@ using Application.Services.Sales;
 using Application.Services.Shared;
 using Application.Services.Verifactu;
 using Application.Services.Warehouse;
+using Application.Services.Transport;
+using Application.Services.Geolocalization;
 using Application.Contracts;
+using Application.Contracts.Services.Geolocalization;
 using Infrastructure.Persistance;
 
 namespace Api.Setup;
@@ -59,6 +62,8 @@ public static class ApplicationServicesSetup
         services.AddScoped<IIncomeService, IncomeService>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<ISupplierTypeService, SupplierTypeService>();
+        services.AddScoped<ITransportRateService, TransportRateService>();
+        services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();

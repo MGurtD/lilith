@@ -6,7 +6,6 @@ import {
   SalesOrderHeader,
 } from "../types";
 import SalesServices from "../services";
-import { GenericResponse } from "../../../types";
 
 export const useBudgetStore = defineStore({
   id: "budget",
@@ -56,9 +55,9 @@ export const useBudgetStore = defineStore({
     async GetAssociatedSalesOrders(budgetId: string) {
       this.order = await SalesServices.SalesOrder.GetFromBudgetId(budgetId);
     },
-    async Create(createRequest: CreateSalesHeaderRequest): Promise<GenericResponse<Budget>> {
-      const response = await SalesServices.Budget.Create(createRequest);
-      return response;
+    async Create(createRequest: CreateSalesHeaderRequest) {
+      const created = await SalesServices.Budget.Create(createRequest);
+      return created;
     },
     async Update(id: string, budget: Budget) {
       const updated = await SalesServices.Budget.update(id, budget);
@@ -80,6 +79,26 @@ export const useBudgetStore = defineStore({
     async DeleteDetail(detail: BudgetDetail): Promise<boolean> {
       const deleted = await SalesServices.Budget.DeleteDetail(detail);
       return deleted;
+    },
+    async CreateTransport(transport: any): Promise<boolean> {
+      const created = await SalesServices.Budget.CreateTransport(transport);
+      if (created) await this.GetById(transport.budgetId);
+      return created;
+    },
+    async UpdateTransport(transport: any): Promise<boolean> {
+      const updated = await SalesServices.Budget.UpdateTransport(transport);
+      if (updated) await this.GetById(transport.budgetId);
+      return updated;
+    },
+    async DeleteTransport(transport: any): Promise<boolean> {
+      const deleted = await SalesServices.Budget.DeleteTransport(transport.id);
+      if (deleted) await this.GetById(transport.budgetId);
+      return deleted;
+    },
+    async DistributeTransportCosts(budgetId: string): Promise<boolean> {
+      const result = await SalesServices.Budget.DistributeTransportCosts(budgetId);
+      if (result) await this.GetById(budgetId);
+      return result;
     },
   },
 });

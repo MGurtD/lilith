@@ -20,6 +20,7 @@ export const useSuppliersStore = defineStore({
     supplierType: undefined as SupplierType | undefined,
     suppliers: undefined as Array<Supplier> | undefined,
     supplier: undefined as Supplier | undefined,
+    logisticSuppliers: undefined as Array<Supplier> | undefined,
     supplierReferences: undefined as Array<SupplierReference> | undefined,
     supplierReference: undefined as SupplierReference | undefined,
   }),
@@ -52,6 +53,9 @@ export const useSuppliersStore = defineStore({
     },
     async fetchSuppliers() {
       this.suppliers = await service.getAll();
+    },
+    async fetchLogisticSuppliers() {
+      this.logisticSuppliers = await service.getLogisticSuppliers();
     },
     async fetchSupplier(id: string) {
       this.supplier = await service.getById(id);

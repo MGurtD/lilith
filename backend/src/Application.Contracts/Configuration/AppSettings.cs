@@ -6,6 +6,7 @@ public class AppSettings
     public JwtConfigSettings JwtConfig { get; set; } = new();
     public FileManagmentSettings FileManagment { get; set; } = new();
     public VerifactuSettings? Verifactu { get; set; }
+    public GeolocalizationSettings? Geolocalization { get; set; }
     public void Validate()
     {
         ConnectionStrings.Validate();
@@ -13,6 +14,8 @@ public class AppSettings
         FileManagment.Validate();
         if (Verifactu != null)
             Verifactu?.Validate();
+        if (Geolocalization != null)
+            Geolocalization?.Validate();
     }
 }
 
@@ -50,6 +53,18 @@ public class JwtConfigSettings
                 return ts;
             throw new ArgumentException("JwtConfig:ExpirationTimeFrame must be a valid TimeSpan");
         }
+    }
+}
+
+public class GeolocalizationSettings
+{
+    public string ApiKey { get; set; } = string.Empty;
+    public string BaseUrl { get; set; } = "https://api.openrouteservice.org";
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            throw new ArgumentException("Geolocalization:ApiKey configuration key is required");
     }
 }
 
