@@ -7,7 +7,7 @@
       />
     </div>
     <div class="dashboard-filter-field">
-      <label class="block text-900">Concepte:</label>
+      <label class="block text-900 font-semibold">Concepte:</label>
       <Select
         id="consolidatedBy"
         v-model="filter.consolidatedBy"
@@ -15,31 +15,38 @@
         placeholder="Selecciona..."
         optionValue="id"
         optionLabel="value"
-        class="w-full"
+        class="w-full min-w-[250px]"
         @change="filterDashboard"
       >
       </Select>
     </div>
     <Button
-      class="grid_add_row_button"
       :icon="PrimeIcons.FILTER_SLASH"
       @click="clearFilter"
+      severity="secondary"
+      outlined
+      label="Netejar"
     />
   </div>
-  <Tabs value="0">
+  <Tabs value="0" class="dashboard-tabs">
     <TabList>
-      <Tab value="0">Grafics</Tab>
-      <Tab value="1">Data</Tab>
+      <Tab value="0">Gràfics</Tab>
+      <Tab value="1">Dades</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
         <div class="dashboard-container">
           <Chart
+            v-if="chartData && chartData.datasets && chartData.datasets.length > 0"
             type="bar"
             :data="chartData"
             :options="chartOptions"
-            class="w-full h-[70rem]"
+            class="chart-canvas"
           />
+          <div v-else class="empty-state">
+            <i :class="PrimeIcons.CHART_BAR" class="empty-icon"></i>
+            <p class="empty-message">Selecciona un interval de dates i un concepte per visualitzar les dades</p>
+          </div>
         </div>
       </TabPanel>
       <TabPanel value="1">
@@ -88,6 +95,7 @@ type Options = {
 const optionValues: Options[] = [
   { id: "operator", value: "Operaris" },
   { id: "workcentertype", value: "Tipus de centre de treball" },
+  { id: "workcenter", value: "Centre de treball" },
 ];
 
 const costs = ref([] as Array<ProductionCostDashboardGrouped>);
@@ -99,6 +107,7 @@ onMounted(async () => {
   });
   await plantModelStore.fetchOperators();
   await plantModelStore.fetchWorkcenterTypes();
+  await plantModelStore.fetchWorkcenters();
   await exercicesStore.fetchActive();
 
   if (!store.exercisePicker.exercise) store.setCurrentYear();
@@ -129,6 +138,14 @@ const filterDashboard = async () => {
           endTime,
         );
     }
+    if (filter.value.consolidatedBy == "workcenter") {
+      await productionCostStore.fetchGroupedByWorkcenter(startTime, endTime);
+      dataResponse =
+        await productionCostDashboardService.GetGroupedByMonthAndWorkcenter(
+          startTime,
+          endTime,
+        );
+    }
 
     chartData.value = setChartData();
     chartOptions.value = setChartOptions();
@@ -140,12 +157,6 @@ const chartData = ref();
 const chartOptions = ref();
 
 const setChartData = () => {
-  const workcenterTypes = plantModelStore.workcenterTypes!.map(
-    (type) => type.name,
-  );
-  const operatorNames = plantModelStore.operators!.map(
-    (operator) => operator.name + " " + operator.surname,
-  );
   const monthNames = [
     "Gener",
     "Febrer",
@@ -160,6 +171,7 @@ const setChartData = () => {
     "Novembre",
     "Desembre",
   ];
+  
   interface GroupedData {
     [key: string]: { [key: string]: number };
   }
@@ -171,44 +183,59 @@ const setChartData = () => {
   }
 
   const groupedByMonth: GroupedData = {};
-  var datasets: Dataset[] = [];
+  const uniqueEntities = new Set<string>();
+  
+  // Build grouped data and collect unique entities from actual data
   productionCostStore.productionCostDashboardGrouped!.forEach((item) => {
-    const month = monthNames[item.month - 1];
-    if (!groupedByMonth[month]) {
-      groupedByMonth[month] = {};
+    const monthYear = `${monthNames[item.month - 1]} ${item.year}`;
+    if (!groupedByMonth[monthYear]) {
+      groupedByMonth[monthYear] = {};
     }
+    
+    let entityKey = "";
     if (filter.value.consolidatedBy == "operator") {
-      groupedByMonth[month][item.operatorName] = item.totalCost; //item.totalCost;
+      entityKey = item.operatorName;
+      groupedByMonth[monthYear][entityKey] = 
+        (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
+    } else if (filter.value.consolidatedBy == "workcentertype") {
+      entityKey = item.workcenterTypeName;
+      groupedByMonth[monthYear][entityKey] = 
+        (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
+    } else if (filter.value.consolidatedBy == "workcenter") {
+      entityKey = item.workcenterName;
+      groupedByMonth[monthYear][entityKey] = 
+        (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
     }
-    if (filter.value.consolidatedBy == "workcentertype") {
-      groupedByMonth[month][item.workcenterTypeName] = item.totalCost;
+    
+    if (entityKey) {
+      uniqueEntities.add(entityKey);
     }
   });
 
-  const labels = Object.keys(groupedByMonth).sort(
-    (a, b) => parseInt(a) - parseInt(b),
-  );
+  // Sort labels chronologically
+  const labels = Object.keys(groupedByMonth).sort((a, b) => {
+    const [monthA, yearA] = a.split(" ");
+    const [monthB, yearB] = b.split(" ");
+    const monthIndexA = monthNames.indexOf(monthA);
+    const monthIndexB = monthNames.indexOf(monthB);
+    
+    if (yearA !== yearB) {
+      return parseInt(yearA) - parseInt(yearB);
+    }
+    return monthIndexA - monthIndexB;
+  });
 
-  if (filter.value.consolidatedBy == "operator") {
-    datasets = operatorNames.map((operator, index) => {
-      return {
-        type: "bar",
-        label: operator,
-        backgroundColor: colors[index],
-        data: labels.map((month) => groupedByMonth[month][operator] || 0),
-      };
-    });
-  }
-  if (filter.value.consolidatedBy == "workcentertype") {
-    datasets = workcenterTypes.map((type, index) => {
-      return {
-        type: "bar",
-        label: type,
-        backgroundColor: colors[index],
-        data: labels.map((month) => groupedByMonth[month][type] || 0),
-      };
-    });
-  }
+  // Create datasets only for entities with actual data
+  const entityList = Array.from(uniqueEntities).sort();
+  const datasets: Dataset[] = entityList.map((entity, index) => {
+    return {
+      type: "bar",
+      label: entity,
+      backgroundColor: colors[index % colors.length],
+      data: labels.map((monthYear) => groupedByMonth[monthYear][entity] || 0),
+    };
+  });
+
   return {
     labels,
     datasets,
@@ -227,16 +254,52 @@ const setChartOptions = () => {
   return {
     maintainAspectRatio: false,
     aspectRatio: 0.8,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
     plugins: {
-      datalabels: {},
-      tooltips: {
-        mode: "index",
-        intersect: false,
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            let label = context.dataset.label || "";
+            if (label) {
+              label += ": ";
+            }
+            if (context.parsed.y !== null) {
+              label += new Intl.NumberFormat("ca-ES", {
+                style: "currency",
+                currency: "EUR",
+              }).format(context.parsed.y);
+            }
+            return label;
+          },
+          footer: function (tooltipItems: any) {
+            let sum = 0;
+            tooltipItems.forEach(function (tooltipItem: any) {
+              sum += tooltipItem.parsed.y;
+            });
+            return "Total: " + new Intl.NumberFormat("ca-ES", {
+              style: "currency",
+              currency: "EUR",
+            }).format(sum);
+          },
+        },
       },
       legend: {
+        position: "top",
         labels: {
           color: textColor,
+          padding: 15,
+          font: {
+            size: 13,
+          },
+          usePointStyle: true,
+          pointStyle: "rectRounded",
         },
+      },
+      title: {
+        display: false,
       },
     },
     scales: {
@@ -244,18 +307,33 @@ const setChartOptions = () => {
         stacked: true,
         ticks: {
           color: textColorSecondary,
+          font: {
+            size: 12,
+          },
         },
         grid: {
-          color: surfaceBorder,
+          display: false,
         },
       },
       y: {
         stacked: true,
         ticks: {
           color: textColorSecondary,
+          font: {
+            size: 12,
+          },
+          callback: function (value: any) {
+            return new Intl.NumberFormat("ca-ES", {
+              style: "currency",
+              currency: "EUR",
+              notation: "compact",
+              compactDisplay: "short",
+            }).format(value);
+          },
         },
         grid: {
           color: surfaceBorder,
+          drawTicks: false,
         },
       },
     },
@@ -263,175 +341,147 @@ const setChartOptions = () => {
 };
 
 const colors = [
-  "#FFB3BA", // Rosa claro
-  "#B3FFBA", // Verde claro
-  "#BAE1FF", // Azul claro
-  "#FFDFBA", // Naranja claro
-  "#FFFFBA", // Amarillo claro
-  "#BAFFC9", // Menta claro
-  "#FFB3E6", // Rosa pastel
-  "#B3FFFF", // Cian claro
-  "#FFBEBA", // Salmón claro
-  "#D1BAFF", // Lila claro
-  "#BAFFC9", // Verde menta
-  "#C9BAFF", // Morado pastel
-  "#FFBAD2", // Rosa pálido
-  "#BAFFD1", // Turquesa claro
-  "#FFC9BA", // Melocotón pastel
-  "#B3BAFF", // Azul lavanda
-  "#B3FFA1", // Verde lima claro
-  "#FFD1BA", // Coral pastel
-  "#FFBAE6", // Fucsia pastel
-  "#BAE6FF", // Azul bebé pastel
-  "#F0BAFF", // Malva pastel
-  "#FFBACD", // Rosa empolvado
-  "#A1FFB3", // Verde claro
-  "#FFB3FF", // Magenta pastel
-  "#C2FFBA", // Verde limón pastel
-  "#FFBAC2", // Melón pastel
-  "#BAC2FF", // Azul claro pastel
-  "#B3FFD1", // Verde espuma de mar
-  "#FFB3C9", // Rosa coral claro
-  "#C9FFA1", // Lima pastel
-  "#FFDFD1", // Rosa muy claro
-  "#A1C9FF", // Azul muy claro
-  "#D1FFBA", // Verde pastel pálido
-  "#FFB3C9", // Rosa coral
-  "#BAC2FF", // Azul claro
-  "#FFBACD", // Rosa claro empolvado
-  "#BAFFC2", // Verde menta claro
-  "#D1BAFF", // Púrpura pastel
-  "#FFBAF0", // Rosa fucsia pastel
-  "#BAFFDA", // Verde agua pastel
+  "#3B82F6", // Blue
+  "#EF4444", // Red
+  "#10B981", // Green
+  "#F59E0B", // Amber
+  "#8B5CF6", // Violet
+  "#EC4899", // Pink
+  "#14B8A6", // Teal
+  "#F97316", // Orange
+  "#6366F1", // Indigo
+  "#84CC16", // Lime
+  "#06B6D4", // Cyan
+  "#F43F5E", // Rose
+  "#8B5CF6", // Purple
+  "#22D3EE", // Cyan Light
+  "#A855F7", // Purple Light
+  "#FBBF24", // Yellow
+  "#34D399", // Emerald
+  "#FB923C", // Orange Light
+  "#60A5FA", // Blue Light
+  "#F472B6", // Pink Light
+  "#4ADE80", // Green Light
+  "#FCD34D", // Amber Light
+  "#C084FC", // Violet Light
+  "#2DD4BF", // Teal Light
+  "#FCA5A5", // Red Light
+  "#94A3B8", // Slate
+  "#4B5563", // Gray
+  "#7C3AED", // Purple Deep
+  "#DC2626", // Red Deep
+  "#059669", // Green Deep
+  "#D97706", // Amber Deep
+  "#7C2D12", // Orange Deep
+  "#1E40AF", // Blue Deep
+  "#BE185D", // Pink Deep
+  "#0F766E", // Teal Deep
+  "#4338CA", // Indigo Deep
+  "#65A30D", // Lime Deep
+  "#0E7490", // Cyan Deep
+  "#9F1239", // Rose Deep
+  "#6D28D9", // Violet Deep
 ];
 </script>
 <style scoped>
-:root {
-  --p-color-1: #ff5733;
-  --p-color-2: #33ff57;
-  --p-color-3: #3357ff;
-  --p-color-4: #ff33a1;
-  --p-color-5: #33ffa1;
-  --p-color-6: #a133ff;
-  --p-color-7: #ffd133;
-  --p-color-8: #33d1ff;
-  --p-color-9: #ff6f33;
-  --p-color-10: #ff33d1;
-  --p-color-11: #57ff33;
-  --p-color-12: #5733ff;
-  --p-color-13: #a1ff33;
-  --p-color-14: #ff3333;
-  --p-color-15: #33ffd1;
-  --p-color-16: #d1ff33;
-  --p-color-17: #33a1ff;
-  --p-color-18: #ff33a1;
-  --p-color-19: #a1ff57;
-  --p-color-20: #ffa133;
-  --p-color-21: #ff5733;
-  --p-color-22: #33ff6f;
-  --p-color-23: #6f33ff;
-  --p-color-24: #ff33ff;
-  --p-color-25: #33fff7;
-  --p-color-26: #ff6fff;
-  --p-color-27: #d133ff;
-  --p-color-28: #ffd133;
-  --p-color-29: #a1a1ff;
-  --p-color-30: #ff336f;
-  --p-color-31: #57ffa1;
-  --p-color-32: #5733d1;
-  --p-color-33: #a1336f;
-  --p-color-34: #6fff33;
-  --p-color-35: #ffd1a1;
-  --p-color-36: #ffa157;
-  --p-color-37: #33ff33;
-  --p-color-38: #336fff;
-  --p-color-39: #33ffa1;
-  --p-color-40: #6f57ff;
-  --p-color-41: #ff33a1;
-  --p-color-42: #ff3357;
-  --p-color-43: #a157ff;
-  --p-color-44: #33ffd1;
-  --p-color-45: #ff6f33;
-  --p-color-46: #5733ff;
-  --p-color-47: #33a1ff;
-  --p-color-48: #ffd157;
-  --p-color-49: #a1ff57;
-  --p-color-50: #ff5733;
-}
 .dashboard-filter {
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
-  color: black;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--p-surface-50);
+  border-radius: 8px;
+  border: 1px solid var(--p-surface-200);
 }
 
 .dashboard-filter-field {
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+}
+
+.dashboard-filter-field label {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.dashboard-tabs {
+  margin-top: 0;
 }
 
 .dashboard-container {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  height: 70vh;
-  gap: 2rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+  padding: 1.5rem 0;
 }
 
-.dashboard-item {
-  display: grid;
-  grid-template-rows: 0.1fr 0.9fr;
-  gap: 1rem;
+.chart-canvas {
+  width: 100%;
+  height: 600px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
-  align-content: center;
   justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: var(--p-text-muted-color);
 }
 
-.dashboard-item-header {
+.empty-icon {
+  font-size: 4rem;
+  opacity: 0.3;
+}
+
+.empty-message {
+  font-size: 1.1rem;
   text-align: center;
+  max-width: 400px;
 }
 
-.dashboard-item-chart {
-  position: relative;
-  height: 60vh;
-  width: 30vw;
-  align-self: center;
-  justify-self: center;
-}
-
-/* phone */
+/* Mobile responsive */
 @media only screen and (max-width: 767px) {
-  .dashboard-container {
-    display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 2rem;
-    height: 100vh;
-    width: 100%;
-  }
-
   .dashboard-filter {
-    display: block;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
   }
 
   .dashboard-filter-field {
-    padding-bottom: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  .dashboard-item {
-    display: grid;
-    grid-template-rows: 0.1fr 0.9fr;
-    gap: 1rem;
+  .dashboard-filter-field label {
+    font-size: 0.875rem;
   }
 
-  .dashboard-item-chart {
-    display: block;
-    height: 50%;
-    width: 90%;
+  .dashboard-container {
+    min-height: 400px;
+    padding: 1rem 0;
+  }
+
+  .chart-canvas {
+    height: 400px;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+  }
+
+  .empty-message {
+    font-size: 0.95rem;
   }
 }
 </style>

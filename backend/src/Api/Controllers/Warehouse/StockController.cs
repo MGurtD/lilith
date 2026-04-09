@@ -23,21 +23,9 @@ namespace Api.Controllers.Warehouse
         }
 
         [HttpGet]
-        public IActionResult GetStock(Guid? locationId, Guid? referenceId)
+        public async Task<IActionResult> GetStock(Guid? locationId, Guid? referenceId)
         {
-            IEnumerable<Stock> stock;
-            if (locationId.HasValue)
-            {
-                stock = service.GetByLocation(locationId.Value);
-            }
-            else if (referenceId.HasValue)
-            {
-                stock = service.GetByReference(referenceId.Value);
-            }
-            else
-            {
-                stock = service.GetAll();
-            }
+            var stock = await service.GetAll(locationId, referenceId);
 
             if (stock != null) return Ok(stock);
             else return BadRequest();
@@ -45,7 +33,8 @@ namespace Api.Controllers.Warehouse
         [HttpGet("ByBillOfMaterials/{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetStockByBillOfMaterials(Guid id){
+        public async Task<IActionResult> GetStockByBillOfMaterials(Guid id)
+        {
             var stock = await service.GetStockByWorkOrderPhaseBillOfMaterialsId(id);
             if (stock != null) return Ok(stock);
             else return BadRequest();

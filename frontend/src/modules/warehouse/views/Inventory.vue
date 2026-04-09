@@ -4,11 +4,8 @@
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
-    paginator
+    :paginator="(inventoryStore.inventories?.length ?? 0) > 20"
     :rows="20"
-    :rowsPerPageOptions="[10, 20, 50]"
-    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-    currentPageReportTemplate="{first} a {last} de {totalRecords} entrades"
   >
     <template #header>
       <div
@@ -78,7 +75,6 @@ import BaseInput from "../../../components/BaseInput.vue";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
-import { useReferenceStore } from "../../shared/store/reference";
 
 import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -87,16 +83,13 @@ import { Inventory, StockMovement } from "../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
 import { getNewUuid } from "../../../utils/functions";
-import { useWarehouseStore } from "../store/warehouse";
 
 const store = useStore();
 const toast = useToast();
 
 const stockStore = useStockStore();
-const referenceStore = useReferenceStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
-const warehouseStore = useWarehouseStore();
 
 const filter = ref({
   referenceName: "",
@@ -113,8 +106,6 @@ onMounted(async () => {
 });
 
 const refreshData = async () => {
-  await warehouseStore.fetchWarehousesWithLocations();
-  await referenceStore.fetchReferences();
   await stockStore.fetchStocks();
   inventoryStore.inventories = [];
   stockStore.stocks?.forEach((stock) => {
@@ -123,9 +114,9 @@ const refreshData = async () => {
       stockId: stock.id,
       movementType: "bal",
       locationId: stock.locationId,
-      locationName: warehouseStore.getLocationName(stock.locationId),
+      locationName: stock.locationName,
       referenceId: stock.referenceId,
-      referenceName: referenceStore.getFullNameById(stock.referenceId),
+      referenceName: stock.referenceDisplay,
       oldQuantity: stock.quantity,
       newQuantity: stock.quantity,
       width: stock.width,
@@ -189,6 +180,7 @@ const saveMovement = async () => {
     stockId: "",
     movementType: "",
     locationId: "",
+    location: null,
     referenceId: "",
     quantity: 0,
     width: 0,
@@ -210,6 +202,7 @@ const saveMovement = async () => {
           stockId: m.stockId,
           movementType: "OUTPUT",
           locationId: m.locationId,
+          location: null,
           referenceId: m.referenceId,
           quantity: m.newQuantity - m.oldQuantity,
           width: m.width,
@@ -226,6 +219,7 @@ const saveMovement = async () => {
           stockId: m.stockId,
           movementType: "INPUT",
           locationId: m.locationId,
+          location: null,
           referenceId: m.referenceId,
           quantity: m.newQuantity - m.oldQuantity,
           width: m.width,

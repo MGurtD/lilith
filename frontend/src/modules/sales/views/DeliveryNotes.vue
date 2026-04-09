@@ -264,11 +264,18 @@ const getCustomerById = (id: string) => {
 };
 
 const createDeliveryNote = async () => {
-  dialogOptions.visible = false;
-  const created = await deliveryNoteStore.Create(createRequest.value);
-  if (created) {
-    router.push({ path: `/deliverynote/${createRequest.value.id}` });
+  const response = await deliveryNoteStore.Create(createRequest.value);
+  if (!response?.result) {
+    toast.add({
+      severity: "warn",
+      summary: "Error al crear l'albarà",
+      detail: response?.errors?.[0] ?? "Error desconegut, contacte amb l'administrador.",
+      life: 10000,
+    });
+    return;
   }
+  dialogOptions.visible = false;
+  router.push({ path: `/deliverynote/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {

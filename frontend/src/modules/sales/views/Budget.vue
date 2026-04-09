@@ -409,13 +409,29 @@ const createSalesOrder = async () => {
     const response = await salesOrderStore.CreateFromBudget(budget.value);
 
     if (response.result) {
+      const budgetId = response.content?.budgetId;
+      const createdSalesOrder = budgetId
+        ? await salesOrderStore.GetFromBudgetId(budgetId)
+        : undefined;
+      const salesOrderId = createdSalesOrder?.id ?? response.content?.id;
+
       toast.add({
         severity: "success",
         summary: `Comanda ${response.content?.number} creada correctament`,
         life: 5000,
       });
 
-      router.push(`/salesorder/${response.content?.id}`);
+      if (!salesOrderId) {
+        toast.add({
+          severity: "error",
+          summary: "Error al obrir la comanda",
+          detail: "No s'ha pogut resoldre la comanda creada",
+          life: 5000,
+        });
+        return;
+      }
+
+      router.push(`/salesorder/${salesOrderId}`);
     } else {
       toast.add({
         severity: "error",

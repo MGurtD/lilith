@@ -16,6 +16,30 @@ namespace Application.Services.Sales
             return budget;
         }
 
+        public async Task<GenericResponse> Accept(Guid id)
+        {
+            var budget = await unitOfWork.Budgets.Get(id);
+            if (budget == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", id));
+            }
+
+            var acceptedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                StatusConstants.Lifecycles.Budget,
+                StatusConstants.Statuses.Acceptat);
+
+            if (acceptedStatus == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Acceptat));
+            }
+
+            budget.StatusId = acceptedStatus.Id;
+            budget.AcceptanceDate = DateTime.Now;
+
+            await unitOfWork.Budgets.Update(budget);
+            return new GenericResponse(true, budget);
+        }
+
         public IEnumerable<Budget> GetBetweenDates(DateTime startDate, DateTime endDate)
         {
             var budgets = unitOfWork.Budgets.Find(p => p.Date >= startDate && p.Date <= endDate);

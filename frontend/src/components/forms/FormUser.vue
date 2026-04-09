@@ -75,6 +75,13 @@
     >
       <BaseInput
         :type="BaseInputType.PASSWORD"
+        id="currentPassword"
+        class="mb-2 w-full"
+        label="Contrasenya actual"
+        v-model="currentPassword"
+      ></BaseInput>
+      <BaseInput
+        :type="BaseInputType.PASSWORD"
         id="passwordOne"
         class="mb-2 w-full"
         :label="$t('forms.user.passwordLabel') as string"
@@ -140,7 +147,7 @@ import {
 } from "../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../types/component";
-import { UserLogin } from "../../services/authentications.service";
+import { UserLogin, ChangePasswordRequest } from "../../services/authentications.service";
 import { User, Role, Profile } from "../../types";
 import LanguageSwitcher from "../LanguageSwitcher.vue";
 
@@ -153,12 +160,13 @@ const props = defineProps<{
   user: User | undefined;
 }>();
 const passwordChangeModeOn = ref(false);
+const currentPassword = ref("");
 const passwordOne = ref("");
 const passwordTwo = ref("");
 
 const emit = defineEmits<{
   (e: "submit", contact: User): void;
-  (e: "change-password", password: UserLogin): void;
+  (e: "change-password", request: ChangePasswordRequest): void;
 }>();
 
 const toast = useToast();
@@ -214,8 +222,17 @@ const enablePasswordMode = () => {
 };
 
 const changePassword = () => {
+  if (!currentPassword.value || currentPassword.value.length < 1) {
+    toast.add({
+      severity: "warn",
+      summary: "Has d'introduir la contrasenya actual",
+    });
+    return;
+  }
+
   let isValid =
-    passwordOne.value.length > 4 === passwordTwo.value.length > 4 &&
+    passwordOne.value.length > 4 &&
+    passwordTwo.value.length > 4 &&
     passwordOne.value === passwordTwo.value;
 
   if (!isValid) {
@@ -228,9 +245,9 @@ const changePassword = () => {
   }
 
   emit("change-password", {
-    username: props.user?.username,
-    password: passwordOne.value,
-  } as UserLogin);
+    currentPassword: currentPassword.value,
+    newPassword: passwordOne.value,
+  } as ChangePasswordRequest);
 };
 </script>
 
@@ -238,6 +255,6 @@ const changePassword = () => {
 .form-user-changepassword {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 0.5fr 0.5fr 0.5fr;
+  grid-template-columns: 1fr 1fr 1fr auto;
 }
 </style>

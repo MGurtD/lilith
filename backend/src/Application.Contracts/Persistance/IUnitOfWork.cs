@@ -15,6 +15,7 @@ namespace Application.Contracts
         // Authentication
         IRepository<Role, Guid> Roles { get; }
         IRepository<User, Guid> Users { get; }
+        IRepository<ApiKey, Guid> ApiKeys { get; }
         IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; }
         IRepository<UserFilter, Guid> UserFilters { get; }
         IRepository<Profile, Guid> Profiles { get; }
@@ -30,7 +31,6 @@ namespace Application.Contracts
         ILifecycleRepository Lifecycles { get; }
         ILifecycleTagRepository LifecycleTags { get; }
         IRepository<StatusLifecycleTag, Guid> StatusLifecycleTags { get; }
-        // Removed Languages repository (now JSON based catalog)
 
         // Purchase
         IRepository<SupplierType, Guid> SupplierTypes { get; }
@@ -46,6 +46,7 @@ namespace Application.Contracts
         IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; }
         ITransportRateRepository TransportRates { get; }
         IRepository<TransportRateDetail, Guid> TransportRateDetails { get; }
+
 
         // Sales
         IRepository<CustomerType, Guid> CustomerTypes { get; }
@@ -66,8 +67,8 @@ namespace Application.Contracts
         IRepository<WorkcenterType, Guid> WorkcenterTypes { get; }
         IWorkcenterRepository Workcenters { get; }
         IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; }
-        IRepository<Operator, Guid> Operators { get;  }
-        IRepository<OperatorType, Guid> OperatorTypes { get; }        
+        IRepository<Operator, Guid> Operators { get; }
+        IRepository<OperatorType, Guid> OperatorTypes { get; }
         IMachineStatusRepository MachineStatuses { get; }
         IRepository<Shift, Guid> Shifts { get; }
         IRepository<ShiftDetail, Guid> ShiftDetails { get; }
@@ -80,13 +81,13 @@ namespace Application.Contracts
         IContractReader<WorkcenterShiftHistoricalOperator> WorkcenterShiftHistoricalOperators { get; }
         IWorkcenterProfitPercentageRepository WorkcenterProfitPercentages { get; }
         IPhaseTemplateRepository PhaseTemplates { get; }
-        
+
         //Warehouse
         IWarehouseRepository Warehouses { get; }
         IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
-        IRepository<StockMovement, Guid> StockMovements {get; }
+        IStockMovementRepository StockMovements { get; }
 
         Task<int> CompleteAsync();
         void Dispose();

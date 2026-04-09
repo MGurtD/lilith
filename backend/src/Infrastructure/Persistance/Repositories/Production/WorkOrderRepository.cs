@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Entities.Production;
 using Domain.Entities.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Persistance.Repositories.Production
 {
@@ -19,7 +20,8 @@ namespace Infrastructure.Persistance.Repositories.Production
                         .ToListAsync();
         }
 
-        public override IEnumerable<WorkOrder> Find(Expression<Func<WorkOrder, bool>> predicate) {
+        public override IEnumerable<WorkOrder> Find(Expression<Func<WorkOrder, bool>> predicate)
+        {
             return dbSet
                     .Include(d => d.Reference)
                     .Where(predicate)
@@ -54,7 +56,7 @@ namespace Infrastructure.Persistance.Repositories.Production
                 .Where(w => includedStatusIds.Contains(w.StatusId))
                 .Include(w => w.Reference)
                     .ThenInclude(r => r!.Customer)
-                .Include(w => w.Status)            
+                .Include(w => w.Status)
                 .AsNoTracking()
                 .OrderBy(w => w.Order)
                     .ThenBy(w => w.PlannedDate)
@@ -70,11 +72,11 @@ namespace Infrastructure.Persistance.Repositories.Production
         {
             // Get WorkOrder IDs with Planned lifecycle tag at WorkOrder level
             var workOrderIdsQuery = from wo in context.Set<WorkOrder>()
-                                    join status in context.Set<Status>() 
+                                    join status in context.Set<Status>()
                                         on wo.StatusId equals status.Id
-                                    join statusTag in context.Set<StatusLifecycleTag>() 
+                                    join statusTag in context.Set<StatusLifecycleTag>()
                                         on status.Id equals statusTag.StatusId
-                                    join tag in context.Set<LifecycleTag>() 
+                                    join tag in context.Set<LifecycleTag>()
                                         on statusTag.LifecycleTagId equals tag.Id
                                     where tag.Name == StatusConstants.LifecycleTags.Plant
                                         && !wo.Disabled
@@ -82,7 +84,7 @@ namespace Infrastructure.Persistance.Repositories.Production
                                     select wo.Id;
 
             var workOrderIds = await workOrderIdsQuery.ToListAsync();
-            
+
             if (workOrderIds.Count == 0)
                 return [];
 
@@ -157,13 +159,13 @@ namespace Infrastructure.Persistance.Repositories.Production
                     .ThenInclude(p => p.Details)
                 .AsNoTracking()
                 .SelectMany(wo => wo.Phases
-                            .GroupBy(wp => new 
+                            .GroupBy(wp => new
                             {
                                 wo.Code,
                                 wo.PlannedQuantity,
                                 PhaseCode = wp.Code,
                                 PhaseDescription = wp.Description,
-                                wp.WorkcenterTypeId                                
+                                wp.WorkcenterTypeId
                             })
                 .Select(g => new WorkOrderPhaseEstimationDto
                 {

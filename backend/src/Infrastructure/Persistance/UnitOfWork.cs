@@ -23,6 +23,7 @@ namespace Infrastructure.Persistance
         // Authentication
         public IRepository<Role, Guid> Roles { get; private set; } = new Repository<Role, Guid>(context);
         public IRepository<User, Guid> Users { get; private set; } = new Repository<User, Guid>(context);
+        public IRepository<ApiKey, Guid> ApiKeys { get; private set; } = new Repository<ApiKey, Guid>(context);
         public IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; private set; } = new Repository<UserRefreshToken, Guid>(context);
         public IRepository<UserFilter, Guid> UserFilters { get; private set; } = new Repository<UserFilter, Guid>(context);
         public IRepository<Profile, Guid> Profiles { get; private set; } = new Repository<Profile, Guid>(context);
@@ -93,7 +94,7 @@ namespace Infrastructure.Persistance
         public IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; private set; } = new Repository<WorkcenterLocation, Guid>(context);
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
-        public IRepository<StockMovement, Guid> StockMovements { get; private set; } = new Repository<StockMovement, Guid>(context);
+        public IStockMovementRepository StockMovements { get; private set; } = new StockMovementRepository(context);
 
         public async Task<int> CompleteAsync()
         {

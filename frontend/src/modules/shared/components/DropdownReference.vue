@@ -11,12 +11,7 @@
       :options="filteredReferences"
       placeholder="Selecciona..."
       optionValue="id"
-      :optionLabel="
-        (r) =>
-          fullName
-            ? referenceStore.getFullNameById(r.id)
-            : referenceStore.getShortNameById(r.id)
-      "
+      :optionLabel="(r) => getReferenceNameById(r.id)"
       class="w-full"
       v-bind="$attrs"
       v-bind:model-value="modelValue as string"
@@ -42,11 +37,19 @@
 import { computed } from "vue";
 import { useReferenceStore } from "../store/reference";
 
+interface ReferenceOption {
+  id: string;
+  code: string;
+  description: string;
+  customerId?: string | null;
+}
+
 const props = defineProps<{
   label: string;
   modelValue: string | null | undefined;
   fullName: boolean;
   customerId?: string;
+  options?: ReferenceOption[];
 }>();
 
 const emit = defineEmits<{
@@ -56,12 +59,31 @@ const emit = defineEmits<{
 const referenceStore = useReferenceStore();
 
 const getReferenceNameById = (id: string) => {
+  const externalReference = props.options?.find((reference) => reference.id === id);
+  if (externalReference) {
+    return props.fullName
+      ? `${externalReference.code} - ${externalReference.description}`
+      : externalReference.code;
+  }
+
   return props.fullName
     ? referenceStore.getFullNameById(id)
     : referenceStore.getShortNameById(id);
 };
 
 const filteredReferences = computed(() => {
+  if (props.options) {
+    if (!props.customerId) return props.options;
+
+    return props.options.filter((reference) => {
+      return (
+        (props.customerId && reference.customerId === props.customerId) ||
+        reference.customerId === null ||
+        reference.customerId === undefined
+      );
+    });
+  }
+
   if (!referenceStore.references) return [];
   if (!props.customerId) return referenceStore.references;
 

@@ -6,11 +6,19 @@ import english from "./primevue/english";
 import catalan from "./primevue/catalan";
 
 const localStorageLangKey = "app.lang";
-const initial = (
-  localStorage.getItem(localStorageLangKey) ||
-  (navigator.language || "ca").slice(0, 2) ||
-  "ca"
-).toLowerCase();
+const defaultLocale = "ca";
+const supportedLocales = ["ca", "es", "en"] as const;
+
+const normalizeLocale = (locale?: string | null) => {
+  const normalized = (locale || defaultLocale).slice(0, 2).toLowerCase();
+  return supportedLocales.includes(
+    normalized as (typeof supportedLocales)[number],
+  )
+    ? normalized
+    : defaultLocale;
+};
+
+const initial = normalizeLocale(localStorage.getItem(localStorageLangKey));
 
 export const i18n = createI18n({
   legacy: false,
@@ -24,7 +32,7 @@ export const applyPrimeVueLocale = (
   primevue: PrimeVueConfiguration,
   code: string,
 ) => {
-  const lang = (code || "ca").toLowerCase();
+  const lang = normalizeLocale(code);
   primevue.locale = (
     lang === "es" ? spanish : lang === "en" ? english : catalan
   ) as any;
@@ -32,6 +40,6 @@ export const applyPrimeVueLocale = (
 };
 
 export function setI18nLocale(locale: string) {
-  const lang = (locale || "ca").slice(0, 2).toLowerCase();
+  const lang = normalizeLocale(locale);
   i18n.global.locale.value = lang as "ca" | "es" | "en";
 }

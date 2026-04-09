@@ -13,6 +13,7 @@ namespace Domain.Entities.Purchase
         public string Phone { get; set; } = string.Empty;
         public string AccountNumber { get; set; } = string.Empty;
         public string Observations { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
 
         public SupplierType? Type { get; set; }
         public Guid SupplierTypeId { get; set; }

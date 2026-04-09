@@ -34,7 +34,7 @@ namespace Api.Controllers.Sales
             if (customerId.HasValue)
                 salesOrderHeaders = service.GetBetweenDatesAndCustomer(startTime, endTime, customerId.Value);
             else
-                salesOrderHeaders = service.GetBetweenDates(startTime, endTime);         
+                salesOrderHeaders = service.GetBetweenDates(startTime, endTime);
             if (salesOrderHeaders != null) return Ok(salesOrderHeaders.OrderByDescending(e => e.Number));
             else return BadRequest();
         }
@@ -47,7 +47,7 @@ namespace Api.Controllers.Sales
             var response = await service.Create(salesOrder);
 
             if (response.Result)
-                return Ok(response.Content);
+                return Ok(response);
             else
                 return BadRequest(response);
         }

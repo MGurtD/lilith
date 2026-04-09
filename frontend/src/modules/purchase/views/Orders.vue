@@ -229,6 +229,7 @@ const generateNewRequest = (): CreatePurchaseDocumentRequest => {
 };
 const create = async () => {
   const created = await ordersStore.create(createRequest.value);
+  dialogOptions.visible = false;
   if (created)
     router.push({ path: `/purchase-orders/${createRequest.value.id}` });
 };

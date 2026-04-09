@@ -1,12 +1,4 @@
 <template>
-  <Button
-    v-if="!selectedContact"
-    :icon="PrimeIcons.PLUS"
-    class="grid_add_row_button"
-    rounded
-    @click="createButtonClick"
-  />
-
   <SupplierContactForm
     v-if="selectedContact"
     :contact="selectedContact"
@@ -20,6 +12,23 @@
       tableStyle="min-width: 100%"
       @row-click="rowContactClick"
     >
+      <template #header>
+        <slot name="header">
+          <div
+            class="flex flex-wrap align-items-center justify-content-between gap-2"
+          >
+            <span class="text-l text-900 font-bold">{{ title }}</span>
+            <div>
+              <Button
+                v-if="formActionMode === FormActionMode.EDIT"
+                :icon="PrimeIcons.PLUS"
+                rounded
+                @click="createButtonClick"
+              />
+            </div>
+          </div>
+        </slot>
+      </template>
       <Column header="Nom" style="width: 25%">
         <template #body="slotProps">
           {{ slotProps.data.firstName }} {{ slotProps.data.lastName }}
@@ -56,6 +65,11 @@ const confirm = useConfirm();
 const supplierStore = useSuppliersStore();
 const { supplier } = storeToRefs(supplierStore);
 const formMode = ref(FormActionMode.CREATE);
+
+const props = defineProps<{
+  title: string;
+  formActionMode: FormActionMode;
+}>();
 
 const emit = defineEmits<{
   (e: "create", contact: SupplierContact): void;
