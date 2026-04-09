@@ -64,7 +64,7 @@
         <div>
           <BaseInput
             :type="BaseInputType.NUMERIC"
-            label="Dies entrega"
+            label="Dies naturals entrega"
             id="deliveryDays"
             v-model="budget.deliveryDays"
           />
