@@ -1,4 +1,4 @@
-﻿namespace Domain.Entities.Production
+namespace Domain.Entities.Production
 {
     public class Site : Entity
     {
@@ -14,6 +14,9 @@
         public string EmailSales { get; set; } = string.Empty;
         public string EmailPurchase { get; set; } = string.Empty;
         public string VatNumber { get; set; } = string.Empty;
+        
+        public decimal Latitude { get; set; } = 0;
+        public decimal Longitude { get; set; } = 0;
 
         public bool IsValidForSales()
         {

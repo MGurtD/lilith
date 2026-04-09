@@ -21,6 +21,7 @@ public interface ISupplierService
     Task<SupplierReference?> GetSupplierReferenceById(Guid supplierReferenceId);
     IEnumerable<SupplierReference> GetSupplierReferences(Guid supplierId);
     IEnumerable<Supplier> GetSuppliersByReference(Guid referenceId);
+    IEnumerable<Supplier> GetLogisticSuppliers();
     Task<GenericResponse> CreateSupplierReference(SupplierReference supplierReference);
     Task<GenericResponse> UpdateSupplierReference(Guid id, SupplierReference supplierReference);
     Task<GenericResponse> RemoveSupplierReference(Guid id);

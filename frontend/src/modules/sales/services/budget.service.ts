@@ -6,13 +6,12 @@ import {
 } from "../types";
 import apiClient from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
-import { GenericResponse } from "../../../types";
 
 export class BudgetService extends BaseService<Budget> {
-  async Create(request: CreateSalesHeaderRequest): Promise<GenericResponse<Budget>> {
+  async Create(request: CreateSalesHeaderRequest): Promise<boolean> {
     const endpoint = `${this.resource}`;
     const response = await this.apiClient.post(endpoint, request);
-    return response.data as GenericResponse<Budget>;
+    return response.status === 200;
   }
 
   async GetBetweenDates(
@@ -61,6 +60,30 @@ export class BudgetService extends BaseService<Budget> {
   async DeleteDetail(request: BudgetDetail): Promise<boolean> {
     const endpoint = `${this.resource}/Detail/${request.id}`;
     const response = await apiClient.delete(endpoint);
+    return response.status === 200;
+  }
+
+  async CreateTransport(request: any): Promise<boolean> {
+    const endpoint = `${this.resource}/Transport`;
+    const response = await apiClient.post(endpoint, request);
+    return response.status === 200;
+  }
+
+  async UpdateTransport(request: any): Promise<boolean> {
+    const endpoint = `${this.resource}/Transport/${request.id}`;
+    const response = await apiClient.put(endpoint, request);
+    return response.status === 200;
+  }
+
+  async DeleteTransport(id: string): Promise<boolean> {
+    const endpoint = `${this.resource}/Transport/${id}`;
+    const response = await apiClient.delete(endpoint);
+    return response.status === 200;
+  }
+
+  async DistributeTransportCosts(budgetId: string): Promise<boolean> {
+    const endpoint = `${this.resource}/Transport/DistributeCosts/${budgetId}`;
+    const response = await apiClient.put(endpoint, {});
     return response.status === 200;
   }
 }

@@ -30,6 +30,7 @@ export interface Supplier {
   supplierTypeId: string;
   paymentMethodId: string;
   contacts: Array<SupplierContact>;
+  distanceFromSite?: number;
 }
 
 export interface SupplierContact {
@@ -293,3 +294,29 @@ export interface AddReceptionsRequest {
   receiptId: string;
   receptions: Array<PurchaseOrderReceiptDetail>;
 }
+
+export interface TransportRate {
+  id: string;
+  name: string;
+  description: string;
+  supplierId: string;
+  validFrom: any;
+  validTo: any;
+  disabled: boolean;
+  details: Array<TransportRateDetail>;
+}
+
+
+export interface TransportRateDetail {
+  id: string;
+  transportRateId: string;
+  minWeight: number;
+  maxWeight: number;
+  minVolume: number;
+  maxVolume: number;
+  minDistance: number;
+  maxDistance: number;
+  price: number;
+  disabled: boolean;
+}
+

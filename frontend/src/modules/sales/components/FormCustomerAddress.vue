@@ -78,9 +78,14 @@
           'p-invalid': validation.errors.address,
         }"
       ></BaseInput>
+      <BaseInput
+        disabled
+        label="Distància des de la seu (km)"
+        id="distanceFromSite"
+        :modelValue="address.distanceFromSite ?? null"
+      ></BaseInput>
     </section>
     <div>
-      <label class="block text-900 mb-2">Observacions</label>
       <Textarea v-model="address.observations" class="w-full" />
     </div>
 

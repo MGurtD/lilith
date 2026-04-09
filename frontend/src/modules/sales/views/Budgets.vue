@@ -288,11 +288,11 @@ const getCustomerById = (id: string) => {
 
 const createOrder = async () => {
   const response = await budgetStore.Create(createRequest.value);
-  if (!response?.result) {
+  if (!response) {
     toast.add({
       severity: "warn",
       summary: "Error al crear el pressupost",
-      detail: response?.errors?.[0] ?? "Error desconegut, contacte amb l'administrador.",
+      detail: "Error desconegut, contacte amb l'administrador.",
       life: 10000,
     });
     return;

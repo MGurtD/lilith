@@ -5,6 +5,7 @@ namespace Application.Contracts
     public interface IBudgetRepository : IRepository<Budget, Guid>
     {
         IRepository<BudgetDetail, Guid> Details { get; }
+        IRepository<BudgetTransport, Guid> Transports { get; }
     }
 }
 

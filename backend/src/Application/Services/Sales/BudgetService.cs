@@ -7,6 +7,7 @@ namespace Application.Services.Sales
     public class BudgetService(
         IUnitOfWork unitOfWork,
         IExerciseService exerciseService,
+        IMetricsService metricsService,
         ILocalizationService localizationService) : IBudgetService
     {
         public async Task<Budget?> GetById(Guid id)
@@ -127,11 +128,54 @@ namespace Application.Services.Sales
         
         public async Task<GenericResponse> AddDetail(BudgetDetail detail)
         {
+            // Recuperar el workmaster
+            if (detail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                // Recollir mètriques
+                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
+                
+                // Afegir pes a la línia
+                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                {
+                    detail.DetailWeight = productionMetrics.TotalWeight;
+                }
+
+                // Afegir pes al total del pressupost
+                var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
+                if (budget != null)
+                {
+                    budget.TotalWeight += detail.DetailWeight;
+                    await unitOfWork.Budgets.Update(budget);
+                }
+            }
+             
             await unitOfWork.Budgets.Details.Add(detail);
             return new GenericResponse(true, detail);
         }
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
+            var oldWeight = detail.DetailWeight;
+            if (detail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                // Recollir mètriques
+                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
+                
+                // Afegir pes a la línia
+                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                {
+                    detail.DetailWeight = productionMetrics.TotalWeight;
+                }
+
+                // Afegir pes al total del pressupost
+                var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
+                if (budget != null)
+                {
+                    budget.TotalWeight += detail.DetailWeight - oldWeight;
+                    await unitOfWork.Budgets.Update(budget);
+                }
+            }
             await unitOfWork.Budgets.Details.Update(detail);
             return new GenericResponse(true, detail);
         }
@@ -140,6 +184,28 @@ namespace Application.Services.Sales
             var detail = unitOfWork.Budgets.Details.Find(d => d.Id == id).FirstOrDefault();
             if (detail == null) 
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetDetailNotFound", id));
+
+            if (detail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                // Recollir mètriques
+                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
+                
+                // Afegir pes a la línia
+                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                {
+                    detail.DetailWeight = productionMetrics.TotalWeight;
+                }
+
+                // Afegir pes al total del pressupost
+                var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
+                if (budget != null)
+                {
+                    budget.TotalWeight -= detail.DetailWeight;
+                    await unitOfWork.Budgets.Update(budget);
+                }
+            }
+
             await unitOfWork.Budgets.Details.Remove(detail);
 
             return new GenericResponse(true, detail);
@@ -163,6 +229,57 @@ namespace Application.Services.Sales
                 await unitOfWork.Budgets.Update(budget);
                 
             }
+            return new GenericResponse(true);
+        }
+
+        public async Task<GenericResponse> AddTransport(BudgetTransport transport)
+        {
+            var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
+            if (budget == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound"));
+            budget.TransportCost += transport.Price;
+            await unitOfWork.Budgets.Transports.Add(transport);
+            await unitOfWork.Budgets.Update(budget);
+            return new GenericResponse(true, transport);
+        }
+        public async Task<GenericResponse> UpdateTransport(BudgetTransport transport)
+        {
+            var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
+            if (budget == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound"));
+            await unitOfWork.Budgets.Transports.Update(transport);
+            return new GenericResponse(true, transport);
+        }
+        public async Task<GenericResponse> RemoveTransport(Guid id)
+        {
+            var transport = unitOfWork.Budgets.Transports.Find(t => t.Id == id).FirstOrDefault();
+            if (transport == null) 
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetTransportNotFound", id));
+            var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
+            if (budget == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound"));
+            budget.TransportCost -= transport.Price;
+            await unitOfWork.Budgets.Transports.Remove(transport);
+            await unitOfWork.Budgets.Update(budget);
+            return new GenericResponse(true, transport);
+        }
+ 
+        public async Task<GenericResponse> DistributeTransportCosts(Guid budgetId)
+        {
+            var budget = await unitOfWork.Budgets.Get(budgetId);
+            if (budget == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", budgetId));
+            }
+                        
+            var totalWeight = budget.Details.Sum(d => d.DetailWeight);                        
+            var transportCostPerKg = budget.TransportCost / totalWeight;            
+            foreach (var detail in budget.Details)
+            {
+                detail.TransportCost = detail.DetailWeight * transportCostPerKg;
+                detail.Amount = detail.Amount + detail.TransportCost;
+            }
+            await unitOfWork.Budgets.Update(budget);
             return new GenericResponse(true);
         }
     }

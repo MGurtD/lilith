@@ -7,6 +7,11 @@ import {
 import BaseService from "../../../api/base.service";
 
 export class SupplierService extends BaseService<Supplier> {
+  async getLogisticSuppliers(): Promise<Array<Supplier>> {
+    const response = await this.apiClient.get(`${this.resource}/Logistic`);
+    return response.data as Array<Supplier>;
+  }
+
   async getReference(id: string) {
     const response = await this.apiClient.get(
       `${this.resource}/Reference/${id}`

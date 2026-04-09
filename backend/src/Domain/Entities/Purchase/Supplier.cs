@@ -1,4 +1,4 @@
-﻿namespace Domain.Entities.Purchase
+namespace Domain.Entities.Purchase
 {
     public class Supplier : Entity
     {
@@ -17,6 +17,9 @@
 
         public SupplierType? Type { get; set; }
         public Guid SupplierTypeId { get; set; }
+        public decimal DistanceFromSite { get; set; } = 0;
+        public decimal Latitude { get; set; } = 0;
+        public decimal Longitude { get; set; } = 0;
 
         public PaymentMethod? PaymentMethod { get; set; }
         public Guid? PaymentMethodId { get; set; }

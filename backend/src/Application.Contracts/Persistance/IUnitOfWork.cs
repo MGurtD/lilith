@@ -6,6 +6,7 @@ using Domain.Entities.Purchase;
 using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
+using Domain.Entities.Transport;
 
 namespace Application.Contracts
 {
@@ -43,6 +44,8 @@ namespace Application.Contracts
         IReceiptRepository Receipts { get; }
         IRepository<ReferenceFormat, Guid> ReferenceFormats { get; }
         IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; }
+        ITransportRateRepository TransportRates { get; }
+        IRepository<TransportRateDetail, Guid> TransportRateDetails { get; }
 
 
         // Sales

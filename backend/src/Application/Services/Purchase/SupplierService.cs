@@ -1,9 +1,13 @@
 using Application.Contracts;
+using Application.Contracts.Services.Geolocalization;
 using Domain.Entities.Purchase;
 
 namespace Application.Services.Purchase;
 
-public class SupplierService(IUnitOfWork unitOfWork, ILocalizationService localizationService) : ISupplierService
+public class SupplierService(
+    IUnitOfWork unitOfWork, 
+    ILocalizationService localizationService,
+    IGeolocalizationService geolocalizationService) : ISupplierService
 {
     // Supplier CRUD
     public async Task<Supplier?> GetSupplierById(Guid id)
@@ -17,6 +21,12 @@ public class SupplierService(IUnitOfWork unitOfWork, ILocalizationService locali
         return suppliers.OrderBy(s => s.ComercialName);
     }
 
+    public IEnumerable<Supplier> GetLogisticSuppliers()
+    {
+        var suppliers = unitOfWork.Suppliers.GetLogisticSuppliers();
+        return suppliers.OrderBy(s => s.ComercialName);
+    }
+
     public async Task<GenericResponse> CreateSupplier(Supplier supplier)
     {
         var exists = unitOfWork.Suppliers.Find(r => supplier.ComercialName == r.ComercialName).Any();
@@ -25,6 +35,8 @@ public class SupplierService(IUnitOfWork unitOfWork, ILocalizationService locali
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("SupplierAlreadyExists", supplier.ComercialName));
         }
+
+        await UpdateCoordinatesAndDistanceAsync(supplier);
 
         await unitOfWork.Suppliers.Add(supplier);
         return new GenericResponse(true, supplier);
@@ -38,6 +50,8 @@ public class SupplierService(IUnitOfWork unitOfWork, ILocalizationService locali
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("EntityNotFound", supplier.Id));
         }
+
+        await UpdateCoordinatesAndDistanceAsync(supplier);
 
         await unitOfWork.Suppliers.Update(supplier);
         return new GenericResponse(true, supplier);
@@ -185,5 +199,31 @@ public class SupplierService(IUnitOfWork unitOfWork, ILocalizationService locali
 
         await unitOfWork.Suppliers.RemoveSupplierReference(supplierReference);
         return new GenericResponse(true, supplierReference);
+    }
+
+    private async Task UpdateCoordinatesAndDistanceAsync(Supplier supplier)
+    {
+        if (string.IsNullOrWhiteSpace(supplier.Address) || string.IsNullOrWhiteSpace(supplier.City) || string.IsNullOrWhiteSpace(supplier.Country))
+            return;
+
+        var coords = await geolocalizationService.GetCoordinatesAsync(supplier.Address, supplier.City, supplier.PostalCode, supplier.Country);
+        if (coords != null)
+        {
+            supplier.Latitude = coords.Latitude;
+            supplier.Longitude = coords.Longitude;
+
+            var defaultSite = (await unitOfWork.Sites.GetAll()).FirstOrDefault();
+            if (defaultSite != null && defaultSite.Latitude != 0 && defaultSite.Longitude != 0)
+            {
+                var distance = await geolocalizationService.GetDistanceAsync(
+                    new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude },
+                    coords);
+                
+                if (distance.HasValue)
+                {
+                    supplier.DistanceFromSite = distance.Value;
+                }
+            }
+        }
     }
 }

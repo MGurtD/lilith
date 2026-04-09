@@ -1,4 +1,5 @@
 using Application.Contracts;
+using Application.Contracts.Services.Geolocalization;
 using Application.Services;
 using Domain.Entities;
 using Domain.Entities.Sales;
@@ -7,7 +8,8 @@ namespace Application.Services.Sales;
 
 public class CustomerService(
     IUnitOfWork unitOfWork,
-    ILocalizationService localizationService) : ICustomerService
+    ILocalizationService localizationService,
+    IGeolocalizationService geolocalizationService) : ICustomerService
 {
     // Customer CRUD operations
     public async Task<IEnumerable<Customer>> GetAllCustomers()
@@ -124,6 +126,8 @@ public class CustomerService(
                 localizationService.GetLocalizedString("CustomerNotFound"));
         }
 
+        await UpdateCoordinatesAndDistanceAsync(address);
+
         await unitOfWork.Customers.AddAddress(address);
         return new GenericResponse(true, address);
     }
@@ -148,6 +152,8 @@ public class CustomerService(
         existingAddress.Main = address.Main;
         existingAddress.Observations = address.Observations;
 
+        await UpdateCoordinatesAndDistanceAsync(existingAddress);
+
         await unitOfWork.Customers.UpdateAddress(existingAddress);
         return new GenericResponse(true, existingAddress);
     }
@@ -163,5 +169,37 @@ public class CustomerService(
 
         await unitOfWork.Customers.RemoveAddress(address);
         return new GenericResponse(true, address);
+    }
+
+    private async Task UpdateCoordinatesAndDistanceAsync(CustomerAddress address)
+    {
+        if (string.IsNullOrWhiteSpace(address.Address) || string.IsNullOrWhiteSpace(address.City) || string.IsNullOrWhiteSpace(address.Country))
+            return;
+
+        var coords = await geolocalizationService.GetCoordinatesAsync(address.Address, address.City, address.PostalCode, address.Country);
+        if (coords != null)
+        {
+            address.Latitude = coords.Latitude;
+            address.Longitude = coords.Longitude;
+
+            var defaultSite = (await unitOfWork.Sites.GetAll()).FirstOrDefault();
+            Console.WriteLine($"[DEBUG] DefaultSite is null? {defaultSite == null}");
+            if (defaultSite != null) 
+            {
+                Console.WriteLine($"[DEBUG] DefaultSite coords: Lat={defaultSite.Latitude}, Lon={defaultSite.Longitude}");
+            }
+
+            if (defaultSite != null && defaultSite.Latitude != 0 && defaultSite.Longitude != 0)
+            {
+                var distance = await geolocalizationService.GetDistanceAsync(
+                    new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude },
+                    coords);
+                
+                if (distance.HasValue)
+                {
+                    address.DistanceFromSite = distance.Value;
+                }
+            }
+        }
     }
 }
