@@ -1,20 +1,22 @@
 using Application.Contracts;
 using Domain.Entities.Production;
+using Domain.Entities.Warehouse;
+using Domain.Implementations.ReferenceFormat;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Production;
 
-public class ProductionPartGeneratorHandler(
+public class WorkOrderPhaseCloseHandler(
     IUnitOfWork unitOfWork,
-    ILogger<ProductionPartGeneratorHandler> logger) : IProductionPartGeneratorHandler
+    ILogger<WorkOrderPhaseCloseHandler> logger) : IWorkOrderPhaseCloseHandler
 {
-    public async Task GenerateFromPhaseClose(GenerateProductionPartsRequest request)
+    public async Task HandlePhaseClose(WorkOrderPhaseCloseRequest request)
     {
         // 1. Obtenir la fase i els seus detalls
         var phase = await unitOfWork.WorkOrders.Phases.Get(request.WorkOrderPhaseId);
         if (phase == null)
         {
-            logger.LogWarning("Fase {PhaseId} no trobada, no es generen tiquets", request.WorkOrderPhaseId);
+            logger.LogWarning("Fase {PhaseId} no trobada, no es processa tancament", request.WorkOrderPhaseId);
             return;
         }
 
@@ -214,7 +216,7 @@ public class ProductionPartGeneratorHandler(
         // 8. Persist all parts
         await unitOfWork.ProductionParts.AddRange(partsToCreate);
 
-        // 9. Single WorkOrder update: subtract removed totals + add new totals
+        // 9. Single WorkOrder update: subtract removed totals + add new totals + recalculate material cost
         await ApplyWorkOrderTotals(phase.WorkOrderId, partsToCreate, removedTotals);
 
         logger.LogInformation(
@@ -270,7 +272,8 @@ public class ProductionPartGeneratorHandler(
     }
 
     /// <summary>
-    /// Single WorkOrder fetch + update that subtracts removed totals and adds new part totals.
+    /// Single WorkOrder fetch + update that subtracts removed totals, adds new part totals,
+    /// and recalculates material cost from all CONSUMPTION movements across all phases.
     /// By doing a single Get/Update cycle, we avoid EF tracking conflicts.
     /// </summary>
     private async Task ApplyWorkOrderTotals(Guid workOrderId, List<ProductionPart>? addedParts, PartTotals? removedTotals)
@@ -301,7 +304,121 @@ public class ProductionPartGeneratorHandler(
             }
         }
 
+        // Recalculate material cost from all CONSUMPTION movements (idempotent full replacement)
+        workOrder.MaterialCost = await CalculateWorkOrderMaterialCost(workOrderId);
+
         await unitOfWork.WorkOrders.Update(workOrder);
+    }
+
+    /// <summary>
+    /// Calculates the total material cost for a WorkOrder by summing costs from all
+    /// CONSUMPTION-type StockMovements across all its phases.
+    /// 
+    /// Negative-quantity movements represent consumed material (cost added).
+    /// Positive-quantity movements represent returned material (cost subtracted).
+    /// The net result is the actual material cost.
+    /// 
+    /// Cost formulas (matching MetricsService):
+    /// - UNITATS: cost = |Quantity| * Reference.LastCost
+    /// - PLACA/RODO/TUB: cost = |Quantity| * UnitWeight * Reference.LastCost
+    ///   where UnitWeight is calculated from dimensions + ReferenceType.Density
+    /// </summary>
+    private async Task<decimal> CalculateWorkOrderMaterialCost(Guid workOrderId)
+    {
+        // Get all phase IDs for this WorkOrder
+        var phaseIds = unitOfWork.WorkOrders.Phases
+            .Find(p => p.WorkOrderId == workOrderId)
+            .Select(p => p.Id)
+            .ToList();
+
+        if (phaseIds.Count == 0) return 0;
+
+        // Get all CONSUMPTION movements across all phases
+        var consumptionMovements = unitOfWork.StockMovements
+            .Find(m => m.Entity == StockMovementEntities.WorkOrderPhase
+                     && m.EntityId.HasValue
+                     && phaseIds.Contains(m.EntityId.Value)
+                     && m.MovementType == StockMovementType.CONSUMPTION)
+            .ToList();
+
+        if (consumptionMovements.Count == 0) return 0;
+
+        // Cache Reference/ReferenceType/ReferenceFormat lookups to avoid repeated DB hits
+        var referenceCache = new Dictionary<Guid, (decimal LastCost, string FormatCode, decimal Density)>();
+
+        decimal totalMaterialCost = 0;
+
+        foreach (var movement in consumptionMovements)
+        {
+            if (!referenceCache.TryGetValue(movement.ReferenceId, out var refData))
+            {
+                var reference = await unitOfWork.References.Get(movement.ReferenceId);
+                if (reference == null) continue;
+
+                string formatCode = "UNITATS";
+                decimal density = 0;
+
+                if (reference.ReferenceFormatId.HasValue)
+                {
+                    var format = await unitOfWork.ReferenceFormats.Get(reference.ReferenceFormatId.Value);
+                    if (format != null) formatCode = format.Code;
+                }
+
+                if (reference.ReferenceTypeId.HasValue)
+                {
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(reference.ReferenceTypeId.Value);
+                    if (referenceType != null) density = referenceType.Density;
+                }
+
+                refData = (reference.LastCost, formatCode, density);
+                referenceCache[movement.ReferenceId] = refData;
+            }
+
+            decimal movementCost;
+
+            if (refData.FormatCode == "UNITATS")
+            {
+                // UNITATS: cost = |Quantity| * LastCost
+                movementCost = Math.Abs(movement.Quantity) * refData.LastCost;
+            }
+            else
+            {
+                // Dimensional (PLACA/RODO/TUB): calculate unit weight, then cost = |Quantity| * UnitWeight * LastCost
+                var calculator = ReferenceFormatCalculationFactory.Create(refData.FormatCode);
+                var dimensions = new ReferenceDimensions
+                {
+                    Quantity = Math.Abs(movement.Quantity),
+                    Width = movement.Width,
+                    Length = movement.Length,
+                    Height = movement.Height,
+                    Diameter = movement.Diameter,
+                    Thickness = movement.Thickness,
+                    Density = refData.Density
+                };
+
+                try
+                {
+                    var unitWeight = Math.Round(calculator.Calculate(dimensions), 2);
+                    movementCost = Math.Abs(movement.Quantity) * unitWeight * refData.LastCost;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex,
+                        "Error calculant pes per moviment {MovementId} (Ref: {ReferenceId}, Format: {Format}), s'omet",
+                        movement.Id, movement.ReferenceId, refData.FormatCode);
+                    continue;
+                }
+            }
+
+            // Negative quantity = consumed (add cost), positive quantity = returned (subtract cost)
+            if (movement.Quantity < 0)
+                totalMaterialCost += movementCost;
+            else
+                totalMaterialCost -= movementCost;
+        }
+
+        // Ensure we never return negative material cost
+        return Math.Max(0, Math.Round(totalMaterialCost, 2));
     }
 
     private async Task<Guid> GetWorkcenterIdFromShiftDetail(WorkcenterShiftDetail shiftDetail)

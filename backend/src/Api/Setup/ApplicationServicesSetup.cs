@@ -95,9 +95,9 @@ public static class ApplicationServicesSetup
         services.AddScoped<IWorkOrderStockService, WorkOrderStockService>();
 
         // Production services - Background jobs
-        services.AddSingleton<IProductionPartChannel, ProductionPartChannel>();
-        services.AddScoped<IProductionPartGeneratorHandler, ProductionPartGeneratorHandler>();
-        services.AddHostedService<ProductionPartGeneratorService>();
+        services.AddSingleton<IWorkOrderPhaseCloseChannel, WorkOrderPhaseCloseChannel>();
+        services.AddScoped<IWorkOrderPhaseCloseHandler, WorkOrderPhaseCloseHandler>();
+        services.AddHostedService<WorkOrderPhaseCloseService>();
 
         // Warehouse services
         services.AddScoped<IWarehouseService, WarehouseService>();

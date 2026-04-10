@@ -65,6 +65,19 @@ namespace Application.Services.Purchase
             return invoices;
         }
 
+        public IEnumerable<PurchaseInvoice> GetFiltered(DateTime startDate, DateTime endDate, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? paymentMethodId)
+        {
+            var invoices = _unitOfWork.PurchaseInvoices.Find(p =>
+                p.PurchaseInvoiceDate >= startDate
+                && p.PurchaseInvoiceDate <= endDate
+                && (!supplierId.HasValue || p.SupplierId == supplierId.Value)
+                && (!statusId.HasValue || p.StatusId == statusId.Value)
+                && (!excludeStatusId.HasValue || p.StatusId != excludeStatusId.Value)
+                && (!paymentMethodId.HasValue || p.PaymentMethodId == paymentMethodId.Value)
+            );
+            return invoices;
+        }
+
         // TODO > Test creació de factura!!
         public async Task<GenericResponse> Create(PurchaseInvoice purchaseInvoice)
         {
