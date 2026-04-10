@@ -1,5 +1,6 @@
 using Application.Contracts;
 using Domain.Entities.Sales;
+using Microsoft.Extensions.Logging;
 
 
 namespace Application.Services.Sales
@@ -8,7 +9,8 @@ namespace Application.Services.Sales
         IUnitOfWork unitOfWork,
         IExerciseService exerciseService,
         IMetricsService metricsService,
-        ILocalizationService localizationService) : IBudgetService
+        ILocalizationService localizationService,
+        ILogger<BudgetService> logger) : IBudgetService
     {
         public async Task<Budget?> GetById(Guid id)
         {
@@ -266,21 +268,55 @@ namespace Application.Services.Sales
  
         public async Task<GenericResponse> DistributeTransportCosts(Guid budgetId)
         {
+            logger.LogInformation("Iniciant DistributeTransportCosts pel pressupost: {BudgetId}", budgetId);
+
             var budget = await unitOfWork.Budgets.Get(budgetId);
             if (budget == null)
             {
+                logger.LogWarning("Pressupost no trobat: {BudgetId}", budgetId);
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", budgetId));
             }
                         
-            var totalWeight = budget.Details.Sum(d => d.DetailWeight);                        
-            var transportCostPerKg = budget.TransportCost / totalWeight;            
-            foreach (var detail in budget.Details)
+            var totalWeight = budget.TotalWeight;
+            logger.LogInformation("Pressupost {BudgetId} carregat. Pes total: {TotalWeight}, Cost transport: {TransportCost}, Línies de detall: {DetailCount}", 
+                budgetId, totalWeight, budget.TransportCost, budget.Details?.Count ?? 0);
+
+            if (budget.Details == null || !budget.Details.Any())
             {
-                detail.TransportCost = detail.DetailWeight * transportCostPerKg;
-                detail.Amount = detail.Amount + detail.TransportCost;
+                logger.LogWarning("El pressupost {BudgetId} no té línies de detall associades.", budgetId);
+                return new GenericResponse(false, "El pressupost no té línies de detall");
             }
-            await unitOfWork.Budgets.Update(budget);
-            return new GenericResponse(true);
+
+            if (totalWeight <= 0)
+            {
+                logger.LogWarning("El pressupost {BudgetId} té un pes total de {TotalWeight}. No es pot ponderar dividint per zero.", budgetId, totalWeight);
+                return new GenericResponse(false, "S'ha intentat ponderar sobre un pes total de 0 o negatiu.");
+            }
+
+            try 
+            {
+                foreach (var detail in budget.Details)
+                {                
+                    detail.TransportCost = (detail.DetailWeight / totalWeight) * budget.TransportCost;
+                    detail.Amount = detail.Amount + detail.TransportCost;
+                    
+                    // Explicitament modifiquem el detall per a que quedi registrat el Tracking i guardi a la BBDD
+                    unitOfWork.Budgets.Details.UpdateWithoutSave(detail);
+
+                    logger.LogInformation("Línia detall {DetailId} ponderada: Cost Transport = {TransportCost}, Nou Import = {Amount}", 
+                        detail.Id, detail.TransportCost, detail.Amount);
+                }
+                
+                await unitOfWork.CompleteAsync();
+                logger.LogInformation("Cost de transport ponderat i desat correctament al pressupost {BudgetId}", budgetId);
+                
+                return new GenericResponse(true);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "S'ha produït un error en intentar ponderar el cost de transport pel pressupost {BudgetId}", budgetId);
+                return new GenericResponse(false, $"Error intern: {ex.Message}");
+            }
         }
     }
 }

@@ -10,17 +10,9 @@
     dataKey="id"
     :sortOrder="1"
   >
-    <template #header>
-      <div class="header-container">
+    <template #header>      
         <slot name="header"></slot>
-        <Button
-          v-if="budgetStore.order === undefined"
-          label="Ponderar costs"
-          icon="pi pi-calculator"
-          size="small"
-          @click="onDistributeCosts"
-        />
-      </div>
+      
     </template>
     <Column field="destination" header="Destinació" style="width: 25%" />
     <Column field="description" header="Descripció" style="width: 20%" />
@@ -49,6 +41,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Budget, BudgetTransport } from "../types";
 import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 import { useBudgetStore } from "../store/budget";
 import { formatCurrency } from "../../../utils/functions";
 
@@ -63,6 +56,7 @@ const emit = defineEmits<{
 }>();
 
 const confirm = useConfirm();
+const toast = useToast();
 const budgetStore = useBudgetStore();
 
 const onEditRow = (row: DataTableRowClickEvent) => {
@@ -89,7 +83,22 @@ const onDeleteRow = (event: any, transport: BudgetTransport) => {
 };
 
 const onDistributeCosts = async () => {
-  await budgetStore.DistributeTransportCosts(props.budget.id);
+  const result = await budgetStore.DistributeTransportCosts(props.budget.id);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Costos ponderats",
+      detail: "S'han ponderat els costos de transport correctament entre els detalls.",
+      life: 5000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error al ponderar",
+      detail: "No s'han pogut ponderar els costos (és possible que el pes total sigui 0 o hi hagi un error al servidor).",
+      life: 5000,
+    });
+  }
 };
 </script>
 <style scoped>
