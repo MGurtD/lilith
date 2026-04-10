@@ -297,6 +297,13 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
+      // Eliminacion optimista: quitar del array local inmediatamente
+      if (workmasterStore.workmasters) {
+        workmasterStore.workmasters = workmasterStore.workmasters.filter(
+          (w) => w.id !== workmaster.id
+        );
+      }
+
       const result = await workmasterStore.delete(workmaster.id);
       if (result) {
         toast.add({
@@ -304,9 +311,9 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
           summary: "Ruta eliminada correctament",
           life: 5000,
         });
-
-        await workmasterStore.fetchByReferenceId(reference.value!.id);
       } else {
+        // Si falla, recargar para restaurar el estado real
+        await workmasterStore.fetchByReferenceId(reference.value!.id);
         toast.add({
           severity: "warn",
           summary: "No s'ha pogut eliminar la ruta",

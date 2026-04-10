@@ -59,7 +59,12 @@ namespace Infrastructure.Persistance.Repositories.Production
                 Value = workMasterCopy.Mode
             };
 
-
+            // TODO: Afegir referenceDescriptionParam al SP quan es pugui modificar
+            // var referenceDescriptionParam = new NpgsqlParameter("@referenceDescription", NpgsqlDbType.Varchar)
+            // {
+            //     Value = workMasterCopy.ReferenceDescription,
+            //     Size = 250
+            // };
 
             await context.Database.ExecuteSqlInterpolatedAsync(
             $"CALL public.SP_Production_CopyWorkMaster({referenceCodeParam}, {workmasterIdParam}, {referenceIdParam}, {modeParam})");
