@@ -13,6 +13,7 @@
       optionValue="id"
       :optionLabel="(r) => getReferenceNameById(r.id)"
       class="w-full"
+      overlayClass="dropdown-reference-overlay"
       v-bind="$attrs"
       v-bind:model-value="modelValue as string"
       @change="emit('update:modelValue', $event.value)"
@@ -95,3 +96,10 @@ const filteredReferences = computed(() => {
   });
 });
 </script>
+
+<style>
+.dropdown-reference-overlay {
+  min-width: 400px !important;
+  width: auto !important;
+}
+</style>
