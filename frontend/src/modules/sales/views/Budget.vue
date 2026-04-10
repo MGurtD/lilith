@@ -75,6 +75,12 @@
                   "
                   class="mr-2"
                 />
+                <Button
+                  :size="'small'"
+                  label="Ponderar costs"
+                  @click="onDistributeCosts(budget.id)"
+                  class="mr-2"
+                />
               </section>
             </div>
           </template>
@@ -424,6 +430,25 @@ const createSalesOrder = async () => {
         life: 5000,
       });
     }
+  }
+};
+
+const onDistributeCosts = async (budgetId: string) => {
+  const result = await budgetStore.DistributeTransportCosts(budgetId);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Costos ponderats",
+      detail: "S'han ponderat els costos de transport correctament entre els detalls.",
+      life: 5000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error al ponderar",
+      detail: "No s'han pogut ponderar els costos (és possible que el pes total sigui 0 o hi hagi un error al servidor).",
+      life: 5000,
+    });
   }
 };
 
