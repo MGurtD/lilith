@@ -1,6 +1,6 @@
 namespace Application.Contracts;
 
-public class GenerateProductionPartsRequest
+public class WorkOrderPhaseCloseRequest
 {
     public Guid WorkOrderPhaseId { get; set; }
     public Guid WorkcenterId { get; set; }

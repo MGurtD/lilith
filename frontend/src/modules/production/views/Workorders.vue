@@ -13,7 +13,17 @@
         @create="createButtonClick"
       >
         <template #prepend>
-          <ExerciseDatePicker :exercises="exerciseStore.exercises" />
+          <div class="flex-1 min-w-0">
+            <label class="filter-label">Període</label>
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Seleccioni un període"
+              showIcon
+              class="w-full"
+            />
+          </div>
         </template>
       </TableFilter>
     </template>
@@ -33,7 +43,6 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import FormCreateWorkorder from "../components/FormCreateWorkorder.vue";
 import TableWorkorders from "../components/TableWorkorders.vue";
 import TableFilter from "../../../components/tables/TableFilter.vue";
@@ -68,14 +77,22 @@ const lifecycleStore = useLifecyclesStore();
 const customersStore = useCustomersStore();
 
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   referenceId: undefined,
-  statusId: undefined as string | undefined, // Type correction for compatibility
+  statusId: undefined as string | undefined,
   customerId: undefined,
-  plannedQuantity: undefined,
   code: undefined,
 });
 
 const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "code",
+    label: "Codi",
+    type: "text",
+    placeholder: "Codi",
+    size: "sm",
+    row: 0,
+  },
   {
     key: "customerId",
     label: "Client",
@@ -84,6 +101,7 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionLabel: "comercialName",
     optionValue: "id",
     placeholder: "Selecciona un client",
+    size: "lg",
     row: 0,
   },
   {
@@ -96,46 +114,39 @@ const filterConfig = computed<FilterConfig[]>(() => [
     placeholder: "Selecciona un estat",
     row: 0,
   },
-  {
-    key: "code",
-    label: "Codi",
-    type: "text",
-    placeholder: "Codi",
-    row: 1,
-  },
-  {
-    key: "plannedQuantity",
-    label: "Quantitat planificada",
-    type: "number",
-    placeholder: "Quantitat planificada",
-    row: 1,
-  },
 ]);
+
+const setCurrentYear = () => {
+  const year = new Date().getFullYear().toString();
+  const currentExercise = exerciseStore.exercises?.find(
+    (e) => e.name === year,
+  );
+
+  if (currentExercise) {
+    filter.value.dates = [
+      new Date(currentExercise.startDate),
+      new Date(currentExercise.endDate),
+    ];
+  }
+};
 
 const cleanFilter = () => {
   filter.value.referenceId = undefined;
   filter.value.statusId = undefined;
   filter.value.customerId = undefined;
   filter.value.code = undefined;
-  filter.value.plannedQuantity = undefined;
+  filter.value.dates = undefined;
 
+  setCurrentYear();
   userFilterStore.removeFilter("Workorders", "");
 };
 const filteredWorkorders = computed(() => {
-  let result = workOrderStore.workorders ?? [];
-  if (filter.value.plannedQuantity) {
-    result = result.filter(
-      (w) => w.plannedQuantity === filter.value.plannedQuantity,
-    );
-  }
-  return result;
+  return workOrderStore.workorders ?? [];
 });
 const filterData = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await workOrderStore.fetchFiltered(
       startTime,
@@ -186,18 +197,11 @@ onMounted(async () => {
   });
 
   getUserFilter();
-  if (!store.exercisePicker.exercise) store.setCurrentYear();
+  if (!filter.value.dates) setCurrentYear();
   filterData();
 });
 onUnmounted(() => {
-  const savedFilter = {
-    referenceId: filter.value.referenceId,
-    statusId: filter.value.statusId,
-    customerId: filter.value.customerId,
-    exercisePicker: store.exercisePicker,
-  };
-
-  userFilterStore.addFilter("Workorders", "", savedFilter);
+  userFilterStore.addFilter("Workorders", "", filter.value);
 });
 
 const getUserFilter = () => {
@@ -206,11 +210,11 @@ const getUserFilter = () => {
     filter.value.referenceId = userFilter.referenceId;
     filter.value.statusId = userFilter.statusId;
     filter.value.customerId = userFilter.customerId;
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    filter.value.code = userFilter.code;
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
   }

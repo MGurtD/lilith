@@ -11,15 +11,34 @@ import {
 export class PurchaseInvoiceSerieService extends BaseService<InvoiceSerie> {}
 
 export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
-  async GetBetweenDates(
+  async GetFiltered(
     startTime: string,
-    endTime: string
+    endTime: string,
+    supplierId?: string,
+    statusId?: string,
+    excludeStatusId?: string,
+    paymentMethodId?: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    const endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}`;
+    const params = new URLSearchParams();
+    params.append("startTime", startTime);
+    params.append("endTime", endTime);
+    if (supplierId) params.append("supplierId", supplierId);
+    if (statusId) params.append("statusId", statusId);
+    if (excludeStatusId) params.append("excludeStatusId", excludeStatusId);
+    if (paymentMethodId) params.append("paymentMethodId", paymentMethodId);
+
+    const endpoint = `${this.resource}?${params.toString()}`;
     const response = await apiClient.get(endpoint);
     if (response.status === 200) {
       return response.data as Array<PurchaseInvoice>;
     }
+  }
+
+  async GetBetweenDates(
+    startTime: string,
+    endTime: string
+  ): Promise<Array<PurchaseInvoice> | undefined> {
+    return this.GetFiltered(startTime, endTime);
   }
 
   async GetBetweenDatesAndStatus(
@@ -27,11 +46,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     endTime: string,
     statusId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    const endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}&statusId=${statusId}`;
-    const response = await apiClient.get(endpoint);
-    if (response.status === 200) {
-      return response.data as Array<PurchaseInvoice>;
-    }
+    return this.GetFiltered(startTime, endTime, undefined, statusId);
   }
 
   async GetBetweenDatesAndExcludeStatus(
@@ -39,11 +54,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     endTime: string,
     excludeStatusId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    const endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}&excludeStatusId=${excludeStatusId}`;
-    const response = await apiClient.get(endpoint);
-    if (response.status === 200) {
-      return response.data as Array<PurchaseInvoice>;
-    }
+    return this.GetFiltered(startTime, endTime, undefined, undefined, excludeStatusId);
   }
 
   async GetBetweenDatesAndSupplier(
@@ -51,11 +62,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     endTime: string,
     supplierId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    const endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}&supplierId=${supplierId}`;
-    const response = await apiClient.get(endpoint);
-    if (response.status === 200) {
-      return response.data as Array<PurchaseInvoice>;
-    }
+    return this.GetFiltered(startTime, endTime, supplierId);
   }
 
   async GetBetweenDatesAndExcludeStatusAndSupplier(
@@ -64,11 +71,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     excludeStatusId: string,
     supplierId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    const endpoint = `${this.resource}?startTime=${startTime}&endTime=${endTime}&excludeStatusId=${excludeStatusId}&supplierId=${supplierId}`;
-    const response = await apiClient.get(endpoint);
-    if (response.status === 200) {
-      return response.data as Array<PurchaseInvoice>;
-    }
+    return this.GetFiltered(startTime, endTime, supplierId, undefined, excludeStatusId);
   }
 
   async GetDueDates(

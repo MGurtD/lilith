@@ -428,13 +428,13 @@ public class WorkOrderStockService(
                         destinationStockId = newStock.Id;
                     }
 
-                    // INPUT movement for remaining piece arriving at default location
+                    // CONSUMPTION movement for remaining piece (positive = returned material)
                     allMovements.Add(new StockMovement
                     {
                         StockId = destinationStockId,
                         LocationId = defaultLocation.Id,
                         ReferenceId = sourceStock.ReferenceId,
-                        MovementType = StockMovementType.INPUT,
+                        MovementType = StockMovementType.CONSUMPTION,
                         Quantity = piece.Quantity,
                         Width = piece.Width,
                         Length = piece.Length,

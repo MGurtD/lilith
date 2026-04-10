@@ -5,14 +5,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Production;
 
-public class ProductionPartGeneratorService(
-    IProductionPartChannel channel,
+public class WorkOrderPhaseCloseService(
+    IWorkOrderPhaseCloseChannel channel,
     IServiceScopeFactory scopeFactory,
-    ILogger<ProductionPartGeneratorService> logger) : BackgroundService
+    ILogger<WorkOrderPhaseCloseService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("ProductionPartGeneratorService iniciat");
+        logger.LogInformation("WorkOrderPhaseCloseService iniciat");
 
         await foreach (var request in channel.ReadAllAsync(stoppingToken))
         {
@@ -20,17 +20,17 @@ public class ProductionPartGeneratorService(
             {
                 using var scope = scopeFactory.CreateScope();
                 var handler = scope.ServiceProvider
-                    .GetRequiredService<IProductionPartGeneratorHandler>();
-                await handler.GenerateFromPhaseClose(request);
+                    .GetRequiredService<IWorkOrderPhaseCloseHandler>();
+                await handler.HandlePhaseClose(request);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex,
-                    "Error generant tiquets de produccio per la fase {PhaseId}",
+                    "Error processant tancament de fase {PhaseId}",
                     request.WorkOrderPhaseId);
             }
         }
 
-        logger.LogInformation("ProductionPartGeneratorService aturat");
+        logger.LogInformation("WorkOrderPhaseCloseService aturat");
     }
 }

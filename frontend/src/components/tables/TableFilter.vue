@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="table-filter surface-section px-4 py-3 shadow-2 border-round mb-3"
-  >
-    <div class="flex flex-column gap-3">
+  <div class="table-filter surface-section px-3 py-3 shadow-2 border-round">
+    <div class="flex flex-column gap-2">
       <!-- Header / Actions Row -->
       <div class="flex justify-content-between align-items-center">
         <div class="flex align-items-center gap-2">
@@ -54,7 +52,7 @@
       <!-- Collapsible Filter Content -->
       <div
         v-if="isExpanded"
-        class="flex flex-column gap-3 fadein animation-duration-300"
+        class="flex flex-column gap-2 fadein animation-duration-300"
       >
         <div
           v-for="(rowFields, rowIndex) in rows"
@@ -68,13 +66,10 @@
           <div
             v-for="field in rowFields"
             :key="field.key"
-            class="flex-1 min-w-0"
+            class="min-w-0"
+            :style="{ flex: fieldFlex(field.size) }"
           >
-            <label
-              v-if="field.label"
-              :for="field.key"
-              class="block text-900 font-medium mb-2"
-            >
+            <label v-if="field.label" :for="field.key" class="filter-label">
               {{ field.label }}
             </label>
 
@@ -128,6 +123,8 @@ export interface FilterConfig {
   optionValue?: string;
   placeholder?: string;
   row?: number;
+  /** Flex sizing: 'sm' = 0.5, 'md' = 1 (default), 'lg' = 1.5, 'xl' = 2 */
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 const props = defineProps({
@@ -148,6 +145,17 @@ const props = defineProps({
 defineEmits(["update:modelValue", "filter", "clear", "create"]);
 
 const isExpanded = ref(true);
+
+const sizeMap: Record<string, string> = {
+  sm: "0.5",
+  md: "1",
+  lg: "1.5",
+  xl: "2",
+};
+
+const fieldFlex = (size?: string): string => {
+  return sizeMap[size || "md"] || "1";
+};
 
 const rows = computed(() => {
   const grouped: Record<number, FilterConfig[]> = {};
