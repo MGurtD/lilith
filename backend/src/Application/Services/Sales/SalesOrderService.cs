@@ -8,6 +8,7 @@ namespace Application.Services.Sales
         IUnitOfWork unitOfWork,
         IEnterpriseService enterpriseService,
         IExerciseService exerciseService,
+        IBudgetService budgetService,
         ILocalizationService localizationService) : ISalesOrderService
     {
         public async Task<SalesOrderHeader?> GetById(Guid id)
@@ -79,6 +80,9 @@ namespace Application.Services.Sales
                 };
                 await AddDetail(salesOrderDetail);
             }
+
+            var acceptResponse = await budgetService.Accept(budget.Id);
+            if (!acceptResponse.Result) return acceptResponse;
 
             return new GenericResponse(true, salesOrder);
         }

@@ -9,6 +9,7 @@ import {
 import { NextPhaseInfo } from "../types";
 import ProductionServices from "../../production/services";
 import SharedServices from "../../shared/services";
+import WarehouseServices from "../../warehouse/services";
 import { FileService } from "../../../services/file.service";
 import { File } from "../../../types";
 import { usePlantWorkcenterStore } from "./workcenter.store";
@@ -19,6 +20,12 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     nextAvailablePhase: null as NextPhaseInfo | null,
     phaseTimeMetrics: undefined as PhaseTimeMetrics | undefined,
     billOfMaterials: [] as BillOfMaterialsItem[],
+    bomProvisioningById: {} as Record<string, boolean>,
+    materialsProvisioningLoading: false,
+    materialsProvisioningLoaded: false,
+    materialsProvisioningError: null as string | null,
+    _materialsProvisioningPhaseId: undefined as string | undefined,
+    _materialsProvisioningWorkcenterId: undefined as string | undefined,
   }),
   getters: {
     activeWorkOrder(): WorkOrderWithPhases | undefined {
@@ -33,6 +40,122 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     },
   },
   actions: {
+    invalidateMaterialsProvisioning() {
+      this.bomProvisioningById = {};
+      this.materialsProvisioningLoading = false;
+      this.materialsProvisioningLoaded = false;
+      this.materialsProvisioningError = null;
+      this._materialsProvisioningPhaseId = undefined;
+      this._materialsProvisioningWorkcenterId = undefined;
+    },
+    async ensureMaterialsProvisioningLoaded(force = false) {
+      const workcenterStore = usePlantWorkcenterStore();
+      const workcenterId = workcenterStore.workcenter?.id;
+      const phaseId = this.activePhase?.phaseId;
+
+      if (!workcenterId || !phaseId || this.billOfMaterials.length === 0) {
+        this.invalidateMaterialsProvisioning();
+        return;
+      }
+
+      const alreadyLoaded =
+        this.materialsProvisioningLoaded &&
+        this._materialsProvisioningPhaseId === phaseId &&
+        this._materialsProvisioningWorkcenterId === workcenterId;
+
+      if (!force && (this.materialsProvisioningLoading || alreadyLoaded)) {
+        return;
+      }
+
+      this.materialsProvisioningLoading = true;
+      this.materialsProvisioningError = null;
+
+      try {
+        await workcenterStore.fetchWorkcenterLocations(workcenterId);
+
+        const associatedLocationIds = workcenterStore.associatedLocationIds;
+        if (associatedLocationIds.length === 0) {
+          this.bomProvisioningById = Object.fromEntries(
+            this.billOfMaterials.map((bom) => [bom.id, false]),
+          );
+          this.materialsProvisioningLoaded = true;
+          this._materialsProvisioningPhaseId = phaseId;
+          this._materialsProvisioningWorkcenterId = workcenterId;
+          return;
+        }
+
+        const provisioningEntries = await Promise.all(
+          this.billOfMaterials.map(async (bom) => {
+            const stockItems =
+              await WarehouseServices.Stock.getByBillOfMaterialsId(bom.id);
+            const isProvisioned = stockItems.some((stockItem) =>
+              associatedLocationIds.includes(stockItem.locationId),
+            );
+
+            return [bom.id, isProvisioned] as const;
+          }),
+        );
+
+        this.bomProvisioningById = Object.fromEntries(provisioningEntries);
+        this.materialsProvisioningLoaded = true;
+        this._materialsProvisioningPhaseId = phaseId;
+        this._materialsProvisioningWorkcenterId = workcenterId;
+      } catch (error) {
+        console.error("Error fetching bill of materials provisioning:", error);
+        this.materialsProvisioningError =
+          "No s'ha pogut comprovar l'aprovisionament dels materials";
+        this.bomProvisioningById = {};
+        this.materialsProvisioningLoaded = false;
+      } finally {
+        this.materialsProvisioningLoading = false;
+      }
+    },
+    async refreshMaterialProvisioning(bomId: string) {
+      const workcenterStore = usePlantWorkcenterStore();
+      const workcenterId = workcenterStore.workcenter?.id;
+      const phaseId = this.activePhase?.phaseId;
+      const bom = this.billOfMaterials.find((item) => item.id === bomId);
+
+      if (!workcenterId || !phaseId || !bom) {
+        return;
+      }
+
+      const isCurrentPhaseLoaded =
+        this.materialsProvisioningLoaded &&
+        this._materialsProvisioningPhaseId === phaseId &&
+        this._materialsProvisioningWorkcenterId === workcenterId;
+
+      if (!isCurrentPhaseLoaded) {
+        await this.ensureMaterialsProvisioningLoaded(true);
+        return;
+      }
+
+      try {
+        await workcenterStore.fetchWorkcenterLocations(workcenterId);
+        const associatedLocationIds = workcenterStore.associatedLocationIds;
+
+        if (associatedLocationIds.length === 0) {
+          this.bomProvisioningById = {
+            ...this.bomProvisioningById,
+            [bomId]: false,
+          };
+          return;
+        }
+
+        const stockItems =
+          await WarehouseServices.Stock.getByBillOfMaterialsId(bom.id);
+        const isProvisioned = stockItems.some((stockItem) =>
+          associatedLocationIds.includes(stockItem.locationId),
+        );
+
+        this.bomProvisioningById = {
+          ...this.bomProvisioningById,
+          [bomId]: isProvisioned,
+        };
+      } catch (error) {
+        console.error("Error refreshing material provisioning:", error);
+      }
+    },
     /**
      * Sincronitza l'estat de la fase activa quan canvien les fases carregades.
      * Cridat pel workcenter store quan es carreguen noves fases.
@@ -40,6 +163,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     async syncWithLoadedPhases() {
       const workcenterStore = usePlantWorkcenterStore();
       const loadedPhases = workcenterStore.loadedWorkOrdersPhases;
+      this.invalidateMaterialsProvisioning();
 
       if (loadedPhases.length > 0) {
         const firstWorkOrder = loadedPhases[0];
@@ -107,6 +231,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     async fetchBillOfMaterials() {
       if (!this.activeWorkOrder) {
         this.billOfMaterials = [];
+        this.invalidateMaterialsProvisioning();
         return;
       }
 
@@ -118,6 +243,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
 
         if (!phasesDetailed) {
           this.billOfMaterials = [];
+          this.invalidateMaterialsProvisioning();
           return;
         }
 
@@ -127,9 +253,11 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
           (p) => p.phaseId === activePhaseId,
         );
         this.billOfMaterials = detailedPhase?.billOfMaterials ?? [];
+        this.invalidateMaterialsProvisioning();
       } catch (error) {
         console.error("Error fetching bill of materials:", error);
         this.billOfMaterials = [];
+        this.invalidateMaterialsProvisioning();
       }
     },
     async fetchNextPhaseForWorkcenter() {
@@ -302,6 +430,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
       this.nextAvailablePhase = null;
       this.phaseTimeMetrics = undefined;
       this.billOfMaterials = [];
+      this.invalidateMaterialsProvisioning();
     },
   },
 });

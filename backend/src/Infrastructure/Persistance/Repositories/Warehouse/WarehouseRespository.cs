@@ -41,17 +41,76 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
             return warehouse.Locations.FirstOrDefault(l => l.Id == warehouse.DefaultLocationId);
         }
 
+        public async Task<IEnumerable<StockListItemResponse>> GetStockList(Guid? locationId, Guid? referenceId)
+        {
+            var query = from st in context.Set<Stock>()
+                        join r in context.Set<Reference>()
+                            on st.ReferenceId equals r.Id
+                        join l in context.Set<Location>()
+                            on st.LocationId equals l.Id
+                        join w in context.Set<Domain.Entities.Warehouse.Warehouse>()
+                            on l.WarehouseId equals w.Id
+                        where st.Quantity > 0
+                            && !r.Disabled
+                            && !l.Disabled
+                            && !w.Disabled
+                            && (!locationId.HasValue || st.LocationId == locationId.Value)
+                            && (!referenceId.HasValue || st.ReferenceId == referenceId.Value)
+                        group st by new
+                        {
+                            st.ReferenceId,
+                            ReferenceCode = r.Code,
+                            ReferenceDescription = r.Description,
+                            st.LocationId,
+                            LocationName = l.Name,
+                            LocationDescription = l.Description,
+                            WarehouseId = w.Id,
+                            WarehouseName = w.Name,
+                            WarehouseDescription = w.Description,
+                            st.Width,
+                            st.Length,
+                            st.Height,
+                            st.Diameter,
+                            st.Thickness
+                        } into stockGroup
+                        select new StockListItemResponse
+                        {
+                            Id = stockGroup
+                                .OrderBy(s => s.Id)
+                                .Select(s => s.Id)
+                                .FirstOrDefault(),
+                            ReferenceId = stockGroup.Key.ReferenceId,
+                            ReferenceCode = stockGroup.Key.ReferenceCode,
+                            ReferenceDescription = stockGroup.Key.ReferenceDescription,
+                            ReferenceDisplay = stockGroup.Key.ReferenceCode + " - " + stockGroup.Key.ReferenceDescription,
+                            LocationId = stockGroup.Key.LocationId,
+                            LocationName = stockGroup.Key.LocationName,
+                            LocationDescription = stockGroup.Key.LocationDescription,
+                            WarehouseId = stockGroup.Key.WarehouseId,
+                            WarehouseName = stockGroup.Key.WarehouseName,
+                            WarehouseDescription = stockGroup.Key.WarehouseDescription,
+                            Quantity = stockGroup.Sum(s => s.Quantity),
+                            Width = stockGroup.Key.Width,
+                            Length = stockGroup.Key.Length,
+                            Height = stockGroup.Key.Height,
+                            Diameter = stockGroup.Key.Diameter,
+                            Thickness = stockGroup.Key.Thickness
+                        };
+
+            return await query.AsNoTracking().ToListAsync();
+        }
+
         public async Task<IEnumerable<StockResponse>> GetStockByReferenceId(Guid referenceId)
         {
             var query = from st in context.Set<Stock>()
-                        join r in context.Set<Reference>() 
+                        join r in context.Set<Reference>()
                             on st.ReferenceId equals r.Id
-                        join rf in context.Set<ReferenceFormat>() 
+                        join rf in context.Set<ReferenceFormat>()
                             on r.ReferenceFormatId equals rf.Id into rfGroup
                         from rf in rfGroup.DefaultIfEmpty()
-                        join l in context.Set<Location>() 
+                        join l in context.Set<Location>()
                             on st.LocationId equals l.Id
-                        join w in context.Set<Domain.Entities.Warehouse.Warehouse>() 
+                        join w in context.Set<Domain.Entities.Warehouse.Warehouse>()
                             on l.WarehouseId equals w.Id
                         where r.Id == referenceId
                             && !r.Disabled
@@ -61,6 +120,7 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             && st.Quantity > 0
                         select new StockResponse
                         {
+                            StockId = st.Id,
                             ReferenceId = r.Id,
                             ReferenceCode = r.Code,
                             ReferenceDescription = r.Description,

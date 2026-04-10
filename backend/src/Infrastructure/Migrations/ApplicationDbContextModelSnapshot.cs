@@ -445,6 +445,72 @@ namespace Infrastructure.Migrations
                     b.ToView("vw_workcentershift_historical_operator", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Auth.ApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("ExpiresOn")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime?>("LastUsedOn")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Scopes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Disabled")
+                        .HasDatabaseName("IX_ApiKey_Disabled");
+
+                    b.HasIndex("ExpiresOn")
+                        .HasDatabaseName("IX_ApiKey_ExpiresOn");
+
+                    b.HasIndex("KeyPrefix")
+                        .IsUnique()
+                        .HasDatabaseName("UK_ApiKey_KeyPrefix");
+
+                    b.ToTable("ApiKeys", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Auth.MenuItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3308,6 +3374,9 @@ namespace Infrastructure.Migrations
 
                     b.Property<decimal>("Longitude")
                         .HasColumnType("numeric");
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Observations")
                         .IsRequired()
@@ -5625,6 +5694,13 @@ namespace Infrastructure.Migrations
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("Entity")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Height")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal");
@@ -5671,6 +5747,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("LocationId");
 
                     b.HasIndex("ReferenceId");
+
+                    b.HasIndex(new[] { "Entity", "EntityId" }, "idx_entity_entityid");
 
                     b.HasIndex(new[] { "MovementType" }, "idx_movementtype");
 

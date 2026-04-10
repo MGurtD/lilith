@@ -47,4 +47,32 @@ export class UserService {
     }
     return false;
   }
+
+  public async CreateManaged(
+    request: CreateManagedUserRequest,
+  ): Promise<User | undefined> {
+    try {
+      const response = await this.apiClient.post(
+        `${this.resource}/managed`,
+        request,
+      );
+      if (response.status === 201 || response.status === 200) {
+        return response.data as User;
+      }
+    } catch (error) {
+      logException(error);
+    }
+  }
+}
+
+export interface CreateManagedUserRequest {
+  username: string;
+  password: string;
+  repeatPassword: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  preferredLanguage: string;
+  roleId: string;
+  profileId?: string | null;
 }

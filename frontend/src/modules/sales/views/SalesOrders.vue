@@ -281,11 +281,18 @@ const getStatusNameById = (id: string) => {
 };
 
 const createOrder = async () => {
-  dialogOptions.visible = false;
-  const created = await salesOrderStore.Create(createRequest.value);
-  if (created) {
-    router.push({ path: `/salesorder/${createRequest.value.id}` });
+  const response = await salesOrderStore.Create(createRequest.value);
+  if (!response?.result) {
+    toast.add({
+      severity: "warn",
+      summary: "Error al crear la comanda",
+      detail: response?.errors?.[0] ?? "Error desconegut, contacte amb l'administrador.",
+      life: 10000,
+    });
+    return;
   }
+  dialogOptions.visible = false;
+  router.push({ path: `/salesorder/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {

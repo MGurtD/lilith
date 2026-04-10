@@ -12,6 +12,8 @@ namespace Application.Contracts
 
         Task<Location?> GetDefaultLocation();
 
+        Task<IEnumerable<StockListItemResponse>> GetStockList(Guid? locationId, Guid? referenceId);
+
         Task<IEnumerable<StockResponse>> GetStockByReferenceId(Guid referenceId);
     }
 }

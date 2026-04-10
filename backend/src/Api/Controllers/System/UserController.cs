@@ -27,6 +27,25 @@ namespace Api.Controllers.Auth
             }
         }
 
+        [HttpPost("managed")]
+        public async Task<IActionResult> CreateManaged(CreateManagedUserRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var response = await service.CreateManagedUser(request);
+            if (response.Result)
+            {
+                var user = response.Content as User;
+                var location = user is not null
+                    ? Url.Action(nameof(GetById), new { id = user.Id }) ?? $"/{user.Id}"
+                    : string.Empty;
+                return Created(location, response.Content);
+            }
+
+            return Conflict(response);
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

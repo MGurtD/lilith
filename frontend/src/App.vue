@@ -33,9 +33,9 @@ watch(
   (val) => applyPrimeVueLocale(primevue.config, val),
 );
 
-const logout = () => {
-  store.removeAuthorization();
-  router.push("/");
+const logout = async () => {
+  await store.removeAuthorization();
+  router.push("/login");
 };
 
 const logoutOperator = () => {

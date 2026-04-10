@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Application.Contracts;
+using System.Security.Claims;
 
 namespace Api.Controllers.Auth
 {
@@ -7,43 +9,45 @@ namespace Api.Controllers.Auth
     [Route("api/[controller]")]
     public class AuthenticationController(IAuthenticationService authenticationService, ILocalizationService localizationService) : ControllerBase
     {
+        [AllowAnonymous]
         [HttpPost]
         [Route("Register")]
         public async Task<IActionResult> Register(UserRegisterRequest request)
         {
-            // Validation the incoming request
             if (!ModelState.IsValid) return BadRequest();
 
-            // Use the authentication service register
             var authResponse = await authenticationService.Register(request);
             return authResponse.Result ? Ok(authResponse) : BadRequest(authResponse);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [Route("Login")]
         public async Task<IActionResult> Login(UserLoginRequest requestUser)
         {
-            // Validation the incoming request
             if (!ModelState.IsValid) return BadRequest();
 
-            // Use the authentication service register
             var authResponse = await authenticationService.Login(requestUser);
             return authResponse.Result ? Ok(authResponse) : BadRequest(authResponse);
         }
 
         [HttpPost]
         [Route("ChangePassword")]
-        public async Task<IActionResult> ChangePassword(UserLoginRequest requestUser)
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
         {
-            // Validation the incoming request
             if (!ModelState.IsValid) return BadRequest();
 
-            // Use the authentication service register
-            var changed = await authenticationService.ChangePassword(requestUser);
-            return changed ? Ok() : StatusCode(StatusCodes.Status500InternalServerError);
+            var userId = User.FindFirstValue("id");
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var response = await authenticationService.ChangePassword(parsedUserId, request);
+            return response.Result ? Ok(response) : BadRequest(response);
         }
 
-        // TODO > Implementar refresh tokens quan hagi separat les responsabilitats de autenticació i autorització
+        [AllowAnonymous]
         [HttpPost]
         [Route("RefreshToken")]
         public async Task<IActionResult> RefreshToken([FromBody] TokenRequest tokenRequest)
@@ -61,5 +65,18 @@ namespace Api.Controllers.Auth
             return authResponse.Result ? Ok(authResponse) : BadRequest(authResponse);
         }
 
+        [HttpPost]
+        [Route("Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var userId = User.FindFirstValue("id");
+            if (string.IsNullOrWhiteSpace(userId) || !Guid.TryParse(userId, out var parsedUserId))
+            {
+                return Unauthorized();
+            }
+
+            var response = await authenticationService.Logout(parsedUserId);
+            return response.Result ? Ok(response) : BadRequest(response);
+        }
     }
 }

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import {
   Workcenter,
+  WorkcenterLocation,
   WorkOrderWithPhases,
 } from "../../production/types";
 import {
@@ -18,6 +19,7 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
   state: () => ({
     workcenter: undefined as Workcenter | undefined,
     workcenterRt: undefined as WorkcenterRealtime | undefined,
+    workcenterLocations: [] as WorkcenterLocation[],
     loadedWorkOrdersPhases: [] as WorkOrderWithPhases[],
     availableWorkOrders: [] as WorkOrderWithPhases[],
     availableWorkOrdersLoading: false,
@@ -35,6 +37,9 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
         config: this.workcenter,
         realtime: this.workcenterRt,
       };
+    },
+    associatedLocationIds(): string[] {
+      return [...new Set(this.workcenterLocations.map((item) => item.locationId))];
     },
   },
   actions: {
@@ -84,6 +89,23 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
     async fetchWorkcenter(workcenterId: string) {
       this.workcenter =
         await ProductionServices.Workcenter.getById(workcenterId);
+    },
+    async fetchWorkcenterLocations(workcenterId: string): Promise<void> {
+      if (!workcenterId) {
+        this.clearWorkcenterLocations();
+        return;
+      }
+
+      try {
+        const locations =
+          await ProductionServices.WorkcenterLocation.getByWorkcenterId(
+            workcenterId,
+          );
+        this.workcenterLocations = locations || [];
+      } catch (error) {
+        console.error("Error fetching workcenter locations:", error);
+        this.workcenterLocations = [];
+      }
     },
     async fetchAvailableWorkOrders(workcenterTypeId: string) {
       if (!workcenterTypeId) {
@@ -147,6 +169,9 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
       }
       this.workcenterRt = undefined;
     },
+    clearWorkcenterLocations() {
+      this.workcenterLocations = [];
+    },
     async clockInOperator(): Promise<boolean> {
       const operatorStore = usePlantOperatorStore();
       if (!this.workcenter || !operatorStore.operator) return false;
@@ -189,6 +214,7 @@ export const usePlantWorkcenterStore = defineStore("plantWorkcenterStore", {
       this.availableWorkOrders = [];
       this.availableWorkOrdersLoading = false;
       this._lastLoadedPhaseIds = [];
+      this.clearWorkcenterLocations();
     },
   },
 });

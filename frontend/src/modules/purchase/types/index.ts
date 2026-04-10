@@ -25,6 +25,7 @@ export interface Supplier {
   phone: string;
   accountNumber: string;
   observations: string;
+  notes: string;
   disabled: boolean;
   supplierTypeId: string;
   paymentMethodId: string;

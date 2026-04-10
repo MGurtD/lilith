@@ -57,6 +57,27 @@ export interface Profile {
   description?: string;
   isSystem?: boolean;
 }
+export interface ApiKey {
+  id: string;
+  name: string;
+  description?: string;
+  keyPrefix: string;
+  scopes?: string;
+  expiresOn?: string | null;
+  lastUsedOn?: string | null;
+  disabled: boolean;
+  createdOn: string;
+  updatedOn: string;
+}
+
+export interface CreateApiKeyResponse {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  apiKey: string;
+  expiresOn?: string | null;
+}
+
 export interface File {
   entity: string;
   entityId: string;

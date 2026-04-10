@@ -99,6 +99,7 @@ const toast = useToast();
 const schema = Yup.object().shape({
   quantity: Yup.number().min(1).required("La quantitat ha de ser superior a 1"),
   referenceId: Yup.string().required("La referencia és obligatoria"),
+  description: Yup.string().required("La descripció és obligatoria"),
 });
 const validation = ref({
   result: false,

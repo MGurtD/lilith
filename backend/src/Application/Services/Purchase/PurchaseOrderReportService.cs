@@ -4,7 +4,7 @@ namespace Application.Services.Purchase
 {
     public class PurchaseOrderReportService(IUnitOfWork unitOfWork) : IPurchaseOrderReportService
     {
-        public async Task<Application.Contracts.PurchaseOrderReportResponse?> GetReportById(Guid id)
+        public async Task<PurchaseOrderReportResponse?> GetReportById(Guid id)
         {
             var order = await unitOfWork.PurchaseOrders.Get(id);
             if (order == null) return null;
@@ -31,9 +31,12 @@ namespace Application.Services.Purchase
             {
                 var reference = references.FirstOrDefault(r => r.Id == detail.ReferenceId);
                 var supplierReference = supplierReferences.FirstOrDefault(sr => sr.ReferenceId == detail.ReferenceId);
-                var description = supplierReference != null ? $"{supplierReference.SupplierCode} - {supplierReference.SupplierDescription}" : reference!.GetFullName();
 
-                if (!string.IsNullOrEmpty(detail.Description)) description = $"{description} - {detail.Description}";
+                var description = detail.Description;
+                if (supplierReference is not null)
+                {
+                    description = $"{supplierReference.SupplierCode} - {description}";
+                }
 
                 orderDetails.Add(new PurchaseOrderDetailReportDto()
                 {
