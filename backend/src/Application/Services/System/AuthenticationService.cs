@@ -1,7 +1,6 @@
 using Application.Contracts;
-using Application.Services;
-using Domain.Entities;
 using Domain.Entities.Auth;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,18 +13,16 @@ namespace Application.Services.System
     {
         public async Task<AuthResponse> Register(UserRegisterRequest request)
         {
-            // Validate existence of the unique user key
             var exists = unitOfWork.Users.Find(u => u.Username == request.Username).FirstOrDefault();
             if (exists is not null)
             {
-                return new AuthResponse() 
+                return new AuthResponse()
                 {
                     Result = false,
                     Errors = new List<string>() { localizationService.GetLocalizedString("UserNotAvailable", request.Username) }
                 };
             }
 
-            // Retrive the default role
             var defaultRole = unitOfWork.Roles.Find(r => r.Name == "user").FirstOrDefault();
             if (defaultRole is null)
             {
@@ -36,7 +33,6 @@ namespace Application.Services.System
                 };
             }
 
-            // Generate instance of the user and add to database
             var user = new User
             {
                 Username = request.Username,
@@ -48,27 +44,38 @@ namespace Application.Services.System
             };
             await unitOfWork.Users.Add(user);
 
-            var authResponse = await GenerateJwtToken(user);
-            return authResponse;
+            // Set the role for JWT claim generation
+            user.Role = defaultRole;
+            return await GenerateJwtToken(user);
         }
 
-        public async Task<bool> ChangePassword(UserLoginRequest request)
+        public async Task<GenericResponse> ChangePassword(Guid userId, ChangePasswordRequest request)
         {
-            var user = unitOfWork.Users.Find((u) => u.Username == request.Username).FirstOrDefault();
-            if (user is null) 
+            var user = await unitOfWork.Users.Get(userId);
+            if (user is null)
             {
-                return false;
+                return new GenericResponse(false, localizationService.GetLocalizedString("UserNotFound"));
             }
 
-            var encrPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(request.Password);
-            user.Password = encrPassword; // assign new password before update
+            var isCurrentPasswordValid = BCrypt.Net.BCrypt.EnhancedVerify(request.CurrentPassword, user.Password);
+            if (!isCurrentPasswordValid)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("UserPasswordInvalid"));
+            }
+
+            user.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(request.NewPassword);
             await unitOfWork.Users.Update(user);
-            return true;
+            return new GenericResponse(true);
         }
 
         public async Task<AuthResponse> Login(UserLoginRequest request)
         {
-            var user = unitOfWork.Users.Find(u => u.Username == request.Username).FirstOrDefault();
+            // Load user with Role relation for JWT claim generation
+            var users = await unitOfWork.Users.FindAsyncWithQueryParams(
+                u => u.Username == request.Username,
+                q => q.Include(u => u.Role));
+            var user = users.FirstOrDefault();
+
             if (user is null)
             {
                 return new AuthResponse()
@@ -105,10 +112,12 @@ namespace Application.Services.System
 
             return await GenerateJwtToken(user);
         }
+
         public async Task<AuthResponse> RefreshToken(TokenRequest request)
         {
             return await VerifyAndGenerateToken(request);
         }
+
         public async Task<bool> Enable(Guid id)
         {
             var user = await unitOfWork.Users.Get(id);
@@ -116,29 +125,59 @@ namespace Application.Services.System
 
             user.Disabled = false;
             await unitOfWork.Users.Update(user);
-
             return true;
         }
-        public Task<AuthResponse> Logout(Guid id)
+
+        public async Task<AuthResponse> Logout(Guid userId)
         {
-            throw new NotImplementedException();
+            // Revoke all active refresh tokens for the user
+            var activeTokens = await unitOfWork.UserRefreshTokens.FindAsync(
+                t => t.UserId == userId && !t.Used && !t.Revoked);
+
+            foreach (var token in activeTokens)
+            {
+                token.Revoked = true;
+                await unitOfWork.UserRefreshTokens.Update(token);
+            }
+
+            return new AuthResponse()
+            {
+                Result = true,
+            };
         }
 
+        public async Task<int> PurgeExpiredRefreshTokens()
+        {
+            var expired = await unitOfWork.UserRefreshTokens.FindAsync(
+                t => t.ExpiryDate < DateTime.UtcNow || t.Used || t.Revoked);
+
+            if (expired.Count == 0)
+                return 0;
+
+            await unitOfWork.UserRefreshTokens.RemoveRange(expired);
+            return expired.Count;
+        }
 
         private async Task<AuthResponse> GenerateJwtToken(User user)
         {
             var signKey = Encoding.ASCII.GetBytes(settings.Value.JwtConfig.Secret);
-
-            // Token specifications
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            // Build claims with optional email claim
+            // Resolve role name for the JWT claim
+            var roleName = user.Role?.Name;
+            if (string.IsNullOrWhiteSpace(roleName))
+            {
+                var role = await unitOfWork.Roles.Get(user.RoleId);
+                roleName = role?.Name ?? "user";
+            }
+
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Token identifier
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim("id", user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Sub, user.Username),
-                new Claim("locale", string.IsNullOrWhiteSpace(user.PreferredLanguage) ? "ca" : user.PreferredLanguage)
+                new Claim("locale", string.IsNullOrWhiteSpace(user.PreferredLanguage) ? "ca" : user.PreferredLanguage),
+                new Claim(ClaimTypes.Role, roleName)
             };
 
             if (!string.IsNullOrWhiteSpace(user.Email))
@@ -183,13 +222,11 @@ namespace Application.Services.System
 
             try
             {
-                // Clone validation parameters and disable lifetime validation for refresh flow
                 var validationParams = tokenValidationParameters.Clone();
                 validationParams.ValidateLifetime = false;
 
                 var principal = jwtTokenHandler.ValidateToken(tokenRequest.Token, validationParams, out var validatedToken);
 
-                // Ensure token algorithm is HmacSha256 and token type is JwtSecurityToken
                 if (validatedToken is not JwtSecurityToken jwtSecurityToken ||
                     !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -200,9 +237,8 @@ namespace Application.Services.System
                     };
                 }
 
-                // Token is still valid?
                 var expValue = principal.Claims.FirstOrDefault(t => t.Type == JwtRegisteredClaimNames.Exp)?.Value;
-                if (string.IsNullOrWhiteSpace(expValue) || !long.TryParse(expValue, out var utcExpiryDate))
+                if (string.IsNullOrWhiteSpace(expValue) || !long.TryParse(expValue, out _))
                 {
                     return new AuthResponse()
                     {
@@ -211,17 +247,6 @@ namespace Application.Services.System
                     };
                 }
 
-                var expiryDate = UnixTimeStampToDateTime(utcExpiryDate);
-                if (expiryDate > DateTime.UtcNow)
-                {
-                    return new AuthResponse()
-                    {
-                        Result = false,
-                        Errors = new List<string>() { localizationService.GetLocalizedString("AuthTokenValid", expiryDate) }
-                    };
-                }
-
-                // Exist on the persistence layer?
                 var storedToken = unitOfWork.UserRefreshTokens.Find(urt => urt.Token == tokenRequest.RefreshToken).FirstOrDefault();
                 if (storedToken is null)
                 {
@@ -241,7 +266,6 @@ namespace Application.Services.System
                     };
                 }
 
-                // Is a revoked token?
                 if (storedToken.Revoked)
                 {
                     return new AuthResponse()
@@ -251,7 +275,6 @@ namespace Application.Services.System
                     };
                 }
 
-                // Has the same identifier?
                 var jti = principal.Claims.FirstOrDefault(t => t.Type == JwtRegisteredClaimNames.Jti)?.Value;
                 if (string.IsNullOrWhiteSpace(jti) || storedToken.JwtId != Guid.Parse(jti))
                 {
@@ -262,7 +285,6 @@ namespace Application.Services.System
                     };
                 }
 
-                // Optional: user consistency check (defense-in-depth)
                 var userIdClaim = principal.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
                 if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userIdFromToken) || userIdFromToken != storedToken.UserId)
                 {
@@ -273,7 +295,6 @@ namespace Application.Services.System
                     };
                 }
 
-                // Refresh token has been expired?
                 if (storedToken.ExpiryDate < DateTime.UtcNow)
                 {
                     return new AuthResponse()
@@ -286,7 +307,12 @@ namespace Application.Services.System
                 storedToken.Used = true;
                 await unitOfWork.UserRefreshTokens.Update(storedToken);
 
-                var user = await unitOfWork.Users.Get(storedToken.UserId);
+                // Load user with Role for JWT claim generation
+                var users = await unitOfWork.Users.FindAsyncWithQueryParams(
+                    u => u.Id == storedToken.UserId,
+                    q => q.Include(u => u.Role));
+                var user = users.FirstOrDefault();
+
                 if (user is null)
                 {
                     return new AuthResponse()
@@ -308,7 +334,6 @@ namespace Application.Services.System
             }
             catch (Exception ex)
             {
-                // Unexpected error
                 return new AuthResponse()
                 {
                     Result = false,
@@ -317,16 +342,5 @@ namespace Application.Services.System
             }
         }
 
-        // Seconds from 1-1-1970 00:00:00
-        private DateTime UnixTimeStampToDateTime(long unixTimeStamp)
-        {
-            var dateTimeValue = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return dateTimeValue.AddSeconds(unixTimeStamp).ToUniversalTime();
-        }
     }
 }
-
-
-
-
-

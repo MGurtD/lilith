@@ -287,11 +287,18 @@ const getCustomerById = (id: string) => {
 };
 
 const createOrder = async () => {
-  dialogOptions.visible = false;
-  const created = await budgetStore.Create(createRequest.value);
-  if (created) {
-    router.push({ path: `/budget/${createRequest.value.id}` });
+  const response = await budgetStore.Create(createRequest.value);
+  if (!response) {
+    toast.add({
+      severity: "warn",
+      summary: "Error al crear el pressupost",
+      detail: "Error desconegut, contacte amb l'administrador.",
+      life: 10000,
+    });
+    return;
   }
+  dialogOptions.visible = false;
+  router.push({ path: `/budget/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {

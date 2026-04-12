@@ -15,7 +15,6 @@ export const useWorkMasterStore = defineStore("workmaster", {
     workmaster: undefined as WorkMaster | undefined,
     workmasters: undefined as Array<WorkMaster> | undefined,
     workmasterPhase: undefined as WorkMasterPhase | undefined,
-    workmasterToCopy: undefined as WorkMasterToCopy | undefined,
     workmasterModes: [
       { id: 1, value: "Prototip" },
       { id: 2, value: "Sèrie curta" },
@@ -71,12 +70,11 @@ export const useWorkMasterStore = defineStore("workmaster", {
     },
     async update(id: string, model: WorkMaster) {
       const result = await Services.WorkMaster.update(id, model);
-      if (result) await this.fetchAll();
+      if (result) await this.fetchOne(model.id);
       return result;
     },
     async delete(id: string) {
       const result = await Services.WorkMaster.delete(id);
-      if (result) await this.fetchAll();
       return result;
     },
     async calculate(
@@ -95,7 +93,6 @@ export const useWorkMasterStore = defineStore("workmaster", {
     },
     async copy(model: WorkMasterToCopy) {
       const result = await Services.WorkMaster.copyWorkMaster(model);
-      if (result.result) await this.fetchAll();
       return result;
     },
 

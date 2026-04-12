@@ -18,6 +18,7 @@
       </div>
       <div>
         <DropdownLifecycleStatusTransitions
+          ref="statusTransitionsDropdown"
           label="Estat"
           :statusId="phase.statusId"
           v-model="phase.statusId"
@@ -164,6 +165,8 @@ onMounted(async () => {
 const toast = useToast();
 const plantModelStore = usePlantModelStore();
 const referencesStore = useReferenceStore();
+const statusTransitionsDropdown =
+  ref<InstanceType<typeof DropdownLifecycleStatusTransitions> | null>(null);
 
 const serviceReferences = ref(undefined as undefined | Reference[]);
 
@@ -254,4 +257,13 @@ const submitForm = async () => {
     });
   }
 };
+
+const reloadLifecycleTransitions = async () => {
+  await statusTransitionsDropdown.value?.reloadTransitions();
+};
+
+defineExpose({
+  submitForm,
+  reloadLifecycleTransitions,
+});
 </script>

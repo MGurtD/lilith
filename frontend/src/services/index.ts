@@ -1,3 +1,4 @@
+import { ApiKeyService } from "./apikey.service";
 import { AuthenticationService } from "./authentications.service";
 import { FileService } from "./file.service";
 import { ReportService } from "./report.service";
@@ -6,6 +7,7 @@ import { UserService } from "./user.service";
 import { UserFilterService } from "./userfilter.service";
 
 export default {
+  ApiKey: new ApiKeyService(),
   Authentication: new AuthenticationService(),
   File: new FileService(),
   User: new UserService(),

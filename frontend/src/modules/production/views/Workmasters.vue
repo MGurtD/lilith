@@ -11,30 +11,25 @@
     :rows="20"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <label class="block text-900">Client</label>
-            <DropdownCustomers
-              label=""
-              v-model="filter.customerId"
-            ></DropdownCustomers>
-          </div>
-          <div class="filter-field">
-            <label class="block text-900">Referència</label>
-            <DropdownReference
-              label=""
-              v-model="filter.referenceId"
-              :customer-id="filter.customerId"
-              :fullName="true"
-            ></DropdownReference>
-          </div>
+      <div class="filter-toolbar">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Client</label>
+          <DropdownCustomers
+            label=""
+            v-model="filter.customerId"
+          ></DropdownCustomers>
         </div>
-        <div class="datatable-buttons">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Referència</label>
+          <DropdownReference
+            label=""
+            v-model="filter.referenceId"
+            :customer-id="filter.customerId"
+            :fullName="true"
+          ></DropdownReference>
+        </div>
+        <div class="filter-toolbar__actions">
           <Button
-            class="datatable-button mr-2"
             :icon="PrimeIcons.FILTER_SLASH"
             rounded
             raised
@@ -68,6 +63,11 @@
         }}
       </template>
     </Column>
+    <Column header="Mode" style="width: 12.5%">
+      <template #body="slotProps">
+        {{ returnMode(slotProps.data.mode) }}
+      </template>
+    </Column>
     <Column
       field="baseQuantity"
       header="Quantitat Base"
@@ -85,12 +85,7 @@
         }}
       </template>
     </Column>
-    <Column header="Mode" sytle="width: 30%">
-      <template #body="slotProps">
-        {{ returnMode(slotProps.data.mode) }}
-      </template>
-    </Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column header="Desactivada" style="width: 5%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -139,59 +134,103 @@
     </div>
   </Dialog>
   <Dialog
-    v-model:visible="copyDialogOptions.visible"
-    :header="copyDialogOptions.title"
-    :closable="true"
+    v-model:visible="copyDialogVisible"
+    header="Copiar ruta de fabricació"
+    :closable="!copyLoading"
     :modal="true"
-    :style="{ width: '60vw' }"
+    :style="{ width: '50vw', maxWidth: '700px' }"
   >
-    <section class="two-columns">
-      <div><h3>Origen</h3></div>
-      <div><h3>Destí</h3></div>
-    </section>
-    <section class="two-columns">
-      <div>
-        <p>
-          {{
-            referenceStore.getFullNameById(
-              workmasterStore.workmasterToCopy!.workmaster.referenceId,
-            )
-          }}
-        </p>
+    <div v-if="copyModel" class="flex flex-column gap-3">
+      <div class="flex flex-column gap-1">
+        <label class="font-semibold text-sm text-color-secondary"
+          >Ruta d'origen</label
+        >
+        <span class="text-lg">{{ copySourceName }}</span>
       </div>
-      <div>
-        <DropdownReference
-          label="Referència existent:"
-          v-model="workmasterStore.workmasterToCopy!.referenceId"
-          :fullName="true"
-          @change="checkDestinyCode"
-        ></DropdownReference>
-        <label class="block text-900 mb-2">Mode</label>
+
+      <hr
+        class="my-2"
+        style="border: none; border-top: 1px solid var(--p-surface-200)"
+      />
+
+      <div class="flex flex-column gap-2">
+        <label class="font-semibold text-sm text-color-secondary"
+          >Destí de la còpia</label
+        >
+
+        <div class="flex align-items-center gap-2">
+          <RadioButton
+            v-model="copyDestinyMode"
+            inputId="destExisting"
+            value="existing"
+          />
+          <label for="destExisting">Referència existent</label>
+        </div>
+        <div v-if="copyDestinyMode === 'existing'" class="ml-4">
+          <DropdownReference
+            label=""
+            v-model="copyModel.referenceId"
+            :fullName="true"
+          />
+        </div>
+
+        <div class="flex align-items-center gap-2 mt-2">
+          <RadioButton
+            v-model="copyDestinyMode"
+            inputId="destNew"
+            value="new"
+          />
+          <label for="destNew">Crear nova referència</label>
+        </div>
+        <div
+          v-if="copyDestinyMode === 'new'"
+          class="ml-4 flex flex-column gap-2"
+        >
+          <BaseInput
+            id="referenceCode"
+            label="Codi"
+            v-model="copyModel.referenceCode"
+          />
+          <BaseInput
+            id="referenceDescription"
+            label="Descripció"
+            v-model="copyModel.referenceDescription"
+          />
+        </div>
+      </div>
+
+      <div class="flex flex-column gap-1">
+        <label class="font-semibold text-sm text-color-secondary mb-1"
+          >Mode de fabricació</label
+        >
         <Select
-          v-model="workmasterStore.workmasterToCopy!.mode"
+          v-model="copyModel.mode"
           :options="workmasterStore.workmasterModes"
           optionLabel="value"
           optionValue="id"
-          placeholder="Seleccione el mode"
-          class="w-full mb-2"
+          placeholder="Selecciona el mode"
+          class="w-full"
         />
-
-        <BaseInput
-          class="mb-2"
-          label="Nou codi:"
-          id="referenceCode"
-          v-model="workmasterStore.workmasterToCopy!.referenceCode"
-          @change="checkDestinyId"
-        ></BaseInput>
       </div>
-    </section>
-    <div>
-      <Button
-        label="Copiar"
-        style="float: right"
-        @click="onCopySubmit"
-      ></Button>
     </div>
+
+    <template #footer>
+      <div class="flex justify-content-end gap-2">
+        <Button
+          label="Cancel·lar"
+          severity="secondary"
+          text
+          :disabled="copyLoading"
+          @click="copyDialogVisible = false"
+        />
+        <Button
+          label="Copiar"
+          icon="pi pi-copy"
+          :loading="copyLoading"
+          @click="onCopySubmit"
+        />
+      </div>
+    </template>
   </Dialog>
 </template>
 <script setup lang="ts">
@@ -207,7 +246,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { useWorkMasterStore } from "../store/workmaster";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../../sales/store/customers";
-import { WorkMaster } from "../types";
+import { WorkMaster, WorkMasterToCopy } from "../types";
 import { getNewUuid, formatCurrency } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
@@ -265,13 +304,17 @@ const returnMode = (mode: number) => {
   return workmasterStore.workmasterModes.find((m) => m.id === mode)?.value;
 };
 
-const copyDialogOptions = reactive({
-  visible: false,
-  title: "Copiar ruta",
-  closable: true,
-  position: "center",
-  modal: true,
-} as DialogOptions);
+const copyDialogVisible = ref(false);
+const copyLoading = ref(false);
+const copyDestinyMode = ref<"existing" | "new">("existing");
+const copyModel = ref<{
+  referenceId: string | null;
+  referenceCode: string;
+  referenceDescription: string;
+  mode: number;
+} | null>(null);
+const copySourceWorkmasterId = ref("");
+const copySourceName = ref("");
 
 onMounted(async () => {
   store.setMenuItem({
@@ -301,47 +344,81 @@ const createButtonClick = () => {
 };
 
 const copyButton = (event: any, workmaster: WorkMaster) => {
-  workmasterStore.workmasterToCopy = {
-    workmasterId: workmaster.id,
-    workmaster,
+  copySourceWorkmasterId.value = workmaster.id;
+  copySourceName.value = referenceStore.getFullNameById(workmaster.referenceId);
+  copyDestinyMode.value = "existing";
+  copyModel.value = {
     referenceId: null,
     referenceCode: "",
+    referenceDescription: "",
     mode: 1,
   };
-  copyDialogOptions.visible = true;
+  copyDialogVisible.value = true;
 };
 
 const onCopySubmit = async () => {
-  if (workmasterStore.workmasterToCopy!.referenceId === "") {
-    workmasterStore.workmasterToCopy!.referenceId = null;
-  }
-  const copied = await workmasterStore.copy(workmasterStore.workmasterToCopy!);
-  await workmasterStore.fetchAll();
-  copyDialogOptions.visible = false;
-  if (copied.result) {
-    toast.add({
-      severity: "success",
-      summary: "Copiada",
-      life: 3000,
-    });
-  } else {
-    toast.add({
-      severity: copied.errors.length > 0 ? "warn" : "error",
-      summary:
-        copied.errors.length > 0
-          ? copied.errors[0]
-          : "Hi ha hagut un error en el proces",
-      life: 6000,
-    });
-  }
-};
+  if (!copyModel.value) return;
 
-const checkDestinyCode = () => {
-  workmasterStore.workmasterToCopy!.referenceCode = "";
-};
+  if (copyDestinyMode.value === "existing" && !copyModel.value.referenceId) {
+    toast.add({
+      severity: "warn",
+      summary: "Selecciona una referència de destí",
+      life: 5000,
+    });
+    return;
+  }
 
-const checkDestinyId = () => {
-  workmasterStore.workmasterToCopy!.referenceId = "";
+  if (
+    copyDestinyMode.value === "new" &&
+    !copyModel.value.referenceCode.trim()
+  ) {
+    toast.add({
+      severity: "warn",
+      summary: "Introdueix el codi de la nova referència",
+      life: 5000,
+    });
+    return;
+  }
+
+  const payload: WorkMasterToCopy = {
+    workmasterId: copySourceWorkmasterId.value,
+    referenceId:
+      copyDestinyMode.value === "existing" ? copyModel.value.referenceId : null,
+    referenceCode:
+      copyDestinyMode.value === "new"
+        ? copyModel.value.referenceCode.trim()
+        : "",
+    referenceDescription:
+      copyDestinyMode.value === "new"
+        ? copyModel.value.referenceDescription.trim()
+        : "",
+    mode: copyModel.value.mode,
+  };
+
+  copyLoading.value = true;
+  try {
+    const copied = await workmasterStore.copy(payload);
+    if (copied.result) {
+      toast.add({
+        severity: "success",
+        summary: "Ruta copiada correctament",
+        life: 3000,
+      });
+      copyDialogVisible.value = false;
+      await workmasterStore.fetchAll();
+    } else {
+      toast.add({
+        severity: copied.errors.length > 0 ? "warn" : "error",
+        summary:
+          copied.errors.length > 0
+            ? copied.errors[0]
+            : "Hi ha hagut un error en el procés",
+        life: 6000,
+      });
+    }
+  } finally {
+    copyLoading.value = false;
+  }
 };
 
 const editRow = (row: DataTableRowClickEvent) => {

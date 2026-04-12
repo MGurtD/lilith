@@ -62,43 +62,17 @@ export const usePurchaseInvoiceStore = defineStore({
       statusId?: string,
       excludeStatusId?: string,
       supplierId?: string,
+      paymentMethodId?: string,
     ) {
-      if (excludeStatusId && supplierId) {
-        this.purchaseInvoices =
-          await PurchaseService.PurchaseInvoice.GetBetweenDatesAndExcludeStatusAndSupplier(
-            startDate,
-            endDate,
-            excludeStatusId,
-            supplierId,
-          );
-      } else if (statusId) {
-        this.purchaseInvoices =
-          await PurchaseService.PurchaseInvoice.GetBetweenDatesAndStatus(
-            startDate,
-            endDate,
-            statusId,
-          );
-      } else if (excludeStatusId) {
-        this.purchaseInvoices =
-          await PurchaseService.PurchaseInvoice.GetBetweenDatesAndExcludeStatus(
-            startDate,
-            endDate,
-            excludeStatusId,
-          );
-      } else if (supplierId) {
-        this.purchaseInvoices =
-          await PurchaseService.PurchaseInvoice.GetBetweenDatesAndSupplier(
-            startDate,
-            endDate,
-            supplierId,
-          );
-      } else {
-        this.purchaseInvoices =
-          await PurchaseService.PurchaseInvoice.GetBetweenDates(
-            startDate,
-            endDate,
-          );
-      }
+      this.purchaseInvoices =
+        await PurchaseService.PurchaseInvoice.GetFiltered(
+          startDate,
+          endDate,
+          supplierId,
+          statusId,
+          excludeStatusId,
+          paymentMethodId,
+        );
     },
     async Update(purchaseInvoice: PurchaseInvoice) {
       const updated = await PurchaseService.PurchaseInvoice.update(

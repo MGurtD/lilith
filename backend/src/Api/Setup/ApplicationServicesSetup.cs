@@ -5,7 +5,10 @@ using Application.Services.Sales;
 using Application.Services.Shared;
 using Application.Services.Verifactu;
 using Application.Services.Warehouse;
+using Application.Services.Transport;
+using Application.Services.Geolocalization;
 using Application.Contracts;
+using Application.Contracts.Services.Geolocalization;
 using Infrastructure.Persistance;
 
 namespace Api.Setup;
@@ -18,6 +21,7 @@ public static class ApplicationServicesSetup
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
@@ -58,10 +62,12 @@ public static class ApplicationServicesSetup
         services.AddScoped<IIncomeService, IncomeService>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<ISupplierTypeService, SupplierTypeService>();
+        services.AddScoped<ITransportRateService, TransportRateService>();
+        services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();
-        
+
         // Production services - Group A Simple CRUD
         services.AddScoped<ISiteService, SiteService>();
         services.AddScoped<IAreaService, AreaService>();
@@ -77,7 +83,7 @@ public static class ApplicationServicesSetup
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
         services.AddScoped<IProductionPartService, ProductionPartService>();
-        
+
         // Production services - Group C Specialized
         services.AddScoped<IWorkcenterService, WorkcenterService>();
         services.AddScoped<IOperatorService, OperatorService>();
@@ -86,16 +92,18 @@ public static class ApplicationServicesSetup
         services.AddScoped<IWorkOrderPhaseService, WorkOrderPhaseService>();
         services.AddScoped<IPhaseTemplateService, PhaseTemplateService>();
         services.AddScoped<IDetailedWorkOrderService, DetailedWorkOrderService>();
-        
+        services.AddScoped<IWorkOrderStockService, WorkOrderStockService>();
+
         // Production services - Background jobs
-        services.AddSingleton<IProductionPartChannel, ProductionPartChannel>();
-        services.AddScoped<IProductionPartGeneratorHandler, ProductionPartGeneratorHandler>();
-        services.AddHostedService<ProductionPartGeneratorService>();
-        
+        services.AddSingleton<IWorkOrderPhaseCloseChannel, WorkOrderPhaseCloseChannel>();
+        services.AddScoped<IWorkOrderPhaseCloseHandler, WorkOrderPhaseCloseHandler>();
+        services.AddHostedService<WorkOrderPhaseCloseService>();
+
         // Warehouse services
         services.AddScoped<IWarehouseService, WarehouseService>();
-        
+
         services.AddHostedService<BudgetBackgroundService>();
+        services.AddHostedService<RefreshTokenCleanupService>();
 
         return services;
     }

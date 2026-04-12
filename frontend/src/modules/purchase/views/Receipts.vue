@@ -234,6 +234,7 @@ const generateNewRequest = (): CreatePurchaseDocumentRequest => {
 };
 const createReceipt = async () => {
   const created = await receiptsStore.createReceipt(createRequest.value);
+  dialogOptions.visible = false;
   if (created) router.push({ path: `/receipts/${createRequest.value.id}` });
 };
 

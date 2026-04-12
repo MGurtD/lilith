@@ -208,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
@@ -355,6 +355,18 @@ const getContrastColor = (hexColor: string): string => {
   return isColorLight(normalized) ? "#000000" : "#ffffff";
 };
 
+const loadMaterialsProvisioningIfNeeded = async () => {
+  if (
+    activeTab.value !== "3" ||
+    !hasLoadedPhase.value ||
+    !activePhaseStore.hasBillOfMaterials
+  ) {
+    return;
+  }
+
+  await activePhaseStore.ensureMaterialsProvisioningLoaded();
+};
+
 onMounted(async () => {
   // 1. Carregar dades del workcenter
   await workcenterStore.fetchWorkcenter(id);
@@ -378,14 +390,36 @@ onMounted(async () => {
   // 3. Carregar estats de màquina
   await dataStore.fetchMachineStatuses();
 
-  // 4. Establir pestanya activa segons si hi ha fase carregada
+  // 4. Carregar ubicacions associades al workcenter sense bloquejar la resta del flux
+  void workcenterStore.fetchWorkcenterLocations(id);
+
+  // 5. Establir pestanya activa segons si hi ha fase carregada
   // Si hi ha fase carregada -> Documentació (tab 1), si no -> Fases disponibles (tab 0)
   activeTab.value = hasLoadedPhase.value ? "1" : "0";
 
-  // 5. Connectar WebSocket específic del workcenter
+  // 6. Connectar WebSocket específic del workcenter
   workcenterStore.connectToWorkcenter(id);
   connect(WS_ENDPOINTS.WORKCENTER(id), { debug: true });
 });
+
+// When phase is unloaded, reset to "Fases disponibles" tab so the user
+// doesn't see a blank panel (the previously-active tab no longer exists).
+watch(hasLoadedPhase, (loaded) => {
+  if (!loaded) {
+    activeTab.value = "0";
+  }
+});
+
+watch(
+  [
+    activeTab,
+    () => activePhaseStore.activePhase?.phaseId,
+    () => activePhaseStore.billOfMaterials.length,
+  ],
+  () => {
+    void loadMaterialsProvisioningIfNeeded();
+  },
+);
 
 onUnmounted(() => {
   // Netejar informació del workcenter dels stores

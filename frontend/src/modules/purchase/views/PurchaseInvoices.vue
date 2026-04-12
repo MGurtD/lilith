@@ -14,37 +14,46 @@
     @row-click="editPurchaseInvoice"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="puchaseMasterDataStore.masterData.exercises"
-              @range-selected="filterInvoices"
-            />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Proveïdor</label>
-            <Select
-              v-model="filter.supplierId"
-              :options="puchaseMasterDataStore.masterData.suppliers"
-              optionValue="id"
-              optionLabel="comercialName"
-              class="w-full"
-            />
-          </div>
+      <div class="filter-toolbar">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Període</label>
+          <DatePicker
+            v-model="filter.dates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            placeholder="Seleccioni un període"
+            showIcon
+            @date-select="filterInvoices"
+          />
         </div>
-        <div class="datatable-buttons">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Proveïdor</label>
+          <Select
+            v-model="filter.supplierId"
+            :options="puchaseMasterDataStore.masterData.suppliers"
+            optionValue="id"
+            optionLabel="comercialName"
+            showClear
+          />
+        </div>
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Mètode de pagament</label>
+          <Select
+            v-model="filter.paymentMethodId"
+            :options="puchaseMasterDataStore.masterData.paymentMethods"
+            optionValue="id"
+            optionLabel="name"
+            showClear
+          />
+        </div>
+        <div class="filter-toolbar__actions">
           <Button
-            class="datatable-button mr-2"
             :icon="PrimeIcons.FILTER"
             rounded
             raised
             @click="filterInvoices"
           />
           <Button
-            class="datatable-button mr-2"
             :icon="PrimeIcons.FILTER_SLASH"
             rounded
             raised
@@ -111,7 +120,6 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import { v4 as uuidv4 } from "uuid";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -127,7 +135,6 @@ import {
   formatDate,
 } from "../../../utils/functions";
 import { PurchaseInvoice } from "../types";
-import { Exercise } from "../../shared/types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
 
@@ -142,8 +149,9 @@ const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   supplierId: undefined as string | undefined,
-  exercise: undefined as Exercise | undefined,
+  paymentMethodId: undefined as string | undefined,
 });
 
 onMounted(async () => {
@@ -154,29 +162,27 @@ onMounted(async () => {
 
   await lifecycleStore.fetchOneByName(lifecycleName);
   await puchaseMasterDataStore.fetchMasterData();
-  setCurrentYear();
   getUserFilter();
+
+  if (!filter.value.dates) {
+    setCurrentYear();
+  }
 
   await filterInvoices();
 });
 onUnmounted(() => {
-  const savedFilter = {
-    ...filter.value,
-    exercisePicker: store.exercisePicker,
-  };
-
-  userFilterStore.addFilter("PurchaseInvoices", "", savedFilter);
+  userFilterStore.addFilter("PurchaseInvoices", "", filter.value);
 });
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("PurchaseInvoices", "");
   if (userFilter) {
     filter.value.supplierId = userFilter.supplierId;
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    filter.value.paymentMethodId = userFilter.paymentMethodId;
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
   }
@@ -189,26 +195,25 @@ const setCurrentYear = () => {
   );
 
   if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
+    filter.value.dates = [
+      new Date(currentExercise.startDate),
+      new Date(currentExercise.endDate),
     ];
   }
 };
 
 const cleanFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = undefined;
   filter.value.supplierId = undefined;
+  filter.value.paymentMethodId = undefined;
+  setCurrentYear();
 };
 
 const filterLocalStorageKey = "temges.purchaseinvoice.filter";
 const filterInvoices = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await purchaseInvoiceStore.GetFiltered(
       startTime,
@@ -216,6 +221,7 @@ const filterInvoices = async () => {
       undefined,
       undefined,
       filter.value.supplierId,
+      filter.value.paymentMethodId,
     );
 
     localStorage.setItem(filterLocalStorageKey, JSON.stringify(filter.value));

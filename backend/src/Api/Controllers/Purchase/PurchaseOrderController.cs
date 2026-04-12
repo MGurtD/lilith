@@ -7,7 +7,7 @@ namespace Api.Controllers.Purchase
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PurchaseOrderController(IPurchaseOrderService service, ILocalizationService localizationService) : ControllerBase
+    public class PurchaseOrderController(IPurchaseOrderService service, IPurchaseOrderReportService reportService, ILocalizationService localizationService) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> Get(DateTime startTime, DateTime endTime, Guid? supplierId, Guid? statusId)
@@ -21,7 +21,7 @@ namespace Api.Controllers.Purchase
         [HttpGet("Report/{id:guid}")]
         public async Task<IActionResult> GetSalesOrderForReport(Guid id)
         {
-            var reportDto = await service.GetDtoForReportingById(id);
+            var reportDto = await reportService.GetReportById(id);
             return Ok(reportDto);
         }
 

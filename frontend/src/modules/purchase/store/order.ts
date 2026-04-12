@@ -64,7 +64,6 @@ export const useOrderStore = defineStore({
     },
     async create(createRequest: CreatePurchaseDocumentRequest) {
       const result = await Services.Order.create(createRequest);
-      if (result) await this.fetchAll();
       return result;
     },
     async createFromWo(createRequest: Array<PurchaseOrderFromWO>) {

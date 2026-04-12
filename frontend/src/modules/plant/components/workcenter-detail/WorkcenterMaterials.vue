@@ -18,10 +18,35 @@
     >
       <Column field="referenceCode" header="Referència" style="width: 200px">
         <template #body="slotProps">
-          <span class="font-semibold">{{ slotProps.data.referenceCode }}</span>
+          <div class="reference-cell">
+            <span class="font-semibold">{{ slotProps.data.referenceCode }}</span>
+            <Tag
+              v-if="activePhaseStore.hasMaterialsConsumed"
+              value="Consumit"
+              severity="success"
+              icon="pi pi-check-circle"
+            />
+            <Tag
+              v-else-if="isMaterialProvisioned(slotProps.data.id)"
+              value="Aprovisionat"
+              severity="warn"
+              icon="pi pi-check-circle"
+            />
+          </div>
         </template>
       </Column>
       <Column field="referenceDescription" header="Descripció" />
+      <Column header="Mesures" style="min-width: 260px">
+        <template #body="slotProps">
+          <DimensionChips
+            :width="slotProps.data.width"
+            :length="slotProps.data.length"
+            :height="slotProps.data.height"
+            :diameter="slotProps.data.diameter"
+            :thickness="slotProps.data.thickness"
+          />
+        </template>
+      </Column>
       <Column
         field="quantity"
         header="Quantitat"
@@ -39,59 +64,38 @@
             rounded
             severity="secondary"
             :loading="loadingBomId === slotProps.data.id"
-            @click="showStock($event, slotProps.data)"
+            @click="showStock(slotProps.data)"
           />
         </template>
       </Column>
     </DataTable>
 
-    <!-- Popover estoc disponible -->
-    <Popover ref="stockPopover">
-      <div class="stock-popover">
-        <div class="stock-popover-header">
-          <span class="stock-popover-title">Estoc disponible</span>
-          <span class="stock-popover-ref">{{ selectedBomCode }}</span>
-        </div>
+    <div
+      v-if="activePhaseStore.materialsProvisioningLoading"
+      class="provisioning-status"
+    >
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Comprovant aprovisionament dels materials...</span>
+    </div>
 
-        <div v-if="stockItems.length === 0" class="stock-empty">
-          <i class="pi pi-exclamation-circle"></i>
-          <span>Sense estoc disponible</span>
-        </div>
+    <div
+      v-else-if="activePhaseStore.materialsProvisioningError"
+      class="provisioning-status provisioning-status-error"
+    >
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ activePhaseStore.materialsProvisioningError }}</span>
+    </div>
 
-        <DataTable
-          v-else
-          :value="stockItems"
-          size="small"
-          class="stock-table"
-        >
-          <Column field="warehouseName" header="Magatzem" />
-          <Column field="locationName" header="Ubicació" />
-          <Column
-            field="quantity"
-            header="Quantitat"
-            style="width: 90px; text-align: right"
-          >
-            <template #body="slotProps">
-              <span class="font-semibold">{{ slotProps.data.quantity }}</span>
-            </template>
-          </Column>
-          <Column header="Moure" style="width: 80px; text-align: center">
-            <template #body="slotProps">
-              <Button
-                icon="pi pi-arrow-right"
-                text
-                rounded
-                severity="secondary"
-                :loading="movingStockId === slotProps.data.stockId"
-                :disabled="movingStockId !== null"
-                @click="moveStock(slotProps.data)"
-                v-tooltip.top="'Moure a ubicació d\'aprovisionament'"
-              />
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-    </Popover>
+    <AvailableStockDialog
+      v-if="selectedBomItem"
+      v-model:visible="stockDialogVisible"
+      :bom-item="selectedBomItem"
+      :stock-items="stockItems"
+      :moving-stock-id="movingStockId"
+      :workcenter-location-ids="workcenterStore.associatedLocationIds"
+      @move-stock="moveStock"
+      @return-stock="returnStock"
+    />
   </div>
 </template>
 
@@ -103,68 +107,131 @@ import { PrimeIcons } from "@primevue/core/api";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
-import Popover from "primevue/popover";
-import { usePlantActivePhaseStore } from "../../store";
+import Tag from "primevue/tag";
+import { usePlantActivePhaseStore, usePlantWorkcenterStore } from "../../store";
 import type { BillOfMaterialsItem } from "../../../production/types";
 import type { StockResponse } from "../../../warehouse/types";
 import WarehouseServices from "../../../warehouse/services";
+import ProductionServices from "../../../production/services";
+import AvailableStockDialog from "./AvailableStockDialog.vue";
+import DimensionChips from "./DimensionChips.vue";
 
 const route = useRoute();
 const toast = useToast();
 const activePhaseStore = usePlantActivePhaseStore();
+const workcenterStore = usePlantWorkcenterStore();
 
 const workcenterId = route.params.id as string;
-const stockPopover = ref<InstanceType<typeof Popover> | null>(null);
+const stockDialogVisible = ref(false);
 const stockItems = ref<StockResponse[]>([]);
 const loadingBomId = ref<string | null>(null);
-const selectedBomCode = ref("");
+const selectedBomItem = ref<BillOfMaterialsItem | null>(null);
 const movingStockId = ref<string | null>(null);
 
-async function showStock(event: Event, bom: BillOfMaterialsItem) {
-  selectedBomCode.value = bom.referenceCode;
-  loadingBomId.value = bom.id;
+function isMaterialProvisioned(bomId: string): boolean {
+  return activePhaseStore.bomProvisioningById[bomId] === true;
+}
 
-  const target = event.currentTarget as HTMLElement;
+async function showStock(bom: BillOfMaterialsItem) {
+  selectedBomItem.value = bom;
+  loadingBomId.value = bom.id;
 
   try {
     stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(bom.id);
+    stockDialogVisible.value = true;
   } finally {
     loadingBomId.value = null;
   }
-
-  stockPopover.value?.show({ currentTarget: target } as unknown as Event);
 }
 
-async function moveStock(stockItem: StockResponse) {
+async function moveStock(payload: { stockItem: StockResponse; quantity: number }) {
+  const { stockItem, quantity } = payload;
+  const workOrderPhaseId = activePhaseStore.activePhase?.phaseId;
+  if (!workOrderPhaseId) {
+    toast.add({
+      severity: "error",
+      summary: "Error al moure l'stock",
+      detail: "No s'ha pogut determinar la fase activa",
+      life: 4000,
+    });
+    return;
+  }
+
   movingStockId.value = stockItem.stockId;
   
   try {
-    const result = await WarehouseServices.Stock.moveToWorkcenterSupply({
+    const result = await ProductionServices.WorkOrderStock.moveToWorkcenterSupply({
       stockId: stockItem.stockId,
       workcenterId: workcenterId,
-      quantity: stockItem.quantity,
+      workOrderPhaseId: workOrderPhaseId,
+      quantity: quantity,
     });
 
     if (result) {
       toast.add({
         severity: "success",
         summary: "Stock mogut correctament",
-        detail: `${stockItem.quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
+        detail: `${quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
         life: 4000,
       });
-      
-      // Refresh stock data
-      const bomId = activePhaseStore.billOfMaterials.find(
-        (bom) => bom.referenceCode === selectedBomCode.value
-      )?.id;
-      if (bomId) {
-        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(bomId);
+
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
       }
     } else {
       toast.add({
         severity: "error",
         summary: "Error al moure l'stock",
         detail: "No s'ha pogut moure l'stock a la ubicació d'aprovisionament",
+        life: 4000,
+      });
+    }
+  } finally {
+    movingStockId.value = null;
+  }
+}
+
+async function returnStock(payload: { stockItem: StockResponse; quantity: number }) {
+  const { stockItem, quantity } = payload;
+  const workOrderPhaseId = activePhaseStore.activePhase?.phaseId;
+  if (!workOrderPhaseId) {
+    toast.add({
+      severity: "error",
+      summary: "Error al retornar l'stock",
+      detail: "No s'ha pogut determinar la fase activa",
+      life: 4000,
+    });
+    return;
+  }
+
+  movingStockId.value = stockItem.stockId;
+
+  try {
+    const result = await ProductionServices.WorkOrderStock.returnFromWorkcenterSupply({
+      stockId: stockItem.stockId,
+      workcenterId: workcenterId,
+      workOrderPhaseId: workOrderPhaseId,
+      quantity: quantity,
+    });
+
+    if (result) {
+      toast.add({
+        severity: "success",
+        summary: "Stock retornat correctament",
+        detail: `${quantity} unitats de ${stockItem.referenceCode} retornades a la ubicació per defecte`,
+        life: 4000,
+      });
+
+      if (selectedBomItem.value) {
+        await activePhaseStore.refreshMaterialProvisioning(selectedBomItem.value.id);
+        stockItems.value = await WarehouseServices.Stock.getByBillOfMaterialsId(selectedBomItem.value.id);
+      }
+    } else {
+      toast.add({
+        severity: "error",
+        summary: "Error al retornar l'stock",
+        detail: "No s'ha pogut retornar l'stock a la ubicació per defecte",
         life: 4000,
       });
     }
@@ -181,6 +248,13 @@ async function moveStock(stockItem: StockResponse) {
   flex-direction: column;
   padding: 1rem;
   overflow-y: auto;
+}
+
+.reference-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .empty-state {
@@ -216,42 +290,16 @@ async function moveStock(stockItem: StockResponse) {
   height: 100%;
 }
 
-/* Popover */
-.stock-popover {
-  min-width: 380px;
-  max-width: 480px;
-}
-
-.stock-popover-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.stock-popover-title {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.stock-popover-ref {
-  font-size: 0.85rem;
-  color: var(--text-color-secondary);
-}
-
-.stock-loading,
-.stock-empty {
+.provisioning-status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 0;
+  margin-top: 0.75rem;
   color: var(--text-color-secondary);
   font-size: 0.9rem;
 }
 
-.stock-table {
-  width: 100%;
+.provisioning-status-error {
+  color: var(--p-red-500);
 }
 </style>

@@ -5,8 +5,6 @@ using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
 
-using Application.Services.Production;
-
 namespace Application.Services.Sales
 {
     internal struct DeliveryNoteEntities
@@ -26,12 +24,12 @@ namespace Application.Services.Sales
         ILocalizationService localizationService) : IDeliveryNoteService
     {
         private readonly string lifecycleName = StatusConstants.Lifecycles.DeliveryNote;
-        
+
         public async Task<DeliveryNote?> GetById(Guid id)
         {
             return await unitOfWork.DeliveryNotes.Get(id);
         }
-        
+
         public IEnumerable<DeliveryNote> GetBetweenDates(DateTime startDate, DateTime endDate)
         {
             var deliveryNotes = unitOfWork.DeliveryNotes.Find(p => p.CreatedOn >= startDate && p.CreatedOn <= endDate);
@@ -88,9 +86,9 @@ namespace Application.Services.Sales
             var deliveryNoteEntities = (DeliveryNoteEntities)response.Content!;
 
             var counterObj = await exerciseService.GetNextCounter(deliveryNoteEntities.Exercise.Id, "deliverynote");
-            if (counterObj.Content == null) 
+            if (counterObj.Content == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterError"));
-            
+
             var deliveryNote = new DeliveryNote()
             {
                 Id = createRequest.Id,
@@ -112,7 +110,7 @@ namespace Application.Services.Sales
             deliveryNote.Details?.Clear();
 
             var exists = await unitOfWork.DeliveryNotes.Exists(deliveryNote.Id);
-            if (!exists) 
+            if (!exists)
                 return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", deliveryNote.Id));
 
             await unitOfWork.DeliveryNotes.Update(deliveryNote);
@@ -122,7 +120,7 @@ namespace Application.Services.Sales
         public async Task<GenericResponse> Remove(Guid id)
         {
             var deliveryNotes = await unitOfWork.DeliveryNotes.Get(id);
-            if (deliveryNotes == null) 
+            if (deliveryNotes == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", id));
 
             await unitOfWork.DeliveryNotes.Remove(deliveryNotes);
@@ -136,7 +134,7 @@ namespace Application.Services.Sales
 
             var orderServiceResponse = await salesOrderService.Deliver(deliveryNote.Id);
             if (!orderServiceResponse.Result) return orderServiceResponse;
-            
+
             deliveryNote.DeliveryDate ??= DateTime.Now;
             await Update(deliveryNote);
 
@@ -178,7 +176,7 @@ namespace Application.Services.Sales
                     {
                         detail.IsInvoiced = isInvoiced;
                         unitOfWork.DeliveryNotes.Details.UpdateWithoutSave(detail);
-                    }                    
+                    }
 
                     await unitOfWork.CompleteAsync();
                 }
@@ -267,15 +265,15 @@ namespace Application.Services.Sales
 
             return new GenericResponse(true, deliveryNoteDetails);
         }
-        
+
         private async Task<GenericResponse> ValidateCreateInvoiceRequest(CreateHeaderRequest createInvoiceRequest)
         {
             var exercise = await unitOfWork.Exercices.Get(createInvoiceRequest.ExerciseId);
-            if (exercise == null) 
+            if (exercise == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseNotFound"));
 
             var customer = await unitOfWork.Customers.Get(createInvoiceRequest.CustomerId);
-            if (customer == null) 
+            if (customer == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("CustomerNotFound"));
             if (!customer.IsValidForSales())
                 return new GenericResponse(false, localizationService.GetLocalizedString("CustomerInvalid"));
@@ -289,9 +287,9 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, localizationService.GetLocalizedString("SiteInvalid"));
 
             var lifecycle = unitOfWork.Lifecycles.Find(l => l.Name == lifecycleName).FirstOrDefault();
-            if (lifecycle == null) 
+            if (lifecycle == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNotFound", lifecycleName));
-            if (!lifecycle.InitialStatusId.HasValue) 
+            if (!lifecycle.InitialStatusId.HasValue)
                 return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNoInitialStatus", lifecycleName));
 
             DeliveryNoteEntities entities;

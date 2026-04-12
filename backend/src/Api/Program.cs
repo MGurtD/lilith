@@ -1,6 +1,8 @@
 using Api;
 using Api.Middlewares;
 using Api.Setup;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 using System.Text.Json.Serialization;
 using Application.Contracts; // ILanguageCatalog
@@ -36,11 +38,25 @@ try
             .AddSwaggerSetup()
             .AddLocalizationSetup(); // Add localization services
 
+        // OpenTelemetry: logs, traces, metrics → Grafana Cloud
+        if (appSettings.OpenTelemetry?.Enabled == true)
+            builder.AddOpenTelemetrySetup(appSettings.OpenTelemetry);
+
         // Language catalog singleton
         builder.Services.AddSingleton<ILanguageCatalog, LanguageCatalog>();
 
-        builder.Services.AddControllers()
+        builder.Services.AddControllers(options =>
+                        {
+                            // Global authorization filter: all endpoints require authentication by default.
+                            // Use [AllowAnonymous] on specific endpoints to opt out.
+                            var policy = new AuthorizationPolicyBuilder()
+                                .RequireAuthenticatedUser()
+                                .Build();
+                            options.Filters.Add(new AuthorizeFilter(policy));
+                        })
                         .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+        builder.Services.AddAuthorization();
     }
 
     var app = builder.Build();

@@ -74,7 +74,6 @@ export const useReceiptsStore = defineStore({
     },
     async createReceipt(createRequest: CreatePurchaseDocumentRequest) {
       const result = await Services.Receipt.create(createRequest);
-      if (result) await this.fetchReceipts();
       return result;
     },
     async updateReceipt(id: string, receipt: Receipt) {

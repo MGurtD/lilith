@@ -299,6 +299,9 @@ export const usePlantModelStore = defineStore("plantmodel", {
     async fetchAreas() {
       this.areas = await areaService.getAll();
     },
+    async fetchActiveAreas() {
+      this.areas = await areaService.getActive();
+    },
     async fetchAreasVisibleInPlant() {
       this.areas = await areaService.getVisibleInPlant();
     },

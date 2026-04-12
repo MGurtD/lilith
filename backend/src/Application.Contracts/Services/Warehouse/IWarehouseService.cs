@@ -13,6 +13,8 @@ public interface IWarehouseService
     Task<GenericResponse> Update(Domain.Entities.Warehouse.Warehouse warehouse);
     Task<GenericResponse> Remove(Guid id);
 
+    Task<Guid?> GetDefaultLocation();
+
     // Location nested operations
     Task<GenericResponse> CreateLocation(Location location);
     Task<GenericResponse> UpdateLocation(Location location);

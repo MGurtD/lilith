@@ -177,9 +177,9 @@ export interface WorkMasterPhaseBillOfMaterials {
 }
 export interface WorkMasterToCopy {
   referenceId: string | null | undefined;
-  workmaster: WorkMaster;
   workmasterId: string;
   referenceCode: string;
+  referenceDescription: string;
   mode: number;
 }
 
@@ -586,6 +586,11 @@ export interface BillOfMaterialsItem {
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
 }
 
 export interface WorkcenterProfitPercentage {

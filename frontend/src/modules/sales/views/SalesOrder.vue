@@ -86,7 +86,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
@@ -160,9 +160,17 @@ const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
 const selectedSalesOrderDetail = ref(undefined as undefined | SalesOrderDetail);
 
-const loadView = async () => {
-  const workOrderId = route.params.id as string;
-  await salesOrderStore.GetById(workOrderId);
+const loadView = async (salesOrderId: string) => {
+  store.setMenuItem({
+    icon: PrimeIcons.BUILDING,
+    backButtonVisible: true,
+    title: "Comanda",
+  });
+
+  budgetStore.budget = undefined;
+  deliveryNoteStore.deliveryNote = undefined;
+
+  await salesOrderStore.GetById(salesOrderId);
   referenceStore.fetchReferencesByModule("sales");
   lifeCycleStore.fetchOneByName("SalesOrder");
   lifeCycleStore.fetchSecondaryByName("WorkOrder");
@@ -170,13 +178,13 @@ const loadView = async () => {
   exerciseStore.fetchAll();
   customerStore.fetchCustomers();
   taxesStore.fetchAll();
-  workOrderStore.fetchBySalesOrder(workOrderId);
+  workOrderStore.fetchBySalesOrder(salesOrderId);
 
   if (!workMasterStore.workmasters) {
     workMasterStore.fetchAllActives();
   }
 
-  let pageTitle = "";
+  let pageTitle = "Comanda";
   if (salesOrder.value) {
     formMode.value = FormActionMode.EDIT;
     pageTitle = `Comanda ${salesOrder.value.number}`;
@@ -209,9 +217,15 @@ const loadView = async () => {
   });
 };
 
-onMounted(async () => {
-  await loadView();
-});
+watch(
+  () => route.params.id,
+  async (salesOrderId) => {
+    if (typeof salesOrderId === "string" && salesOrderId) {
+      await loadView(salesOrderId);
+    }
+  },
+  { immediate: true },
+);
 
 onUnmounted(() => {
   salesOrderStore.salesOrder = undefined;

@@ -13,8 +13,8 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../store";
 import { useToast } from "primevue/usetoast";
-import { Role, UserLogin } from "../services/authentications.service";
-import { AuthenticationService } from "../services/authentications.service";
+import { Role } from "../services/authentications.service";
+import { AuthenticationService, ChangePasswordRequest } from "../services/authentications.service";
 import { UserService } from "../services/user.service";
 import { RoleService } from "../services/role.service";
 import { Profile, User } from "../types";
@@ -65,7 +65,7 @@ const submitForm = async () => {
   }
 };
 
-const changePassword = async (request: UserLogin) => {
+const changePassword = async (request: ChangePasswordRequest) => {
   const service = new AuthenticationService();
   const changed = await service.ChangePassword(request);
 

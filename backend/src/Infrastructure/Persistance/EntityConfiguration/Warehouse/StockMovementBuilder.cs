@@ -12,27 +12,27 @@ namespace Infrastructure.Persistance.EntityConfiguration.Warehouse
             builder
                 .Property(b => b.Quantity)
                 .IsRequired()
-                .HasColumnType("integer");     
+                .HasColumnType("integer");
             builder
                 .Property(b => b.Description)
                 .IsRequired()
                 .HasColumnType("varchar")
-                .HasMaxLength(250);             
+                .HasMaxLength(250);
             builder
                 .Property(b => b.Width)
-                .IsRequired()                
+                .IsRequired()
                 .HasColumnType("decimal")
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
             builder
                 .Property(b => b.Length)
-                .IsRequired()                
+                .IsRequired()
                 .HasColumnType("decimal")
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
             builder
                 .Property(b => b.Height)
-                .IsRequired()                
+                .IsRequired()
                 .HasColumnType("decimal")
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
@@ -42,24 +42,34 @@ namespace Infrastructure.Persistance.EntityConfiguration.Warehouse
                 .HasColumnType("timestamp without time zone");
             builder
                 .Property(b => b.Diameter)
-                .IsRequired()                
+                .IsRequired()
                 .HasColumnType("decimal")
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
-            
+
             builder
                 .Property(b => b.Thickness)
-                .IsRequired()                
+                .IsRequired()
                 .HasColumnType("decimal")
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
-           
+
+            builder
+                .Property(b => b.Entity)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(50);
+            builder
+                .Property(b => b.EntityId)
+                .IsRequired(false);
+
             builder
                 .HasKey(b => b.Id)
                 .HasName("PK_StockMovements");
-            builder.HasIndex(builder => new { builder.StockId}, "idx_stockid");
-            builder.HasIndex(builder => new { builder.MovementType}, "idx_movementtype");
-            builder.HasIndex(builder => new { builder.StockId, builder.MovementType}, "idx_stockid_movementtype");
+            builder.HasIndex(builder => new { builder.StockId }, "idx_stockid");
+            builder.HasIndex(builder => new { builder.MovementType }, "idx_movementtype");
+            builder.HasIndex(builder => new { builder.StockId, builder.MovementType }, "idx_stockid_movementtype");
+            builder.HasIndex(builder => new { builder.Entity, builder.EntityId }, "idx_entity_entityid");
 
             builder.ToTable("StockMovements");
 

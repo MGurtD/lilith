@@ -68,7 +68,7 @@
             label="Num. Pressupost"
             id="budgetNumber"
             disabled
-            :value="budgetStore.budget?.number"
+            :modelValue="budgetStore.budget?.number ?? ''"
           />
         </div>
 
@@ -78,7 +78,7 @@
             :disabled="true"
             label="Albarà Entrega"
             id="deliveryNote"
-            v-model="deliveryNoteNumber"
+            :modelValue="deliveryNoteNumber"
           />
         </div>
       </section>

@@ -46,12 +46,25 @@ export interface Stock {
   thickness: number;
 }
 
+export interface StockListItem extends Stock {
+  referenceCode: string;
+  referenceDescription: string;
+  referenceDisplay: string;
+  locationName: string;
+  locationDescription: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseDescription: string;
+}
+
 export interface StockMovement {
   id: string;
   stockId: string;
   movementType: string;
   locationId: null | string;
+  location: Location | null;
   referenceId: string;
+  reference?: { id: string; code: string; description: string } | null;
   quantity: number;
   width: number;
   length: number;
@@ -60,13 +73,15 @@ export interface StockMovement {
   thickness: number;
   movementDate: any;
   description: string;
+  entity?: string | null;
+  entityId?: string | null;
 }
 
 export interface Inventory {
   id: string;
   stockId: string;
   movementType: string;
-  locationId: string;
+  locationId: string | null;
   locationName?: string; // Optional for UI purposes
   referenceId: string;
   referenceName?: string; // Optional for UI purposes
@@ -109,6 +124,41 @@ export interface StockResponse {
 export interface MoveStockToWorkcenterSupplyRequest {
   stockId: string;
   workcenterId: string;
+  workOrderPhaseId: string;
   quantity: number;
 }
+
+export interface ReturnStockFromSupplyRequest {
+  stockId: string;
+  workcenterId: string;
+  workOrderPhaseId: string;
+  quantity: number;
+}
+
+export interface RemainingPiece {
+  quantity: number;
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
+}
+
+export interface ConsumeStockEntry {
+  stockId: string;
+  remainingPieces: RemainingPiece[];
+}
+
+export interface ConsumePhaseStockRequest {
+  workcenterId: string;
+  workOrderPhaseId: string;
+  entries: ConsumeStockEntry[];
+}
+
+export const StockMovementEntity = {
+  WorkOrderPhase: "WorkOrderPhase",
+  DeliveryNote: "DeliveryNote",
+  Receipt: "Receipt",
+  WorkOrder: "WorkOrder",
+} as const;
 

@@ -112,15 +112,29 @@ namespace Application.Services.Production
 
             // Execute copy operation
             var result = await unitOfWork.WorkMasters.Copy(request);
-            if (result)
-            {
-                return new GenericResponse(true);
-            }
-            else
+            if (!result)
             {
                 return new GenericResponse(false,
                     localizationService.GetLocalizedString("WorkMasterNotFound"));
             }
+
+            // TODO: Eliminar quan el SP accepti el paràmetre referenceDescription
+            // Post-copy: update reference description if a new reference was created
+            if (!string.IsNullOrWhiteSpace(request.ReferenceDescription) 
+                && !string.IsNullOrWhiteSpace(request.ReferenceCode))
+            {
+                var newReference = unitOfWork.References
+                    .Find(r => r.Code == request.ReferenceCode)
+                    .FirstOrDefault();
+
+                if (newReference != null)
+                {
+                    newReference.Description = request.ReferenceDescription;
+                    await unitOfWork.References.Update(newReference);
+                }
+            }
+
+            return new GenericResponse(true);
         }
     }
 }

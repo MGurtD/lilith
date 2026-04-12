@@ -49,76 +49,14 @@
     </template>
 
     <div class="dialog-content">
-      <!-- Produced Quantity Section (Informative) -->
-      <div class="info-section">
-        <div class="produced-units-row">
-          <div class="produced-column">
-            <h4 class="section-title">
-              <i :class="PrimeIcons.CHECK_CIRCLE" class="mr-2"></i>
-              Quantitat produïda
-            </h4>
-            <div class="produced-unit-card ok">
-              <span class="produced-value">{{
-                loadedPhase?.quantityOk ?? 0
-              }}</span>
-            </div>
-          </div>
-          <div class="produced-column">
-            <h4 class="section-title">
-              <i :class="PrimeIcons.EXCLAMATION_TRIANGLE" class="mr-2"></i>
-              Quantitat defectuosa
-            </h4>
-            <div class="produced-unit-card ko">
-              <span class="produced-value">{{
-                loadedPhase?.quantityKo ?? 0
-              }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Add More Quantity Section (Input) -->
-      <div class="input-section">
-        <h4 class="section-title">
-          <i :class="PrimeIcons.PLUS_CIRCLE" class="mr-2"></i>
-          Afegir més quantitat
-        </h4>
-        <p class="section-hint">
-          Introdueix la quantitat addicional produïda en aquesta sessió
-        </p>
-        <div class="counters-row">
-          <div class="counter-field">
-            <InputNumber
-              v-model="formData.counterOk"
-              :min="0"
-              :useGrouping="false"
-              class="w-full"
-              showButtons
-              buttonLayout="horizontal"
-              :step="1"
-              decrementButtonClass="p-button-secondary"
-              incrementButtonClass="p-button-secondary"
-              incrementButtonIcon="pi pi-plus"
-              decrementButtonIcon="pi pi-minus"
-            />
-          </div>
-          <div class="counter-field">
-            <InputNumber
-              v-model="formData.counterKo"
-              :min="0"
-              :useGrouping="false"
-              class="w-full"
-              showButtons
-              buttonLayout="horizontal"
-              :step="1"
-              decrementButtonClass="p-button-secondary"
-              incrementButtonClass="p-button-secondary"
-              incrementButtonIcon="pi pi-plus"
-              decrementButtonIcon="pi pi-minus"
-            />
-          </div>
-        </div>
-      </div>
+      <PhaseQuantityForm
+        :quantity-ok="loadedPhase?.quantityOk ?? 0"
+        :quantity-ko="loadedPhase?.quantityKo ?? 0"
+        :counter-ok="formData.counterOk"
+        :counter-ko="formData.counterKo"
+        @update:counter-ok="formData.counterOk = $event"
+        @update:counter-ko="formData.counterKo = $event"
+      />
 
       <!-- Options Section -->
       <div
@@ -153,6 +91,15 @@
           </div>
         </div>
       </div>
+
+      <!-- Material Consumption Dialog -->
+      <MaterialConsumptionDialog
+        v-model:visible="showConsumptionDialog"
+        :bill-of-materials="activePhaseStore.billOfMaterials"
+        :workcenter-id="formData.workcenterId"
+        :work-order-phase-id="formData.workOrderPhaseId"
+        @confirm="onConsumptionConfirmed"
+      />
 
       <!-- Action Buttons -->
       <div class="actions-panel">
@@ -193,7 +140,11 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { UnloadWorkOrderPhaseRequest } from "../../types";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
+import PhaseQuantityForm from "./PhaseQuantityForm.vue";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
+import MaterialConsumptionDialog from "./MaterialConsumptionDialog.vue";
+import type { ConsumeStockEntry } from "../../../warehouse/types";
+import ProductionServices from "../../../production/services";
 
 interface Props {
   visible: boolean;
@@ -225,6 +176,10 @@ const nextPhaseDetails = computed(
 // Validation state
 const isValidating = ref(false);
 const closingPhase = ref(false);
+
+// Consumption dialog state
+const showConsumptionDialog = ref(false);
+const pendingUnloadRequest = ref<UnloadWorkOrderPhaseRequest | null>(null);
 
 // Form state
 interface FormData {
@@ -274,6 +229,45 @@ const resetForm = () => {
 
 const onCancel = () => {
   emit("update:visible", false);
+};
+
+const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
+  if (!pendingUnloadRequest.value) return;
+
+  try {
+    // Call the consumption API
+    const success =
+      await ProductionServices.WorkOrderStock.consumePhaseStock({
+        workcenterId: formData.workcenterId,
+        workOrderPhaseId: formData.workOrderPhaseId,
+        entries,
+      });
+
+    if (!success) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "No s'ha pogut registrar el consum de materials",
+        life: 6000,
+      });
+      return;
+    }
+
+    // Close the consumption dialog
+    showConsumptionDialog.value = false;
+
+    // Proceed with the normal unload flow
+    emit("phase-unloaded", pendingUnloadRequest.value);
+    pendingUnloadRequest.value = null;
+  } catch (error) {
+    console.error("Error consuming phase stock:", error);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Error de connexió al registrar el consum",
+      life: 6000,
+    });
+  }
 };
 
 const onUnload = async (closePhase: boolean) => {
@@ -354,6 +348,38 @@ const onUnload = async (closePhase: boolean) => {
       request.nextMachineStatusId = props.nextMachineStatusId;
     }
 
+    // If closing phase and there are BOM materials, check provisioning and show consumption dialog
+    // Skip if materials have already been consumed (e.g. re-opening a finalized phase)
+    if (
+      closePhase &&
+      activePhaseStore.hasBillOfMaterials &&
+      !activePhaseStore.hasMaterialsConsumed
+    ) {
+      // Ensure provisioning status is loaded
+      await activePhaseStore.ensureMaterialsProvisioningLoaded(true);
+
+      // Check all materials are provisioned
+      const allProvisioned = Object.values(
+        activePhaseStore.bomProvisioningById,
+      ).every((v) => v === true);
+
+      if (!allProvisioned) {
+        toast.add({
+          severity: "error",
+          summary: "Materials no aprovisionats",
+          detail:
+            "Tots els materials han d'estar aprovisionats abans de finalitzar la fase",
+          life: 6000,
+        });
+        return;
+      }
+
+      // Store the pending request and show consumption dialog
+      pendingUnloadRequest.value = request;
+      showConsumptionDialog.value = true;
+      return;
+    }
+
     emit("phase-unloaded", request);
   } finally {
     isValidating.value = false;
@@ -382,68 +408,6 @@ const onUnload = async (closePhase: boolean) => {
   margin: 0 0 1rem 0;
   font-size: 0.85rem;
   color: var(--text-color-secondary);
-}
-
-/* Produced Units Section */
-.info-section {
-  background: var(--p-surface-50);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.produced-units-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.produced-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.produced-unit-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border-radius: 8px;
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-}
-
-.produced-unit-card.ok {
-  border-left: 4px solid var(--p-green-500);
-}
-
-.produced-unit-card.ko {
-  border-left: 4px solid var(--p-red-500);
-}
-
-.produced-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-color);
-}
-
-/* Input Section */
-.input-section {
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.counters-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.counter-field {
-  display: flex;
-  flex-direction: column;
 }
 
 /* Options Section */
@@ -504,11 +468,6 @@ const onUnload = async (closePhase: boolean) => {
 }
 
 @media (max-width: 768px) {
-  .produced-units-row,
-  .counters-row {
-    grid-template-columns: 1fr;
-  }
-
   .header-details {
     flex-direction: column;
     gap: 0.5rem;

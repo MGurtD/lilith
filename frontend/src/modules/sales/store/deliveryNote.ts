@@ -59,9 +59,9 @@ export const useDeliveryNoteStore = defineStore({
         await SalesServices.DeliveryNote.GetToInvoice(customerId);
     },
 
-    async Create(createRequest: CreateSalesHeaderRequest) {
+    async Create(createRequest: CreateSalesHeaderRequest): Promise<GenericResponse<DeliveryNote>> {
       const response = await SalesServices.DeliveryNote.Create(createRequest);
-      return response.result;
+      return response;
     },
     async Update(id: string, salesOrder: DeliveryNote) {
       const updated = await SalesServices.DeliveryNote.update(id, salesOrder);

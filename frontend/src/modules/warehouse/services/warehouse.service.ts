@@ -1,6 +1,6 @@
 import BaseService from "../../../api/base.service";
 import { logException } from "../../../api/api.client";
-import { Warehouse, Stock, Location, StockResponse, MoveStockToWorkcenterSupplyRequest } from "../types";
+import { Warehouse, Stock, StockListItem, Location, StockResponse } from "../types";
 
 export class WarehouseService extends BaseService<Warehouse> {
   async getAllWithLocations(): Promise<Array<Warehouse>> {
@@ -34,6 +34,16 @@ export class WarehouseService extends BaseService<Warehouse> {
 }
 
 export class StockService extends BaseService<Stock> {
+  async getAll(): Promise<StockListItem[]> {
+    try {
+      const response = await this.apiClient.get(this.resource);
+      return response.data ?? [];
+    } catch (err) {
+      logException(err);
+      return [];
+    }
+  }
+
   async getByBillOfMaterialsId(bomId: string): Promise<StockResponse[]> {
     try {
       const endpoint = `${this.resource}/ByBillOfMaterials/${bomId}`;
@@ -42,17 +52,6 @@ export class StockService extends BaseService<Stock> {
     } catch (err) {
       logException(err);
       return [];
-    }
-  }
-
-  async moveToWorkcenterSupply(request: MoveStockToWorkcenterSupplyRequest): Promise<boolean> {
-    try {
-      const endpoint = `${this.resource}/MoveToWorkcenterSupply`;
-      const response = await this.apiClient.post(endpoint, request);
-      return response.status === 200;
-    } catch (err) {
-      logException(err);
-      return false;
     }
   }
 }

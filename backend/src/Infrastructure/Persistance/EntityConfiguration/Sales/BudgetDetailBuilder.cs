@@ -98,6 +98,12 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
             builder
+                .Property(b => b.DetailWeight)
+                .IsRequired()
+                .HasColumnType("decimal")
+                .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
+                              ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
+            builder
                 .Property(b => b.UserNotes)
                 .HasColumnType("varchar")
                 .HasMaxLength(4000);

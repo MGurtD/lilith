@@ -15,6 +15,7 @@
           <Tab value="0">Fases</Tab>
           <Tab value="1">Hores</Tab>
           <Tab value="2">Costs</Tab>
+          <Tab value="3">Moviments</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="0">
@@ -49,51 +50,101 @@
             </TableProductionParts>
           </TabPanel>
           <TabPanel value="2" v-if="workorder">
-            <section class="four-columns">
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Cost Operari</label>
-                <span class="summary-field">{{
-                  formatCurrency(workorder.operatorCost)
-                }}</span>
+            <div class="costs-container">
+              <div class="costs-section">
+                <h4 class="costs-section-title">
+                  <i class="pi pi-euro" />
+                  Costos
+                </h4>
+                <div class="costs-grid">
+                  <div class="cost-card">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-user" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Cost Operari</span>
+                      <span class="cost-card-value">{{
+                        formatCurrency(workorder.operatorCost)
+                      }}</span>
+                    </div>
+                  </div>
+                  <div class="cost-card">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-cog" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Cost Màquina</span>
+                      <span class="cost-card-value">{{
+                        formatCurrency(workorder.machineCost)
+                      }}</span>
+                    </div>
+                  </div>
+                  <div class="cost-card">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-box" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Cost Material</span>
+                      <span class="cost-card-value">{{
+                        formatCurrency(workorder.materialCost)
+                      }}</span>
+                    </div>
+                  </div>
+                  <div class="cost-card cost-card-total">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-calculator" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Cost Total</span>
+                      <span class="cost-card-value">{{
+                        formatCurrency(
+                          workorder.machineCost +
+                            workorder.materialCost +
+                            workorder.operatorCost,
+                        )
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Cost Máquina</label>
-                <span class="summary-field">{{
-                  formatCurrency(workorder.machineCost)
-                }}</span>
+
+              <div class="costs-section">
+                <h4 class="costs-section-title">
+                  <i class="pi pi-clock" />
+                  Temps
+                </h4>
+                <div class="time-grid">
+                  <div class="cost-card">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-user" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Temps Operari</span>
+                      <span class="cost-card-value"
+                        >{{ workorder.operatorTime }} min</span
+                      >
+                    </div>
+                  </div>
+                  <div class="cost-card">
+                    <div class="cost-card-icon">
+                      <i class="pi pi-cog" />
+                    </div>
+                    <div class="cost-card-content">
+                      <span class="cost-card-label">Temps Màquina</span>
+                      <span class="cost-card-value"
+                        >{{ workorder.machineTime }} min</span
+                      >
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Cost Material</label>
-                <span class="summary-field">{{
-                  formatCurrency(workorder.materialCost)
-                }}</span>
-              </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Cost Total</label>
-                <span class="summary-field">{{
-                  formatCurrency(
-                    workorder.machineCost +
-                      workorder.materialCost +
-                      workorder.operatorCost,
-                  )
-                }}</span>
-              </div>
-            </section>
-            <section class="four-columns mt-4">
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Temps Operari</label>
-                <span class="summary-field"
-                  >{{ workorder.operatorTime }} mins.</span
-                >
-              </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">Temps Màquina</label>
-                <span class="summary-field"
-                  >{{ workorder.machineTime }} mins.</span
-                >
-              </div>
-              <div class="mt-1"></div>
-            </section>
+            </div>
+          </TabPanel>
+          <TabPanel value="3">
+            <TableWorkorderStockMovements
+              v-if="stockMovementStore.stockMovements"
+              :stockMovements="stockMovementStore.stockMovements"
+            />
           </TabPanel>
         </TabPanels>
       </Tabs>
@@ -117,13 +168,15 @@ import FormWorkOrderProductionPart from "../components/FormWorkOrderProductionPa
 import FormWorkorder from "../components/FormWorkorder.vue";
 import TableWorkorderPhases from "../components/TableWorkorderPhases.vue";
 import TableProductionParts from "../components/TableProductionParts.vue";
+import TableWorkorderStockMovements from "../components/TableWorkorderStockMovements.vue";
 
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useWorkOrderStore } from "../store/workorder";
 import { useProductionPartStore } from "../store/productionpart";
+import { useStockMovementStore } from "../../warehouse/store/stockMovement";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
 import { ProductionPart, WorkOrder, WorkOrderPhase } from "../types";
@@ -149,9 +202,19 @@ const referenceStore = useReferenceStore();
 const workorderStore = useWorkOrderStore();
 const plantModelStore = usePlantModelStore();
 const productionPartStore = useProductionPartStore();
+const stockMovementStore = useStockMovementStore();
 const { workorder } = storeToRefs(workorderStore);
 const id = ref("");
 const activeTab = ref("0");
+const stockMovementsLoaded = ref(false);
+const workorderForm = ref<InstanceType<typeof FormWorkorder> | null>(null);
+
+watch(activeTab, async (newTab) => {
+  if (newTab === "3" && !stockMovementsLoaded.value && id.value) {
+    stockMovementsLoaded.value = true;
+    await stockMovementStore.getByWorkOrderId(id.value);
+  }
+});
 
 const dialogOptions = reactive({
   visible: false,
@@ -216,6 +279,7 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
     });
 
     await loadViewData();
+    await workorderForm.value?.reloadLifecycleTransitions();
   } else {
     toast.add({
       severity: "error",
@@ -313,5 +377,110 @@ const printReport = async () => {
 <style scoped>
 .main {
   margin-top: 1rem;
+}
+
+/* Costs tab */
+.costs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.costs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.costs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.cost-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--p-content-background, #fff);
+  transition: box-shadow 0.15s ease;
+}
+
+.cost-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cost-card-total {
+  background: var(--p-primary-50, #eef2ff);
+  border-color: var(--p-primary-200, #c7d2fe);
+}
+
+.cost-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: var(--p-surface-100, #f1f5f9);
+  color: var(--p-primary-color, #3b82f6);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cost-card-total .cost-card-icon {
+  background: var(--p-primary-100, #dbeafe);
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+.cost-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cost-card-label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+}
+
+.cost-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.cost-card-total .cost-card-value {
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+@media (max-width: 1200px) {
+  .costs-grid,
+  .time-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .costs-grid,
+  .time-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

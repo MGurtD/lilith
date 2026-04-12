@@ -61,6 +61,11 @@
         {{ formatCurrency(slotProps.data.unitPrice) }}
       </template>
     </Column>
+    <Column field="transportCost" header="Cost transport" style="width: 10%">
+      <template #body="slotProps">
+        {{ formatCurrency(slotProps.data.transportCost) }}
+      </template>
+    </Column>
     <Column field="amount" header="Total" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}

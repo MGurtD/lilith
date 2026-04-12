@@ -20,23 +20,25 @@
         ></DropdownReference>
       </div>
       <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Quantitat"
-          v-model="workorder.plannedQuantity"
+        <label class="block text-900 mb-2">Data prevista</label>
+        <DatePicker
+          v-model="workorder.plannedDate"
+          dateFormat="dd/mm/yy"
+          showTime
+          hourFormat="24"
+          class="mt-2"
           :class="{
-            'p-invalid': validation.errors.plannedQuantity,
+            'p-invalid': validation.errors.plannedDate,
           }"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Data Prevista</label>
-        <DatePicker
-          v-model="workorder.plannedDate"
-          dateFormat="dd/mm/yy"
-          class="mt-2"
+        <BaseInput
+          :type="BaseInputType.NUMERIC"
+          label="Quantitat prevista"
+          v-model="workorder.plannedQuantity"
           :class="{
-            'p-invalid': validation.errors.plannedDate,
+            'p-invalid': validation.errors.plannedQuantity,
           }"
         />
       </div>
@@ -45,27 +47,12 @@
       <div>
         <label class="block text-900 mb-2">Estat</label>
         <DropdownLifecycleStatusTransitions
+          ref="statusTransitionsDropdown"
           v-model="workorder.statusId"
           :statusId="workorder.statusId"
           :class="{
             'p-invalid': validation.errors.statusId,
           }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Data Inici</label>
-        <DatePicker
-          v-model="workorder.startTime"
-          dateFormat="dd/mm/yy"
-          class="mt-2"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Data Fi</label>
-        <DatePicker
-          v-model="workorder.endTime"
-          dateFormat="dd/mm/yy"
-          class="mt-2"
         />
       </div>
       <div>
@@ -78,9 +65,29 @@
           }"
         />
       </div>
+      <div>
+        <label class="block text-900 mb-2">Període execució</label>
+        <DatePicker
+          v-model="dateRange"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          showTime
+          hourFormat="24"
+          showIcon
+          class="mt-2"
+        />
+      </div>
+      <div>
+        <BaseInput
+          :type="BaseInputType.NUMERIC"
+          label="Quantitat total"
+          v-model="workorder.totalQuantity"
+          disabled
+        />
+      </div>
     </section>
     <div>
-      <label class="block text-900 mb-2">Comentari Fabricació</label>
+      <label class="block text-900 mb-2">Comentari fabricació</label>
       <Textarea class="w-full" v-model="workorder.comment"></Textarea>
     </div>
   </form>
@@ -88,7 +95,7 @@
 
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { WorkOrder } from "../types";
 import * as Yup from "yup";
 import {
@@ -112,6 +119,9 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const statusTransitionsDropdown = ref<InstanceType<
+  typeof DropdownLifecycleStatusTransitions
+> | null>(null);
 
 const items = [
   {
@@ -120,6 +130,36 @@ const items = [
     command: () => emit("download"),
   },
 ];
+
+const dateRange = computed({
+  get(): Date[] {
+    const range: Date[] = [];
+    if (props.workorder.startTime) {
+      range.push(
+        props.workorder.startTime instanceof Date
+          ? props.workorder.startTime
+          : new Date(props.workorder.startTime),
+      );
+    }
+    if (props.workorder.endTime) {
+      range.push(
+        props.workorder.endTime instanceof Date
+          ? props.workorder.endTime
+          : new Date(props.workorder.endTime),
+      );
+    }
+    return range;
+  },
+  set(value: Date[] | null) {
+    if (value && value.length >= 1) {
+      props.workorder.startTime = value[0];
+      props.workorder.endTime = value.length >= 2 ? value[1] : null;
+    } else {
+      props.workorder.startTime = null;
+      props.workorder.endTime = null;
+    }
+  },
+});
 
 const schema = Yup.object().shape({
   plannedQuantity: Yup.number()
@@ -157,7 +197,12 @@ const handleSubmit = async () => {
   }
 };
 
+const reloadLifecycleTransitions = async () => {
+  await statusTransitionsDropdown.value?.reloadTransitions();
+};
+
 defineExpose({
   submitForm: handleSubmit,
+  reloadLifecycleTransitions,
 });
 </script>

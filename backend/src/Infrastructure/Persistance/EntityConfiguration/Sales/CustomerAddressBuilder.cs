@@ -51,6 +51,11 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
                 .IsRequired()
                 .HasColumnType("bool")
                 .HasDefaultValue(false);
+            builder
+                .Property(b => b.DistanceFromSite)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0);
 
             builder
                 .HasKey(b => b.Id)

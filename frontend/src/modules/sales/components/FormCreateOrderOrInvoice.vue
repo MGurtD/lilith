@@ -83,8 +83,11 @@ const validate = () => {
 const onSubmit = () => {
   validate();
   if (validation.value.result) {
-    props.createRequest.date = convertDateTimeToJSON(props.createRequest.date);
-    emit("submit", props.createRequest);
+    const submitPayload = {
+      ...props.createRequest,
+      date: convertDateTimeToJSON(props.createRequest.date),
+    };
+    emit("submit", submitPayload);
   } else {
     let errors = "";
     Object.entries(validation.value.errors).forEach((e) => {

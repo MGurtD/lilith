@@ -315,3 +315,39 @@ export const getBorderTopStyle = (
     background: `linear-gradient(90deg, ${baseColor}, ${darkerColor})`,
   };
 };
+
+/**
+ * Dimension values used for formatting dimension labels.
+ */
+export interface DimensionValues {
+  width: number;
+  length: number;
+  height: number;
+  diameter: number;
+  thickness: number;
+}
+
+/**
+ * Formats dimension values into localized label strings with mm suffix.
+ * Filters out zero values and returns an array like ["Ample 100 mm", "Llarg 40 mm"].
+ *
+ * @param t - i18n translation function (from useI18n)
+ * @param dimensions - Object with width, length, height, diameter, thickness
+ * @returns Array of formatted dimension strings, or the localized "no dimensions" message
+ */
+export function formatDimensions(
+  t: (key: string) => string,
+  dimensions: DimensionValues,
+): string[] {
+  const entries = [
+    { label: t("measurements.width"), value: dimensions.width },
+    { label: t("measurements.length"), value: dimensions.length },
+    { label: t("measurements.height"), value: dimensions.height },
+    { label: t("measurements.diameter"), value: dimensions.diameter },
+    { label: t("measurements.thickness"), value: dimensions.thickness },
+  ]
+    .filter((entry) => entry.value > 0)
+    .map((entry) => `${entry.label} ${entry.value} mm`);
+
+  return entries.length > 0 ? entries : [t("measurements.none")];
+}

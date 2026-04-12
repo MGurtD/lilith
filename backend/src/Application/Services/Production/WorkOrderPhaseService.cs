@@ -6,13 +6,13 @@ using Microsoft.Extensions.Logging;
 namespace Application.Services.Production;
 
 public class WorkOrderPhaseService(
-    IUnitOfWork unitOfWork, 
+    IUnitOfWork unitOfWork,
     ILocalizationService localizationService,
     IWorkOrderService workOrderService,
     ILogger<WorkOrderPhaseService> logger) : IWorkOrderPhaseService
 {
     #region Phase CRUD
-    
+
     public async Task<WorkOrderPhase?> GetById(Guid id)
     {
         return await unitOfWork.WorkOrders.Phases.Get(id);
@@ -23,13 +23,13 @@ public class WorkOrderPhaseService(
         // Check if phase already exists
         var exists = unitOfWork.WorkOrders.Phases.Find(p => p.Id == phase.Id).Any();
         if (exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseAlreadyExists"));
 
         // Validate parent WorkOrder exists
         var workOrder = await unitOfWork.WorkOrders.Get(phase.WorkOrderId);
         if (workOrder is null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderNotFound", phase.WorkOrderId));
 
         // Create phase
@@ -42,7 +42,7 @@ public class WorkOrderPhaseService(
         // Check if phase exists
         var exists = await unitOfWork.WorkOrders.Phases.Exists(phase.Id);
         if (!exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
 
         // Update phase
@@ -54,37 +54,37 @@ public class WorkOrderPhaseService(
     {
         var entity = unitOfWork.WorkOrders.Phases.Find(p => p.Id == id).FirstOrDefault();
         if (entity is null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
 
         await unitOfWork.WorkOrders.Phases.Remove(entity);
         return new GenericResponse(true, entity);
     }
-    
+
     #endregion
 
     #region Phase Lifecycle
-    
+
     public async Task<GenericResponse> StartPhase(Guid phaseId, Guid? workOrderStatusId = null)
     {
         // Get phase
         var phase = await unitOfWork.WorkOrders.Phases.Get(phaseId);
         if (phase == null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
-        
+
         // Get "Producció" status
         var productionStatus = await unitOfWork.Lifecycles.GetStatusByName(
-            StatusConstants.Lifecycles.WorkOrder, 
+            StatusConstants.Lifecycles.WorkOrder,
             StatusConstants.Statuses.Production);
-        
+
         if (productionStatus == null)
         {
             logger.LogError("Production status not found in WorkOrder lifecycle");
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Production));
         }
-        
+
         if (!phase.StartTime.HasValue)
         {
             phase.StartTime = DateTime.Now;
@@ -96,7 +96,7 @@ public class WorkOrderPhaseService(
 
         phase.StatusId = productionStatus.Id;
         await unitOfWork.WorkOrders.Phases.Update(phase);
-        
+
         // Update parent WorkOrder
         var workOrder = await unitOfWork.WorkOrders.Get(phase.WorkOrderId);
         if (workOrder != null)
@@ -112,10 +112,10 @@ public class WorkOrderPhaseService(
             {
                 workOrder.EndTime = null;
             }
-            
+
             await unitOfWork.WorkOrders.Update(workOrder);
         }
-        
+
         return new GenericResponse(true, phase);
     }
 
@@ -124,57 +124,85 @@ public class WorkOrderPhaseService(
         // Get phase
         var phase = await unitOfWork.WorkOrders.Phases.Get(phaseId);
         if (phase == null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
-        
+
         // Validate phase has been started
         if (!phase.StartTime.HasValue)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseNotStarted"));
 
         var outStatus = await unitOfWork.Lifecycles.StatusRepository.Get(workOrderStatusId);
         if (outStatus == null)
         {
             logger.LogError("Status with id {workOrderStatusId} not found in WorkOrder lifecycle", workOrderStatusId);
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("StatusNotFound"));
         }
-        
+
         // Update phase
         phase.StatusId = outStatus.Id;
         phase.EndTime = DateTime.Now;
         await unitOfWork.WorkOrders.Phases.Update(phase);
-        
+
         // Delegate work order status update to WorkOrderService
         var updateResult = await workOrderService.UpdateStatusAfterPhaseEnd(
-            phase.WorkOrderId, 
-            phaseId, 
+            phase.WorkOrderId,
+            phaseId,
             workOrderStatusId);
-        
+
         if (!updateResult.Result)
             return updateResult;
-        
+
         return new GenericResponse(true);
     }
-    
+
+    public async Task<GenericResponse> EndExternalPhase(Guid phaseId)
+    {
+        // Get phase
+        var phase = await unitOfWork.WorkOrders.Phases.Get(phaseId);
+        if (phase == null)
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
+
+        // Resolve "Tancada" status
+        var closedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+            StatusConstants.Lifecycles.WorkOrder,
+            StatusConstants.Statuses.Tancada);
+        if (closedStatus == null)
+        {
+            logger.LogError("Closed status '{Status}' not found in WorkOrder lifecycle", StatusConstants.Statuses.Tancada);
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Tancada));
+        }
+
+        // Close the phase
+        phase.StatusId = closedStatus.Id;
+        phase.EndTime = DateTime.Now;
+        await unitOfWork.WorkOrders.Phases.Update(phase);
+
+        // Delegate WorkOrder status update
+        return await workOrderService.UpdateExternalWorkOrderStatus(phase.WorkOrderId, phaseId);
+    }
+
     #endregion
 
     #region Special Queries
-    
+
     public async Task<IEnumerable<object>> GetExternalPhases(DateTime startTime, DateTime endTime)
     {
         // Get the WorkOrder lifecycle
         var lifecycle = await unitOfWork.Lifecycles.GetByName(StatusConstants.Lifecycles.WorkOrder);
-        if (lifecycle == null) 
+        if (lifecycle == null)
         {
             return [];
         }
 
         // Find all statuses in this lifecycle that have the 'ExternalService' tag
         var validStatuses = await unitOfWork.LifecycleTags.GetStatusesByTagName(
-            StatusConstants.LifecycleTags.ExternalService, 
+            StatusConstants.LifecycleTags.ExternalService,
             lifecycle.Id);
-        
+
         if (validStatuses == null || validStatuses.Count == 0)
         {
             return [];
@@ -221,7 +249,7 @@ public class WorkOrderPhaseService(
             WorkOrderCode = wo.Code,
             CustomerName = wo.Reference?.Customer?.ComercialName ?? string.Empty,
             SalesReferenceId = wo.ReferenceId,
-            SalesReferenceDisplay = wo.Reference != null 
+            SalesReferenceDisplay = wo.Reference != null
                 ? $"{wo.Reference.Code} - {wo.Reference.Description}"
                 : string.Empty,
             PlannedQuantity = wo.PlannedQuantity,
@@ -241,7 +269,7 @@ public class WorkOrderPhaseService(
 
         // Use optimized repository method with efficient EF Core query
         var workOrders = await unitOfWork.WorkOrders.GetWorkOrdersByLoadedPhaseIds(phaseIds);
-        
+
         if (!workOrders.Any())
             return [];
 
@@ -295,7 +323,7 @@ public class WorkOrderPhaseService(
                 WorkOrderCode = wo.Code,
                 CustomerName = wo.Reference?.Customer?.ComercialName ?? string.Empty,
                 SalesReferenceId = wo.ReferenceId,
-                SalesReferenceDisplay = wo.Reference != null 
+                SalesReferenceDisplay = wo.Reference != null
                     ? $"{wo.Reference.Code} - {wo.Reference.Description}"
                     : string.Empty,
                 PlannedQuantity = wo.PlannedQuantity,
@@ -314,7 +342,7 @@ public class WorkOrderPhaseService(
     public async Task<IEnumerable<WorkOrderPhaseDetailedDto>> GetWorkOrderPhasesDetailed(Guid workOrderId)
     {
         var workOrder = await unitOfWork.WorkOrders.GetWorkOrderWithPhasesDetailed(workOrderId);
-        
+
         if (workOrder == null || workOrder.Phases == null)
             return [];
 
@@ -326,10 +354,10 @@ public class WorkOrderPhaseService(
         {
             var customerName = workOrder.Reference.Customer?.ComercialName ?? string.Empty;
             var referenceCode = workOrder.Reference.Code ?? string.Empty;
-            var version = !string.IsNullOrEmpty(workOrder.Reference.Version) 
-                ? $" v{workOrder.Reference.Version}" 
+            var version = !string.IsNullOrEmpty(workOrder.Reference.Version)
+                ? $" v{workOrder.Reference.Version}"
                 : string.Empty;
-            
+
             salesReferenceDisplay = $"{customerName} - {referenceCode}{version}";
         }
 
@@ -384,7 +412,12 @@ public class WorkOrderPhaseService(
                         Id = bom.Id,
                         ReferenceCode = bom.Reference?.Code ?? string.Empty,
                         ReferenceDescription = bom.Reference?.Description ?? string.Empty,
-                        Quantity = bom.Quantity
+                        Quantity = bom.Quantity,
+                        Width = bom.Width,
+                        Length = bom.Length,
+                        Height = bom.Height,
+                        Diameter = bom.Diameter,
+                        Thickness = bom.Thickness
                     });
                 }
             }
@@ -394,7 +427,7 @@ public class WorkOrderPhaseService(
 
         return results;
     }
-    
+
     public async Task<NextPhaseInfoDto?> GetNextPhaseForWorkcenter(Guid workcenterId, Guid currentPhaseId)
     {
         // Get the workcenter to find its type
@@ -419,7 +452,7 @@ public class WorkOrderPhaseService(
         // - Not external work
         // - Not completed (EndTime is null)
         var nextPhase = unitOfWork.WorkOrders.Phases
-            .Find(p => 
+            .Find(p =>
                 p.WorkOrderId == workOrderId &&
                 p.WorkcenterTypeId == workcenterTypeId &&
                 !p.Disabled &&
@@ -461,11 +494,11 @@ public class WorkOrderPhaseService(
             Details = details
         };
     }
-    
+
     #endregion
 
     #region PhaseDetail CRUD
-    
+
     public async Task<WorkOrderPhaseDetail?> GetDetailById(Guid id)
     {
         return await unitOfWork.WorkOrders.Phases.Details.Get(id);
@@ -476,7 +509,7 @@ public class WorkOrderPhaseService(
         // Check if detail already exists
         var exists = unitOfWork.WorkOrders.Phases.Details.Find(d => d.Id == detail.Id).Any();
         if (exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailAlreadyExists"));
 
         // Create detail
@@ -489,7 +522,7 @@ public class WorkOrderPhaseService(
         // Check if detail exists
         var exists = await unitOfWork.WorkOrders.Phases.Details.Exists(detail.Id);
         if (!exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailNotFound"));
 
         // Update detail
@@ -501,17 +534,17 @@ public class WorkOrderPhaseService(
     {
         var entity = unitOfWork.WorkOrders.Phases.Details.Find(d => d.Id == id).FirstOrDefault();
         if (entity is null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailNotFound"));
 
         await unitOfWork.WorkOrders.Phases.Details.Remove(entity);
         return new GenericResponse(true, entity);
     }
-    
+
     #endregion
 
     #region BillOfMaterials CRUD
-    
+
     public async Task<WorkOrderPhaseBillOfMaterials?> GetBillOfMaterialsById(Guid id)
     {
         return await unitOfWork.WorkOrders.Phases.BillOfMaterials.Get(id);
@@ -522,7 +555,7 @@ public class WorkOrderPhaseService(
         // Check if item already exists
         var exists = unitOfWork.WorkOrders.Phases.BillOfMaterials.Find(b => b.Id == item.Id).Any();
         if (exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailAlreadyExists"));
 
         // Create item
@@ -535,7 +568,7 @@ public class WorkOrderPhaseService(
         // Check if item exists
         var exists = await unitOfWork.WorkOrders.Phases.BillOfMaterials.Exists(item.Id);
         if (!exists)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailNotFound"));
 
         // Update item
@@ -547,13 +580,13 @@ public class WorkOrderPhaseService(
     {
         var entity = unitOfWork.WorkOrders.Phases.BillOfMaterials.Find(b => b.Id == id).FirstOrDefault();
         if (entity is null)
-            return new GenericResponse(false, 
+            return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailNotFound"));
 
         await unitOfWork.WorkOrders.Phases.BillOfMaterials.Remove(entity);
         return new GenericResponse(true, entity);
     }
-    
+
     #endregion
 
     #region Quantity Validation

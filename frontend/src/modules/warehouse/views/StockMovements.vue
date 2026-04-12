@@ -8,11 +8,8 @@
       sortField="movementDate"
       :sortOrder="1"
       :value="stockMovementStore.stockMovements"
-      paginator
+      :paginator="(stockMovementStore.stockMovements?.length ?? 0) > 20"
       :rows="20"
-      :rowsPerPageOptions="[20, 50]"
-      paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-      currentPageReportTemplate="{first} a {last} de {totalRecords} entrades"
     >
       <template #header>
         <div
@@ -51,16 +48,21 @@
           </div>
         </div>
       </template>
-      <Column header="Data" field="movementDate" sortable style="width: 15%">
+      <Column header="Data" field="movementDate" sortable style="width: 10%">
         <template #body="slotProps">
           {{ formatDateTime(slotProps.data.movementDate) }}
         </template>
       </Column>
-      <Column header="Referència" style="width: 20%">
+      <Column header="Referència" style="width: 15%">
         <template #body="slotProps">
           {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
         </template></Column
       >
+      <Column header="Ubicació" style="width: 10%">
+        <template #body="slotProps">
+          {{ slotProps.data.location?.name }}
+        </template>
+      </Column>
       <Column field="width" header="Ample (x) mm" style="width: 5%"></Column>
       <Column field="length" header="Llarg (y) mm" style="width: 5%"></Column>
       <Column field="height" header="Alt (z) mm" style="width: 5%"></Column>
@@ -72,10 +74,14 @@
         style="width: 25%"
       ></Column>
       <Column
-        field="movementType"
         header="Tipus de moviment"
+        field="movementType"
         style="width: 10%"
-      ></Column>
+      >
+        <template #body="slotProps">
+          <TagMovementType :movementType="slotProps.data.movementType" />
+        </template>
+      </Column>
       <Column field="quantity" header="Quantitat" style="width: 10%"></Column>
     </DataTable>
   </div>
@@ -83,6 +89,7 @@
 <script setup lang="ts">
 import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
+import TagMovementType from "../../../components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
 import { useStockMovementStore } from "../store/stockMovement";

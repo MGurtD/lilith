@@ -6,11 +6,13 @@ using Domain.Entities.Purchase;
 using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
+using Domain.Entities.Transport;
 using Infrastructure.Persistance.Repositories;
 using Infrastructure.Persistance.Repositories.Production;
 using Infrastructure.Persistance.Repositories.Purchase; // contains LifecycleRepository as per current project structure
 using Infrastructure.Persistance.Repositories.Sales;
 using Infrastructure.Persistance.Repositories.Warehouse;
+using Infrastructure.Persistance.Repositories.Transport;
 
 namespace Infrastructure.Persistance
 {
@@ -21,6 +23,7 @@ namespace Infrastructure.Persistance
         // Authentication
         public IRepository<Role, Guid> Roles { get; private set; } = new Repository<Role, Guid>(context);
         public IRepository<User, Guid> Users { get; private set; } = new Repository<User, Guid>(context);
+        public IRepository<ApiKey, Guid> ApiKeys { get; private set; } = new Repository<ApiKey, Guid>(context);
         public IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; private set; } = new Repository<UserRefreshToken, Guid>(context);
         public IRepository<UserFilter, Guid> UserFilters { get; private set; } = new Repository<UserFilter, Guid>(context);
         public IRepository<Profile, Guid> Profiles { get; private set; } = new Repository<Profile, Guid>(context);
@@ -48,6 +51,8 @@ namespace Infrastructure.Persistance
         public IExpenseRepository Expenses { get; private set; } = new ExpenseRepository(context);
         public IRepository<ReferenceFormat, Guid> ReferenceFormats { get; private set; } = new Repository<ReferenceFormat, Guid>(context);
         public IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; private set; } = new ContractReader<ConsolidatedExpense>(context);
+        public ITransportRateRepository TransportRates { get; private set; } = new TransportRateRepository(context);
+        public IRepository<TransportRateDetail, Guid> TransportRateDetails { get; private set; } = new Repository<TransportRateDetail, Guid>(context);
 
         // Sales
         public IRepository<CustomerType, Guid> CustomerTypes { get; private set; } = new Repository<CustomerType, Guid>(context);
@@ -89,7 +94,7 @@ namespace Infrastructure.Persistance
         public IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; private set; } = new Repository<WorkcenterLocation, Guid>(context);
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
-        public IRepository<StockMovement, Guid> StockMovements { get; private set; } = new Repository<StockMovement, Guid>(context);
+        public IStockMovementRepository StockMovements { get; private set; } = new StockMovementRepository(context);
 
         public async Task<int> CompleteAsync()
         {
