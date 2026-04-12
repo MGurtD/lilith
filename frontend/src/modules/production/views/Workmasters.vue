@@ -406,6 +406,9 @@ const onCopySubmit = async () => {
       });
       copyDialogVisible.value = false;
       await workmasterStore.fetchAll();
+      if (copyDestinyMode.value === "new") {
+        referenceStore.fetchReferencesByModule("sales");
+      }
     } else {
       toast.add({
         severity: copied.errors.length > 0 ? "warn" : "error",
