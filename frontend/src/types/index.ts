@@ -90,3 +90,20 @@ export interface File {
   updatedOn: string;
   disabled: boolean;
 }
+
+export interface AddressAutocompleteResult {
+  placeId: string;
+  formatted: string;
+  addressLine1: string;
+  addressLine2: string;
+  lat: number;
+  lon: number;
+  country: string;
+  countryCode: string;
+  state: string;
+  city: string;
+  postcode: string;
+  street: string;
+  housenumber: string;
+  resultType: string;
+}

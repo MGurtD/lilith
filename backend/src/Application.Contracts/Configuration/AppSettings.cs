@@ -7,6 +7,7 @@ public class AppSettings
     public FileManagmentSettings FileManagment { get; set; } = new();
     public VerifactuSettings? Verifactu { get; set; }
     public GeolocalizationSettings? Geolocalization { get; set; }
+    public GeoapifySettings? Geoapify { get; set; }
     public OpenTelemetrySettings? OpenTelemetry { get; set; }
     public void Validate()
     {
@@ -19,6 +20,8 @@ public class AppSettings
             OpenTelemetry?.Validate();
         if (Geolocalization != null)
             Geolocalization?.Validate();
+        if (Geoapify != null)
+            Geoapify?.Validate();
     }
 }
 
@@ -112,6 +115,19 @@ public class CertificateSettings
             throw new ArgumentException("Verifactu:Certificate:Path configuration key is required");
         if (string.IsNullOrWhiteSpace(Password))
             throw new ArgumentException("Verifactu:Certificate:Password configuration key is required");
+    }
+}
+
+public class GeoapifySettings
+{
+    public string ApiKey { get; set; } = string.Empty;
+    public string BaseUrl { get; set; } = "https://api.geoapify.com";
+    public int DefaultLimit { get; set; } = 20;
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            throw new ArgumentException("Geoapify:ApiKey configuration key is required");
     }
 }
 

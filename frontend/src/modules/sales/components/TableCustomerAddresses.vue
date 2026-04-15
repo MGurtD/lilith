@@ -83,6 +83,8 @@ const createButtonClick = () => {
     main: false,
     disabled: false,
     observations: "",
+    latitude: 0,
+    longitude: 0,
   } as CustomerAddress;
   formMode.value = FormActionMode.CREATE;
 };

@@ -27,54 +27,27 @@
       ></BaseInput>
     </section>
     <section class="three-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">País</label>
-        <Select
-          v-model="site.country"
-          :options="['Espanya']"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.country,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Província</label>
-        <Select
-          v-model="site.region"
-          :options="spanishGeo.regions"
-          optionValue="nm"
-          optionLabel="nm"
-          @change="onRegionChanged"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.region,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Municipi</label>
-        <Select
-          v-model="site.city"
-          :options="spanishGeo.getTownsByRegionName(site.region)"
-          optionValue="nm"
-          optionLabel="nm"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.city,
-          }"
+      <DropdownCountry
+        v-model="site.country"
+        label="País"
+        :class="{
+          'p-invalid': validation.errors.country,
+        }"
+      />
+      <div class="col-span-2">
+        <label class="block text-900 mb-2">{{ t("location.searchLabel") }}</label>
+        <AutocompleteLocation
+          v-model="locationSelection"
+          :label="''"
+          :placeholder="t('location.placeholder')"
+          :country-code="autocompleteCountryCode"
+          :disabled="!site.country"
+          @select="onLocationSelected"
+          @clear="onLocationCleared"
         />
       </div>
     </section>
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Codi Postal"
-        id="postalCode"
-        v-model="site.postalCode"
-        :class="{
-          'p-invalid': validation.errors.postalCode,
-        }"
-      ></BaseInput>
+    <section class="four-columns mb-2">
       <BaseInput
         label="Direcció"
         id="address"
@@ -84,6 +57,32 @@
         }"
       ></BaseInput>
       <BaseInput
+        label="Ciutat"
+        id="city"
+        v-model="site.city"
+        :class="{
+          'p-invalid': validation.errors.city,
+        }"
+      ></BaseInput>
+      <BaseInput
+        label="Província"
+        id="region"
+        v-model="site.region"
+        :class="{
+          'p-invalid': validation.errors.region,
+        }"
+      ></BaseInput>
+      <BaseInput
+        label="Codi Postal"
+        id="postalCode"
+        v-model="site.postalCode"
+        :class="{
+          'p-invalid': validation.errors.postalCode,
+        }"
+      ></BaseInput>
+    </section>
+    <section class="three-columns mb-2">
+      <BaseInput
         label="Telèfon"
         id="phone"
         v-model="site.phoneNumber"
@@ -91,8 +90,6 @@
           'p-invalid': validation.errors.phone,
         }"
       ></BaseInput>
-    </section>
-    <section class="three-columns mb-2">
       <BaseInput
         label="Email general"
         id="email"
@@ -103,22 +100,22 @@
       ></BaseInput>
       <BaseInput
         label="Email compres"
-        id="email"
+        id="emailPurchase"
         v-model="site.emailPurchase"
         :class="{
           'p-invalid': validation.errors.emailPurchase,
         }"
       ></BaseInput>
+    </section>
+    <section class="three-columns mb-2">
       <BaseInput
         label="Email ventes"
-        id="email"
+        id="emailSales"
         v-model="site.emailSales"
         :class="{
           'p-invalid': validation.errors.emailSales,
         }"
       ></BaseInput>
-    </section>
-    <section class="three-columns mb-2">
       <div>
         <label class="block text-900 mb-2">Empresa</label>
         <Select
@@ -145,12 +142,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
-import { useSpanishGeography } from "../../../store/geography";
+import AutocompleteLocation from "../../../components/AutocompleteLocation.vue";
+import DropdownCountry from "../../shared/components/DropdownCountry.vue";
 import { Site } from "../types";
-import { storeToRefs } from "pinia";
 import { usePlantModelStore } from "../store/plantmodel";
+import type { AddressAutocompleteResult } from "@/types";
 
 import * as Yup from "yup";
 import {
@@ -173,17 +172,22 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const spanishGeo = useSpanishGeography();
 const siteStore = usePlantModelStore();
-const { site } = storeToRefs(siteStore);
+const { t } = useI18n();
+
+const locationSelection = ref<AddressAutocompleteResult | null>(null);
+
+const autocompleteCountryCode = computed(() => {
+  return props.site?.country?.toLowerCase() ?? "es";
+});
 
 const schema = Yup.object().shape({
   name: Yup.string()
     .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .max(250, "El nom no pot superar els 250 caràcters"),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
+    .required("La descripció és obligatòria")
+    .max(250, "La descripció no pot superar els 250 caràcters"),
   email: Yup.string()
     .email("El correu electrònic no és vàlid")
     .required("El correu electrònic és obligatori"),
@@ -193,7 +197,7 @@ const schema = Yup.object().shape({
   emailPurchase: Yup.string()
     .email("El correu electrònic de compres no és vàlid")
     .required("El correu electrònic de compres és obligatori"),
-  enterpriseId: Yup.string().required("L'empresa es obligatoria"),
+  enterpriseId: Yup.string().required("L'empresa és obligatòria"),
 });
 const validation = ref({
   result: false,
@@ -205,8 +209,25 @@ const validate = () => {
   validation.value = formValidation.validate(props.site);
 };
 
-const onRegionChanged = () => {
-  (site.value as Site).address = "";
+const onLocationSelected = (result: AddressAutocompleteResult) => {
+  const s = props.site;
+  const addressParts = [result.street, result.housenumber].filter(Boolean);
+  s.address = addressParts.join(", ") || result.addressLine1;
+  s.city = result.city;
+  s.region = result.state;
+  s.postalCode = result.postcode;
+  s.latitude = result.lat;
+  s.longitude = result.lon;
+};
+
+const onLocationCleared = () => {
+  const s = props.site;
+  s.address = "";
+  s.city = "";
+  s.region = "";
+  s.postalCode = "";
+  s.latitude = 0;
+  s.longitude = 0;
 };
 
 const submitForm = async () => {
@@ -220,10 +241,16 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: "Formulari invàlid",
       detail: errors,
       life: 5000,
     });
   }
 };
 </script>
+
+<style scoped>
+.col-span-2 {
+  grid-column: span 2;
+}
+</style>

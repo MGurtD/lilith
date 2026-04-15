@@ -22,6 +22,8 @@ export interface Site {
   emailSales: string;
   emailPurchase: string;
   vatNumber: string;
+  latitude: number;
+  longitude: number;
   enterpriseId: string;
   disabled: boolean;
 }

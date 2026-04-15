@@ -1,6 +1,6 @@
 <template>
   <form v-if="supplier">
-    <section class="three-columns">
+    <section class="four-columns mb-2">
       <BaseInput
         name="comercialName"
         label="Nom Comercial"
@@ -26,57 +26,43 @@
           'p-invalid': validation.errors.vatNumber,
         }"
       ></BaseInput>
+      <div>
+        <label class="block text-900 mb-2">Tipus Proveïdor</label>
+        <Select
+          v-model="supplier.supplierTypeId"
+          :options="supplierStore.supplierTypes"
+          optionValue="id"
+          optionLabel="name"
+          class="w-full"
+          :class="{
+            'p-invalid': validation.errors.supplierTypeId,
+          }"
+        />
+      </div>
     </section>
 
     <section class="three-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">País</label>
-        <Select
-          v-model="supplier.country"
-          :options="['Espanya']"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.country,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Província</label>
-        <Select
-          v-model="supplier.region"
-          :options="spanishGeo.regions"
-          optionValue="nm"
-          optionLabel="nm"
-          @change="onRegionChanged"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.region,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Municipi</label>
-        <Select
-          v-model="supplier.city"
-          :options="spanishGeo.getTownsByRegionName(supplier.region)"
-          optionValue="nm"
-          optionLabel="nm"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.city,
-          }"
+      <DropdownCountry
+        v-model="supplier.country"
+        label="País"
+        :class="{
+          'p-invalid': validation.errors.country,
+        }"
+      />
+      <div class="col-span-2">
+        <label class="block text-900 mb-2">{{ t("location.searchLabel") }}</label>
+        <AutocompleteLocation
+          v-model="locationSelection"
+          :label="''"
+          :placeholder="t('location.placeholder')"
+          :country-code="autocompleteCountryCode"
+          :disabled="!supplier.country"
+          @select="onLocationSelected"
+          @clear="onLocationCleared"
         />
       </div>
     </section>
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Codi Postal"
-        id="postalCode"
-        v-model="supplier.postalCode"
-        :class="{
-          'p-invalid': validation.errors.postalCode,
-        }"
-      ></BaseInput>
+    <section class="four-columns mb-2">
       <BaseInput
         label="Direcció"
         id="address"
@@ -86,6 +72,33 @@
         }"
       ></BaseInput>
       <BaseInput
+        label="Ciutat"
+        id="city"
+        v-model="supplier.city"
+        :class="{
+          'p-invalid': validation.errors.city,
+        }"
+      ></BaseInput>
+      <BaseInput
+        label="Província"
+        id="region"
+        v-model="supplier.region"
+        :class="{
+          'p-invalid': validation.errors.region,
+        }"
+      ></BaseInput>
+      <BaseInput
+        label="Codi Postal"
+        id="postalCode"
+        v-model="supplier.postalCode"
+        :class="{
+          'p-invalid': validation.errors.postalCode,
+        }"
+      ></BaseInput>
+    </section>
+
+    <section class="three-columns mb-2">
+      <BaseInput
         label="Telèfon"
         id="phone"
         v-model="supplier.phone"
@@ -93,9 +106,6 @@
           'p-invalid': validation.errors.phone,
         }"
       ></BaseInput>
-    </section>
-
-    <section class="three-columns">
       <div>
         <label class="block text-900 mb-2">Forma de pagament</label>
         <Select
@@ -117,22 +127,9 @@
           'p-invalid': validation.errors.accountNumber,
         }"
       ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">Tipus Proveïdor</label>
-        <Select
-          v-model="supplier.supplierTypeId"
-          :options="supplierStore.supplierTypes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.supplierTypeId,
-          }"
-        />
-      </div>
     </section>
 
-    <div>
+    <div class="mt-2">
       <label class="block text-900 mb-2">Observacions</label>
       <Textarea v-model="supplier.observations" class="w-full" />
     </div>
@@ -149,11 +146,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import BaseInput from "../../../components/BaseInput.vue";
+import AutocompleteLocation from "../../../components/AutocompleteLocation.vue";
+import DropdownCountry from "../../shared/components/DropdownCountry.vue";
 import { useSuppliersStore } from "../store/suppliers";
-import { useSpanishGeography } from "../../../store/geography";
-import { storeToRefs } from "pinia";
 import { Supplier } from "../types";
+import type { AddressAutocompleteResult } from "@/types";
 import * as Yup from "yup";
 import {
   FormValidation,
@@ -162,15 +162,24 @@ import {
 import { useToast } from "primevue/usetoast";
 import { usePaymentMethodStore } from "../../shared/store/paymentMethod";
 
+const props = defineProps<{
+  supplier: Supplier;
+}>();
+
 const emit = defineEmits<{
   (e: "submit", supplier: Supplier): void;
 }>();
 
-const spanishGeo = useSpanishGeography();
 const supplierStore = useSuppliersStore();
 const paymentMethodStore = usePaymentMethodStore();
-const { supplier } = storeToRefs(supplierStore);
 const toast = useToast();
+const { t } = useI18n();
+
+const locationSelection = ref<AddressAutocompleteResult | null>(null);
+
+const autocompleteCountryCode = computed(() => {
+  return props.supplier?.country?.toLowerCase() ?? "es";
+});
 
 onMounted(async () => {
   await paymentMethodStore.fetchAll();
@@ -179,40 +188,57 @@ onMounted(async () => {
 const schema = Yup.object().shape({
   comercialName: Yup.string()
     .required("El nom comercial és obligatori")
-    .max(250, "El nom comercial no pot superar els 250 carácters"),
+    .max(250, "El nom comercial no pot superar els 250 caràcters"),
   vatNumber: Yup.string()
     .required("El CIF és obligatori")
-    .max(15, "El CIF no pot superar els 15 carácters"),
+    .max(15, "El CIF no pot superar els 15 caràcters"),
   taxName: Yup.string().required("El nom fiscal és obligatori"),
-  region: Yup.string().required("La província és obligatoria"),
+  region: Yup.string().required("La província és obligatòria"),
   city: Yup.string().required("El municipi és obligatori"),
   postalCode: Yup.string().required("El codi postal és obligatori"),
-  address: Yup.string().required("La direcció és obligatoria"),
+  address: Yup.string().required("La direcció és obligatòria"),
   phone: Yup.string().required("El telèfon és obligatori"),
   accountNumber: Yup.string()
     .required("El número de compte és obligatori")
     .max(35, "El número de compte no pot superar el 35 dígits"),
   supplierTypeId: Yup.string().required("El tipus de proveïdor és obligatori"),
-  paymentMethodId: Yup.string().required("La forma de pagament és obligatoria"),
+  paymentMethodId: Yup.string().required("La forma de pagament és obligatòria"),
 });
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
-const onRegionChanged = () => {
-  (supplier.value as Supplier).address = "";
-};
-
 const validate = () => {
   const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(supplier.value);
+  validation.value = formValidation.validate(props.supplier);
+};
+
+const onLocationSelected = (result: AddressAutocompleteResult) => {
+  const s = props.supplier;
+  const addressParts = [result.street, result.housenumber].filter(Boolean);
+  s.address = addressParts.join(", ") || result.addressLine1;
+  s.city = result.city;
+  s.region = result.state;
+  s.postalCode = result.postcode;
+  s.latitude = result.lat;
+  s.longitude = result.lon;
+};
+
+const onLocationCleared = () => {
+  const s = props.supplier;
+  s.address = "";
+  s.city = "";
+  s.region = "";
+  s.postalCode = "";
+  s.latitude = 0;
+  s.longitude = 0;
 };
 
 const submitForm = async () => {
   validate();
   if (validation.value.result) {
-    emit("submit", supplier.value as Supplier);
+    emit("submit", props.supplier);
   } else {
     let errors = "";
     Object.entries(validation.value.errors).forEach((e) => {
@@ -220,10 +246,16 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: "Formulari invàlid",
       detail: errors,
       life: 5000,
     });
   }
 };
 </script>
+
+<style scoped>
+.col-span-2 {
+  grid-column: span 2;
+}
+</style>
