@@ -20,7 +20,7 @@
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <FormSupplier @submit="submitForm" />
+        <FormSupplier v-if="supplier" :supplier="supplier" @submit="submitForm" />
       </TabPanel>
       <TabPanel value="1" v-if="formMode === FormActionMode.EDIT">
         <TableSupplierReferences

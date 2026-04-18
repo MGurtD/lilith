@@ -31,6 +31,8 @@ export interface Supplier {
   paymentMethodId: string;
   contacts: Array<SupplierContact>;
   distanceFromSite?: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface SupplierContact {

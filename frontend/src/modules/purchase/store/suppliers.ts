@@ -43,12 +43,14 @@ export const useSuppliersStore = defineStore({
         address: "",
         vatNumber: "",
         city: "",
-        country: "Espanya",
+        country: "ES",
         disabled: false,
         observations: "",
         phone: "",
         postalCode: "",
         region: "",
+        latitude: 0,
+        longitude: 0,
       } as Supplier;
     },
     async fetchSuppliers() {

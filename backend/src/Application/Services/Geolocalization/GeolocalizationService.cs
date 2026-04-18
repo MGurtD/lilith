@@ -114,7 +114,7 @@ public class GeolocalizationService(
                         if (summary.TryGetProperty("distance", out var distanceMeters))
                         {
                             // distance comes in meters, we return km
-                            var distanceKm = distanceMeters.GetDecimal() / 1000m;
+                            var distanceKm = Math.Round(distanceMeters.GetDecimal() / 1000m, 2);
                             logger.LogInformation("GetDistanceAsync Output -> Distance: {DistanceKm} km", distanceKm);
                             return distanceKm;
                         }
