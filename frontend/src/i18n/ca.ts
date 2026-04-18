@@ -419,6 +419,10 @@ const ca = {
     label: "Ubicació",
     placeholder: "Escriu una adreça, ciutat o lloc",
     searchLabel: "Cerca ubicació",
+    coordinatesSection: "Coordenades i distància",
+    latitude: "Latitud",
+    longitude: "Longitud",
+    distanceFromSite: "Distància des de la seu (km)",
     resultTypes: {
       street: "Carrer",
       city: "Ciutat",

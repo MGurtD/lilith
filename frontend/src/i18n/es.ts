@@ -420,6 +420,10 @@ const es = {
     label: "Ubicación",
     placeholder: "Escribe una dirección, ciudad o lugar",
     searchLabel: "Buscar ubicación",
+    coordinatesSection: "Coordenadas y distancia",
+    latitude: "Latitud",
+    longitude: "Longitud",
+    distanceFromSite: "Distancia desde la sede (km)",
     resultTypes: {
       street: "Calle",
       city: "Ciudad",

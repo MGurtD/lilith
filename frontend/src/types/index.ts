@@ -107,3 +107,14 @@ export interface AddressAutocompleteResult {
   housenumber: string;
   resultType: string;
 }
+
+export interface LocationData {
+  address: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  distanceFromSite?: number;
+}

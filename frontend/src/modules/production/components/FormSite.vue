@@ -26,61 +26,10 @@
         }"
       ></BaseInput>
     </section>
-    <section class="three-columns mb-2">
-      <DropdownCountry
-        v-model="site.country"
-        label="País"
-        :class="{
-          'p-invalid': validation.errors.country,
-        }"
-      />
-      <div class="col-span-2">
-        <label class="block text-900 mb-2">{{ t("location.searchLabel") }}</label>
-        <AutocompleteLocation
-          v-model="locationSelection"
-          :label="''"
-          :placeholder="t('location.placeholder')"
-          :country-code="autocompleteCountryCode"
-          :disabled="!site.country"
-          @select="onLocationSelected"
-          @clear="onLocationCleared"
-        />
-      </div>
-    </section>
-    <section class="four-columns mb-2">
-      <BaseInput
-        label="Direcció"
-        id="address"
-        v-model="site.address"
-        :class="{
-          'p-invalid': validation.errors.address,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Ciutat"
-        id="city"
-        v-model="site.city"
-        :class="{
-          'p-invalid': validation.errors.city,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Província"
-        id="region"
-        v-model="site.region"
-        :class="{
-          'p-invalid': validation.errors.region,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Codi Postal"
-        id="postalCode"
-        v-model="site.postalCode"
-        :class="{
-          'p-invalid': validation.errors.postalCode,
-        }"
-      ></BaseInput>
-    </section>
+    <LocationFields
+      :model-value="site"
+      :validation-errors="validation.errors"
+    />
     <section class="three-columns mb-2">
       <BaseInput
         label="Telèfon"
@@ -142,14 +91,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
-import AutocompleteLocation from "../../../components/AutocompleteLocation.vue";
-import DropdownCountry from "../../shared/components/DropdownCountry.vue";
+import LocationFields from "@/components/LocationFields.vue";
 import { Site } from "../types";
 import { usePlantModelStore } from "../store/plantmodel";
-import type { AddressAutocompleteResult } from "@/types";
 
 import * as Yup from "yup";
 import {
@@ -173,13 +119,6 @@ onMounted(async () => {
 
 const toast = useToast();
 const siteStore = usePlantModelStore();
-const { t } = useI18n();
-
-const locationSelection = ref<AddressAutocompleteResult | null>(null);
-
-const autocompleteCountryCode = computed(() => {
-  return props.site?.country?.toLowerCase() ?? "es";
-});
 
 const schema = Yup.object().shape({
   name: Yup.string()
@@ -209,27 +148,6 @@ const validate = () => {
   validation.value = formValidation.validate(props.site);
 };
 
-const onLocationSelected = (result: AddressAutocompleteResult) => {
-  const s = props.site;
-  const addressParts = [result.street, result.housenumber].filter(Boolean);
-  s.address = addressParts.join(", ") || result.addressLine1;
-  s.city = result.city;
-  s.region = result.state;
-  s.postalCode = result.postcode;
-  s.latitude = result.lat;
-  s.longitude = result.lon;
-};
-
-const onLocationCleared = () => {
-  const s = props.site;
-  s.address = "";
-  s.city = "";
-  s.region = "";
-  s.postalCode = "";
-  s.latitude = 0;
-  s.longitude = 0;
-};
-
 const submitForm = async () => {
   validate();
   if (validation.value.result) {
@@ -249,8 +167,3 @@ const submitForm = async () => {
 };
 </script>
 
-<style scoped>
-.col-span-2 {
-  grid-column: span 2;
-}
-</style>

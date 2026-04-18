@@ -419,6 +419,10 @@ const en = {
     label: "Location",
     placeholder: "Type an address, city or place",
     searchLabel: "Search location",
+    coordinatesSection: "Coordinates and distance",
+    latitude: "Latitude",
+    longitude: "Longitude",
+    distanceFromSite: "Distance from site (km)",
     resultTypes: {
       street: "Street",
       city: "City",
