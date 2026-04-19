@@ -15,7 +15,7 @@ namespace Application.Contracts
         IEnumerable<PurchaseInvoice> GetBetweenDatesAndSupplier(DateTime startDate, DateTime endDate, Guid supplierId);
         IEnumerable<PurchaseInvoice> GetBetweenDatesExcludingStatusAndSupplier(DateTime startDate, DateTime endDate, Guid excludeStatusId, Guid supplierId);
         Task<IEnumerable<PurchaseInvoice>> GetByExercise(Guid exerciseId);
-        IEnumerable<PurchaseInvoice> GetFiltered(DateTime startDate, DateTime endDate, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? paymentMethodId);
+        IEnumerable<PurchaseInvoice> GetFiltered(DateTime startDate, DateTime endDate, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? paymentMethodId, DateTime? dueDateStartTime, DateTime? dueDateEndTime);
 
         Task<GenericResponse> RecreateDueDates(PurchaseInvoice purchaseInvoice);
         Task<GenericResponse> ChangeStatus(ChangeStatusRequest changeStatusOfPurchaseInvoiceRequest);

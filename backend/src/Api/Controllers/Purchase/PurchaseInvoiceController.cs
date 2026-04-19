@@ -19,13 +19,13 @@ namespace Api.Controllers.Purchase
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPurchaseInvoices(DateTime startTime, DateTime endTime, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? exerciceId, Guid? paymentMethodId)
+        public async Task<IActionResult> GetPurchaseInvoices(DateTime startTime, DateTime endTime, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? exerciceId, Guid? paymentMethodId, DateTime? dueDateStartTime, DateTime? dueDateEndTime)
         {
             IEnumerable<PurchaseInvoice> purchaseInvoices = [];
             if (exerciceId.HasValue)
                 purchaseInvoices = await service.GetByExercise(exerciceId.Value);
             else
-                purchaseInvoices = service.GetFiltered(startTime, endTime, supplierId, statusId, excludeStatusId, paymentMethodId);
+                purchaseInvoices = service.GetFiltered(startTime, endTime, supplierId, statusId, excludeStatusId, paymentMethodId, dueDateStartTime, dueDateEndTime);
 
             if (purchaseInvoices != null) return Ok(purchaseInvoices.OrderByDescending(e => e.Number));
             else return BadRequest();
