@@ -63,6 +63,8 @@ export const usePurchaseInvoiceStore = defineStore({
       excludeStatusId?: string,
       supplierId?: string,
       paymentMethodId?: string,
+      dueDateStartTime?: string,
+      dueDateEndTime?: string,
     ) {
       this.purchaseInvoices =
         await PurchaseService.PurchaseInvoice.GetFiltered(
@@ -72,6 +74,8 @@ export const usePurchaseInvoiceStore = defineStore({
           statusId,
           excludeStatusId,
           paymentMethodId,
+          dueDateStartTime,
+          dueDateEndTime,
         );
     },
     async Update(purchaseInvoice: PurchaseInvoice) {

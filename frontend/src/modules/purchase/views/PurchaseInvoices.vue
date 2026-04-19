@@ -46,6 +46,16 @@
             showClear
           />
         </div>
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Venciment</label>
+          <DatePicker
+            v-model="filter.dueDates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            placeholder="Seleccioni un període"
+            showIcon
+          />
+        </div>
         <div class="filter-toolbar__actions">
           <Button
             :icon="PrimeIcons.FILTER"
@@ -128,7 +138,7 @@ import { useStore } from "../../../store";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
   formatDateForQueryParameter,
@@ -150,6 +160,7 @@ const purchaseInvoiceStore = usePurchaseInvoiceStore();
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
+  dueDates: undefined as Array<Date> | undefined,
   supplierId: undefined as string | undefined,
   paymentMethodId: undefined as string | undefined,
 });
@@ -170,9 +181,6 @@ onMounted(async () => {
 
   await filterInvoices();
 });
-onUnmounted(() => {
-  userFilterStore.addFilter("PurchaseInvoices", "", filter.value);
-});
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("PurchaseInvoices", "");
@@ -183,6 +191,12 @@ const getUserFilter = () => {
       filter.value.dates = [
         new Date(userFilter.dates[0]),
         new Date(userFilter.dates[1]),
+      ];
+    }
+    if (userFilter.dueDates) {
+      filter.value.dueDates = [
+        new Date(userFilter.dueDates[0]),
+        new Date(userFilter.dueDates[1]),
       ];
     }
   }
@@ -204,16 +218,32 @@ const setCurrentYear = () => {
 
 const cleanFilter = () => {
   filter.value.dates = undefined;
+  filter.value.dueDates = undefined;
   filter.value.supplierId = undefined;
   filter.value.paymentMethodId = undefined;
   setCurrentYear();
 };
 
-const filterLocalStorageKey = "temges.purchaseinvoice.filter";
 const filterInvoices = async () => {
-  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
     const startTime = formatDateForQueryParameter(filter.value.dates[0]);
     const endTime = formatDateForQueryParameter(filter.value.dates[1]);
+    const dueDateStartTime =
+      filter.value.dueDates &&
+      filter.value.dueDates.length === 2 &&
+      filter.value.dueDates[1]
+        ? formatDateForQueryParameter(filter.value.dueDates[0])
+        : undefined;
+    const dueDateEndTime =
+      filter.value.dueDates &&
+      filter.value.dueDates.length === 2 &&
+      filter.value.dueDates[1]
+        ? formatDateForQueryParameter(filter.value.dueDates[1])
+        : undefined;
 
     await purchaseInvoiceStore.GetFiltered(
       startTime,
@@ -222,9 +252,11 @@ const filterInvoices = async () => {
       undefined,
       filter.value.supplierId,
       filter.value.paymentMethodId,
+      dueDateStartTime,
+      dueDateEndTime,
     );
 
-    localStorage.setItem(filterLocalStorageKey, JSON.stringify(filter.value));
+    userFilterStore.addFilter("PurchaseInvoices", "", filter.value);
   } else {
     toast.add({
       severity: "info",
@@ -255,11 +287,13 @@ const getLastDueDate = (invoice: PurchaseInvoice): string => {
   } else if (invoice.purchaseInvoiceDueDates.length === 0) {
     return formatDate(invoice.purchaseInvoiceDate);
   } else {
-    return formatDate(
-      invoice.purchaseInvoiceDueDates[
-        invoice.purchaseInvoiceDueDates.length - 1
-      ].dueDate,
+    const sortedDueDates = [...invoice.purchaseInvoiceDueDates].sort(
+      (left, right) =>
+        new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
     );
+    const lastDueDate = sortedDueDates[sortedDueDates.length - 1];
+
+    return formatDate(lastDueDate.dueDate);
   }
 };
 

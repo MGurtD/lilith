@@ -17,7 +17,9 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     supplierId?: string,
     statusId?: string,
     excludeStatusId?: string,
-    paymentMethodId?: string
+    paymentMethodId?: string,
+    dueDateStartTime?: string,
+    dueDateEndTime?: string,
   ): Promise<Array<PurchaseInvoice> | undefined> {
     const params = new URLSearchParams();
     params.append("startTime", startTime);
@@ -26,6 +28,8 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     if (statusId) params.append("statusId", statusId);
     if (excludeStatusId) params.append("excludeStatusId", excludeStatusId);
     if (paymentMethodId) params.append("paymentMethodId", paymentMethodId);
+    if (dueDateStartTime) params.append("dueDateStartTime", dueDateStartTime);
+    if (dueDateEndTime) params.append("dueDateEndTime", dueDateEndTime);
 
     const endpoint = `${this.resource}?${params.toString()}`;
     const response = await apiClient.get(endpoint);
@@ -54,7 +58,13 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     endTime: string,
     excludeStatusId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    return this.GetFiltered(startTime, endTime, undefined, undefined, excludeStatusId);
+    return this.GetFiltered(
+      startTime,
+      endTime,
+      undefined,
+      undefined,
+      excludeStatusId,
+    );
   }
 
   async GetBetweenDatesAndSupplier(
@@ -71,7 +81,13 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     excludeStatusId: string,
     supplierId: string
   ): Promise<Array<PurchaseInvoice> | undefined> {
-    return this.GetFiltered(startTime, endTime, supplierId, undefined, excludeStatusId);
+    return this.GetFiltered(
+      startTime,
+      endTime,
+      supplierId,
+      undefined,
+      excludeStatusId,
+    );
   }
 
   async GetDueDates(
@@ -91,7 +107,6 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
       `${this.resource}/RecreateDueDates`,
       purchaseInvoice
     );
-    2;
     return response.status === 200;
   }
 
