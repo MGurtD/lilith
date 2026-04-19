@@ -6,7 +6,7 @@
       <Button label="Guardar" size="small" @click="submitForm" />
       <br />
     </div>
-    <section class="five-columns">
+    <section class="six-columns">
       <div>
         <DropdownReference
           label="Referència"
@@ -20,6 +20,14 @@
           label="Quantitat Base"
           :decimals="2"
           v-model="workmaster.baseQuantity"
+        />
+      </div>
+      <div>
+        <BaseInput
+          :type="BaseInputType.NUMERIC"
+          label="Volum mm3"
+          :decimals="2"
+          v-model="workmaster.volume"
         />
       </div>
       <div>

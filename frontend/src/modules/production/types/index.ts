@@ -132,6 +132,7 @@ export interface WorkMaster {
   externalCost: number;
   materialCost: number;
   totalWeight: number;
+  volume: number;
   mode: number;
   disabled: boolean;
   phases: Array<WorkMasterPhase>;

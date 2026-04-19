@@ -135,19 +135,29 @@ namespace Application.Services.Sales
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
                 // Recollir mètriques
-                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
+                /*var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
                 
                 // Afegir pes a la línia
                 if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
                 {
                     detail.DetailWeight = productionMetrics.TotalWeight;
+                }*/
+                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                var netWeight = decimal.Zero;
+                if(referenceTypeId != null)
+                {
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
+                    if (referenceType != null)
+                    {
+                        netWeight = referenceType.Density * (workmaster.volume/1000);
+                    }
                 }
-
+                detail.DetailWeight = netWeight;
                 // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {
-                    budget.TotalWeight += detail.DetailWeight;
+                    budget.TotalWeight += netWeight;
                     await unitOfWork.Budgets.Update(budget);
                 }
             }
@@ -161,14 +171,17 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
-                // Recollir mètriques
-                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
-                
-                // Afegir pes a la línia
-                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                var netWeight = decimal.Zero;
+                if(referenceTypeId != null)
                 {
-                    detail.DetailWeight = productionMetrics.TotalWeight;
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
+                    if (referenceType != null)
+                    {
+                        netWeight = referenceType.Density * (workmaster.volume/1000);
+                    }
                 }
+                detail.DetailWeight = netWeight;
 
                 // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
@@ -190,14 +203,17 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
-                // Recollir mètriques
-                var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
-                
-                // Afegir pes a la línia
-                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                var netWeight = decimal.Zero;
+                if(referenceTypeId != null)
                 {
-                    detail.DetailWeight = productionMetrics.TotalWeight;
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
+                    if (referenceType != null)
+                    {
+                        netWeight = referenceType.Density * (workmaster.volume/1000);
+                    }
                 }
+                detail.DetailWeight = netWeight;
 
                 // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
