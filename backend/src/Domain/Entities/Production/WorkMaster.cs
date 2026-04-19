@@ -12,7 +12,8 @@ public class WorkMaster : Entity
     public decimal externalCost { get; set; } = decimal.Zero;
     public decimal materialCost { get; set; } = decimal.Zero;
     public decimal totalWeight { get; set; } = decimal.Zero;
-    public int Mode { get; set; } //1 - prototip, 2 - sèrie curta, 3 - sèrie llarga
+    public decimal volume { get; set; } = decimal.Zero;
+    public int Mode { get; set; } //1 - prototip, 2 - srie curta, 3 - srie llarga
 
     public ICollection<WorkMasterPhase> Phases { get; set; } = new List<WorkMasterPhase>();
 }

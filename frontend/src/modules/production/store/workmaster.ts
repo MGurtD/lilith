@@ -43,6 +43,7 @@ export const useWorkMasterStore = defineStore("workmaster", {
         materialCost: 0,
         operatorCost: 0,
         totalWeight: 0,
+        volume: 0,
         mode: 1,
         phases: [],
       } as WorkMaster;
@@ -79,14 +80,14 @@ export const useWorkMasterStore = defineStore("workmaster", {
     },
     async calculate(
       id: string,
-      quantity?: number
+      quantity?: number,
     ): Promise<GenericResponse<number>> {
       const result = await Services.WorkMaster.calculateCost(id, quantity);
       return result;
     },
     async getCosts(
       id: string,
-      quantity?: number
+      quantity?: number,
     ): Promise<GenericResponse<ProductionCosts>> {
       const result = await Services.WorkMaster.getCosts(id, quantity);
       return result;
@@ -142,11 +143,11 @@ export const useWorkMasterStore = defineStore("workmaster", {
     },
     async updatePhaseBomItem(
       id: string,
-      model: WorkMasterPhaseBillOfMaterials
+      model: WorkMasterPhaseBillOfMaterials,
     ) {
       const result = await Services.WorkMasterPhaseBillOfMaterials.update(
         id,
-        model
+        model,
       );
       if (result) await this.fetchPhaseById(model.workMasterPhaseId);
       return result;
