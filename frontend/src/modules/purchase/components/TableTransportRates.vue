@@ -39,6 +39,7 @@
       sortField="name"
       :sortOrder="1"
       :rowClass="(row: TransportRate) => row.id === transportRateStore.transportRate?.id ? 'selected-row' : ''"
+      class="clickable-rows"
       @row-click="onRateRowClick"
     >
       <template #header>
@@ -63,7 +64,7 @@
         <template #body="slotProps">
           <i
             :class="PrimeIcons.PENCIL"
-            class="grid_delete_column_button mr-2"
+            class="grid_copy_column_button mr-2"
             @click.stop="editRate(slotProps.data)"
           />
           <i
@@ -81,6 +82,7 @@
       tableStyle="min-width: 100%"
       :scroll-height="'calc(50vh - 100px)'"
       scrollable
+      class="clickable-rows"
       @row-click="onDetailRowClick"
     >
       <template #header>
@@ -124,7 +126,7 @@
         <template #body="slotProps">
           <i
             :class="PrimeIcons.PENCIL"
-            class="grid_delete_column_button mr-2"
+            class="grid_copy_column_button mr-2"
             @click.stop="editDetail(slotProps.data)"
           />
           <i
@@ -184,8 +186,16 @@ const editRate = (rate: TransportRate) => {
 
 const onRateRowClick = (row: DataTableRowClickEvent) => {
   const target = row.originalEvent.target as HTMLElement;
-  if (target?.className && typeof target.className === "string" && target.className.includes("grid_delete_column_button")) return;
-  transportRateStore.fetchTransportRateDetails(row.data as TransportRate);
+  if (
+    target?.className &&
+    typeof target.className === "string" &&
+    target.className.includes("grid_delete_column_button")
+  )
+    return;
+
+  const rate = row.data as TransportRate;
+  transportRateStore.fetchTransportRateDetails(rate);
+  editRate(rate);
 };
 
 const submitRateForm = async (rate: TransportRate) => {

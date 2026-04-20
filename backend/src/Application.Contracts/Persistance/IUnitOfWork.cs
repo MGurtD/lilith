@@ -1,4 +1,5 @@
 using Application.Contracts;
+using Application.Contracts.Persistance.Repositories.Purchase;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -46,7 +47,8 @@ namespace Application.Contracts
         IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; }
         ITransportRateRepository TransportRates { get; }
         IRepository<TransportRateDetail, Guid> TransportRateDetails { get; }
-
+        IPurchaseRateRepository PurchaseRates { get; }
+        IRepository<PurchaseRateDetail, Guid> PurchaseRateDetails { get; }
 
         // Sales
         IRepository<CustomerType, Guid> CustomerTypes { get; }
