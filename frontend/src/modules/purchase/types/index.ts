@@ -322,3 +322,31 @@ export interface TransportRateDetail {
   disabled: boolean;
 }
 
+export enum CalculationType {
+  Volume = 0,
+  Weight = 1,
+  Units = 2,
+}
+
+export interface PurchaseRate {
+  id: string;
+  name: string;
+  supplierId: string;
+  validFrom: any;
+  validTo: any;
+  disabled: boolean;
+  details: Array<PurchaseRateDetail>;
+}
+
+export interface PurchaseRateDetail {
+  id: string;
+  purchaseRateId: string;
+  referenceId: string;
+  reference?: Reference;
+  from: number;
+  to: number;
+  calculationType: CalculationType;
+  price: number;
+  disabled: boolean;
+}
+

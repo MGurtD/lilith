@@ -1,4 +1,5 @@
 using Application.Contracts;
+using Application.Contracts.Persistance.Repositories.Purchase;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -53,6 +54,8 @@ namespace Infrastructure.Persistance
         public IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; private set; } = new ContractReader<ConsolidatedExpense>(context);
         public ITransportRateRepository TransportRates { get; private set; } = new TransportRateRepository(context);
         public IRepository<TransportRateDetail, Guid> TransportRateDetails { get; private set; } = new Repository<TransportRateDetail, Guid>(context);
+        public IPurchaseRateRepository PurchaseRates { get; private set; } = new PurchaseRateRepository(context);
+        public IRepository<PurchaseRateDetail, Guid> PurchaseRateDetails { get; private set; } = new Repository<PurchaseRateDetail, Guid>(context);
 
         // Sales
         public IRepository<CustomerType, Guid> CustomerTypes { get; private set; } = new Repository<CustomerType, Guid>(context);
