@@ -57,12 +57,16 @@
   </section>
 
   <Panel
-    :header="t('location.coordinatesSection')"
+    :header="
+      showDistance
+        ? t('location.coordinatesSection')
+        : t('location.coordinatesSectionNoDistance')
+    "
     :toggleable="true"
     :collapsed="true"
     class="mt-2 mb-2"
   >
-    <section class="three-columns">
+    <section class="location-coordinates-grid">
       <div>
         <label class="block text-900 mb-2">{{ t("location.latitude") }}</label>
         <InputNumber
@@ -90,6 +94,17 @@
         id="location-distanceFromSite"
         :modelValue="model.distanceFromSite ?? null"
       ></BaseInput>
+      <div class="map-link-cell mb-2">
+        <Button
+          v-if="hasCoordinates"
+          :label="t('location.viewOnMap')"
+          icon="pi pi-map-marker"
+          severity="secondary"
+          text
+          size="small"
+          @click="openMap"
+        />
+      </div>
     </section>
   </Panel>
 </template>
@@ -124,6 +139,18 @@ const autocompleteCountryCode = computed(() => {
   return model.value?.country?.toLowerCase() ?? "es";
 });
 
+const hasCoordinates = computed(() => {
+  return model.value.latitude !== 0 || model.value.longitude !== 0;
+});
+
+const mapUrl = computed(() => {
+  return `https://www.google.com/maps?q=${model.value.latitude},${model.value.longitude}`;
+});
+
+function openMap() {
+  window.open(mapUrl.value, "_blank", "noopener,noreferrer");
+}
+
 function onLocationSelected(result: AddressAutocompleteResult) {
   const m = model.value;
   const addressParts = [result.street, result.housenumber].filter(Boolean);
@@ -149,5 +176,28 @@ function onLocationCleared() {
 <style scoped>
 .col-span-2 {
   grid-column: span 2;
+}
+
+.location-coordinates-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.map-link-cell {
+  display: flex;
+  align-self: end;
+}
+
+@media (max-width: 960px) {
+  .location-coordinates-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .location-coordinates-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

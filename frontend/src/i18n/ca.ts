@@ -420,6 +420,8 @@ const ca = {
     placeholder: "Escriu una adreça, ciutat o lloc",
     searchLabel: "Cerca ubicació",
     coordinatesSection: "Coordenades i distància",
+    coordinatesSectionNoDistance: "Coordenades",
+    viewOnMap: "Veure al mapa",
     latitude: "Latitud",
     longitude: "Longitud",
     distanceFromSite: "Distància des de la seu (km)",

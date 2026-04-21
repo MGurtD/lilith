@@ -421,6 +421,8 @@ const es = {
     placeholder: "Escribe una dirección, ciudad o lugar",
     searchLabel: "Buscar ubicación",
     coordinatesSection: "Coordenadas y distancia",
+    coordinatesSectionNoDistance: "Coordenadas",
+    viewOnMap: "Ver en el mapa",
     latitude: "Latitud",
     longitude: "Longitud",
     distanceFromSite: "Distancia desde la sede (km)",

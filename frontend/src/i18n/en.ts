@@ -420,6 +420,8 @@ const en = {
     placeholder: "Type an address, city or place",
     searchLabel: "Search location",
     coordinatesSection: "Coordinates and distance",
+    coordinatesSectionNoDistance: "Coordinates",
+    viewOnMap: "View on map",
     latitude: "Latitude",
     longitude: "Longitude",
     distanceFromSite: "Distance from site (km)",
