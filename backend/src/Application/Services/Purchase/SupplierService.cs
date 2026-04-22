@@ -1,13 +1,15 @@
 using Application.Contracts;
 using Application.Contracts.Services.Geolocalization;
 using Domain.Entities.Purchase;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Purchase;
 
 public class SupplierService(
     IUnitOfWork unitOfWork, 
     ILocalizationService localizationService,
-    IGeolocalizationService geolocalizationService) : ISupplierService
+    IGeolocalizationService geolocalizationService,
+    ILogger<SupplierService> logger) : ISupplierService
 {
     // Supplier CRUD
     public async Task<Supplier?> GetSupplierById(Guid id)
@@ -203,26 +205,65 @@ public class SupplierService(
 
     private async Task UpdateCoordinatesAndDistanceAsync(Supplier supplier)
     {
-        if (string.IsNullOrWhiteSpace(supplier.Address) || string.IsNullOrWhiteSpace(supplier.City) || string.IsNullOrWhiteSpace(supplier.Country))
-            return;
+        logger.LogInformation("UpdateCoordinatesAndDistanceAsync -> Supplier: {SupplierId} | Lat: {Lat}, Lon: {Lon}",
+            supplier.Id, supplier.Latitude, supplier.Longitude);
 
-        var coords = await geolocalizationService.GetCoordinatesAsync(supplier.Address, supplier.City, supplier.PostalCode, supplier.Country);
-        if (coords != null)
+        // 1. Si el frontend ya proporcionó coordenadas (vía AutocompleteLocation), confiar en ellas.
+        //    Si no, intentar geocodificar como fallback.
+        if (supplier.Latitude == 0 && supplier.Longitude == 0)
         {
-            supplier.Latitude = coords.Latitude;
-            supplier.Longitude = coords.Longitude;
+            if (!string.IsNullOrWhiteSpace(supplier.Address) &&
+                !string.IsNullOrWhiteSpace(supplier.City) &&
+                !string.IsNullOrWhiteSpace(supplier.Country))
+            {
+                logger.LogInformation("Geocoding supplier {SupplierId}: {Address}, {City}, {Country}",
+                    supplier.Id, supplier.Address, supplier.City, supplier.Country);
 
+                var coords = await geolocalizationService.GetCoordinatesAsync(
+                    supplier.Address, supplier.City, supplier.PostalCode, supplier.Country);
+                if (coords != null)
+                {
+                    supplier.Latitude = coords.Latitude;
+                    supplier.Longitude = coords.Longitude;
+                    logger.LogInformation("Geocoding supplier {SupplierId} resolved -> Lat: {Lat}, Lon: {Lon}",
+                        supplier.Id, coords.Latitude, coords.Longitude);
+                }
+                else
+                {
+                    logger.LogWarning("Geocoding supplier {SupplierId} returned no results.", supplier.Id);
+                }
+            }
+            else
+            {
+                logger.LogWarning("Supplier {SupplierId} has no coordinates and insufficient address data to geocode.", supplier.Id);
+            }
+        }
+
+        // 2. Si tenemos coordenadas válidas, calcular distancia desde el site por defecto
+        if (supplier.Latitude != 0 && supplier.Longitude != 0)
+        {
             var defaultSite = (await unitOfWork.Sites.GetAll()).FirstOrDefault();
             if (defaultSite != null && defaultSite.Latitude != 0 && defaultSite.Longitude != 0)
             {
-                var distance = await geolocalizationService.GetDistanceAsync(
-                    new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude },
-                    coords);
-                
+                var origin = new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude };
+                var destination = new Coordinates { Latitude = supplier.Latitude, Longitude = supplier.Longitude };
+
+                // Intentar distancia por carretera; si falla, Haversine como fallback silencioso
+                var distance = await geolocalizationService.GetDistanceAsync(origin, destination);
                 if (distance.HasValue)
                 {
-                    supplier.DistanceFromSite = distance.Value;
+                    logger.LogInformation("Distance (road) for supplier {SupplierId}: {Distance} km", supplier.Id, distance.Value);
                 }
+                else
+                {
+                    logger.LogWarning("Road distance API unavailable for supplier {SupplierId}, using Haversine fallback.", supplier.Id);
+                }
+                supplier.DistanceFromSite = distance ?? Coordinates.HaversineDistanceKm(origin, destination);
+                logger.LogInformation("DistanceFromSite set for supplier {SupplierId}: {Distance} km", supplier.Id, supplier.DistanceFromSite);
+            }
+            else
+            {
+                logger.LogWarning("No valid default site found; skipping distance calculation for supplier {SupplierId}.", supplier.Id);
             }
         }
     }

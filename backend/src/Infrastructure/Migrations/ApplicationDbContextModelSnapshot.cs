@@ -17,7 +17,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1787,6 +1787,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("decimal")
                         .HasDefaultValue(0m);
 
+                    b.Property<decimal>("volume")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m);
+
                     b.HasKey("Id")
                         .HasName("PK_WorkMaster");
 
@@ -3131,6 +3137,87 @@ namespace Infrastructure.Migrations
                     b.ToTable("PurchaseOrderReceiptDetails", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Purchase.PurchaseRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("PurchaseRate");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Purchase.PurchaseRateDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CalculationType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("From")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("PurchaseRateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("To")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseRateId");
+
+                    b.HasIndex("ReferenceId");
+
+                    b.ToTable("PurchaseRateDetail");
+                });
+
             modelBuilder.Entity("Domain.Entities.Purchase.Receipt", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3374,6 +3461,7 @@ namespace Infrastructure.Migrations
 
                     b.Property<decimal>("Longitude")
                         .HasColumnType("numeric");
+
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text");
@@ -6480,6 +6568,36 @@ namespace Infrastructure.Migrations
                     b.Navigation("ReceiptDetail");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Purchase.PurchaseRate", b =>
+                {
+                    b.HasOne("Domain.Entities.Purchase.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Purchase.PurchaseRateDetail", b =>
+                {
+                    b.HasOne("Domain.Entities.Purchase.PurchaseRate", "PurchaseRate")
+                        .WithMany("Details")
+                        .HasForeignKey("PurchaseRateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Shared.Reference", "Reference")
+                        .WithMany()
+                        .HasForeignKey("ReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseRate");
+
+                    b.Navigation("Reference");
+                });
+
             modelBuilder.Entity("Domain.Entities.Purchase.Receipt", b =>
                 {
                     b.HasOne("Domain.Entities.Exercise", "Exercise")
@@ -7181,6 +7299,11 @@ namespace Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Domain.Entities.Purchase.PurchaseOrder", b =>
+                {
+                    b.Navigation("Details");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Purchase.PurchaseRate", b =>
                 {
                     b.Navigation("Details");
                 });

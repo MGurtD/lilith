@@ -65,7 +65,7 @@ namespace Application.Services.Purchase
             return invoices;
         }
 
-        public IEnumerable<PurchaseInvoice> GetFiltered(DateTime startDate, DateTime endDate, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? paymentMethodId)
+        public IEnumerable<PurchaseInvoice> GetFiltered(DateTime startDate, DateTime endDate, Guid? supplierId, Guid? statusId, Guid? excludeStatusId, Guid? paymentMethodId, DateTime? dueDateStartTime, DateTime? dueDateEndTime)
         {
             var invoices = _unitOfWork.PurchaseInvoices.Find(p =>
                 p.PurchaseInvoiceDate >= startDate
@@ -74,6 +74,12 @@ namespace Application.Services.Purchase
                 && (!statusId.HasValue || p.StatusId == statusId.Value)
                 && (!excludeStatusId.HasValue || p.StatusId != excludeStatusId.Value)
                 && (!paymentMethodId.HasValue || p.PaymentMethodId == paymentMethodId.Value)
+                && (!dueDateStartTime.HasValue || (!(p.PurchaseInvoiceDueDates != null && p.PurchaseInvoiceDueDates.Any())
+                    ? p.PurchaseInvoiceDate
+                    : p.PurchaseInvoiceDueDates.Max(d => d.DueDate)) >= dueDateStartTime.Value)
+                && (!dueDateEndTime.HasValue || (!(p.PurchaseInvoiceDueDates != null && p.PurchaseInvoiceDueDates.Any())
+                    ? p.PurchaseInvoiceDate
+                    : p.PurchaseInvoiceDueDates.Max(d => d.DueDate)) <= dueDateEndTime.Value)
             );
             return invoices;
         }

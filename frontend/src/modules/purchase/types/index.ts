@@ -31,6 +31,8 @@ export interface Supplier {
   paymentMethodId: string;
   contacts: Array<SupplierContact>;
   distanceFromSite?: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface SupplierContact {
@@ -316,6 +318,34 @@ export interface TransportRateDetail {
   maxVolume: number;
   minDistance: number;
   maxDistance: number;
+  price: number;
+  disabled: boolean;
+}
+
+export enum CalculationType {
+  Volume = 0,
+  Weight = 1,
+  Units = 2,
+}
+
+export interface PurchaseRate {
+  id: string;
+  name: string;
+  supplierId: string;
+  validFrom: any;
+  validTo: any;
+  disabled: boolean;
+  details: Array<PurchaseRateDetail>;
+}
+
+export interface PurchaseRateDetail {
+  id: string;
+  purchaseRateId: string;
+  referenceId: string;
+  reference?: Reference;
+  from: number;
+  to: number;
+  calculationType: CalculationType;
   price: number;
   disabled: boolean;
 }

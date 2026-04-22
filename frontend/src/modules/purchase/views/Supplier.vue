@@ -17,10 +17,14 @@
         <i :class="PrimeIcons.TRUCK" class="mr-2"></i>
         <span>Tarifes de transport</span>
       </Tab>
+      <Tab value="4" v-if="formMode === FormActionMode.EDIT">
+        <i :class="PrimeIcons.MONEY_BILL" class="mr-2"></i>
+        <span>Tarifes de compra</span>
+      </Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <FormSupplier @submit="submitForm" />
+        <FormSupplier v-if="supplier" :supplier="supplier" @submit="submitForm" />
       </TabPanel>
       <TabPanel value="1" v-if="formMode === FormActionMode.EDIT">
         <TableSupplierReferences
@@ -49,6 +53,12 @@
           :supplierId="supplier.id"
         />
       </TabPanel>
+      <TabPanel value="4" v-if="formMode === FormActionMode.EDIT">
+        <TablePurchaseRates
+          v-if="supplier"
+          :supplierId="supplier.id"
+        />
+      </TabPanel>
     </TabPanels>
   </Tabs>
 </template>
@@ -69,7 +79,9 @@ import TableSupplierContacts from "../components/TableSupplierContacts.vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import TableSupplierReferences from "../components/TableSupplierReferences.vue";
 import TableTransportRates from "../components/TableTransportRates.vue";
+import TablePurchaseRates from "../components/TablePurchaseRates.vue";
 import { useTransportRateStore } from "../store/transportRate";
+import { usePurchaseRateStore } from "../store/purchaseRate";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -77,6 +89,7 @@ const store = useStore();
 const supplierStore = useSuppliersStore();
 const referenceStore = useReferenceStore();
 const transportRateStore = useTransportRateStore();
+const purchaseRateStore = usePurchaseRateStore();
 const { supplier } = storeToRefs(supplierStore);
 
 const isLogisticSupplier = computed(() => {
@@ -104,8 +117,11 @@ const loadView = async () => {
   } else {
     formMode.value = FormActionMode.EDIT;
     pageTitle = `Proveïdor ${supplier.value.comercialName}`;
-    // Carregar tarifes si és logística
-    await transportRateStore.fetchTransportRatesBySupplierId(supplierId);
+    // Carregar tarifes
+    if (isLogisticSupplier.value) {
+       await transportRateStore.fetchTransportRatesBySupplierId(supplierId);
+    }
+    await purchaseRateStore.fetchPurchaseRatesBySupplierId(supplierId);
   }
 
   store.setMenuItem({

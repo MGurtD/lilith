@@ -50,8 +50,8 @@
         }"
       ></BaseInput>
     </section>
-    <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+    <div class="mt-2 flex justify-content-end gap-2">
+      <Button label="Guardar" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -61,7 +61,7 @@ import BaseInput from "../../../components/BaseInput.vue";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
 import DropdownReference from "../../../modules/shared/components/DropdownReference.vue";
 import { ref } from "vue";
-import { Supplier, SupplierReference } from "../types";
+import { SupplierReference } from "../types";
 import * as Yup from "yup";
 import { BaseInputType } from "../../../types/component";
 import {
@@ -87,7 +87,7 @@ const schema = Yup.object().shape({
   supplierCode: Yup.string().required("El codi és obligatori"),
   supplierPrice: Yup.number().required("El preu és obligatori"),
   supplyDays: Yup.number().required(
-    "Els dies de subministrament són obligatoris"
+    "Els dies de subministrament són obligatoris",
   ),
 });
 const validation = ref({

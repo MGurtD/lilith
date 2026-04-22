@@ -1,9 +1,8 @@
 <template>
   <form v-if="address">
-    <section class="three-columns">
+    <section class="three-columns mb-2">
       <BaseInput
         id="name"
-        class="mb-2"
         label="Nom"
         v-model="address.name"
         :class="{
@@ -20,77 +19,20 @@
       </div>
     </section>
 
-    <section class="three-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">País</label>
-        <Select
-          v-model="address.country"
-          :options="['Espanya']"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.country,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Província</label>
-        <Select
-          v-model="address.region"
-          :options="spanishGeo.regions"
-          optionValue="nm"
-          optionLabel="nm"
-          @change="onRegionChanged"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.region,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Municipi</label>
-        <Select
-          v-model="address.city"
-          :options="spanishGeo.getTownsByRegionName(address.region)"
-          optionValue="nm"
-          optionLabel="nm"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.city,
-          }"
-        />
-      </div>
-    </section>
+    <LocationFields
+      :model-value="address"
+      :show-distance="true"
+      :validation-errors="validation.errors"
+    />
 
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Codi Postal"
-        id="postalCode"
-        v-model="address.postalCode"
-        :class="{
-          'p-invalid': validation.errors.postalCode,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Direcció"
-        id="address"
-        v-model="address.address"
-        :class="{
-          'p-invalid': validation.errors.address,
-        }"
-      ></BaseInput>
-      <BaseInput
-        disabled
-        label="Distància des de la seu (km)"
-        id="distanceFromSite"
-        :modelValue="address.distanceFromSite ?? null"
-      ></BaseInput>
-    </section>
     <div>
+      <label class="block text-900 mb-2">Observacions</label>
       <Textarea v-model="address.observations" class="w-full" />
     </div>
 
-    <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+    <div class="mt-2 flex justify-content-end gap-2">
+      <Button label="Guardar" @click="submitForm" />
+      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
     </div>
   </form>
 </template>
@@ -98,7 +40,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
-import { useSpanishGeography } from "../../../store/geography";
+import LocationFields from "@/components/LocationFields.vue";
 import * as Yup from "yup";
 import {
   FormValidation,
@@ -116,18 +58,17 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const spanishGeo = useSpanishGeography();
 const toast = useToast();
 
 const schema = Yup.object().shape({
   name: Yup.string()
     .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .max(250, "El nom no pot superar els 250 caràcters"),
   country: Yup.string().required("El país és obligatori"),
-  region: Yup.string().required("La província és obligatoria"),
+  region: Yup.string().required("La província és obligatòria"),
   city: Yup.string().required("El municipi és obligatori"),
   postalCode: Yup.string().required("El codi postal és obligatori"),
-  address: Yup.string().required("La direcció és obligatoria"),
+  address: Yup.string().required("La direcció és obligatòria"),
   main: Yup.boolean().required(),
   disabled: Yup.boolean().required(),
 });
@@ -135,11 +76,6 @@ const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
-
-const onRegionChanged = () => {
-  const address = props.address;
-  address.address = "";
-};
 
 const validate = () => {
   const formValidation = new FormValidation(schema);
@@ -157,10 +93,11 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: "Formulari invàlid",
       detail: errors,
       life: 5000,
     });
   }
 };
 </script>
+

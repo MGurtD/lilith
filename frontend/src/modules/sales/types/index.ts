@@ -52,6 +52,8 @@ export interface CustomerAddress {
   observations: string;
   customerId: string;
   distanceFromSite?: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface BudgetTransport {

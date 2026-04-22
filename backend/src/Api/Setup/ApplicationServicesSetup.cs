@@ -63,7 +63,9 @@ public static class ApplicationServicesSetup
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<ISupplierTypeService, SupplierTypeService>();
         services.AddScoped<ITransportRateService, TransportRateService>();
+        services.AddScoped<IPurchaseRateService, PurchaseRateService>();
         services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
+        services.AddHttpClient<IGeoapifyService, GeoapifyService>();
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();

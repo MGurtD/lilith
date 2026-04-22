@@ -19,92 +19,96 @@
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <DataTable
-          :value="filteredData"
-          tableStyle="min-width: 100%"
-          sort-field="comercialName"
-          :sort-order="1"
-          scrollable
-          scrollHeight="flex"
-          paginator
-          :rows="20"
-          @row-click="editCustomer"
-        >
-          <template #header>
-            <div class="references-header">
-              <div class="references-filter">
-                <label>Nom comercial</label>
-                <BaseInput v-model="filter.code" />
+        <div ref="customersTableRef">
+          <DataTable
+            :value="filteredData"
+            tableStyle="min-width: 100%"
+            sort-field="comercialName"
+            :sort-order="1"
+            scrollable
+            :scrollHeight="customersScrollHeight"
+            paginator
+            :rows="20"
+            @row-click="editCustomer"
+          >
+            <template #header>
+              <div class="references-header">
+                <div class="references-filter">
+                  <label>Nom comercial</label>
+                  <BaseInput v-model="filter.code" />
+                </div>
               </div>
-            </div>
-          </template>
-          <Column
-            field="comercialName"
-            header="Nom comercial"
-            sortable
-            style="width: 20%"
-          ></Column>
-          <Column
-            field="taxName"
-            header="Nom Fiscal"
-            style="width: 20%"
-          ></Column>
-          <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
-          <Column header="Tipus" style="width: 20%">
-            <template #body="slotProps">
-              <span>{{
-                getCustomerTypeName(slotProps.data.customerTypeId)
-              }}</span>
             </template>
-          </Column>
-          <Column header="Desactivat" sortable style="width: 20%">
-            <template #body="slotProps">
-              <BooleanColumn
-                :value="slotProps.data.disabled"
-                :showColor="false"
-              />
-            </template>
-          </Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteCustomer($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+            <Column
+              field="comercialName"
+              header="Nom comercial"
+              sortable
+              style="width: 20%"
+            ></Column>
+            <Column
+              field="taxName"
+              header="Nom Fiscal"
+              style="width: 20%"
+            ></Column>
+            <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
+            <Column header="Tipus" style="width: 20%">
+              <template #body="slotProps">
+                <span>{{
+                  getCustomerTypeName(slotProps.data.customerTypeId)
+                }}</span>
+              </template>
+            </Column>
+            <Column header="Desactivat" sortable style="width: 20%">
+              <template #body="slotProps">
+                <BooleanColumn
+                  :value="slotProps.data.disabled"
+                  :showColor="false"
+                />
+              </template>
+            </Column>
+            <Column>
+              <template #body="slotProps">
+                <i
+                  :class="PrimeIcons.TIMES"
+                  class="grid_delete_column_button"
+                  @click="deleteCustomer($event, slotProps.data)"
+                />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </TabPanel>
       <TabPanel value="1">
-        <DataTable
-          :value="customerStore.customerTypes"
-          tableStyle="min-width: 100%"
-          scrollable
-          scrollHeight="flex"
-          @row-click="editCustomerType"
-        >
-          <Column field="name" header="Nom" style="width: 33%"></Column>
-          <Column
-            field="description"
-            header="Descripció"
-            style="width: 33%"
-          ></Column>
-          <Column header="Desactivat" style="width: 33%">
-            <template #body="slotProps">
-              <BooleanColumn :value="slotProps.data.disabled" />
-            </template>
-          </Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteCustomerType($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+        <div ref="typesTableRef">
+          <DataTable
+            :value="customerStore.customerTypes"
+            tableStyle="min-width: 100%"
+            scrollable
+            :scrollHeight="typesScrollHeight"
+            @row-click="editCustomerType"
+          >
+            <Column field="name" header="Nom" style="width: 33%"></Column>
+            <Column
+              field="description"
+              header="Descripció"
+              style="width: 33%"
+            ></Column>
+            <Column header="Desactivat" style="width: 33%">
+              <template #body="slotProps">
+                <BooleanColumn :value="slotProps.data.disabled" />
+              </template>
+            </Column>
+            <Column>
+              <template #body="slotProps">
+                <i
+                  :class="PrimeIcons.TIMES"
+                  class="grid_delete_column_button"
+                  @click="deleteCustomerType($event, slotProps.data)"
+                />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </TabPanel>
     </TabPanels>
   </Tabs>
@@ -120,6 +124,7 @@ import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
+import { useScrollHeight } from "@/composables/useScrollHeight";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
@@ -127,6 +132,11 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const customerStore = useCustomersStore();
+
+const { tableRef: customersTableRef, scrollHeight: customersScrollHeight } =
+  useScrollHeight(140);
+const { tableRef: typesTableRef, scrollHeight: typesScrollHeight } =
+  useScrollHeight();
 
 const filter = ref({
   code: "",

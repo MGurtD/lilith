@@ -26,63 +26,11 @@
         }"
       ></BaseInput>
     </section>
+    <LocationFields
+      :model-value="site"
+      :validation-errors="validation.errors"
+    />
     <section class="three-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">País</label>
-        <Select
-          v-model="site.country"
-          :options="['Espanya']"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.country,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Província</label>
-        <Select
-          v-model="site.region"
-          :options="spanishGeo.regions"
-          optionValue="nm"
-          optionLabel="nm"
-          @change="onRegionChanged"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.region,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Municipi</label>
-        <Select
-          v-model="site.city"
-          :options="spanishGeo.getTownsByRegionName(site.region)"
-          optionValue="nm"
-          optionLabel="nm"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.city,
-          }"
-        />
-      </div>
-    </section>
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Codi Postal"
-        id="postalCode"
-        v-model="site.postalCode"
-        :class="{
-          'p-invalid': validation.errors.postalCode,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Direcció"
-        id="address"
-        v-model="site.address"
-        :class="{
-          'p-invalid': validation.errors.address,
-        }"
-      ></BaseInput>
       <BaseInput
         label="Telèfon"
         id="phone"
@@ -91,8 +39,6 @@
           'p-invalid': validation.errors.phone,
         }"
       ></BaseInput>
-    </section>
-    <section class="three-columns mb-2">
       <BaseInput
         label="Email general"
         id="email"
@@ -103,22 +49,22 @@
       ></BaseInput>
       <BaseInput
         label="Email compres"
-        id="email"
+        id="emailPurchase"
         v-model="site.emailPurchase"
         :class="{
           'p-invalid': validation.errors.emailPurchase,
         }"
       ></BaseInput>
+    </section>
+    <section class="three-columns mb-2">
       <BaseInput
         label="Email ventes"
-        id="email"
+        id="emailSales"
         v-model="site.emailSales"
         :class="{
           'p-invalid': validation.errors.emailSales,
         }"
       ></BaseInput>
-    </section>
-    <section class="three-columns mb-2">
       <div>
         <label class="block text-900 mb-2">Empresa</label>
         <Select
@@ -147,9 +93,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
-import { useSpanishGeography } from "../../../store/geography";
+import LocationFields from "@/components/LocationFields.vue";
 import { Site } from "../types";
-import { storeToRefs } from "pinia";
 import { usePlantModelStore } from "../store/plantmodel";
 
 import * as Yup from "yup";
@@ -173,17 +118,15 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const spanishGeo = useSpanishGeography();
 const siteStore = usePlantModelStore();
-const { site } = storeToRefs(siteStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
     .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .max(250, "El nom no pot superar els 250 caràcters"),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
+    .required("La descripció és obligatòria")
+    .max(250, "La descripció no pot superar els 250 caràcters"),
   email: Yup.string()
     .email("El correu electrònic no és vàlid")
     .required("El correu electrònic és obligatori"),
@@ -193,7 +136,7 @@ const schema = Yup.object().shape({
   emailPurchase: Yup.string()
     .email("El correu electrònic de compres no és vàlid")
     .required("El correu electrònic de compres és obligatori"),
-  enterpriseId: Yup.string().required("L'empresa es obligatoria"),
+  enterpriseId: Yup.string().required("L'empresa és obligatòria"),
 });
 const validation = ref({
   result: false,
@@ -203,10 +146,6 @@ const validation = ref({
 const validate = () => {
   const formValidation = new FormValidation(schema);
   validation.value = formValidation.validate(props.site);
-};
-
-const onRegionChanged = () => {
-  (site.value as Site).address = "";
 };
 
 const submitForm = async () => {
@@ -220,10 +159,11 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: "Formulari invàlid",
       detail: errors,
       life: 5000,
     });
   }
 };
 </script>
+

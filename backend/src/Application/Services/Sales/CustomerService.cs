@@ -3,13 +3,15 @@ using Application.Contracts.Services.Geolocalization;
 using Application.Services;
 using Domain.Entities;
 using Domain.Entities.Sales;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Sales;
 
 public class CustomerService(
     IUnitOfWork unitOfWork,
     ILocalizationService localizationService,
-    IGeolocalizationService geolocalizationService) : ICustomerService
+    IGeolocalizationService geolocalizationService,
+    ILogger<CustomerService> logger) : ICustomerService
 {
     // Customer CRUD operations
     public async Task<IEnumerable<Customer>> GetAllCustomers()
@@ -128,6 +130,9 @@ public class CustomerService(
 
         await UpdateCoordinatesAndDistanceAsync(address);
 
+        if (!address.Main && !customer.Address.Any(a => !a.Disabled))
+            address.Main = true;
+
         await unitOfWork.Customers.AddAddress(address);
         return new GenericResponse(true, address);
     }
@@ -151,6 +156,8 @@ public class CustomerService(
         existingAddress.Disabled = address.Disabled;
         existingAddress.Main = address.Main;
         existingAddress.Observations = address.Observations;
+        existingAddress.Latitude = address.Latitude;
+        existingAddress.Longitude = address.Longitude;
 
         await UpdateCoordinatesAndDistanceAsync(existingAddress);
 
@@ -173,32 +180,65 @@ public class CustomerService(
 
     private async Task UpdateCoordinatesAndDistanceAsync(CustomerAddress address)
     {
-        if (string.IsNullOrWhiteSpace(address.Address) || string.IsNullOrWhiteSpace(address.City) || string.IsNullOrWhiteSpace(address.Country))
-            return;
+        logger.LogInformation("UpdateCoordinatesAndDistanceAsync -> CustomerAddress: {AddressId} | Lat: {Lat}, Lon: {Lon}",
+            address.Id, address.Latitude, address.Longitude);
 
-        var coords = await geolocalizationService.GetCoordinatesAsync(address.Address, address.City, address.PostalCode, address.Country);
-        if (coords != null)
+        // 1. Si el frontend ya proporcionó coordenadas (vía AutocompleteLocation), confiar en ellas.
+        //    Si no, intentar geocodificar como fallback.
+        if (address.Latitude == 0 && address.Longitude == 0)
         {
-            address.Latitude = coords.Latitude;
-            address.Longitude = coords.Longitude;
-
-            var defaultSite = (await unitOfWork.Sites.GetAll()).FirstOrDefault();
-            Console.WriteLine($"[DEBUG] DefaultSite is null? {defaultSite == null}");
-            if (defaultSite != null) 
+            if (!string.IsNullOrWhiteSpace(address.Address) &&
+                !string.IsNullOrWhiteSpace(address.City) &&
+                !string.IsNullOrWhiteSpace(address.Country))
             {
-                Console.WriteLine($"[DEBUG] DefaultSite coords: Lat={defaultSite.Latitude}, Lon={defaultSite.Longitude}");
-            }
+                logger.LogInformation("Geocoding address {AddressId}: {Address}, {City}, {Country}",
+                    address.Id, address.Address, address.City, address.Country);
 
+                var coords = await geolocalizationService.GetCoordinatesAsync(
+                    address.Address, address.City, address.PostalCode, address.Country);
+                if (coords != null)
+                {
+                    address.Latitude = coords.Latitude;
+                    address.Longitude = coords.Longitude;
+                    logger.LogInformation("Geocoding address {AddressId} resolved -> Lat: {Lat}, Lon: {Lon}",
+                        address.Id, coords.Latitude, coords.Longitude);
+                }
+                else
+                {
+                    logger.LogWarning("Geocoding address {AddressId} returned no results.", address.Id);
+                }
+            }
+            else
+            {
+                logger.LogWarning("CustomerAddress {AddressId} has no coordinates and insufficient address data to geocode.", address.Id);
+            }
+        }
+
+        // 2. Si tenemos coordenadas válidas, calcular distancia desde el site por defecto
+        if (address.Latitude != 0 && address.Longitude != 0)
+        {
+            var defaultSite = (await unitOfWork.Sites.GetAll()).FirstOrDefault();
             if (defaultSite != null && defaultSite.Latitude != 0 && defaultSite.Longitude != 0)
             {
-                var distance = await geolocalizationService.GetDistanceAsync(
-                    new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude },
-                    coords);
-                
+                var origin = new Coordinates { Latitude = defaultSite.Latitude, Longitude = defaultSite.Longitude };
+                var destination = new Coordinates { Latitude = address.Latitude, Longitude = address.Longitude };
+
+                // Intentar distancia por carretera; si falla, Haversine como fallback silencioso
+                var distance = await geolocalizationService.GetDistanceAsync(origin, destination);
                 if (distance.HasValue)
                 {
-                    address.DistanceFromSite = distance.Value;
+                    logger.LogInformation("Distance (road) for address {AddressId}: {Distance} km", address.Id, distance.Value);
                 }
+                else
+                {
+                    logger.LogWarning("Road distance API unavailable for address {AddressId}, using Haversine fallback.", address.Id);
+                }
+                address.DistanceFromSite = distance ?? Coordinates.HaversineDistanceKm(origin, destination);
+                logger.LogInformation("DistanceFromSite set for address {AddressId}: {Distance} km", address.Id, address.DistanceFromSite);
+            }
+            else
+            {
+                logger.LogWarning("No valid default site found; skipping distance calculation for address {AddressId}.", address.Id);
             }
         }
     }

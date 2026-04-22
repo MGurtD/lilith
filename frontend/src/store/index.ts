@@ -220,7 +220,7 @@ export const useStore = defineStore("applicationStore", {
 
           // Get user filters
           const userFilterStore = useUserFilterStore();
-          userFilterStore.getUserFilters(this.user.id);
+          await userFilterStore.getUserFilters(this.user.id);
         }
       }
     },

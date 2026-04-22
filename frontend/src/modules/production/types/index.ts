@@ -22,6 +22,8 @@ export interface Site {
   emailSales: string;
   emailPurchase: string;
   vatNumber: string;
+  latitude: number;
+  longitude: number;
   enterpriseId: string;
   disabled: boolean;
 }
@@ -130,6 +132,7 @@ export interface WorkMaster {
   externalCost: number;
   materialCost: number;
   totalWeight: number;
+  volume: number;
   mode: number;
   disabled: boolean;
   phases: Array<WorkMasterPhase>;
