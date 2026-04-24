@@ -75,7 +75,7 @@
           <label class="block text-900 mb-2">Notes Internes</label>
           <Textarea
             class="w-full"
-            rows="3"
+            rows="2"
             placeholder="Notes internes"
             v-model="budget.userNotes"
           />

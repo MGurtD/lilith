@@ -211,6 +211,7 @@
     "Report.DeliveryNote.OrderTotal": "Total del Pedido",
     "Report.DeliveryNote.TableTotal": "Total del Albarán (IVA no incluido)",
     "Report.DeliveryNote.CustomerSign": "Firma del Cliente",
+    "Report.DeliveryNote.ReturnsPolicy": "No se aceptan devoluciones pasada 1 semana de la entrega",
     "Report.Budget.Title": "PRESUPUESTO",
     "Report.Budget.HeaderDeliveryIn": "Entrega en",
     "Report.Budget.HeaderDeliveryConfirmation": "días desde la confirmación",
