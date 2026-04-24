@@ -81,6 +81,12 @@
         />
       </template>
     </Column>
+    <template #footer>
+      <div class="total-footer">
+        <span class="total-label">Total</span>
+        <span class="total-value">{{ formatCurrency(totalAmount) }}</span>
+      </div>
+    </template>
   </DataTable>
 </template>
 <script setup lang="ts">
@@ -90,6 +96,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Budget, BudgetDetail } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useBudgetStore } from "../store/budget";
+import { computed } from "vue";
 import { formatCurrency } from "../../../utils/functions";
 
 const props = defineProps<{
@@ -104,6 +111,13 @@ const emit = defineEmits<{
 
 const confirm = useConfirm();
 const budgetStore = useBudgetStore();
+
+const totalAmount = computed(() => {
+  if (props.details) {
+    return props.details.reduce((acc, detail) => acc + detail.amount, 0);
+  }
+  return 0;
+});
 
 const onEditRow = (row: DataTableRowClickEvent) => {
   if (
@@ -128,3 +142,21 @@ const onDeleteRow = (event: any, detail: BudgetDetail) => {
   });
 };
 </script>
+<style scoped>
+.total-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.total-label {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.total-value {
+  font-weight: 700;
+}
+</style>
