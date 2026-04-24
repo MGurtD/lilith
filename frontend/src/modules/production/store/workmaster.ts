@@ -45,6 +45,8 @@ export const useWorkMasterStore = defineStore("workmaster", {
         totalWeight: 0,
         volume: 0,
         mode: 1,
+        createdOn: new Date(),
+        updatedOn: new Date(),
         phases: [],
       } as WorkMaster;
 
