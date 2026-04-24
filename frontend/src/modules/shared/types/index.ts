@@ -124,6 +124,8 @@ export interface Reference {
   purchase: boolean;
   production: boolean;
   isService: boolean;
+  createdOn: Date;
+  updatedOn: Date;
 }
 
 export interface ReferenceType {

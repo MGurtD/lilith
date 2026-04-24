@@ -2,6 +2,13 @@
   <main v-if="receipt">
     <FormReceipt @submit="submitForm" />
     <br />
+    <Tabs value="0">
+      <TabList>
+        <Tab value="0">Detall</Tab>
+        <Tab value="1">Fitxers</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="0">
     <TableReceiptDetails
       :details="receipt?.details"
       @edit="openEditDetailForm"
@@ -35,6 +42,16 @@
         </div>
       </template>
     </TableReceiptDetails>
+        </TabPanel>
+        <TabPanel value="1">
+          <FileEntityPicker
+            title="Documentació adjunta"
+            entity="Receipt"
+            :id="route.params.id as string"
+          />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
 
     <Dialog
       v-model:visible="dialogOptionsSelector.visible"
@@ -88,6 +105,7 @@ import TableReceiptDetails from "../components/TableReceiptDetails.vue";
 import FormReceiptDetail from "../components/FormReceiptDetail.vue";
 import FormMaterial from "../components/FormMaterial.vue";
 import SelectorOrdersDetailsToReceipt from "../components/SelectorOrdersDetailsToReceipt.vue";
+import FileEntityPicker from "../../../components/FileEntityPicker.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
