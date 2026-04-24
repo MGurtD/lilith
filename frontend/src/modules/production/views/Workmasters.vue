@@ -74,12 +74,7 @@
         }}
       </template>
     </Column>
-    <Column
-      field="createdOn"
-      header="Data creació"
-      sortable
-      style="width: 10%"
-    >
+    <Column field="createdOn" header="Data creació" sortable style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.createdOn) }}
       </template>
@@ -268,7 +263,11 @@ import { useWorkMasterStore } from "../store/workmaster";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../../sales/store/customers";
 import { WorkMaster, WorkMasterToCopy } from "../types";
-import { getNewUuid, formatCurrency, formatDate } from "../../../utils/functions";
+import {
+  getNewUuid,
+  formatCurrency,
+  formatDate,
+} from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
 
@@ -316,14 +315,14 @@ const filteredData = computed(() => {
     const startDate = filter.value.dates[0];
     if (startDate) {
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn) >= startDate,
+        (w) => new Date(w.createdOn!) >= startDate,
       );
     }
     if (filter.value.dates.length > 1 && filter.value.dates[1]) {
       const endDate = new Date(filter.value.dates[1]);
       endDate.setHours(23, 59, 59, 999);
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn) <= endDate,
+        (w) => new Date(w.createdOn!) <= endDate,
       );
     }
   }
