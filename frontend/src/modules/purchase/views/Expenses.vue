@@ -7,7 +7,7 @@
     scrollHeight="flex"
     sortMode="multiple"
     paginator
-    :rows="20"
+    :rows="25"
     @row-click="editExpense"
   >
     <template #header>
@@ -92,7 +92,9 @@
     </Column>
     <Column header="Freqüència" style="width: 12%">
       <template #body="slotProps">
-        {{ getFrequencyName(slotProps.data.frecuency, slotProps.data.recurring) }}
+        {{
+          getFrequencyName(slotProps.data.frecuency, slotProps.data.recurring)
+        }}
       </template>
     </Column>
     <Column header="Recurrent" style="width: 10%">
@@ -145,7 +147,7 @@ const confirm = useConfirm();
 
 const filter = ref({
   expenseTypeId: undefined as string | undefined,
-  frecuency: undefined as number | undefined,
+  frecuency: undefined as number | null | undefined,
   dates: undefined as Array<Date> | undefined,
 });
 
@@ -169,7 +171,7 @@ const filteredExpenses = computed(() => {
     );
   }
 
-  if (filter.value.frecuency !== undefined) {
+  if (filter.value.frecuency !== undefined && filter.value.frecuency !== null) {
     expenses = expenses.filter((expense) => {
       if (filter.value.frecuency === 0) {
         return !expense.recurring || expense.frecuency === 0;
@@ -227,7 +229,11 @@ onUnmounted(() => {
 });
 
 const filterExpense = async () => {
-  if (filter.value.dates && filter.value.dates.length > 1 && filter.value.dates[1]) {
+  if (
+    filter.value.dates &&
+    filter.value.dates.length > 1 &&
+    filter.value.dates[1]
+  ) {
     const startTime = formatDateForQueryParameter(filter.value.dates[0]);
     const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
@@ -305,7 +311,9 @@ const getFrequencyName = (frequency: number, recurring: boolean) => {
     return "No recurrent";
   }
 
-  return frequencyOptions.find((option) => option.id === frequency)?.name ?? "-";
+  return (
+    frequencyOptions.find((option) => option.id === frequency)?.name ?? "-"
+  );
 };
 </script>
 
@@ -320,7 +328,7 @@ const getFrequencyName = (frequency: number, recurring: boolean) => {
 .filter-toolbar__field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex: 0 0 auto;
 }
 
