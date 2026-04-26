@@ -34,6 +34,7 @@
         label="Últim cost"
         id="lastCost"
         v-model="reference.lastCost"
+        :disabled="disabled"
       />
     </div>
     <div>
@@ -49,6 +50,8 @@ import { BaseInputType } from "../../../types/component";
 import { useTaxesStore } from "../../shared/store/tax";
 import { useReferenceStore } from "../../shared/store/reference";
 import DropdownReferenceType from "../../shared/components/DropdownReferenceType.vue";
+import { ref, onMounted } from "vue";
+import Services from "../services";
 
 const props = defineProps<{
   reference: Reference;
@@ -56,4 +59,18 @@ const props = defineProps<{
 
 const taxesStore = useTaxesStore();
 const referenceStore = useReferenceStore();
+
+const disabled = ref();
+
+const isDisabled = async () => {
+  const receipts = await Services.Receipt.GetByReferenceId(props.reference.id);
+  if (receipts && receipts?.length > 0) {
+    disabled.value = true;
+  } else {
+    disabled.value = false;
+  }
+};
+onMounted(() => {
+  isDisabled();
+});
 </script>
