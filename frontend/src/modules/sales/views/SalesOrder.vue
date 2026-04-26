@@ -153,6 +153,11 @@ const items = [
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(false),
   },
+  {
+    label: "Crear albarà",
+    icon: PrimeIcons.TRUCK,
+    command: () => createDeliveryNote(),
+  },
 ];
 
 const detailDialogTitle = "Línia de comanda";
@@ -368,6 +373,39 @@ const createWorkOrder = async (dto: CreateWorkOrderFromSalesOrderDto) => {
 
 const openWorkOrder = (workorderid: string) => {
   router.push({ path: `/workorder/${workorderid}` });
+};
+
+const createDeliveryNote = async () => {
+  if (!salesOrder.value) return;
+
+  if (salesOrder.value.deliveryNoteId) {
+    toast.add({
+      severity: "warn",
+      summary: "Aquesta comanda ja té un albarà associat",
+      life: 5000,
+    });
+    return;
+  }
+
+  const response = await deliveryNoteStore.CreateFromSalesOrder(salesOrder.value);
+
+  if (response.result && response.content?.id) {
+    toast.add({
+      severity: "success",
+      summary: `Albarà ${response.content.number} creat correctament`,
+      life: 5000,
+    });
+
+    router.push(`/deliverynote/${response.content.id}`);
+    return;
+  }
+
+  toast.add({
+    severity: "error",
+    summary: "Error al crear l'albarà",
+    detail: response.errors[0],
+    life: 5000,
+  });
 };
 
 const printInvoice = async (showPrices: boolean) => {
