@@ -495,6 +495,24 @@ const es = {
       expiresOn: "Fecha de expiración",
     },
   },
+  help: {
+    drawer: {
+      title: "Ayuda contextual",
+      subtitle: "Atajo: Alt + H",
+    },
+    actions: {
+      openTooltip: "Abrir ayuda de la pantalla actual (Alt + H)",
+    },
+    messages: {
+      loading: "Cargando ayuda...",
+      notAvailable: "Todavía no hay ayuda disponible para esta pantalla.",
+      noRouteHelp:
+        "Esta pantalla todavía no tiene una clave de ayuda configurada.",
+      loadError:
+        "No se ha podido cargar la documentación de ayuda. Vuelve a intentarlo.",
+      mermaidError: "No se ha podido renderizar el diagrama.",
+    },
+  },
 };
 
 export default es;

@@ -494,6 +494,25 @@ const ca = {
       expiresOn: "Data d'expiració",
     },
   },
+  help: {
+    drawer: {
+      title: "Ajuda contextual",
+      subtitle: "Shortcut: Alt + H",
+    },
+    actions: {
+      openTooltip: "Obrir ajuda de la pantalla actual (Alt + H)",
+    },
+    messages: {
+      loading: "Carregant ajuda...",
+      notAvailable:
+        "No hi ha ajuda disponible per a aquesta pantalla encara.",
+      noRouteHelp:
+        "Aquesta pantalla no té una clau d'ajuda configurada encara.",
+      loadError:
+        "No s'ha pogut carregar la documentació d'ajuda. Torna-ho a provar.",
+      mermaidError: "No s'ha pogut renderitzar el diagrama.",
+    },
+  },
 };
 
 export default ca;

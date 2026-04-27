@@ -11,121 +11,122 @@
         store.currentMenuItem.title
       }}</span>
     </div>
-    <div v-if="plantOperatorStore.operator" class="title-bar__user">
-      <div class="avatar-container" @click="showOverlayPanel">
-        <Avatar
-          :label="
-            plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
-          "
-          class="title-bar__user__avatar title-bar__user__avatar--operator"
-          size="large"
-          shape="circle"
-        />
-      </div>
-      <Popover ref="op">
-        <div class="user-menu">
-          <div class="user-menu__header">
-            <Avatar
-              :label="
-                plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
-              "
-              class="user-menu__avatar user-menu__avatar--operator"
-              size="large"
-              shape="circle"
-            />
-            <div class="user-menu__name">
-              {{ plantOperatorStore.operator.name }}
-              {{ plantOperatorStore.operator.surname }}
-            </div>
-            <div class="user-menu__username">
-              <i :class="PrimeIcons.USER" class="mr-1"></i>
-              Operari
-            </div>
-          </div>
-
-          <div class="divider" />
-
-          <div class="user-menu__actions">
-            <Button
-              :icon="PrimeIcons.SIGN_OUT"
-              label="Sortir"
-              class="w-full"
-              size="large"
-              @click="logoutOperator"
-            />
-          </div>
+    <div class="title-bar__right">
+      <div v-if="plantOperatorStore.operator" class="title-bar__user">
+        <div class="avatar-container" @click="showOverlayPanel">
+          <Avatar
+            :label="
+              plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
+            "
+            class="title-bar__user__avatar title-bar__user__avatar--operator"
+            size="large"
+            shape="circle"
+          />
         </div>
-      </Popover>
-    </div>
-    <div class="title-bar__user" v-else-if="store.user">
-      <div class="avatar-container" @click="showOverlayPanel">
-        <Avatar
-          :label="store.user.username.substring(0, 1).toUpperCase()"
-          class="title-bar__user__avatar title-bar__user__avatar--admin"
-          size="large"
-          shape="circle"
-        />
+        <Popover ref="op">
+          <div class="user-menu">
+            <div class="user-menu__header">
+              <Avatar
+                :label="
+                  plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
+                "
+                class="user-menu__avatar user-menu__avatar--operator"
+                size="large"
+                shape="circle"
+              />
+              <div class="user-menu__name">
+                {{ plantOperatorStore.operator.name }}
+                {{ plantOperatorStore.operator.surname }}
+              </div>
+              <div class="user-menu__username">
+                <i :class="PrimeIcons.USER" class="mr-1"></i>
+                Operari
+              </div>
+            </div>
+
+            <div class="divider" />
+
+            <div class="user-menu__actions">
+              <Button
+                :icon="PrimeIcons.SIGN_OUT"
+                label="Sortir"
+                class="w-full"
+                size="large"
+                @click="logoutOperator"
+              />
+            </div>
+          </div>
+        </Popover>
       </div>
-      <Popover ref="op">
-        <div class="user-menu">
-          <div class="user-menu__header">
-            <Avatar
-              :label="store.user.username.substring(0, 1).toUpperCase()"
-              class="user-menu__avatar user-menu__avatar--admin"
-              size="large"
-              shape="circle"
-            />
-            <div class="user-menu__name">
-              {{ store.user.firstName }} {{ store.user.lastName }}
-            </div>
-            <div class="user-menu__username">
-              <i :class="PrimeIcons.SHIELD" class="mr-1"></i>
-              @{{ store.user.username }}
-            </div>
-          </div>
-
-          <div class="divider" />
-
-          <div class="user-menu__section">
-            <label class="user-menu__label">Idioma</label>
-            <LanguageSwitcher
-              v-model="store.user.preferredLanguage"
-              :changeAppLanguage="true"
-            />
-          </div>
-
-          <div class="user-menu__actions">
-            <Button
-              :icon="PrimeIcons.SIGN_OUT"
-              label="Tancar sessió"
-              class="w-full"
-              size="large"
-              @click="logoutClick"
-            />
-          </div>
+      <div class="title-bar__user" v-else-if="store.user">
+        <div class="avatar-container" @click="showOverlayPanel">
+          <Avatar
+            :label="store.user.username.substring(0, 1).toUpperCase()"
+            class="title-bar__user__avatar title-bar__user__avatar--admin"
+            size="large"
+            shape="circle"
+          />
         </div>
-      </Popover>
+        <Popover ref="op">
+          <div class="user-menu">
+            <div class="user-menu__header">
+              <Avatar
+                :label="store.user.username.substring(0, 1).toUpperCase()"
+                class="user-menu__avatar user-menu__avatar--admin"
+                size="large"
+                shape="circle"
+              />
+              <div class="user-menu__name">
+                {{ store.user.firstName }} {{ store.user.lastName }}
+              </div>
+              <div class="user-menu__username">
+                <i :class="PrimeIcons.SHIELD" class="mr-1"></i>
+                @{{ store.user.username }}
+              </div>
+            </div>
+
+            <div class="divider" />
+
+            <div class="user-menu__section">
+              <label class="user-menu__label">Idioma</label>
+              <LanguageSwitcher
+                v-model="store.user.preferredLanguage"
+                :changeAppLanguage="true"
+              />
+            </div>
+
+            <div class="user-menu__actions">
+              <Button
+                :icon="PrimeIcons.SIGN_OUT"
+                label="Tancar sessió"
+                class="w-full"
+                size="large"
+                @click="logoutClick"
+              />
+            </div>
+          </div>
+        </Popover>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useStore } from "../store";
 import Avatar from "primevue/avatar";
-import Badge from "primevue/badge";
 import Popover from "primevue/popover";
 import { PrimeIcons } from "@primevue/core/api";
 import { useRouter } from "vue-router";
-import { usePlantOperatorStore } from "../modules/plant/store";
-import LanguageSwitcher from "./LanguageSwitcher.vue";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import { usePlantOperatorStore } from "@/modules/plant/store";
+import { useStore } from "@/store";
 
 const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 const plantOperatorStore = usePlantOperatorStore();
 
 const store = useStore();
 const op = ref();
-const showOverlayPanel = (event: any) => {
+const showOverlayPanel = (event: Event) => {
   op.value.toggle(event);
 };
 const logoutClick = () => emits("logoutClick");
@@ -165,6 +166,14 @@ const goBack = () => router.back();
   text-align: left;
 }
 
+.title-bar__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-right: 1.5vw;
+}
+
 .title-bar__page__text {
   font-size: 1.5rem;
 }
@@ -182,9 +191,7 @@ const goBack = () => router.back();
 
 .title-bar__user {
   padding-top: 0.2rem;
-  margin-right: 1.5vw;
   padding-top: 0.2rem;
-  margin-right: 1.5vw;
   font-size: 1rem;
   text-align: right;
 }
