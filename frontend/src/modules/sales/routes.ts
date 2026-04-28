@@ -48,5 +48,6 @@ export default [
     path: "/salesinvoices-by-period",
     name: "SalesInvoicesByDates",
     component: SalesInvoicesByDates,
+    meta: { helpKey: "sales/salesinvoice/by-period" },
   },
 ] as Array<RouteRecordRaw>;
