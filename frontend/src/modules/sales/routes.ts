@@ -22,12 +22,18 @@ export default [
     component: CustomerType,
     props: true,
   },
-  { path: "/customers", name: "Customers", component: Customers },
+  {
+    path: "/customers",
+    name: "Customers",
+    component: Customers,
+    meta: { helpKey: "sales/customers/list" },
+  },
   {
     path: "/customers/:id",
     name: "Customer",
     component: Customer,
     props: true,
+    meta: { helpKey: "sales/customers/detail" },
   },
   { path: "/sales-invoice", name: "SalesInvoices", component: SalesInvoices },
   {
@@ -40,8 +46,18 @@ export default [
   { path: "/sales/reference/:id", name: "Reference", component: Reference },
   { path: "/budget", name: "Budgets", component: Budgets },
   { path: "/budget/:id", name: "Budget", component: Budget },
-  { path: "/salesorder", name: "SalesOrders", component: SalesOrders },
-  { path: "/salesorder/:id", name: "SalesOrder", component: SalesOrder },
+  {
+    path: "/salesorder",
+    name: "SalesOrders",
+    component: SalesOrders,
+    meta: { helpKey: "sales/salesorder/list" },
+  },
+  {
+    path: "/salesorder/:id",
+    name: "SalesOrder",
+    component: SalesOrder,
+    meta: { helpKey: "sales/salesorder/detail" },
+  },
   { path: "/deliverynote", name: "DeliveryNotes", component: DeliveryNotes },
   { path: "/deliverynote/:id", name: "DeliveryNote", component: DeliveryNote },
   {

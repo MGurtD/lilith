@@ -494,6 +494,22 @@ const en = {
       expiresOn: "Expiry date",
     },
   },
+  help: {
+    drawer: {
+      title: "Contextual help",
+      subtitle: "Shortcut: Alt + H",
+    },
+    actions: {
+      openTooltip: "Open help for the current screen (Alt + H)",
+    },
+    messages: {
+      loading: "Loading help...",
+      notAvailable: "There is no help available for this screen yet.",
+      noRouteHelp: "This screen does not have a configured help key yet.",
+      loadError: "The help documentation could not be loaded. Please try again.",
+      mermaidError: "The diagram could not be rendered.",
+    },
+  },
 };
 
 export default en;

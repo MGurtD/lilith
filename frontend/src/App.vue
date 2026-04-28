@@ -1,26 +1,71 @@
 <script setup lang="ts">
-import { useStore } from "./store";
-import { useApiStore } from "./store/backend";
-import { useSpanishGeography } from "./store/geography";
-import Header from "./components/TheHeader.vue";
-import SideBar from "./components/TheSidebar.vue";
-import Login from "./views/Login.vue";
-import PwaUpdatePrompt from "./components/PwaUpdatePrompt.vue";
-import { onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
-import { usePlantOperatorStore } from "./modules/plant/store";
+import { onMounted, onUnmounted, watch } from "vue";
 import ScrollPanel from "primevue/scrollpanel";
 import { applyPrimeVueLocale } from "./i18n";
 import { usePrimeVue } from "primevue/config";
+import { useRoute, useRouter } from "vue-router";
+import HelpDrawer from "@/components/help/HelpDrawer.vue";
+import Header from "@/components/TheHeader.vue";
+import PwaUpdatePrompt from "@/components/PwaUpdatePrompt.vue";
+import SideBar from "@/components/TheSidebar.vue";
+import { usePlantOperatorStore } from "@/modules/plant/store";
+import { useStore } from "@/store";
+import { useApiStore } from "@/store/backend";
+import { useSpanishGeography } from "@/store/geography";
+import { useHelpStore } from "@/store/help";
+import Login from "@/views/Login.vue";
 
 const store = useStore();
 const plantOperatorStore = usePlantOperatorStore();
 const apiStore = useApiStore();
 const spanishGeography = useSpanishGeography();
+const helpStore = useHelpStore();
+const route = useRoute();
 const router = useRouter();
 const primevue = usePrimeVue();
 
+const resolveRouteHelpKey = (): string | undefined => {
+  return typeof route.meta.helpKey === "string" ? route.meta.helpKey : undefined;
+};
+
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  const element = target instanceof HTMLElement ? target : null;
+  if (!element) {
+    return false;
+  }
+
+  const tagName = element.tagName;
+  return (
+    element.isContentEditable ||
+    element.closest("[contenteditable='true']") !== null ||
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT"
+  );
+};
+
+const handleHelpShortcut = (event: KeyboardEvent) => {
+  if (!store.authorization) {
+    return;
+  }
+
+  if (
+    !event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    event.key.toLowerCase() !== "h" ||
+    isEditableTarget(event.target)
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  void helpStore.toggleForRoute(resolveRouteHelpKey());
+};
+
 onMounted(async () => {
+  window.addEventListener("keydown", handleHelpShortcut);
   spanishGeography.fetch();
 
   // Initialize language for anonymous users; JWT-based locale will be handled in setAuthorization
@@ -28,17 +73,32 @@ onMounted(async () => {
   await store.getAuthorization();
 });
 
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleHelpShortcut);
+});
+
 watch(
   () => store.language.current,
   (val) => applyPrimeVueLocale(primevue.config, val),
 );
 
+watch(
+  () => route.fullPath,
+  () => {
+    if (helpStore.visible) {
+      void helpStore.openForRoute(resolveRouteHelpKey());
+    }
+  },
+);
+
 const logout = async () => {
+  helpStore.reset();
   await store.removeAuthorization();
   router.push("/login");
 };
 
 const logoutOperator = () => {
+  helpStore.reset();
   plantOperatorStore.removeOperator();
   router.push({ path: "/plant" });
 };
@@ -48,6 +108,7 @@ const logoutOperator = () => {
   <div v-if="store.authorization">
     <Header @logout-click="logout" @logout-operator-click="logoutOperator" />
     <SideBar />
+    <HelpDrawer />
     <main class="app__view" :class="{ collapsed: store.sidebar.collapsed }">
       <ScrollPanel style="height: calc(100vh - 5rem)">
         <RouterView />
