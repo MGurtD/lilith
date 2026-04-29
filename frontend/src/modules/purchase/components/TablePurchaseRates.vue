@@ -6,9 +6,11 @@
     :closable="true"
     :modal="true"
     style="width: 600px"
+    @hide="selectedRate = undefined"
   >
     <FormPurchaseRate
       v-if="selectedRate"
+      :key="selectedRate.id"
       :purchaseRate="selectedRate"
       @submit="submitRateForm"
     />
@@ -21,9 +23,11 @@
     :closable="true"
     :modal="true"
     style="width: 650px"
+    @hide="selectedDetail = undefined"
   >
     <FormPurchaseRateDetail
       v-if="selectedDetail"
+      :key="selectedDetail.id"
       :detail="selectedDetail"
       @submit="submitDetailForm"
     />
