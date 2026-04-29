@@ -142,6 +142,9 @@ namespace Application.Services.Sales
                 {
                     detail.DetailWeight = productionMetrics.TotalWeight;
                 }*/
+
+                
+
                 var referenceTypeId = workmaster.Reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
                 if(referenceTypeId != null)
@@ -160,14 +163,23 @@ namespace Application.Services.Sales
                     budget.TotalWeight += netWeight;
                     await unitOfWork.Budgets.Update(budget);
                 }
+
+                // El detall s'ha de desar ABANS d'inserir BudgetExternalServiceDetail
+                // per satisfer la FK constraint BudgetDetailId
+                await unitOfWork.Budgets.Details.Add(detail);
+                await AddExternalServicesFromWorkmaster(workmaster, detail);
+                return new GenericResponse(true, detail);
             }
-             
             await unitOfWork.Budgets.Details.Add(detail);
             return new GenericResponse(true, detail);
         }
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
+            // Recuperar el detall antic per obtenir la quantitat anterior
+            var oldDetail = unitOfWork.Budgets.Details.Find(d => d.Id == detail.Id).FirstOrDefault();
+            var oldQuantity = oldDetail?.Quantity ?? 0;
             var oldWeight = detail.DetailWeight;
+
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
@@ -189,6 +201,45 @@ namespace Application.Services.Sales
                 {
                     budget.TotalWeight += detail.DetailWeight - oldWeight;
                     await unitOfWork.Budgets.Update(budget);
+                }
+
+                // Actualitzar serveis externs: restar contribució antiga i sumar la nova
+                var quantityDiff = detail.Quantity - oldQuantity;
+                var volumeDiff = workmaster.volume * quantityDiff;
+                var weightDiff = detail.DetailWeight * quantityDiff;
+                var newLineWeight = detail.DetailWeight * detail.Quantity;
+                var newLineVolume = workmaster.volume * detail.Quantity;
+
+                foreach (var phase in workmaster.Phases)
+                {
+                    if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                    {
+                        var serviceRefId = phase.ServiceReferenceId.Value;
+                        var existing = unitOfWork.Budgets.ExternalServices
+                            .Find(es => es.BudgetId == detail.BudgetId && es.ReferenceId == serviceRefId)
+                            .FirstOrDefault();
+
+                        if (existing != null)
+                        {
+                            existing.Quantity += quantityDiff;
+                            existing.Volume += volumeDiff;
+                            existing.Weight += weightDiff;
+                            await unitOfWork.Budgets.ExternalServices.Update(existing);
+
+                            // Actualitzar detall de la relació N:M
+                            var existingServiceDetail = unitOfWork.Budgets.ExternalServiceDetails
+                                .Find(d => d.BudgetExternalServiceId == existing.Id && d.BudgetDetailId == detail.Id)
+                                .FirstOrDefault();
+
+                            if (existingServiceDetail != null)
+                            {
+                                existingServiceDetail.Quantity = detail.Quantity;
+                                existingServiceDetail.Weight = newLineWeight;
+                                existingServiceDetail.Volume = newLineVolume;
+                                await unitOfWork.Budgets.ExternalServiceDetails.Update(existingServiceDetail);
+                            }
+                        }
+                    }
                 }
             }
             await unitOfWork.Budgets.Details.Update(detail);
@@ -215,13 +266,16 @@ namespace Application.Services.Sales
                 }
                 detail.DetailWeight = netWeight;
 
-                // Afegir pes al total del pressupost
+                // Restar pes del total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {
                     budget.TotalWeight -= detail.DetailWeight;
                     await unitOfWork.Budgets.Update(budget);
                 }
+
+                // Restar contribució dels serveis externs o eliminar-los
+                await RemoveExternalServicesFromWorkmaster(workmaster, detail);
             }
 
             await unitOfWork.Budgets.Details.Remove(detail);
@@ -332,6 +386,267 @@ namespace Application.Services.Sales
             {
                 logger.LogError(ex, "S'ha produït un error en intentar ponderar el cost de transport pel pressupost {BudgetId}", budgetId);
                 return new GenericResponse(false, $"Error intern: {ex.Message}");
+            }
+        }
+
+        public async Task<GenericResponse> DistributeAllCosts(Guid budgetId)
+        {
+            logger.LogInformation("Iniciant DistributeAllCosts pel pressupost: {BudgetId}", budgetId);
+
+            var budget = await unitOfWork.Budgets.Get(budgetId);
+            if (budget == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", budgetId));
+            }
+
+            if (budget.Details == null || !budget.Details.Any())
+            {
+                return new GenericResponse(false, "El pressupost no té línies de detall");
+            }
+
+            var totalWeight = budget.TotalWeight;
+            var budgetDate = DateOnly.FromDateTime(budget.Date);
+
+            try 
+            {
+                // 1. Ponderar Transport (pes)
+                foreach (var detail in budget.Details)
+                {
+                    decimal totalTransportShare = totalWeight > 0 ? (detail.DetailWeight / totalWeight) * budget.TransportCost : 0;
+                    detail.TransportCost = detail.Quantity > 0 ? totalTransportShare / detail.Quantity : 0;
+                    detail.ServiceCost = 0; // Reset
+                }
+
+                // 2. Ponderar Serveis Externs
+                if (budget.ExternalServices != null)
+                {
+                    foreach (var extService in budget.ExternalServices)
+                    {
+                        if (extService.SupplierId == Guid.Empty || extService.UnitPrice <= 0)
+                        {
+                            logger.LogWarning("Servei extern {ServiceId} sense proveïdor o preu. S'omet.", extService.Id);
+                            continue;
+                        }
+
+                        // Obtenir la tarifa activa del proveïdor
+                        var activeRates = await unitOfWork.PurchaseRates.FindAsync(r => 
+                            r.SupplierId == extService.SupplierId && 
+                            r.ValidFrom <= budgetDate && 
+                            r.ValidTo >= budgetDate);
+                        
+                        var activeRate = activeRates.FirstOrDefault();
+                        if (activeRate == null)
+                        {
+                            logger.LogWarning("No hi ha tarifa de compra activa pel proveïdor {SupplierId} a la data {Date}", extService.SupplierId, budgetDate);
+                            continue;
+                        }
+
+                        // Obtenir els detalls de la tarifa
+                        var rateDetails = await unitOfWork.PurchaseRateDetails.FindAsync(d => d.PurchaseRateId == activeRate.Id && d.ReferenceId == extService.ReferenceId);
+                        var rateDetail = rateDetails.FirstOrDefault();
+
+                        int calculationType = rateDetail?.CalculationType ?? 2; // Default Unitats
+
+                        // 1 = Pes, 2 = Unitats, 3 = Volum
+                        decimal totalMagnitude = calculationType switch
+                        {
+                            1 => extService.Weight,
+                            3 => extService.Volume,
+                            _ => extService.Quantity
+                        };
+
+                        if (totalMagnitude <= 0)
+                        {
+                            if (calculationType == 1 || calculationType == 3)
+                            {
+                                logger.LogWarning("La magnitud (pes/volum) del servei extern {ServiceId} és {Magnitude}, es canvia a repartir per unitats.", extService.Id, totalMagnitude);
+                                calculationType = 2; // Fallback to Units
+                                totalMagnitude = extService.Quantity;
+                            }
+                            
+                            if (totalMagnitude <= 0) continue;
+                        }
+
+                        decimal totalServiceCost = extService.UnitPrice * totalMagnitude;
+
+                        if (extService.Details != null)
+                        {
+                            foreach (var esd in extService.Details)
+                            {
+                                var detailMagnitude = calculationType switch
+                                {
+                                    1 => esd.Weight,
+                                    3 => esd.Volume,
+                                    _ => esd.Quantity
+                                };
+
+                                decimal proportion = detailMagnitude / totalMagnitude;
+                                decimal totalCostShare = totalServiceCost * proportion;
+
+                                var bDetail = budget.Details.FirstOrDefault(d => d.Id == esd.BudgetDetailId);
+                                if (bDetail != null)
+                                {
+                                    decimal unitCostShare = bDetail.Quantity > 0 ? totalCostShare / bDetail.Quantity : 0;
+                                    bDetail.ServiceCost += unitCostShare;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Recalcular totals
+                foreach (var detail in budget.Details)
+                {
+                    // Costos unitaris
+                    detail.TotalCost = detail.UnitCost + detail.TransportCost + detail.ServiceCost;
+                    
+                    // Preu unitari amb benefici i descompte (en %)
+                    decimal priceWithProfit = detail.TotalCost + (detail.TotalCost * (detail.Profit / 100m));
+                    detail.UnitPrice = priceWithProfit - (priceWithProfit * (detail.Discount / 100m));
+                    
+                    // Import total de la línia
+                    detail.Amount = detail.UnitPrice * detail.Quantity;
+
+                    unitOfWork.Budgets.Details.UpdateWithoutSave(detail);
+                }
+                
+                await unitOfWork.CompleteAsync();
+                return new GenericResponse(true);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error a DistributeAllCosts pel pressupost {BudgetId}", budgetId);
+                return new GenericResponse(false, $"Error intern: {ex.Message}");
+            }
+        }
+
+        public async Task<GenericResponse> UpdateExternalService(BudgetExternalServices externalService)
+        {
+            var exists = await unitOfWork.Budgets.ExternalServices.Get(externalService.Id);
+            if (exists == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound"));
+            }
+
+            // Only update the manually modifiable fields from the frontend
+            exists.SupplierId = externalService.SupplierId;
+            exists.UnitPrice = externalService.UnitPrice;
+            exists.TotalPrice = externalService.TotalPrice;
+
+            await unitOfWork.Budgets.ExternalServices.Update(exists);
+            return new GenericResponse(true, exists);
+        }
+
+        /// <summary>
+        /// Per cada fase ExternalWork del workmaster, comprova si ja existeix un BudgetExternalServices
+        /// amb el mateix ServiceReferenceId. Si existeix, suma quantitat, volum i pes. Si no, l'insereix.
+        /// </summary>
+        private async Task AddExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, BudgetDetail detail)
+        {
+            var lineWeight = detail.DetailWeight * detail.Quantity;
+            var lineVolume = workmaster.volume * detail.Quantity;
+
+            foreach (var phase in workmaster.Phases)
+            {
+                if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                {
+                    var serviceRefId = phase.ServiceReferenceId.Value;
+                    var existing = unitOfWork.Budgets.ExternalServices
+                        .Find(es => es.BudgetId == detail.BudgetId && es.ReferenceId == serviceRefId)
+                        .FirstOrDefault();
+
+                    Guid externalServiceId;
+                    if (existing != null)
+                    {
+                        existing.Quantity += detail.Quantity;
+                        existing.Volume += lineVolume;
+                        existing.Weight += lineWeight;
+                        await unitOfWork.Budgets.ExternalServices.Update(existing);
+                        externalServiceId = existing.Id;
+                    }
+                    else
+                    {
+                        var budgetExternalService = new BudgetExternalServices
+                        {
+                            BudgetId = detail.BudgetId,
+                            ReferenceId = serviceRefId,
+                            Description = phase.Description,
+                            Weight = lineWeight,
+                            Volume = lineVolume,
+                            Quantity = detail.Quantity,
+                        };
+                        await unitOfWork.Budgets.ExternalServices.Add(budgetExternalService);
+                        externalServiceId = budgetExternalService.Id;
+                    }
+
+                    // Upsert del detall de la relació N:M
+                    var existingDetail = unitOfWork.Budgets.ExternalServiceDetails
+                        .Find(d => d.BudgetExternalServiceId == externalServiceId && d.BudgetDetailId == detail.Id)
+                        .FirstOrDefault();
+
+                    if (existingDetail != null)
+                    {
+                        existingDetail.Quantity = detail.Quantity;
+                        existingDetail.Weight = lineWeight;
+                        existingDetail.Volume = lineVolume;
+                        await unitOfWork.Budgets.ExternalServiceDetails.Update(existingDetail);
+                    }
+                    else
+                    {
+                        var serviceDetail = new BudgetExternalServiceDetail
+                        {
+                            BudgetExternalServiceId = externalServiceId,
+                            BudgetDetailId = detail.Id,
+                            Quantity = detail.Quantity,
+                            Weight = lineWeight,
+                            Volume = lineVolume,
+                        };
+                        await unitOfWork.Budgets.ExternalServiceDetails.Add(serviceDetail);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Per cada fase ExternalWork del workmaster, resta la contribució de la línia eliminada.
+        /// Si la quantitat resultant és <= 0, elimina el registre.
+        /// </summary>
+        private async Task RemoveExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, BudgetDetail detail)
+        {
+            foreach (var phase in workmaster.Phases)
+            {
+                if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                {
+                    var serviceRefId = phase.ServiceReferenceId.Value;
+                    var existing = unitOfWork.Budgets.ExternalServices
+                        .Find(es => es.BudgetId == detail.BudgetId && es.ReferenceId == serviceRefId)
+                        .FirstOrDefault();
+
+                    if (existing != null)
+                    {
+                        // Eliminar el detall de la relació N:M
+                        var serviceDetail = unitOfWork.Budgets.ExternalServiceDetails
+                            .Find(d => d.BudgetExternalServiceId == existing.Id && d.BudgetDetailId == detail.Id)
+                            .FirstOrDefault();
+                        if (serviceDetail != null)
+                        {
+                            await unitOfWork.Budgets.ExternalServiceDetails.Remove(serviceDetail);
+                        }
+
+                        existing.Quantity -= detail.Quantity;
+                        existing.Volume -= workmaster.volume * detail.Quantity;
+                        existing.Weight -= detail.DetailWeight * detail.Quantity;
+
+                        if (existing.Quantity <= 0)
+                        {
+                            await unitOfWork.Budgets.ExternalServices.Remove(existing);
+                        }
+                        else
+                        {
+                            await unitOfWork.Budgets.ExternalServices.Update(existing);
+                        }
+                    }
+                }
             }
         }
     }

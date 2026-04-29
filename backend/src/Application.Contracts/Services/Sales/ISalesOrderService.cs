@@ -23,6 +23,13 @@ namespace Application.Contracts
 
         Task<GenericResponse> UpdateCosts(Guid id);
 
+        Task<GenericResponse> AddTransport(SalesOrderTransport transport);
+        Task<GenericResponse> UpdateTransport(SalesOrderTransport transport);
+        Task<GenericResponse> RemoveTransport(Guid id);
+        Task<GenericResponse> DistributeTransportCosts(Guid salesOrderId);
+        Task<GenericResponse> DistributeAllCosts(Guid salesOrderId);
+        Task<GenericResponse> UpdateExternalService(SalesOrderExternalServices externalService);
+
         Task<SalesOrderDetail?> GetDetailById(Guid id);
         Task<GenericResponse> AddDetail(SalesOrderDetail detail);
         Task<GenericResponse> UpdateDetail(SalesOrderDetail detail);

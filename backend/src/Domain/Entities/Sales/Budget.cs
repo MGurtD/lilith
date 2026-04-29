@@ -21,6 +21,7 @@ namespace Domain.Entities.Sales
 
         public ICollection<BudgetDetail> Details { get; set; } = new List<BudgetDetail>();
         public ICollection<BudgetTransport> Transports { get; set; } = new List<BudgetTransport>();
+        public ICollection<BudgetExternalServices> ExternalServices { get; set; } = new List<BudgetExternalServices>();
 
         // Constructors
         public Budget()

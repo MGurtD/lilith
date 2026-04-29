@@ -1,6 +1,7 @@
 
 using Application.Contracts;
 using Domain.Entities.Sales;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Sales
 {
@@ -9,7 +10,8 @@ namespace Application.Services.Sales
         IEnterpriseService enterpriseService,
         IExerciseService exerciseService,
         IBudgetService budgetService,
-        ILocalizationService localizationService) : ISalesOrderService
+        ILocalizationService localizationService,
+        Microsoft.Extensions.Logging.ILogger<SalesOrderService> logger) : ISalesOrderService
     {
         public async Task<SalesOrderHeader?> GetById(Guid id)
         {
@@ -69,9 +71,12 @@ namespace Application.Services.Sales
             var salesOrder = (SalesOrderHeader)createResponse.Content!;
             salesOrder.ExpectedDate = DateTime.Now.AddDays(budget.DeliveryDays);
             salesOrder.BudgetId = budget.Id;
+            salesOrder.TotalWeight = budget.TotalWeight;
+            // Budget doesn't have TotalVolume yet, but we add it for parity
             var updateResponse = await Update(salesOrder);
             if (!updateResponse.Result) return updateResponse;
 
+            var detailMap = new Dictionary<Guid, Guid>();
             foreach (var detail in budget.Details)
             {
                 var salesOrderDetail = new SalesOrderDetail(detail, DateTime.Now.AddDays(budget.DeliveryDays))
@@ -79,6 +84,69 @@ namespace Application.Services.Sales
                     SalesOrderHeaderId = salesOrder.Id
                 };
                 await AddDetail(salesOrderDetail);
+                detailMap[detail.Id] = salesOrderDetail.Id;
+            }
+
+            if (budget.Transports != null)
+            {
+                foreach (var transport in budget.Transports)
+                {
+                    var newTransport = new SalesOrderTransport
+                    {
+                        Id = Guid.NewGuid(),
+                        SalesOrderHeaderId = salesOrder.Id,
+                        TransportRateDetailId = transport.TransportRateDetailId,
+                        Weight = transport.Weight,
+                        Volume = transport.Volume,
+                        Distance = transport.Distance,
+                        Price = transport.Price,
+                        Description = transport.Description,
+                        Destination = transport.Destination
+                    };
+                    await unitOfWork.SalesOrderHeaders.Transports.Add(newTransport);
+                }
+            }
+
+            if (budget.ExternalServices != null)
+            {
+                foreach (var extService in budget.ExternalServices)
+                {
+                    var newExtService = new SalesOrderExternalServices
+                    {
+                        Id = Guid.NewGuid(),
+                        SalesOrderHeaderId = salesOrder.Id,
+                        ReferenceId = extService.ReferenceId,
+                        Description = extService.Description,
+                        Weight = extService.Weight,
+                        Volume = extService.Volume,
+                        Quantity = extService.Quantity,
+                        SupplierId = extService.SupplierId,
+                        UnitPrice = extService.UnitPrice,
+                        TotalPrice = extService.TotalPrice,
+                        Details = new List<SalesOrderExternalServiceDetail>()
+                    };
+
+                    if (extService.Details != null)
+                    {
+                        foreach (var esd in extService.Details)
+                        {
+                            if (detailMap.TryGetValue(esd.BudgetDetailId, out var newDetailId))
+                            {
+                                newExtService.Details.Add(new SalesOrderExternalServiceDetail
+                                {
+                                    Id = Guid.NewGuid(),
+                                    SalesOrderExternalServiceId = newExtService.Id,
+                                    SalesOrderDetailId = newDetailId,
+                                    Weight = esd.Weight,
+                                    Volume = esd.Volume,
+                                    Quantity = esd.Quantity
+                                });
+                            }
+                        }
+                    }
+
+                    await unitOfWork.SalesOrderHeaders.ExternalServices.Add(newExtService);
+                }
             }
 
             var acceptResponse = await budgetService.Accept(budget.Id);
@@ -174,6 +242,200 @@ namespace Application.Services.Sales
 
             }
 
+            return new GenericResponse(true);
+        }
+
+        public async Task<GenericResponse> AddTransport(SalesOrderTransport transport)
+        {
+            await unitOfWork.SalesOrderHeaders.Transports.Add(transport);
+            return new GenericResponse(true);
+        }
+
+        public async Task<GenericResponse> UpdateTransport(SalesOrderTransport transport)
+        {
+            var exists = await unitOfWork.SalesOrderHeaders.Transports.Get(transport.Id);
+            if (exists == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("ItemNotFound", transport.Id));
+            }
+            exists.Weight = transport.Weight;
+            exists.Volume = transport.Volume;
+            exists.Distance = transport.Distance;
+            exists.Price = transport.Price;
+            exists.Description = transport.Description;
+            exists.Destination = transport.Destination;
+
+            await unitOfWork.SalesOrderHeaders.Transports.Update(exists);
+            return new GenericResponse(true);
+        }
+
+        public async Task<GenericResponse> RemoveTransport(Guid id)
+        {
+            var exists = await unitOfWork.SalesOrderHeaders.Transports.Get(id);
+            if (exists == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ItemNotFound", id));
+
+            await unitOfWork.SalesOrderHeaders.Transports.Remove(exists);
+            return new GenericResponse(true, exists);
+        }
+
+        public async Task<GenericResponse> DistributeTransportCosts(Guid salesOrderId)
+        {
+            return await DistributeAllCosts(salesOrderId);
+        }
+
+        public async Task<GenericResponse> DistributeAllCosts(Guid salesOrderId)
+        {
+            var salesOrder = await unitOfWork.SalesOrderHeaders.Get(salesOrderId);
+            if (salesOrder == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("OrderNotFound", salesOrderId));
+            }
+
+            if (salesOrder.SalesOrderDetails == null || !salesOrder.SalesOrderDetails.Any())
+            {
+                return new GenericResponse(false, "La comanda no té línies de detall");
+            }
+
+            var totalWeight = salesOrder.SalesOrderDetails.Sum(d => 
+            {
+                var master = unitOfWork.WorkMasters.Find(w => w.ReferenceId == d.ReferenceId).FirstOrDefault();
+                return master?.totalWeight * d.Quantity ?? 0;
+            });
+
+            var budgetDate = DateOnly.FromDateTime(salesOrder.Date);
+
+            try 
+            {
+                var totalTransportCost = salesOrder.Transports?.Sum(t => t.Price) ?? 0;
+
+                // 1. Ponderar Transport (pes)
+                foreach (var detail in salesOrder.SalesOrderDetails)
+                {
+                    var master = unitOfWork.WorkMasters.Find(w => w.ReferenceId == detail.ReferenceId).FirstOrDefault();
+                    var detailWeight = master?.totalWeight * detail.Quantity ?? 0;
+
+                    decimal totalTransportShare = totalWeight > 0 ? (detailWeight / totalWeight) * totalTransportCost : 0;
+                    detail.TransportCost = detail.Quantity > 0 ? totalTransportShare / detail.Quantity : 0;
+                    detail.ServiceCost = 0; // Reset
+                }
+
+                // 2. Ponderar Serveis Externs
+                if (salesOrder.ExternalServices != null)
+                {
+                    foreach (var extService in salesOrder.ExternalServices)
+                    {
+                        if (extService.SupplierId == Guid.Empty || extService.UnitPrice <= 0)
+                        {
+                            logger.LogWarning("Servei extern {ServiceId} sense proveïdor o preu. S'omet.", extService.Id);
+                            continue;
+                        }
+
+                        // Obtenir la tarifa activa del proveïdor
+                        var activeRates = await unitOfWork.PurchaseRates.FindAsync(r => 
+                            r.SupplierId == extService.SupplierId && 
+                            r.ValidFrom <= budgetDate && 
+                            r.ValidTo >= budgetDate);
+                        
+                        var activeRate = activeRates.FirstOrDefault();
+                        if (activeRate == null)
+                        {
+                            logger.LogWarning("No hi ha tarifa de compra activa pel proveïdor {SupplierId} a la data {Date}", extService.SupplierId, budgetDate);
+                            continue;
+                        }
+
+                        // Obtenir els detalls de la tarifa
+                        var rateDetails = await unitOfWork.PurchaseRateDetails.FindAsync(d => d.PurchaseRateId == activeRate.Id && d.ReferenceId == extService.ReferenceId);
+                        var rateDetail = rateDetails.FirstOrDefault();
+
+                        int calculationType = rateDetail?.CalculationType ?? 2; // Default Unitats
+
+                        // 1 = Pes, 2 = Unitats, 3 = Volum
+                        decimal totalMagnitude = calculationType switch
+                        {
+                            1 => extService.Weight,
+                            3 => extService.Volume,
+                            _ => extService.Quantity
+                        };
+
+                        if (totalMagnitude <= 0)
+                        {
+                            if (calculationType == 1 || calculationType == 3)
+                            {
+                                logger.LogWarning("La magnitud (pes/volum) del servei extern {ServiceId} és {Magnitude}, es canvia a repartir per unitats.", extService.Id, totalMagnitude);
+                                calculationType = 2; // Fallback to Units
+                                totalMagnitude = extService.Quantity;
+                            }
+                            
+                            if (totalMagnitude <= 0) continue;
+                        }
+
+                        decimal totalServiceCost = extService.UnitPrice * totalMagnitude;
+
+                        if (extService.Details != null)
+                        {
+                            foreach (var esd in extService.Details)
+                            {
+                                var detailMagnitude = calculationType switch
+                                {
+                                    1 => esd.Weight,
+                                    3 => esd.Volume,
+                                    _ => esd.Quantity
+                                };
+
+                                decimal proportion = detailMagnitude / totalMagnitude;
+                                decimal totalCostShare = totalServiceCost * proportion;
+
+                                var bDetail = salesOrder.SalesOrderDetails.FirstOrDefault(d => d.Id == esd.SalesOrderDetailId);
+                                if (bDetail != null)
+                                {
+                                    decimal unitCostShare = bDetail.Quantity > 0 ? totalCostShare / bDetail.Quantity : 0;
+                                    bDetail.ServiceCost += unitCostShare;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Recalcular totals
+                foreach (var detail in salesOrder.SalesOrderDetails)
+                {
+                    // Costos unitaris
+                    detail.TotalCost = detail.UnitCost + detail.TransportCost + detail.ServiceCost;
+                    
+                    // Preu unitari amb benefici i descompte (en %)
+                    decimal priceWithProfit = detail.TotalCost + (detail.TotalCost * (detail.Profit / 100m));
+                    detail.UnitPrice = priceWithProfit - (priceWithProfit * (detail.Discount / 100m));
+                    
+                    // Import total de la línia
+                    detail.Amount = detail.UnitPrice * detail.Quantity;
+
+                    unitOfWork.SalesOrderHeaders.UpdateDetail(detail).Wait();
+                }
+                
+                await unitOfWork.CompleteAsync();
+                return new GenericResponse(true);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error a DistributeAllCosts per la comanda {OrderId}", salesOrderId);
+                return new GenericResponse(false, $"Error intern: {ex.Message}");
+            }
+        }
+
+        public async Task<GenericResponse> UpdateExternalService(SalesOrderExternalServices externalService)
+        {
+            var exists = await unitOfWork.SalesOrderHeaders.ExternalServices.Get(externalService.Id);
+            if (exists == null)
+            {
+                return new GenericResponse(false, localizationService.GetLocalizedString("ItemNotFound", externalService.Id));
+            }
+
+            exists.SupplierId = externalService.SupplierId;
+            exists.UnitPrice = externalService.UnitPrice;
+            exists.TotalPrice = externalService.TotalPrice;
+
+            await unitOfWork.SalesOrderHeaders.ExternalServices.Update(exists);
             return new GenericResponse(true);
         }
 

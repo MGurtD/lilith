@@ -17,7 +17,9 @@
   <Tabs value="0">
     <TabList>
       <Tab value="0">Detall</Tab>
-      <Tab value="1">Fitxers</Tab>
+      <Tab value="1">Transports</Tab>
+      <Tab value="2">Serveis Externs</Tab>
+      <Tab value="3">Fitxers</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -45,6 +47,12 @@
               <section v-if="!deliveryNoteStore.deliveryNote">
                 <Button
                   :size="'small'"
+                  label="Ponderar Costos"
+                  @click="onDistributeAllCosts(salesOrder.id)"
+                  class="mr-2 dark-gray-button"
+                />
+                <Button
+                  :size="'small'"
                   label="Afegir línea"
                   @click="
                     openOrderDetailDialog(FormActionMode.CREATE, {} as any)
@@ -57,6 +65,54 @@
         </TableSalesOrderDetails>
       </TabPanel>
       <TabPanel value="1">
+        <TableSalesOrderTransports
+          v-if="salesOrder && salesOrder.transports"
+          :salesOrder="salesOrder"
+          :transports="salesOrder.transports"
+          @edit="
+            (trans: SalesOrderTransport) =>
+              openSalesOrderTransportDialog(FormActionMode.EDIT, trans)
+          "
+          @delete="deleteSalesOrderTransport"
+        >
+          <template #header>
+            <div
+              class="flex flex-wrap align-items-center justify-content-between gap-2"
+            >
+              <span class="text-l text-900 font-bold"
+                >Transports de la comanda</span
+              >
+              <section v-if="!deliveryNoteStore.deliveryNote">
+                <Button
+                  :size="'small'"
+                  label="Afegir transport"
+                  @click="
+                    openSalesOrderTransportDialog(FormActionMode.CREATE, {} as any)
+                  "
+                  class="mr-2"
+                />
+              </section>
+            </div>
+          </template>
+        </TableSalesOrderTransports>
+      </TabPanel>
+      <TabPanel value="2">
+        <TableSalesOrderExternalServices
+          v-if="externalServicesWithSuppliers.length > 0"
+          :externalServices="externalServicesWithSuppliers"
+          @supplierChange="onExternalServiceSupplierChange"
+        >
+          <template #header>
+            <div
+              class="flex flex-wrap align-items-center justify-content-between gap-2"
+            >
+              <span class="text-l text-900 font-bold">Serveis externs</span>
+            </div>
+          </template>
+        </TableSalesOrderExternalServices>
+        <p v-else class="mt-3 text-500">Sense serveis externs calculats.</p>
+      </TabPanel>
+      <TabPanel value="3">
         <FileEntityPicker
           v-if="salesOrder"
           entity="SalesOrder"
@@ -84,6 +140,25 @@
       @submit="onOrderDetailSubmit"
     />
   </Dialog>
+  <Dialog
+    :closable="true"
+    :style="{ width: '50%' }"
+    :maximizable="true"
+    v-model:visible="isTransportDialogVisible"
+    :header="transportDialogTitle"
+    :modal="true"
+    v-if="salesOrder"
+  >
+    <FormSalesOrderTransport
+      v-if="salesOrder && salesOrderTransport"
+      :formAction="formTransportMode"
+      :header="salesOrder"
+      :transport="salesOrderTransport"
+      :customerId="salesOrder.customerId"
+      :readonly="false"
+      @submit="onSalesOrderTransportSubmit"
+    />
+  </Dialog>
 </template>
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from "vue";
@@ -95,6 +170,7 @@ import {
   CreateWorkOrderFromSalesOrderDto,
   SalesOrderDetail,
   SalesOrderHeader,
+  SalesOrderTransport,
 } from "../types";
 import { useStore } from "../../../store";
 import {
@@ -121,7 +197,14 @@ import services from "../services";
 import { useWorkOrderStore } from "../../production/store/workorder";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useBudgetStore } from "../store/budget";
+import TableSalesOrderTransports from "../components/TableSalesOrderTransports.vue";
+import FormSalesOrderTransport from "../components/FormSalesOrderTransport.vue";
+import TableSalesOrderExternalServices from "../components/TableSalesOrderExternalServices.vue";
+import type { SalesOrderExternalServiceRow } from "../components/TableSalesOrderExternalServices.vue";
+import { ReferenceService } from "../../shared/services/reference.service";
+import { useSuppliersStore } from "../../purchase/store/suppliers";
 
+const referenceService = new ReferenceService("/reference");
 const salesOrderForm = ref();
 
 const formMode = ref(FormActionMode.EDIT);
@@ -140,7 +223,83 @@ const workMasterStore = useWorkMasterStore();
 const workOrderStore = useWorkOrderStore();
 const taxesStore = useTaxesStore();
 const budgetStore = useBudgetStore();
+const supplierStore = useSuppliersStore();
 const { salesOrder } = storeToRefs(salesOrderStore);
+
+export type { SalesOrderExternalServiceRow };
+const externalServicesWithSuppliers = ref<SalesOrderExternalServiceRow[]>([]);
+
+const calculatePriceForRow = async (row: SalesOrderExternalServiceRow): Promise<void> => {
+  if (!row.supplierId) return;
+  const unitPrice = await referenceService.getPriceBySupplier(row.referenceId, row.supplierId);
+  if (unitPrice !== null) {
+    row.unitPrice = unitPrice;
+    row.totalPrice = unitPrice * row.quantity;
+  }
+};
+
+const loadExternalServiceSuppliers = async () => {
+  if (!salesOrder.value?.externalServices?.length) {
+    externalServicesWithSuppliers.value = [];
+    return;
+  }
+  const previousById = new Map<string, SalesOrderExternalServiceRow>(
+    externalServicesWithSuppliers.value.map((r) => [r.id, r])
+  );
+
+  const rows = await Promise.all(
+    salesOrder.value.externalServices.map(async (svc) => {
+      const suppliers = await supplierStore.fetchSuppliersByReference(svc.referenceId);
+      const prev = previousById.get(svc.id);
+      const row: SalesOrderExternalServiceRow = {
+        ...svc,
+        availableSuppliers: suppliers,
+        supplierId: prev?.supplierId ?? svc.supplierId,
+      };
+      await calculatePriceForRow(row);
+      return row;
+    })
+  );
+  externalServicesWithSuppliers.value = rows;
+};
+
+const onExternalServiceSupplierChange = async (row: SalesOrderExternalServiceRow) => {
+  await calculatePriceForRow(row);
+  const result = await salesOrderStore.UpdateExternalService({
+      id: row.id,
+      salesOrderHeaderId: row.salesOrderHeaderId,
+      referenceId: row.referenceId,
+      description: row.description,
+      weight: row.weight,
+      volume: row.volume,
+      quantity: row.quantity,
+      supplierId: row.supplierId,
+      unitPrice: row.unitPrice,
+      totalPrice: row.totalPrice
+  });
+  
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Proveïdor actualitzat",
+      detail: "S'ha desat el proveïdor per al servei extern.",
+      life: 3000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No s'ha pogut desar el proveïdor.",
+      life: 3000,
+    });
+  }
+};
+
+watch(
+  () => salesOrder.value?.externalServices,
+  () => loadExternalServiceSuppliers(),
+  { deep: true }
+);
 
 const items = [
   {
@@ -160,6 +319,11 @@ const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
 const selectedSalesOrderDetail = ref(undefined as undefined | SalesOrderDetail);
 
+const transportDialogTitle = "Transport de comanda";
+const isTransportDialogVisible = ref(false);
+const formTransportMode = ref(FormActionMode.EDIT);
+const salesOrderTransport = ref(undefined as undefined | SalesOrderTransport);
+
 const loadView = async (salesOrderId: string) => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
@@ -171,6 +335,8 @@ const loadView = async (salesOrderId: string) => {
   deliveryNoteStore.deliveryNote = undefined;
 
   await salesOrderStore.GetById(salesOrderId);
+  await loadExternalServiceSuppliers();
+
   referenceStore.fetchReferencesByModule("sales");
   lifeCycleStore.fetchOneByName("SalesOrder");
   lifeCycleStore.fetchSecondaryByName("WorkOrder");
@@ -233,6 +399,7 @@ onUnmounted(() => {
   salesOrderStore.salesOrdersToDeliver = undefined;
   deliveryNoteStore.deliveryNote = undefined;
   workOrderStore.workorders = undefined;
+  externalServicesWithSuppliers.value = [];
 });
 
 const submitForm = () => {
@@ -395,6 +562,67 @@ const printInvoice = async (showPrices: boolean) => {
         detail: "No s'ha pugut generar fulla de la comanda",
       });
     }
+  }
+};
+
+const openSalesOrderTransportDialog = (
+  formMode: FormActionMode,
+  transport: SalesOrderTransport,
+) => {
+  if (formMode === FormActionMode.CREATE) {
+    transport = {
+      id: getNewUuid(),
+      salesOrderHeaderId: salesOrder.value!.id,
+      transportRateDetailId: "",
+      weight: 0,
+      volume: 0,
+      distance: 0,
+      price: 0,
+    } as SalesOrderTransport;
+  }
+  salesOrderTransport.value = Object.assign({}, transport);
+  formTransportMode.value = formMode;
+  isTransportDialogVisible.value = true;
+};
+
+const onSalesOrderTransportSubmit = async (transport: SalesOrderTransport) => {
+  if (formTransportMode.value === FormActionMode.CREATE) {
+    await salesOrderStore.CreateTransport(transport);
+  } else if (formTransportMode.value === FormActionMode.EDIT) {
+    await salesOrderStore.UpdateTransport(transport);
+  }
+  isTransportDialogVisible.value = false;
+};
+
+const deleteSalesOrderTransport = async (transport: SalesOrderTransport) => {
+  if (formMode.value === FormActionMode.EDIT) {
+    await salesOrderStore.DeleteTransport(transport.id, salesOrder.value!.id);
+  } else {
+    const afterDelete = salesOrder.value!.transports!.filter(
+      (i) => i.id !== transport.id,
+    );
+    salesOrder.value!.transports = afterDelete;
+  }
+};
+
+const onDistributeAllCosts = async (salesOrderId: string) => {
+  const result = await salesOrderStore.DistributeAllCosts(salesOrderId);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Costos ponderats",
+      detail:
+        "S'han ponderat els costos de transport i serveis externs correctament entre els detalls.",
+      life: 5000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error al ponderar",
+      detail:
+        "No s'han pogut ponderar els costos (és possible que hi hagi un error al servidor).",
+      life: 5000,
+    });
   }
 };
 </script>

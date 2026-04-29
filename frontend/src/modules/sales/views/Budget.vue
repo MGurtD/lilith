@@ -13,7 +13,8 @@
     <TabList>
       <Tab value="0">Detall</Tab>
       <Tab value="1">Transport</Tab>
-      <Tab value="2">Notes</Tab>
+      <Tab value="2">Serveis externs</Tab>
+      <Tab value="3">Notes</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -35,6 +36,12 @@
                 >Linies del pressupost</span
               >
               <section v-if="!budgetStore.order">
+                <Button
+                  :size="'small'"
+                  label="Ponderar Costos"
+                  @click="onDistributeAllCosts(budget.id)"
+                  class="mr-2 dark-gray-button"
+                />
                 <Button
                   :size="'small'"
                   label="Afegir línea"
@@ -75,18 +82,28 @@
                   "
                   class="mr-2"
                 />
-                <Button
-                  :size="'small'"
-                  label="Ponderar costs"
-                  @click="onDistributeCosts(budget.id)"
-                  class="mr-2"
-                />
               </section>
             </div>
           </template>
         </TableBudgetTransports>
       </TabPanel>
       <TabPanel value="2">
+        <TableBudgetExternalServices
+          v-if="externalServicesWithSuppliers.length > 0"
+          :externalServices="externalServicesWithSuppliers"
+          @supplierChange="onExternalServiceSupplierChange"
+        >
+          <template #header>
+            <div
+              class="flex flex-wrap align-items-center justify-content-between gap-2"
+            >
+              <span class="text-l text-900 font-bold">Serveis externs</span>
+            </div>
+          </template>
+        </TableBudgetExternalServices>
+        <p v-else class="mt-3 text-500">Sense serveis externs calculats.</p>
+      </TabPanel>
+      <TabPanel value="3">
         <section v-if="budget" class="mt-2">
           <div>
             <label class="block text-900 mb-2">Notes Internes</label>
@@ -153,7 +170,7 @@
   <!--:readonly="budgetStore.order !== null"-->
 </template>
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
@@ -177,6 +194,7 @@ import { useExerciseStore } from "../../shared/store/exercise";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useTaxesStore } from "../../shared/store/tax";
+import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import Services from "../services";
 import { useWorkMasterStore } from "../../production/store/workmaster";
@@ -186,7 +204,12 @@ import FormBudget from "../components/FormBudget.vue";
 import FormBudgetOrderDetail from "../components/FormBudgetOrderDetail.vue";
 import TableBudgetTransports from "../components/TableBudgetTransports.vue";
 import FormBudgetTransport from "../components/FormBudgetTransport.vue";
+import TableBudgetExternalServices from "../components/TableBudgetExternalServices.vue";
+import type { BudgetExternalServiceRow } from "../components/TableBudgetExternalServices.vue";
+import { ReferenceService } from "../../shared/services/reference.service";
 import { useSalesOrderStore } from "../store/order";
+
+const referenceService = new ReferenceService("/reference");
 
 const formMode = ref(FormActionMode.EDIT);
 const budgetForm = ref();
@@ -204,7 +227,85 @@ const referenceStore = useReferenceStore();
 const workMasterStore = useWorkMasterStore();
 const taxesStore = useTaxesStore();
 const salesOrderStore = useSalesOrderStore();
+const supplierStore = useSuppliersStore();
 const { budget } = storeToRefs(budgetStore);
+
+export type { BudgetExternalServiceRow };
+const externalServicesWithSuppliers = ref<BudgetExternalServiceRow[]>([]);
+
+const calculatePriceForRow = async (row: BudgetExternalServiceRow): Promise<void> => {
+  if (!row.supplierId) return;
+  const unitPrice = await referenceService.getPriceBySupplier(row.referenceId, row.supplierId);
+  if (unitPrice !== null) {
+    row.unitPrice = unitPrice;
+    row.totalPrice = unitPrice * row.quantity;
+  }
+};
+
+const loadExternalServiceSuppliers = async () => {
+  if (!budget.value?.externalServices?.length) {
+    externalServicesWithSuppliers.value = [];
+    return;
+  }
+  // Preservar les seleccions de supplier anteriors per mantenir-les al reconstruir
+  const previousById = new Map<string, BudgetExternalServiceRow>(
+    externalServicesWithSuppliers.value.map((r) => [r.id, r])
+  );
+
+  const rows = await Promise.all(
+    budget.value.externalServices.map(async (svc) => {
+      const suppliers = await supplierStore.fetchSuppliersByReference(svc.referenceId);
+      const prev = previousById.get(svc.id);
+      const row: BudgetExternalServiceRow = {
+        ...svc,
+        availableSuppliers: suppliers,
+        supplierId: prev?.supplierId ?? svc.supplierId,
+      };
+      // Recalcular preu si ja hi ha un proveïdor seleccionat
+      await calculatePriceForRow(row);
+      return row;
+    })
+  );
+  externalServicesWithSuppliers.value = rows;
+};
+
+const onExternalServiceSupplierChange = async (row: BudgetExternalServiceRow) => {
+  await calculatePriceForRow(row);
+  const result = await budgetStore.UpdateExternalService({
+      id: row.id,
+      budgetId: row.budgetId,
+      referenceId: row.referenceId,
+      description: row.description,
+      weight: row.weight,
+      volume: row.volume,
+      quantity: row.quantity,
+      supplierId: row.supplierId,
+      unitPrice: row.unitPrice,
+      totalPrice: row.totalPrice
+  });
+  
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Proveïdor actualitzat",
+      detail: "S'ha desat el proveïdor per al servei extern.",
+      life: 3000,
+    });
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No s'ha pogut desar el proveïdor.",
+      life: 3000,
+    });
+  }
+};
+
+watch(
+  () => budget.value?.externalServices,
+  () => loadExternalServiceSuppliers(),
+  { deep: true }
+);
 
 const items = [
   {
@@ -233,6 +334,7 @@ const loadView = async () => {
   const budgetId = route.params.id as string;
   await budgetStore.GetById(budgetId);
   await budgetStore.GetAssociatedSalesOrders(budgetId);
+  await loadExternalServiceSuppliers();
 
   referenceStore.fetchReferencesByModule("sales");
   workMasterStore.fetchAllActives();
@@ -449,20 +551,22 @@ const createSalesOrder = async () => {
   }
 };
 
-const onDistributeCosts = async (budgetId: string) => {
-  const result = await budgetStore.DistributeTransportCosts(budgetId);
+const onDistributeAllCosts = async (budgetId: string) => {
+  const result = await budgetStore.DistributeAllCosts(budgetId);
   if (result) {
     toast.add({
       severity: "success",
       summary: "Costos ponderats",
-      detail: "S'han ponderat els costos de transport correctament entre els detalls.",
+      detail:
+        "S'han ponderat els costos de transport i serveis externs correctament entre els detalls.",
       life: 5000,
     });
   } else {
     toast.add({
       severity: "error",
       summary: "Error al ponderar",
-      detail: "No s'han pogut ponderar els costos (és possible que el pes total sigui 0 o hi hagi un error al servidor).",
+      detail:
+        "No s'han pogut ponderar els costos (és possible que hi hagi un error al servidor).",
       life: 5000,
     });
   }

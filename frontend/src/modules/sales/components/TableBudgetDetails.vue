@@ -31,18 +31,19 @@
           formatCurrency(
             slotProps.data.totalCost -
               slotProps.data.serviceCost -
-              slotProps.data.transportCost
+              slotProps.data.transportCost,
           )
         }}
       </template>
     </Column>
     <Column header="Cost extern" style="width: 10%">
       <template #body="slotProps">
-        {{
-          formatCurrency(
-            slotProps.data.serviceCost + slotProps.data.transportCost
-          )
-        }}
+        {{ formatCurrency(slotProps.data.serviceCost) }}
+      </template>
+    </Column>
+    <Column header="Cost transport" style="width: 10%">
+      <template #body="slotProps">
+        {{ formatCurrency(slotProps.data.transportCost) }}
       </template>
     </Column>
     <Column field="totalCost" header="Cost total" style="width: 10%">
@@ -59,11 +60,6 @@
     <Column field="unitPrice" header="Preu un." style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.unitPrice) }}
-      </template>
-    </Column>
-    <Column field="transportCost" header="Cost transport" style="width: 10%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.transportCost) }}
       </template>
     </Column>
     <Column field="amount" header="Total" style="width: 10%">
@@ -108,7 +104,7 @@ const budgetStore = useBudgetStore();
 const onEditRow = (row: DataTableRowClickEvent) => {
   if (
     !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
+      "grid_delete_column_button",
     )
   ) {
     emit("edit", row.data);

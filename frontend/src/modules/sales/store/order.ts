@@ -51,6 +51,11 @@ export const useSalesOrderStore = defineStore({
         date: normalizeDateForApi(budget.date),
         acceptanceDate: normalizeDateForApi(budget.acceptanceDate),
         details: budget.details?.map((detail) => ({ ...detail })),
+        transports: budget.transports?.map((t) => ({ ...t })),
+        externalServices: budget.externalServices?.map((es) => ({
+          ...es,
+          details: es.details?.map((d) => ({ ...d })),
+        })),
       };
 
       const response = await SalesServices.SalesOrder.CreateFromBudget(payload);
@@ -134,6 +139,43 @@ export const useSalesOrderStore = defineStore({
       const deleted = await SalesServices.SalesOrder.DeleteDetail(detail);
       if (deleted) await this.GetDetailsById(detail.salesOrderHeaderId);
       return deleted;
+    },
+    async CreateTransport(transport: any): Promise<boolean> {
+      const created = await SalesServices.SalesOrder.CreateTransport(transport);
+      if (created) await this.GetById(transport.salesOrderHeaderId);
+      return created;
+    },
+    async UpdateTransport(transport: any): Promise<boolean> {
+      const updated = await SalesServices.SalesOrder.UpdateTransport(transport);
+      if (updated) await this.GetById(transport.salesOrderHeaderId);
+      return updated;
+    },
+    async DeleteTransport(
+      id: string,
+      salesOrderId: string
+    ): Promise<boolean> {
+      const deleted = await SalesServices.SalesOrder.DeleteTransport(id);
+      if (deleted) await this.GetById(salesOrderId);
+      return deleted;
+    },
+    async DistributeTransportCosts(salesOrderId: string): Promise<boolean> {
+      const distributed =
+        await SalesServices.SalesOrder.DistributeTransportCosts(salesOrderId);
+      if (distributed) await this.GetById(salesOrderId);
+      return distributed;
+    },
+    async DistributeAllCosts(salesOrderId: string): Promise<boolean> {
+      const distributed =
+        await SalesServices.SalesOrder.DistributeAllCosts(salesOrderId);
+      if (distributed) await this.GetById(salesOrderId);
+      return distributed;
+    },
+    async UpdateExternalService(externalService: any): Promise<boolean> {
+      const updated = await SalesServices.SalesOrder.UpdateExternalService(
+        externalService
+      );
+      if (updated) await this.GetById(externalService.salesOrderHeaderId);
+      return updated;
     },
   },
 });

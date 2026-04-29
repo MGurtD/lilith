@@ -144,5 +144,9 @@ export const useSuppliersStore = defineStore({
       if (result) await this.fetchSupplierReferences(reference.supplierId);
       return result;
     },
+
+    async fetchSuppliersByReference(referenceId: string): Promise<Array<Supplier>> {
+      return (await service.getSuppliersReferenceById(referenceId)) ?? [];
+    },
   },
 });

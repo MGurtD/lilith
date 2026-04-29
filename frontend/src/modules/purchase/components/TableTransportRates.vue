@@ -63,11 +63,6 @@
       <Column style="width: 5%">
         <template #body="slotProps">
           <i
-            :class="PrimeIcons.PENCIL"
-            class="grid_copy_column_button mr-2"
-            @click.stop="editRate(slotProps.data)"
-          />
-          <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
             @click.stop="deleteRate($event, slotProps.data)"
@@ -124,11 +119,6 @@
       </Column>
       <Column style="width: 5%">
         <template #body="slotProps">
-          <i
-            :class="PrimeIcons.PENCIL"
-            class="grid_copy_column_button mr-2"
-            @click.stop="editDetail(slotProps.data)"
-          />
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"

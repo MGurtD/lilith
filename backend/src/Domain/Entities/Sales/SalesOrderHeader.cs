@@ -1,4 +1,4 @@
-﻿using Domain.Entities.Production;
+using Domain.Entities.Production;
 
 namespace Domain.Entities.Sales
 {
@@ -20,6 +20,9 @@ namespace Domain.Entities.Sales
         public Guid? CustomerId { get; set; }
         public Site? Site { get; set; }
         public Guid? SiteId { get; set;}
+        public decimal TotalWeight { get; set; }
+        public decimal TotalVolume { get; set; }
+
 
         public string UserNotes { get; set; } = string.Empty;
 
@@ -58,6 +61,8 @@ namespace Domain.Entities.Sales
         }
        
         public ICollection<SalesOrderDetail> SalesOrderDetails { get; set; } = new List<SalesOrderDetail>();
+        public ICollection<SalesOrderTransport> Transports { get; set; } = new List<SalesOrderTransport>();
+        public ICollection<SalesOrderExternalServices> ExternalServices { get; set; } = new List<SalesOrderExternalServices>();
 
         public void Deliver()
         {
