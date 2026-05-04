@@ -130,9 +130,6 @@ public class CustomerService(
 
         await UpdateCoordinatesAndDistanceAsync(address);
 
-        if (!address.Main && !customer.Address.Any(a => !a.Disabled))
-            address.Main = true;
-
         await unitOfWork.Customers.AddAddress(address);
         return new GenericResponse(true, address);
     }

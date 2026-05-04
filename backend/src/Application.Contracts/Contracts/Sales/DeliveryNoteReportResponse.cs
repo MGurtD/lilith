@@ -15,7 +15,6 @@ namespace Application.Contracts
         public string TableImport { get; set; } = localizationService.GetLocalizedStringForCulture("Report.TableAmount", languageCode);
         public string TableTotal { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.TableTotal", languageCode);
         public string FooterSignature { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.CustomerSign", languageCode);
-        public string ReturnsPolicy { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.ReturnsPolicy", languageCode);
 
         public Customer? Customer { get; set; }
         public Site? Site { get; set; }

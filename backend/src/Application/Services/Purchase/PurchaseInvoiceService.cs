@@ -74,10 +74,10 @@ namespace Application.Services.Purchase
                 && (!statusId.HasValue || p.StatusId == statusId.Value)
                 && (!excludeStatusId.HasValue || p.StatusId != excludeStatusId.Value)
                 && (!paymentMethodId.HasValue || p.PaymentMethodId == paymentMethodId.Value)
-                && (!dueDateStartTime.HasValue || (!(p.PurchaseInvoiceDueDates != null && p.PurchaseInvoiceDueDates.Any())
+                && (!dueDateStartTime.HasValue || (!p.PurchaseInvoiceDueDates.Any()
                     ? p.PurchaseInvoiceDate
                     : p.PurchaseInvoiceDueDates.Max(d => d.DueDate)) >= dueDateStartTime.Value)
-                && (!dueDateEndTime.HasValue || (!(p.PurchaseInvoiceDueDates != null && p.PurchaseInvoiceDueDates.Any())
+                && (!dueDateEndTime.HasValue || (!p.PurchaseInvoiceDueDates.Any()
                     ? p.PurchaseInvoiceDate
                     : p.PurchaseInvoiceDueDates.Max(d => d.DueDate)) <= dueDateEndTime.Value)
             );

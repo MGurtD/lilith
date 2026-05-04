@@ -1,55 +1,46 @@
 <template>
   <DataTable
-    :value="filteredExpenses"
+    :value="expenseStore.expenses"
     class="p-datatable-sm small-datatable"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
     sortMode="multiple"
-    paginator
-    :rows="25"
     @row-click="editExpense"
   >
     <template #header>
-      <div class="filter-toolbar">
-        <div class="filter-toolbar__field filter-toolbar__field--exercise">
-          <label class="filter-label">Periode</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            :showIcon="true"
-            class="w-full"
-            placeholder="Selecciona periode"
-            @update:model-value="filterExpense"
-          />
+      <div
+        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      >
+        <div class="datatable-filter">
+          <div class="filter-field">
+            <ExerciseDatePicker
+              :exercises="exerciseStore.exercises"
+              @range-selected="filterExpense"
+            />
+          </div>
+          <div class="filter-field">
+            <label class="block text-900 mb-2">Tipus</label>
+            <Select
+              v-model="filter.expenseTypeId"
+              :options="expenseStore.expenseTypes"
+              optionValue="id"
+              optionLabel="name"
+              class="w-full"
+            />
+          </div>
         </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Tipus</label>
-          <Select
-            v-model="filter.expenseTypeId"
-            :options="expenseStore.expenseTypes"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            placeholder="Tots els tipus"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Freqüència</label>
-          <Select
-            v-model="filter.frecuency"
-            :options="frequencyOptions"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            placeholder="Totes"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__actions">
+
+        <div class="datatable-buttons">
           <Button
+            class="datatable-button mr-2"
+            :icon="PrimeIcons.FILTER"
+            rounded
+            raised
+            @click="filterExpense"
+          />
+          <Button
+            class="datatable-button mr-2"
             :icon="PrimeIcons.FILTER_SLASH"
             rounded
             raised
@@ -90,13 +81,6 @@
         {{ formatCurrency(slotProps.data.amount) }}
       </template>
     </Column>
-    <Column header="Freqüència" style="width: 12%">
-      <template #body="slotProps">
-        {{
-          getFrequencyName(slotProps.data.frecuency, slotProps.data.recurring)
-        }}
-      </template>
-    </Column>
     <Column header="Recurrent" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.recurring" :showColor="false" />
@@ -112,8 +96,8 @@
       </template>
     </Column>
     <template #footer
-      ><div class="expenses-footer-total">
-        Total visible {{ formatCurrency(totalAmount) }}
+      ><div class="flex-right">
+        Total {{ formatCurrency(totalAmount) }}
       </div></template
     >
   </DataTable>
@@ -125,6 +109,7 @@ import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
+import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDate,
@@ -147,46 +132,13 @@ const confirm = useConfirm();
 
 const filter = ref({
   expenseTypeId: undefined as string | undefined,
-  frecuency: undefined as number | null | undefined,
-  dates: undefined as Array<Date> | undefined,
-});
-
-const frequencyOptions = [
-  { id: 0, name: "No recurrent" },
-  { id: 1, name: "Mensual" },
-  { id: 2, name: "Bimensual" },
-  { id: 3, name: "Trimestral" },
-  { id: 6, name: "Semestral" },
-  { id: 12, name: "Anual" },
-];
-
-const filteredExpenses = computed(() => {
-  if (!expenseStore.expenses) return [];
-
-  let expenses = expenseStore.expenses;
-
-  if (filter.value.expenseTypeId) {
-    expenses = expenses.filter(
-      (expense) => expense.expenseTypeId === filter.value.expenseTypeId,
-    );
-  }
-
-  if (filter.value.frecuency !== undefined && filter.value.frecuency !== null) {
-    expenses = expenses.filter((expense) => {
-      if (filter.value.frecuency === 0) {
-        return !expense.recurring || expense.frecuency === 0;
-      }
-
-      return expense.frecuency === filter.value.frecuency;
-    });
-  }
-
-  return expenses;
 });
 
 const totalAmount = computed(() => {
   let total = 0;
-  filteredExpenses.value.forEach((expense) => (total += expense.amount));
+  if (expenseStore.expenses) {
+    expenseStore.expenses.forEach((e) => (total += e.amount));
+  }
   return total;
 });
 
@@ -194,11 +146,11 @@ const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("Expenses", "");
   if (userFilter) {
     filter.value.expenseTypeId = userFilter.expenseTypeId;
-    filter.value.frecuency = userFilter.frecuency;
-    if (userFilter.dates) {
-      filter.value.dates = [
-        new Date(userFilter.dates[0]),
-        new Date(userFilter.dates[1]),
+    if (userFilter.exercisePicker) {
+      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
+      store.exercisePicker.dates = [
+        new Date(userFilter.exercisePicker.dates[0]),
+        new Date(userFilter.exercisePicker.dates[1]),
       ];
     }
   }
@@ -221,21 +173,18 @@ onMounted(async () => {
 onUnmounted(() => {
   const savedFilter = {
     expenseTypeId: filter.value.expenseTypeId,
-    frecuency: filter.value.frecuency,
-    dates: filter.value.dates,
+    exercisePicker: store.exercisePicker,
   };
 
   userFilterStore.addFilter("Expenses", "", savedFilter);
 });
 
 const filterExpense = async () => {
-  if (
-    filter.value.dates &&
-    filter.value.dates.length > 1 &&
-    filter.value.dates[1]
-  ) {
-    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
-    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
+  if (store.exercisePicker.dates) {
+    const startTime = formatDateForQueryParameter(
+      store.exercisePicker.dates[0],
+    );
+    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
 
     await expenseStore.fetchExpenses(
       startTime,
@@ -250,19 +199,17 @@ const setCurrentYear = () => {
   const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
 
   if (currentExercise) {
-    filter.value.dates = [
-      new Date(currentExercise.startDate),
-      new Date(currentExercise.endDate),
+    store.exercisePicker.exercise = currentExercise;
+    store.exercisePicker.dates = [
+      new Date(store.exercisePicker.exercise.startDate),
+      new Date(store.exercisePicker.exercise.endDate),
     ];
   }
 };
 
 const clearFilter = async () => {
-  filter.value.expenseTypeId = undefined;
-  filter.value.frecuency = undefined;
-  setCurrentYear();
-  await filterExpense();
-  userFilterStore.removeFilter("Expenses", "");
+  filter.value.expenseTypeId = "";
+  store.cleanExercisePicker();
 };
 
 const createButtonClick = () => {
@@ -305,85 +252,4 @@ const getExpenseTypeNameById = (id: string) => {
   if (type) return type.name;
   else return "";
 };
-
-const getFrequencyName = (frequency: number, recurring: boolean) => {
-  if (!recurring || frequency === 0) {
-    return "No recurrent";
-  }
-
-  return (
-    frequencyOptions.find((option) => option.id === frequency)?.name ?? "-"
-  );
-};
 </script>
-
-<style scoped>
-.filter-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: end;
-}
-
-.filter-toolbar__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 0 0 auto;
-}
-
-.filter-toolbar__field--exercise {
-  width: 22rem;
-}
-
-.filter-toolbar__field:not(.filter-toolbar__field--exercise) {
-  width: 16rem;
-}
-
-.filter-toolbar__exercise-picker {
-  width: 100%;
-}
-
-.filter-toolbar__actions {
-  display: flex;
-  gap: 0.5rem;
-  align-self: end;
-}
-
-.expenses-footer-total {
-  display: flex;
-  justify-content: flex-end;
-  font-weight: 600;
-}
-
-:deep(.filter-toolbar__exercise-picker > *) {
-  width: 100%;
-}
-
-@media (max-width: 1200px) {
-  .filter-toolbar {
-    align-items: stretch;
-  }
-
-  .filter-toolbar__actions {
-    min-width: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .filter-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-toolbar__field,
-  .filter-toolbar__field--exercise,
-  .filter-toolbar__field:not(.filter-toolbar__field--exercise) {
-    width: 100%;
-  }
-
-  .filter-toolbar__actions {
-    justify-content: flex-end;
-  }
-}
-</style>

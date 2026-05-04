@@ -150,13 +150,6 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 - Clone objects before editing in dialogs to prevent premature state mutation
 - Numeric defaults should be `0`, not `undefined`
 
-### Contextual Help Documentation
-
-- When adding or updating contextual help, first analyze the real behavior of the view instead of documenting from route names alone
-- Keep help content in Catalan and align terminology with the business flow: `pressupost`, `comanda`, `albara`, `factura`, `client`, `referencia`
-- Use the mandatory section order defined in `frontend/docs/help-module.md`: purpose, actions, typical flow, important notes, common errors, and basic Mermaid process
-- If a new help document raises the quality bar, review sibling help files in the same module for consistency
-
 ## Utilities (utils/functions.ts)
 
 Use these instead of reimplementing:

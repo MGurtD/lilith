@@ -104,34 +104,6 @@ namespace Application.Services.Sales
             return new GenericResponse(true, deliveryNote);
         }
 
-        public async Task<GenericResponse> CreateFromSalesOrder(SalesOrderHeader salesOrder)
-        {
-            if (!salesOrder.CustomerId.HasValue)
-                return new GenericResponse(false, localizationService.GetLocalizedString("CustomerNotFound"));
-
-            var createDto = new CreateHeaderRequest
-            {
-                Id = Guid.NewGuid(),
-                Date = DateTime.Now,
-                CustomerId = salesOrder.CustomerId.Value
-            };
-
-            var currentExercise = exerciseService.GetExerciceByDate(createDto.Date);
-            if (currentExercise == null)
-                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseNotFoundForDate"));
-
-            createDto.ExerciseId = currentExercise.Id;
-
-            var createResponse = await Create(createDto);
-            if (!createResponse.Result) return createResponse;
-
-            var deliveryNote = (DeliveryNote)createResponse.Content!;
-            var addOrderResponse = await AddOrder(deliveryNote.Id, salesOrder);
-            if (!addOrderResponse.Result) return addOrderResponse;
-
-            return new GenericResponse(true, deliveryNote);
-        }
-
         public async Task<GenericResponse> Update(DeliveryNote deliveryNote)
         {
             // Netejar dependencies per evitar col·lisions de EF

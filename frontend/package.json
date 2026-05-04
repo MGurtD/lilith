@@ -15,7 +15,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "dompurify": "^3.3.0",
     "@primeuix/themes": "^2.0.3",
     "@primevue/core": "^4.5.4",
     "@vuelidate/core": "^2.0.2",
@@ -24,8 +23,6 @@
     "chart.js": "^4.2.1",
     "jwt-decode": "^3.1.2",
     "lodash": "^4.17.21",
-    "markdown-it": "^14.1.0",
-    "mermaid": "^11.12.0",
     "pinia": "^2.1.7",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
@@ -42,7 +39,6 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.17.10",
-    "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.9.2",
     "@types/uuid": "^9.0.7",
     "@vitejs/plugin-vue": "^5.2.4",

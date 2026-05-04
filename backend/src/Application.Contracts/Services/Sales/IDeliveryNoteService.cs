@@ -16,7 +16,6 @@ namespace Application.Contracts
         IEnumerable<DeliveryNote> GetDeliveryNotesToInvoice(Guid customerId);
 
         Task<GenericResponse> Create(CreateHeaderRequest createRequest);
-        Task<GenericResponse> CreateFromSalesOrder(SalesOrderHeader salesOrder);
         Task<GenericResponse> Update(DeliveryNote deliveryNote);
         Task<GenericResponse> Remove(Guid id);
 

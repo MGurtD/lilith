@@ -421,8 +421,6 @@ const es = {
     placeholder: "Escribe una dirección, ciudad o lugar",
     searchLabel: "Buscar ubicación",
     coordinatesSection: "Coordenadas y distancia",
-    coordinatesSectionNoDistance: "Coordenadas",
-    viewOnMap: "Ver en el mapa",
     latitude: "Latitud",
     longitude: "Longitud",
     distanceFromSite: "Distancia desde la sede (km)",
@@ -493,24 +491,6 @@ const es = {
       scopesPlaceholder: "p.ej. read:orders,write:invoices",
       scopesHelp: "Separados por comas",
       expiresOn: "Fecha de expiración",
-    },
-  },
-  help: {
-    drawer: {
-      title: "Ayuda contextual",
-      subtitle: "Atajo: Alt + H",
-    },
-    actions: {
-      openTooltip: "Abrir ayuda de la pantalla actual (Alt + H)",
-    },
-    messages: {
-      loading: "Cargando ayuda...",
-      notAvailable: "Todavía no hay ayuda disponible para esta pantalla.",
-      noRouteHelp:
-        "Esta pantalla todavía no tiene una clave de ayuda configurada.",
-      loadError:
-        "No se ha podido cargar la documentación de ayuda. Vuelve a intentarlo.",
-      mermaidError: "No se ha podido renderizar el diagrama.",
     },
   },
 };

@@ -13,61 +13,6 @@
   <main v-if="invoice">
     <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
 
-    <section class="invoice-totals-section mt-3">
-      <div class="invoice-totals-grid">
-        <article class="total-card">
-          <div class="total-card-icon">
-            <i class="pi pi-wallet" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Base imposable</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.baseAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article class="total-card">
-          <div class="total-card-icon">
-            <i class="pi pi-percentage" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Impostos</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.taxAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article class="total-card total-card-total">
-          <div class="total-card-icon">
-            <i class="pi pi-calculator" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Total factura</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.netAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article
-          v-if="invoice.integrationStatusId !== null"
-          class="total-card"
-        >
-          <div class="total-card-icon">
-            <i class="pi pi-verified" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Verifactu</span>
-            <span class="total-card-value" :class="getVerifactuStatusClass()">{{
-              invoiceStore.getVerifactuStatusById(invoice.integrationStatusId)
-            }}</span>
-          </div>
-        </article>
-      </div>
-    </section>
-
     <TableInvoiceDetails
       class="mt-3"
       :canDelete="isEditable"
@@ -157,7 +102,6 @@ import {
   convertDateTimeToJSON,
   createBlobAndDownloadFile,
   formatDate,
-  formatCurrency,
 } from "../../../utils/functions";
 import {
   CreateRectificativeInvoiceRequest,
@@ -250,28 +194,6 @@ const isEditable = computed(() => {
     invoice.value !== undefined && invoice.value.parentSalesInvoiceId === null
   );
 });
-
-const getVerifactuStatusClass = () => {
-  if (!invoice.value?.integrationStatusId) return "";
-
-  const status = invoiceStore.getVerifactuStatusById(
-    invoice.value.integrationStatusId,
-  );
-
-  if (status === "OK") {
-    return "status-ok";
-  }
-
-  if (status === "Error") {
-    return "status-error";
-  }
-
-  if (status === "Pendent") {
-    return "status-pending";
-  }
-
-  return "";
-};
 
 const updateInvoice = async () => {
   if (invoice.value) {
@@ -441,106 +363,5 @@ const sendToVerifactu = async () => {
   top: 0;
   right: 2rem;
   z-index: 1000;
-}
-
-.invoice-totals-section {
-  padding-right: 0.75rem;
-}
-
-.invoice-totals-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-}
-
-.total-card {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
-  padding: 0.65rem 0.85rem;
-  background: var(--p-content-background, #fff);
-  transition: box-shadow 0.15s ease;
-}
-
-.total-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.total-card-total {
-  background: var(--p-primary-50, #eef2ff);
-  border-color: var(--p-primary-200, #c7d2fe);
-}
-
-.total-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 8px;
-  background: var(--p-surface-100, #f1f5f9);
-  color: var(--p-primary-color, #3b82f6);
-  font-size: 0.95rem;
-  flex-shrink: 0;
-}
-
-.total-card-total .total-card-icon {
-  background: var(--p-primary-100, #dbeafe);
-  color: var(--p-primary-700, #1d4ed8);
-}
-
-.total-card-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  min-width: 0;
-}
-
-.total-card-label {
-  font-size: 0.75rem;
-  color: var(--p-text-muted-color);
-  white-space: nowrap;
-  line-height: 1.1;
-}
-
-.total-card-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--p-text-color);
-  line-height: 1.15;
-}
-
-.total-card-total .total-card-value {
-  color: var(--p-primary-700, #1d4ed8);
-}
-
-.status-ok {
-  color: #28a745;
-}
-
-.status-error {
-  color: #dc3545;
-}
-
-.status-pending {
-  color: #6c757d;
-}
-
-@media (max-width: 1200px) {
-  .invoice-totals-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .invoice-totals-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .invoice-totals-section {
-    padding-right: 0;
-  }
 }
 </style>

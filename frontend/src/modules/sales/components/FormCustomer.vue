@@ -3,6 +3,7 @@
     <section class="three-columns">
       <BaseInput
         name="comercialName"
+        class="mb-2"
         label="Nom Comercial"
         id="comercialName"
         v-model="customer.comercialName"
@@ -11,6 +12,7 @@
         }"
       ></BaseInput>
       <BaseInput
+        class="mb-2"
         label="Nom Fiscal"
         id="taxName"
         v-model="customer.taxName"
@@ -36,6 +38,7 @@
     <section class="three-columns mb-2">
       <BaseInput
         name="vatNumber"
+        class="mb-2"
         label="CIF"
         id="vatNumber"
         v-model="customer.vatNumber"
@@ -45,6 +48,7 @@
       ></BaseInput>
       <BaseInput
         name="web"
+        class="mb-2"
         label="Web"
         id="web"
         v-model="customer.web"
@@ -65,6 +69,7 @@
     <section class="three-columns mb-2">
       <BaseInput
         name="accountNumber"
+        class="mb-2"
         label="Número de compte"
         id="accountNumber"
         v-model="customer.accountNumber"
@@ -86,17 +91,16 @@
         />
       </div>
     </section>
-    <div class="mb-2">
+    <div>
       <label class="block text-900 mb-2">Observacions</label>
       <Textarea v-model="customer.observations" class="w-full" />
     </div>
-    <div class="mb-2">
+    <div>
       <label class="block text-900 mb-2">Notes de factura</label>
       <Textarea v-model="customer.invoiceNotes" class="w-full" />
     </div>
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
+    <div class="mt-2">
+      <Button label="Guardar" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -117,7 +121,6 @@ import LanguageSwitcher from "../../../components/LanguageSwitcher.vue";
 
 const emit = defineEmits<{
   (e: "submit", customer: Customer): void;
-  (e: "cancel"): void;
 }>();
 
 const customerStore = useCustomersStore();

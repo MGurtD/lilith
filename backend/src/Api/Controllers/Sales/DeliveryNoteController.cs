@@ -66,19 +66,6 @@ namespace Api.Controllers.Purchase
                 return BadRequest(response);
         }
 
-        [HttpPost("FromSalesOrder")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateFromSalesOrder([FromBody] SalesOrderHeader salesOrder)
-        {
-            var response = await service.CreateFromSalesOrder(salesOrder);
-
-            if (response.Result)
-                return Ok(response);
-            else
-                return BadRequest(response);
-        }
-
         [HttpPut("{id:guid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

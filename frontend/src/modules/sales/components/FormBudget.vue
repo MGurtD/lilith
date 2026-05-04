@@ -70,6 +70,17 @@
           />
         </div>
       </section>
+      <section class="mt-2">
+        <div>
+          <label class="block text-900 mb-2">Notes Internes</label>
+          <Textarea
+            class="w-full"
+            rows="3"
+            placeholder="Notes internes"
+            v-model="budget.userNotes"
+          />
+        </div>
+      </section>
       <section v-if="budget.notes && budget.notes.length > 0" class="mt-2">
         <div>
           <BaseInput

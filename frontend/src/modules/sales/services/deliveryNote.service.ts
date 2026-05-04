@@ -16,14 +16,6 @@ export class DeliveryNoteService extends BaseService<DeliveryNote> {
     return response.data as GenericResponse<DeliveryNote>;
   }
 
-  async CreateFromSalesOrder(
-    salesOrder: SalesOrderHeader
-  ): Promise<GenericResponse<DeliveryNote>> {
-    const endpoint = `${this.resource}/FromSalesOrder`;
-    const response = await this.apiClient.post(endpoint, salesOrder);
-    return response.data as GenericResponse<DeliveryNote>;
-  }
-
   async GetBetweenDates(
     startTime: string,
     endTime: string

@@ -85,15 +85,12 @@
     </div>
 
     <div class="mt-2">
-      <label class="block text-900 mb-2"
-        >Notes per les comandes de compra</label
-      >
+      <label class="block text-900 mb-2">Notes</label>
       <Textarea v-model="supplier.notes" class="w-full" />
     </div>
 
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
+    <div class="mt-2">
+      <Button label="Guardar" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -118,7 +115,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "submit", supplier: Supplier): void;
-  (e: "cancel"): void;
 }>();
 
 const supplierStore = useSuppliersStore();
@@ -176,3 +172,4 @@ const submitForm = async () => {
   }
 };
 </script>
+

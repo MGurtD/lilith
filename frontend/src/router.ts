@@ -8,6 +8,16 @@ import ShoopfloorRoutes from "./modules/plant/routes";
 import AnalyticsRoutes from "./modules/analytics/routes";
 import VerifactuRoutes from "./modules/verifactu/routes";
 
+// Extend RouteMeta with auth-related fields
+declare module "vue-router" {
+  interface RouteMeta {
+    /** Route accessible without authentication */
+    public?: boolean;
+    /** Roles allowed to access this route (empty = any authenticated user) */
+    roles?: string[];
+  }
+}
+
 const Login = () => import("./views/Login.vue");
 const Home = () => import("./views/Home.vue");
 const Users = () => import("./views/Users.vue");

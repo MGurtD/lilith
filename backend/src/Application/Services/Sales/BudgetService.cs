@@ -8,6 +8,7 @@ namespace Application.Services.Sales
     public class BudgetService(
         IUnitOfWork unitOfWork,
         IExerciseService exerciseService,
+        IMetricsService metricsService,
         ILocalizationService localizationService,
         ILogger<BudgetService> logger) : IBudgetService
     {
@@ -126,27 +127,36 @@ namespace Application.Services.Sales
                 return new GenericResponse(true, new List<string> { });
             }
         }
-        
-        private async Task<decimal> CalculateNetWeightAsync(Guid workMasterId)
-        {
-            var workmaster = await unitOfWork.WorkMasters.Get(workMasterId);
-            if (workmaster?.Reference?.ReferenceTypeId == null)
-                return decimal.Zero;
-
-            var referenceType = await unitOfWork.ReferenceTypes.Get(workmaster.Reference.ReferenceTypeId.Value);
-            if (referenceType == null)
-                return decimal.Zero;
-
-            return referenceType.Density * (workmaster.volume / 1000);
-        }
 
         public async Task<GenericResponse> AddDetail(BudgetDetail detail)
         {
+            // Recuperar el workmaster
             if (detail.WorkMasterId != null)
             {
-                var netWeight = await CalculateNetWeightAsync(detail.WorkMasterId.Value);
-                detail.DetailWeight = netWeight;
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                // Recollir mètriques
+                /*var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
+                
+                // Afegir pes a la línia
+                if (metrics.Result && metrics.Content is Domain.Entities.Production.ProductionMetrics productionMetrics)
+                {
+                    detail.DetailWeight = productionMetrics.TotalWeight;
+                }*/
 
+
+
+                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                var netWeight = decimal.Zero;
+                if (referenceTypeId != null)
+                {
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
+                    if (referenceType != null)
+                    {
+                        netWeight = referenceType.Density * (workmaster.Volume / 1000);
+                    }
+                }
+                detail.DetailWeight = netWeight * detail.Quantity;
+                // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {
@@ -160,11 +170,9 @@ namespace Application.Services.Sales
                 await AddExternalServicesFromWorkmaster(workmaster, detail);
                 return new GenericResponse(true, detail);
             }
-
             await unitOfWork.Budgets.Details.Add(detail);
             return new GenericResponse(true, detail);
         }
-
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
             // Recuperar el detall antic per obtenir la quantitat anterior
@@ -174,9 +182,20 @@ namespace Application.Services.Sales
 
             if (detail.WorkMasterId != null)
             {
-                var netWeight = await CalculateNetWeightAsync(detail.WorkMasterId.Value);
-                detail.DetailWeight = netWeight;
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                var netWeight = decimal.Zero;
+                if (referenceTypeId != null)
+                {
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
+                    if (referenceType != null)
+                    {
+                        netWeight = referenceType.Density * (workmaster.Volume / 1000);
+                    }
+                }
+                detail.DetailWeight = netWeight * detail.Quantity;
 
+                // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {
@@ -231,7 +250,6 @@ namespace Application.Services.Sales
             await unitOfWork.Budgets.Details.Update(detail);
             return new GenericResponse(true, detail);
         }
-
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
             var detail = unitOfWork.Budgets.Details.Find(d => d.Id == id).FirstOrDefault();
@@ -240,9 +258,9 @@ namespace Application.Services.Sales
 
             if (detail.WorkMasterId != null)
             {
-                var netWeight = await CalculateNetWeightAsync(detail.WorkMasterId.Value);
-                detail.DetailWeight = netWeight;
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
 
+                // Restar pes del total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {

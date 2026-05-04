@@ -58,9 +58,14 @@
       <Textarea v-model="contact.observations" class="w-full" />
     </div>
 
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="cancel" />
+    <div class="mt-2">
+      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button
+        label="Cancelar"
+        severity="secondary"
+        class="mr-2"
+        @click="cancel"
+      />
     </div>
   </form>
 </template>

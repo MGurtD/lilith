@@ -1,4 +1,12 @@
 <template>
+  <Button
+    v-if="!selectedContact"
+    :icon="PrimeIcons.PLUS"
+    class="grid_add_row_button"
+    rounded
+    @click="createButtonClick"
+  />
+
   <CustomerContactForm
     v-if="selectedContact"
     :contact="selectedContact"
@@ -12,20 +20,6 @@
       tableStyle="min-width: 100%"
       @row-click="rowContactClick"
     >
-      <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <span class="text-l text-900 font-bold">Contactes</span>
-          <div>
-            <Button
-              :icon="PrimeIcons.PLUS"
-              rounded
-              @click="createButtonClick"
-            />
-          </div>
-        </div>
-      </template>
       <Column header="Nom" style="width: 25%">
         <template #body="slotProps">
           {{ slotProps.data.firstName }} {{ slotProps.data.lastName }}
