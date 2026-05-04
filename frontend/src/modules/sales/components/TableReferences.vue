@@ -9,33 +9,38 @@
     @row-click="editRow"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <div class="datatable-filter-3">
-          <div class="filter-field">
-            <label>Codi</label>
-            <BaseInput v-model="filter.code" />
-          </div>
-          <div class="filter-field">
-            <label>Descripció</label>
-            <BaseInput v-model="filter.description" />
-          </div>
-          <div class="filter-field">
-            <label>Client</label>
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
+      <div class="filter-toolbar">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Codi</label>
+          <BaseInput v-model="filter.code" />
         </div>
-        <div class="datatable-buttons">
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Descripció</label>
+          <BaseInput v-model="filter.description" />
+        </div>
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Client</label>
+          <DropdownCustomers label="" v-model="filter.customerId" />
+        </div>
+        <div class="filter-toolbar__field filter-toolbar__field--date">
+          <label class="filter-label">Data creació</label>
+          <DatePicker
+            v-model="filter.dates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            :showIcon="true"
+            class="w-full"
+            placeholder="Selecciona periode"
+          />
+        </div>
+        <div class="filter-toolbar__actions">
           <Button
-            class="datatable-button mr-2"
             :icon="PrimeIcons.FILTER_SLASH"
             rounded
             raised
             @click="cleanFilter"
           />
           <Button
-            class="datatable-button mr-2"
             :icon="PrimeIcons.PLUS"
             rounded
             raised
@@ -44,31 +49,40 @@
         </div>
       </div>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column field="description" header="Descripció" style="width: 35%"></Column>
-    <Column field="version" header="Versió" style="width: 10%"></Column>
-    <Column field="customerId" header="Client" style="width: 20%">
+    <Column field="code" header="Codi" style="width: 10%"></Column>
+    <Column field="description" header="Descripció" style="width: 30%"></Column>
+    <Column field="version" header="Versió" style="width: 8%"></Column>
+    <Column field="customerId" header="Client" style="width: 18%">
       <template #body="slotProps">
         <span>{{ getCustomerById(slotProps.data.customerId) }}</span>
       </template>
     </Column>
-    <Column field="price" header="Preu" style="width: 10%">
+    <Column
+      field="createdOn"
+      header="Data creació"
+      sortable
+      style="width: 10%"
+    >
+      <template #body="slotProps">
+        {{ formatDate(slotProps.data.createdOn) }}
+      </template>
+    </Column>
+    <Column field="price" header="Preu" style="width: 8%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.price) }}
       </template>
     </Column>
-    <Column field="cost" header="Cost" style="width: 10%">
+    <Column field="cost" header="Cost" style="width: 8%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.workMasterCost) }}
       </template>
     </Column>
-    <Column header="Servei" style="width: 10%">
+    <Column header="Servei" style="width: 5%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isService" />
       </template>
     </Column>
-
-    <Column style="width: 10%">
+    <Column style="width: 3%">
       <template #body="slotProps">
         <i
           :class="PrimeIcons.TIMES"
@@ -88,7 +102,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
-import { formatCurrency } from "../../../utils/functions";
+import { formatCurrency, formatDate } from "../../../utils/functions";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const userFilterStore = useUserFilterStore();
@@ -97,6 +111,7 @@ const filter = ref({
   code: "",
   description: "",
   customerId: "",
+  dates: undefined as Array<Date> | undefined,
 });
 
 onMounted(() => {
@@ -104,6 +119,7 @@ onMounted(() => {
   if (userFilter) {
     if (userFilter.code) filter.value.code = userFilter.code;
     if (userFilter.customerId) filter.value.customerId = userFilter.customerId;
+    if (userFilter.dates) filter.value.dates = userFilter.dates;
   }
 });
 onUnmounted(async () => {
@@ -113,6 +129,8 @@ onUnmounted(async () => {
 const cleanFilter = () => {
   filter.value.code = "";
   filter.value.customerId = "";
+  filter.value.description = "";
+  filter.value.dates = undefined;
 };
 
 const props = defineProps<{
@@ -151,6 +169,23 @@ const filteredData = computed(() => {
     );
   }
 
+  // Date range filter
+  if (filter.value.dates && filter.value.dates.length > 0) {
+    const startDate = filter.value.dates[0];
+    if (startDate) {
+      filteredReferences = filteredReferences.filter(
+        (r) => new Date(r.createdOn) >= startDate,
+      );
+    }
+    if (filter.value.dates.length > 1 && filter.value.dates[1]) {
+      const endDate = new Date(filter.value.dates[1]);
+      endDate.setHours(23, 59, 59, 999);
+      filteredReferences = filteredReferences.filter(
+        (r) => new Date(r.createdOn) <= endDate,
+      );
+    }
+  }
+
   return filteredReferences;
 });
 
@@ -177,15 +212,17 @@ const getCustomerById = (customerId: string) => {
   return customer ? customer.comercialName : "";
 };
 </script>
+
 <style scoped>
-.references-header {
-  display: grid;
-  grid-template-columns: 3fr 0.1fr;
+.filter-toolbar {
+  align-items: flex-start;
 }
-.references-filter {
-  display: grid;
-  grid-template-columns: 0.2fr 0.8fr;
-  align-items: center;
-  width: 25vw;
+
+.filter-toolbar__actions {
+  align-self: flex-end;
+}
+
+.filter-toolbar__field--date {
+  min-width: 15rem;
 }
 </style>

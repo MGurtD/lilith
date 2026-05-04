@@ -420,6 +420,8 @@ const ca = {
     placeholder: "Escriu una adreça, ciutat o lloc",
     searchLabel: "Cerca ubicació",
     coordinatesSection: "Coordenades i distància",
+    coordinatesSectionNoDistance: "Coordenades",
+    viewOnMap: "Veure al mapa",
     latitude: "Latitud",
     longitude: "Longitud",
     distanceFromSite: "Distància des de la seu (km)",
@@ -490,6 +492,25 @@ const ca = {
       scopesPlaceholder: "p.ex. read:orders,write:invoices",
       scopesHelp: "Separats per comes",
       expiresOn: "Data d'expiració",
+    },
+  },
+  help: {
+    drawer: {
+      title: "Ajuda contextual",
+      subtitle: "Shortcut: Alt + H",
+    },
+    actions: {
+      openTooltip: "Obrir ajuda de la pantalla actual (Alt + H)",
+    },
+    messages: {
+      loading: "Carregant ajuda...",
+      notAvailable:
+        "No hi ha ajuda disponible per a aquesta pantalla encara.",
+      noRouteHelp:
+        "Aquesta pantalla no té una clau d'ajuda configurada encara.",
+      loadError:
+        "No s'ha pogut carregar la documentació d'ajuda. Torna-ho a provar.",
+      mermaidError: "No s'ha pogut renderitzar el diagrama.",
     },
   },
 };

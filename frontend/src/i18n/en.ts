@@ -420,6 +420,8 @@ const en = {
     placeholder: "Type an address, city or place",
     searchLabel: "Search location",
     coordinatesSection: "Coordinates and distance",
+    coordinatesSectionNoDistance: "Coordinates",
+    viewOnMap: "View on map",
     latitude: "Latitude",
     longitude: "Longitude",
     distanceFromSite: "Distance from site (km)",
@@ -490,6 +492,22 @@ const en = {
       scopesPlaceholder: "e.g. read:orders,write:invoices",
       scopesHelp: "Comma-separated",
       expiresOn: "Expiry date",
+    },
+  },
+  help: {
+    drawer: {
+      title: "Contextual help",
+      subtitle: "Shortcut: Alt + H",
+    },
+    actions: {
+      openTooltip: "Open help for the current screen (Alt + H)",
+    },
+    messages: {
+      loading: "Loading help...",
+      notAvailable: "There is no help available for this screen yet.",
+      noRouteHelp: "This screen does not have a configured help key yet.",
+      loadError: "The help documentation could not be loaded. Please try again.",
+      mermaidError: "The diagram could not be rendered.",
     },
   },
 };

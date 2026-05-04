@@ -1,12 +1,4 @@
 <template>
-  <Button
-    v-if="!selectedAddress"
-    :icon="PrimeIcons.PLUS"
-    class="grid_add_row_button"
-    rounded
-    @click="createButtonClick"
-  />
-
   <FormCustomerAddress
     v-if="selectedAddress"
     :address="selectedAddress"
@@ -20,6 +12,20 @@
       tableStyle="min-width: 100%"
       @row-click="rowClick"
     >
+      <template #header>
+        <div
+          class="flex flex-wrap align-items-center justify-content-between gap-2"
+        >
+          <span class="text-l text-900 font-bold">Adreces</span>
+          <div>
+            <Button
+              :icon="PrimeIcons.PLUS"
+              rounded
+              @click="createButtonClick"
+            />
+          </div>
+        </div>
+      </template>
       <Column header="Nom" field="name" style="width: 25%"></Column>
       <Column header="Província" field="region" style="width: 25%"></Column>
       <Column header="Municipi" field="city" style="width: 25%"></Column>

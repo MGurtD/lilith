@@ -102,8 +102,9 @@
       </template>
     </Column>
     <template #footer>
-      <div class="total">
-        <span class="total-text">Total {{ formatCurrency(totalAmount) }} </span>
+      <div class="total-footer">
+        <span class="total-label">Total</span>
+        <span class="total-value">{{ formatCurrency(totalAmount) }}</span>
       </div>
     </template>
   </DataTable>
@@ -289,8 +290,20 @@ const onWorkOrderCreateSubmit = () => {
 };
 </script>
 <style scoped>
-.total {
+.total-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.total-label {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.total-value {
+  font-weight: 700;
 }
 </style>

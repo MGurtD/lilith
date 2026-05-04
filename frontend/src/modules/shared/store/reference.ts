@@ -87,6 +87,8 @@ export const useReferenceStore = defineStore({
         customer: null,
         customerId: null,
         areaId: null,
+        createdOn: new Date(),
+        updatedOn: new Date(),
       } as Reference;
     },
     async getReferencesByModuleAndCategory(

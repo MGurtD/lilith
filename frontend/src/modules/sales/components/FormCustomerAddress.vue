@@ -30,8 +30,9 @@
       <Textarea v-model="address.observations" class="w-full" />
     </div>
 
-    <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+    <div class="mt-2 flex justify-content-end gap-2">
+      <Button label="Guardar" @click="submitForm" />
+      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
     </div>
   </form>
 </template>
