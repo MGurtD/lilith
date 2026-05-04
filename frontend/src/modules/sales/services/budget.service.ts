@@ -86,4 +86,16 @@ export class BudgetService extends BaseService<Budget> {
     const response = await apiClient.put(endpoint, {});
     return response.status === 200;
   }
+
+  async DistributeAllCosts(budgetId: string): Promise<boolean> {
+    const endpoint = `${this.resource}/DistributeAllCosts/${budgetId}`;
+    const response = await apiClient.put(endpoint, {});
+    return response.status === 200;
+  }
+
+  async UpdateExternalService(request: any): Promise<boolean> {
+    const endpoint = `${this.resource}/ExternalService/${request.id}`;
+    const response = await apiClient.put(endpoint, request);
+    return response.status === 200;
+  }
 }

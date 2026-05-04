@@ -159,5 +159,31 @@ namespace Api.Controllers.Sales
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);
         }
+
+        [HttpPut("DistributeAllCosts/{id:guid}")]
+        [SwaggerOperation("BudgetDistributeAllCosts")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DistributeAllCosts(Guid id)
+        {
+            var response = await service.DistributeAllCosts(id);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("ExternalService/{id:guid}")]
+        [SwaggerOperation("BudgetExternalServiceUpdate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateExternalService(Guid id, [FromBody] BudgetExternalServices externalService)
+        {
+            if (id != externalService.Id) return BadRequest();
+            
+            var response = await service.UpdateExternalService(externalService);
+
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
     }
 }

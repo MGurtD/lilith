@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities.Sales;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -134,6 +134,62 @@ namespace Api.Controllers.Sales
             else return BadRequest(response.Errors);
         }
 
+        [HttpPost("Transport")]
+        [SwaggerOperation("SalesOrderTransportCreate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AddTransport(SalesOrderTransport transport)
+        {
+            var response = await service.AddTransport(transport);
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("Transport/{id:guid}")]
+        [SwaggerOperation("SalesOrderTransportUpdate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateTransport(Guid id, [FromBody] SalesOrderTransport transport)
+        {
+            if (id != transport.Id) return BadRequest();
+            var response = await service.UpdateTransport(transport);
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpDelete("Transport/{id:guid}")]
+        [SwaggerOperation("SalesOrderTransportDelete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RemoveTransport(Guid id)
+        {
+            var response = await service.RemoveTransport(id);
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("ExternalService/{id:guid}")]
+        [SwaggerOperation("SalesOrderExternalServiceUpdate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateExternalService(Guid id, [FromBody] SalesOrderExternalServices externalService)
+        {
+            if (id != externalService.Id) return BadRequest();
+            var response = await service.UpdateExternalService(externalService);
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
+
+        [HttpPut("DistributeAllCosts/{id:guid}")]
+        [SwaggerOperation("SalesOrderDistributeAllCosts")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DistributeAllCosts(Guid id)
+        {
+            var response = await service.DistributeAllCosts(id);
+            if (response.Result) return Ok();
+            else return BadRequest(response.Errors);
+        }
 
         [HttpPut("Detail/{id:guid}")]
         [SwaggerOperation("SalesOrderDetailUpdate")]

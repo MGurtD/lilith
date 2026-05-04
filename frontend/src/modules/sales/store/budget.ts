@@ -74,10 +74,12 @@ export const useBudgetStore = defineStore({
     },
     async UpdateDetail(detail: BudgetDetail): Promise<boolean> {
       const updated = await SalesServices.Budget.UpdateDetail(detail);
+      if (updated) await this.GetById(detail.budgetId);
       return updated;
     },
     async DeleteDetail(detail: BudgetDetail): Promise<boolean> {
       const deleted = await SalesServices.Budget.DeleteDetail(detail);
+      if (deleted) await this.GetById(detail.budgetId);
       return deleted;
     },
     async CreateTransport(transport: any): Promise<boolean> {
@@ -98,6 +100,17 @@ export const useBudgetStore = defineStore({
     async DistributeTransportCosts(budgetId: string): Promise<boolean> {
       const result = await SalesServices.Budget.DistributeTransportCosts(budgetId);
       if (result) await this.GetById(budgetId);
+      return result;
+    },
+    async DistributeAllCosts(budgetId: string): Promise<boolean> {
+      const result = await SalesServices.Budget.DistributeAllCosts(budgetId);
+      if (result) await this.GetById(budgetId);
+      return result;
+    },
+    async UpdateExternalService(externalService: any): Promise<boolean> {
+      const result =
+        await SalesServices.Budget.UpdateExternalService(externalService);
+      if (result) await this.GetById(externalService.budgetId);
       return result;
     },
   },

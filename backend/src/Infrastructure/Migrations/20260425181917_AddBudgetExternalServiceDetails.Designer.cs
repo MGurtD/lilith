@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistance;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,13 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260425181917_AddBudgetExternalServiceDetails")]
+    partial class AddBudgetExternalServiceDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -4973,94 +4976,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("SalesOrderDetail");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("Disabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid>("SalesOrderDetailId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SalesOrderExternalServiceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Volume")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SalesOrderDetailId");
-
-                    b.HasIndex("SalesOrderExternalServiceId");
-
-                    b.ToTable("SalesOrderExternalServiceDetails");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<bool>("Disabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid>("ReferenceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SalesOrderHeaderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<DateTime>("UpdatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Volume")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SalesOrderHeaderId");
-
-                    b.ToTable("SalesOrderExternalServices");
-                });
-
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5167,12 +5082,6 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("StatusId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("TotalVolume")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalWeight")
-                        .HasColumnType("numeric");
-
                     b.Property<DateTime>("UpdatedOn")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp without time zone")
@@ -5204,55 +5113,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex(new[] { "ExerciseId" }, "IDX_SalesOrderHeader_Exercise");
 
                     b.ToTable("SalesOrderHeader");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderTransport", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<string>("Destination")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<bool>("Disabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Distance")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid>("SalesOrderHeaderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TransportRateDetailId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedOn")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Volume")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SalesOrderHeaderId");
-
-                    b.ToTable("SalesOrderTransports");
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.InvoiceSerie", b =>
@@ -7290,34 +7150,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkOrder");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
-                {
-                    b.HasOne("Domain.Entities.Sales.SalesOrderDetail", "SalesOrderDetail")
-                        .WithMany()
-                        .HasForeignKey("SalesOrderDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Sales.SalesOrderExternalServices", "SalesOrderExternalService")
-                        .WithMany("Details")
-                        .HasForeignKey("SalesOrderExternalServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SalesOrderDetail");
-
-                    b.Navigation("SalesOrderExternalService");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
-                {
-                    b.HasOne("Domain.Entities.Sales.SalesOrderHeader", null)
-                        .WithMany("ExternalServices")
-                        .HasForeignKey("SalesOrderHeaderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.Budget", "Budget")
@@ -7355,15 +7187,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Site");
 
                     b.Navigation("Status");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderTransport", b =>
-                {
-                    b.HasOne("Domain.Entities.Sales.SalesOrderHeader", null)
-                        .WithMany("Transports")
-                        .HasForeignKey("SalesOrderHeaderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.LifecycleTag", b =>
@@ -7671,18 +7494,9 @@ namespace Infrastructure.Migrations
                     b.Navigation("VerifactuRequests");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
-                {
-                    b.Navigation("Details");
-                });
-
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
-                    b.Navigation("ExternalServices");
-
                     b.Navigation("SalesOrderDetails");
-
-                    b.Navigation("Transports");
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.Lifecycle", b =>

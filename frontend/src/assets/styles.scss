@@ -248,3 +248,14 @@ table > tbody > tr {
   color: var(--quantity-ko-color);
   font-weight: 600;
 }
+
+.dark-gray-button {
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+  color: white !important;
+
+  &:hover {
+    background-color: #334155 !important;
+    border-color: #334155 !important;
+  }
+}

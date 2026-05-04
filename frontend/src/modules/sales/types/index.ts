@@ -68,6 +68,29 @@ export interface BudgetTransport {
   destination: string;
 }
 
+export interface BudgetExternalServiceDetail {
+  id: string;
+  budgetExternalServiceId: string;
+  budgetDetailId: string;
+  weight: number;
+  volume: number;
+  quantity: number;
+}
+
+export interface BudgetExternalService {
+  id: string;
+  budgetId: string;
+  referenceId: string;
+  description: string;
+  weight: number;
+  volume: number;
+  quantity: number;
+  supplierId: string;
+  unitPrice: number;
+  totalPrice: number;
+  details: Array<BudgetExternalServiceDetail> | undefined;
+}
+
 export interface Budget {
   id: string;
   customerId: string;
@@ -82,6 +105,7 @@ export interface Budget {
   totalWeight: number;
   details: Array<BudgetDetail> | undefined;
   transports: Array<BudgetTransport> | undefined;
+  externalServices: Array<BudgetExternalService> | undefined;
   userNotes: string;
 }
 
@@ -108,6 +132,41 @@ export interface BudgetDetail {
   userNotes: string;
 }
 
+export interface SalesOrderTransport {
+  id: string;
+  salesOrderHeaderId: string;
+  transportRateDetailId: string;
+  weight: number;
+  volume: number;
+  distance: number;
+  price: number;
+  description: string;
+  destination: string;
+}
+
+export interface SalesOrderExternalService {
+  id: string;
+  salesOrderHeaderId: string;
+  referenceId: string;
+  description: string;
+  weight: number;
+  volume: number;
+  quantity: number;
+  supplierId: string;
+  unitPrice: number;
+  totalPrice: number;
+  details: Array<SalesOrderExternalServiceDetail> | undefined;
+}
+
+export interface SalesOrderExternalServiceDetail {
+  id: string;
+  salesOrderExternalServiceId: string;
+  salesOrderDetailId: string;
+  weight: number;
+  volume: number;
+  quantity: number;
+}
+
 export interface SalesOrderHeader {
   id: string;
   customerId: string;
@@ -132,7 +191,11 @@ export interface SalesOrderHeader {
   vatNumber: string;
   statusId: string;
   deliveryNoteId: string;
+  totalWeight: number;
+  totalVolume: number;
   salesOrderDetails: Array<SalesOrderDetail> | undefined;
+  transports: Array<SalesOrderTransport> | undefined;
+  externalServices: Array<SalesOrderExternalService> | undefined;
 }
 
 export interface SalesOrderReport {

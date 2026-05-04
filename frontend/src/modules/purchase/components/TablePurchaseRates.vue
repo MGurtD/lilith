@@ -6,9 +6,11 @@
     :closable="true"
     :modal="true"
     style="width: 600px"
+    @hide="selectedRate = undefined"
   >
     <FormPurchaseRate
       v-if="selectedRate"
+      :key="selectedRate.id"
       :purchaseRate="selectedRate"
       @submit="submitRateForm"
     />
@@ -21,9 +23,11 @@
     :closable="true"
     :modal="true"
     style="width: 650px"
+    @hide="selectedDetail = undefined"
   >
     <FormPurchaseRateDetail
       v-if="selectedDetail"
+      :key="selectedDetail.id"
       :detail="selectedDetail"
       @submit="submitDetailForm"
     />
@@ -98,11 +102,6 @@
               @click.stop="openDuplicateDialog(slotProps.data)"
             />
             <i
-              :class="PrimeIcons.PENCIL"
-              class="grid_copy_column_button mr-2"
-              @click.stop="editRate(slotProps.data)"
-            />
-            <i
               :class="PrimeIcons.TIMES"
               class="grid_delete_column_button"
               @click.stop="deleteRate($event, slotProps.data)"
@@ -158,11 +157,6 @@
       </Column>
       <Column style="width: 10%">
         <template #body="slotProps">
-          <i
-            :class="PrimeIcons.PENCIL"
-            class="grid_copy_column_button mr-2"
-            @click.stop="editDetail(slotProps.data)"
-          />
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
