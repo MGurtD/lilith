@@ -56,7 +56,7 @@ namespace Application.Services.Sales
         public async Task<GenericResponse> Create(CreateHeaderRequest createRequest)
         {
             var counterObj = await exerciseService.GetNextCounter(createRequest.ExerciseId, "budget");
-            if (!counterObj.Result || counterObj.Content == null) 
+            if (!counterObj.Result || counterObj.Content == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterError"));
 
             var budget = new Budget
@@ -107,7 +107,7 @@ namespace Application.Services.Sales
 
             if (existingBudget.StatusId == statusPending.Id && budget.StatusId == statusAccept.Id)
             {
-                budget.AcceptanceDate = DateTime.Now;                
+                budget.AcceptanceDate = DateTime.Now;
             }
 
             await unitOfWork.Budgets.Update(budget);
@@ -127,7 +127,7 @@ namespace Application.Services.Sales
                 return new GenericResponse(true, new List<string> { });
             }
         }
-        
+
         public async Task<GenericResponse> AddDetail(BudgetDetail detail)
         {
             // Recuperar el workmaster
@@ -143,24 +143,24 @@ namespace Application.Services.Sales
                     detail.DetailWeight = productionMetrics.TotalWeight;
                 }*/
 
-                
+
 
                 var referenceTypeId = workmaster.Reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
-                if(referenceTypeId != null)
+                if (referenceTypeId != null)
                 {
                     var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
                     if (referenceType != null)
                     {
-                        netWeight = referenceType.Density * (workmaster.volume/1000);
+                        netWeight = referenceType.Density * (workmaster.Volume / 1000);
                     }
                 }
-                detail.DetailWeight = netWeight;
+                detail.DetailWeight = netWeight * detail.Quantity;
                 // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
                 if (budget != null)
                 {
-                    budget.TotalWeight += netWeight;
+                    budget.TotalWeight += detail.DetailWeight;
                     await unitOfWork.Budgets.Update(budget);
                 }
 
@@ -185,15 +185,15 @@ namespace Application.Services.Sales
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
                 var referenceTypeId = workmaster.Reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
-                if(referenceTypeId != null)
+                if (referenceTypeId != null)
                 {
                     var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
                     if (referenceType != null)
                     {
-                        netWeight = referenceType.Density * (workmaster.volume/1000);
+                        netWeight = referenceType.Density * (workmaster.Volume / 1000);
                     }
                 }
-                detail.DetailWeight = netWeight;
+                detail.DetailWeight = netWeight * detail.Quantity;
 
                 // Afegir pes al total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
@@ -205,10 +205,10 @@ namespace Application.Services.Sales
 
                 // Actualitzar serveis externs: restar contribució antiga i sumar la nova
                 var quantityDiff = detail.Quantity - oldQuantity;
-                var volumeDiff = workmaster.volume * quantityDiff;
-                var weightDiff = detail.DetailWeight * quantityDiff;
-                var newLineWeight = detail.DetailWeight * detail.Quantity;
-                var newLineVolume = workmaster.volume * detail.Quantity;
+                var volumeDiff = workmaster.Volume * quantityDiff;
+                var weightDiff = detail.DetailWeight - oldWeight;
+                var newLineWeight = detail.DetailWeight;
+                var newLineVolume = workmaster.Volume * detail.Quantity;
 
                 foreach (var phase in workmaster.Phases)
                 {
@@ -242,29 +242,23 @@ namespace Application.Services.Sales
                     }
                 }
             }
+            // Nullify navigation properties to avoid EF tracking issues
+            detail.Reference = null;
+            detail.Budget = null;
+            detail.WorkMaster = null;
+
             await unitOfWork.Budgets.Details.Update(detail);
             return new GenericResponse(true, detail);
         }
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
             var detail = unitOfWork.Budgets.Details.Find(d => d.Id == id).FirstOrDefault();
-            if (detail == null) 
+            if (detail == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetDetailNotFound", id));
 
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
-                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
-                var netWeight = decimal.Zero;
-                if(referenceTypeId != null)
-                {
-                    var referenceType = await unitOfWork.ReferenceTypes.Get(referenceTypeId.Value);
-                    if (referenceType != null)
-                    {
-                        netWeight = referenceType.Density * (workmaster.volume/1000);
-                    }
-                }
-                detail.DetailWeight = netWeight;
 
                 // Restar pes del total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
@@ -292,14 +286,14 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, localizationService.GetLocalizedString("StatusNotFound", "Pendent d'acceptar/Rebutjat"));
             }
 
-            var budgets =  await unitOfWork.Budgets.FindAsync(b => b.StatusId == status.Id && b.Date.AddDays(30) <= DateTime.UtcNow);           
+            var budgets = await unitOfWork.Budgets.FindAsync(b => b.StatusId == status.Id && b.Date.AddDays(30) <= DateTime.UtcNow);
             foreach (var budget in budgets)
             {
                 budget.StatusId = rejectedstatus.Id;
                 budget.AutoRejectedDate = DateTime.UtcNow;
                 budget.Notes = localizationService.GetLocalizedString("BudgetAutomaticRejection", DateTime.UtcNow.ToString());
                 await unitOfWork.Budgets.Update(budget);
-                
+
             }
             return new GenericResponse(true);
         }
@@ -325,7 +319,7 @@ namespace Application.Services.Sales
         public async Task<GenericResponse> RemoveTransport(Guid id)
         {
             var transport = unitOfWork.Budgets.Transports.Find(t => t.Id == id).FirstOrDefault();
-            if (transport == null) 
+            if (transport == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetTransportNotFound", id));
             var budget = await unitOfWork.Budgets.Get(transport.BudgetId);
             if (budget == null)
@@ -335,7 +329,7 @@ namespace Application.Services.Sales
             await unitOfWork.Budgets.Update(budget);
             return new GenericResponse(true, transport);
         }
- 
+
         public async Task<GenericResponse> DistributeTransportCosts(Guid budgetId)
         {
             logger.LogInformation("Iniciant DistributeTransportCosts pel pressupost: {BudgetId}", budgetId);
@@ -346,9 +340,9 @@ namespace Application.Services.Sales
                 logger.LogWarning("Pressupost no trobat: {BudgetId}", budgetId);
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", budgetId));
             }
-                        
+
             var totalWeight = budget.TotalWeight;
-            logger.LogInformation("Pressupost {BudgetId} carregat. Pes total: {TotalWeight}, Cost transport: {TransportCost}, Línies de detall: {DetailCount}", 
+            logger.LogInformation("Pressupost {BudgetId} carregat. Pes total: {TotalWeight}, Cost transport: {TransportCost}, Línies de detall: {DetailCount}",
                 budgetId, totalWeight, budget.TransportCost, budget.Details?.Count ?? 0);
 
             if (budget.Details == null || !budget.Details.Any())
@@ -363,23 +357,27 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, "S'ha intentat ponderar sobre un pes total de 0 o negatiu.");
             }
 
-            try 
+            try
             {
                 foreach (var detail in budget.Details)
-                {                
+                {
                     detail.TransportCost = (detail.DetailWeight / totalWeight) * budget.TransportCost;
                     detail.Amount = detail.Amount + detail.TransportCost;
-                    
-                    // Explicitament modifiquem el detall per a que quedi registrat el Tracking i guardi a la BBDD
+
+                    // Nullify navigation properties to avoid EF tracking issues
+                    detail.Reference = null;
+                    detail.Budget = null;
+                    detail.WorkMaster = null;
+
                     unitOfWork.Budgets.Details.UpdateWithoutSave(detail);
 
-                    logger.LogInformation("Línia detall {DetailId} ponderada: Cost Transport = {TransportCost}, Nou Import = {Amount}", 
+                    logger.LogInformation("Línia detall {DetailId} ponderada: Cost Transport = {TransportCost}, Nou Import = {Amount}",
                         detail.Id, detail.TransportCost, detail.Amount);
                 }
-                
+
                 await unitOfWork.CompleteAsync();
                 logger.LogInformation("Cost de transport ponderat i desat correctament al pressupost {BudgetId}", budgetId);
-                
+
                 return new GenericResponse(true);
             }
             catch (Exception ex)
@@ -407,7 +405,7 @@ namespace Application.Services.Sales
             var totalWeight = budget.TotalWeight;
             var budgetDate = DateOnly.FromDateTime(budget.Date);
 
-            try 
+            try
             {
                 // 1. Ponderar Transport (pes)
                 foreach (var detail in budget.Details)
@@ -420,24 +418,28 @@ namespace Application.Services.Sales
                 // 2. Ponderar Serveis Externs
                 if (budget.ExternalServices != null)
                 {
+                    logger.LogInformation("Processant {Count} serveis externs pel pressupost {BudgetId}", budget.ExternalServices.Count(), budgetId);
                     foreach (var extService in budget.ExternalServices)
                     {
+                        logger.LogInformation("Processant servei extern: {ServiceId} (Referència: {ReferenceId})", extService.Id, extService.ReferenceId);
+
                         if (extService.SupplierId == Guid.Empty || extService.UnitPrice <= 0)
                         {
-                            logger.LogWarning("Servei extern {ServiceId} sense proveïdor o preu. S'omet.", extService.Id);
+                            logger.LogWarning("Servei extern {ServiceId} omet: sense proveïdor (SupplierId: {SupplierId}) o preu unitari zero/negatiu (UnitPrice: {UnitPrice})",
+                                extService.Id, extService.SupplierId, extService.UnitPrice);
                             continue;
                         }
 
                         // Obtenir la tarifa activa del proveïdor
-                        var activeRates = await unitOfWork.PurchaseRates.FindAsync(r => 
-                            r.SupplierId == extService.SupplierId && 
-                            r.ValidFrom <= budgetDate && 
+                        var activeRates = await unitOfWork.PurchaseRates.FindAsync(r =>
+                            r.SupplierId == extService.SupplierId &&
+                            r.ValidFrom <= budgetDate &&
                             r.ValidTo >= budgetDate);
-                        
+
                         var activeRate = activeRates.FirstOrDefault();
                         if (activeRate == null)
                         {
-                            logger.LogWarning("No hi ha tarifa de compra activa pel proveïdor {SupplierId} a la data {Date}", extService.SupplierId, budgetDate);
+                            logger.LogWarning("No hi ha tarifa de compra activa pel proveïdor {SupplierId} a la data {Date}. S'ometrà el servei {ServiceId}.", extService.SupplierId, budgetDate, extService.Id);
                             continue;
                         }
 
@@ -446,41 +448,57 @@ namespace Application.Services.Sales
                         var rateDetail = rateDetails.FirstOrDefault();
 
                         int calculationType = rateDetail?.CalculationType ?? 2; // Default Unitats
+                        string calculationTypeName = calculationType switch
+                        {
+                            0 => "Volum",
+                            1 => "Pes",
+                            _ => "Unitats"
+                        };
 
-                        // 1 = Pes, 2 = Unitats, 3 = Volum
+                        logger.LogInformation("Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", activeRate.Id, calculationType, calculationTypeName);
+                        logger.LogInformation("Detall Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", rateDetail.Id, calculationType, calculationTypeName);
+
+                        // 0 = Volum, 1 = Pes, 2 = Unitats (default)
                         decimal totalMagnitude = calculationType switch
                         {
+                            0 => extService.Volume,
                             1 => extService.Weight,
-                            3 => extService.Volume,
                             _ => extService.Quantity
                         };
 
                         if (totalMagnitude <= 0)
                         {
-                            if (calculationType == 1 || calculationType == 3)
+                            if (calculationType == 0 || calculationType == 1)
                             {
-                                logger.LogWarning("La magnitud (pes/volum) del servei extern {ServiceId} és {Magnitude}, es canvia a repartir per unitats.", extService.Id, totalMagnitude);
+                                logger.LogWarning("La magnitud ({TypeName}) del servei extern {ServiceId} és {Magnitude}. Reintentant per Unitats.", calculationTypeName, extService.Id, totalMagnitude);
                                 calculationType = 2; // Fallback to Units
                                 totalMagnitude = extService.Quantity;
                             }
-                            
-                            if (totalMagnitude <= 0) continue;
+
+                            if (totalMagnitude <= 0)
+                            {
+                                logger.LogWarning("La magnitud final del servei extern {ServiceId} segueix sent 0. S'omet.", extService.Id);
+                                continue;
+                            }
                         }
 
                         decimal totalServiceCost = extService.UnitPrice * totalMagnitude;
+                        logger.LogInformation("Cost total del servei {ServiceId}: {TotalCost} (Preu: {UnitPrice} * Magnitud: {Magnitude})",
+                            extService.Id, totalServiceCost, extService.UnitPrice, totalMagnitude);
 
                         if (extService.Details != null)
                         {
+                            logger.LogInformation("Distribuint cost del servei {ServiceId} entre {DetailCount} línies de detall", extService.Id, extService.Details.Count());
                             foreach (var esd in extService.Details)
                             {
                                 var detailMagnitude = calculationType switch
                                 {
+                                    0 => esd.Volume,
                                     1 => esd.Weight,
-                                    3 => esd.Volume,
                                     _ => esd.Quantity
                                 };
 
-                                decimal proportion = detailMagnitude / totalMagnitude;
+                                decimal proportion = totalMagnitude > 0 ? detailMagnitude / totalMagnitude : 0;
                                 decimal totalCostShare = totalServiceCost * proportion;
 
                                 var bDetail = budget.Details.FirstOrDefault(d => d.Id == esd.BudgetDetailId);
@@ -488,8 +506,18 @@ namespace Application.Services.Sales
                                 {
                                     decimal unitCostShare = bDetail.Quantity > 0 ? totalCostShare / bDetail.Quantity : 0;
                                     bDetail.ServiceCost += unitCostShare;
+                                    logger.LogInformation("  -> Línia detall {BudgetDetailId}: Proporció {Proportion:P2}, Cost total compartit {TotalShare}, Cost unitari afegit {UnitShare}",
+                                        bDetail.Id, proportion, totalCostShare, unitCostShare);
+                                }
+                                else
+                                {
+                                    logger.LogWarning("  -> No s'ha trobat la línia de detall {BudgetDetailId} associada al servei extern {ServiceId}", esd.BudgetDetailId, extService.Id);
                                 }
                             }
+                        }
+                        else
+                        {
+                            logger.LogWarning("El servei extern {ServiceId} no té detalls (ExternalServiceDetails) per distribuir el cost.", extService.Id);
                         }
                     }
                 }
@@ -499,17 +527,22 @@ namespace Application.Services.Sales
                 {
                     // Costos unitaris
                     detail.TotalCost = detail.UnitCost + detail.TransportCost + detail.ServiceCost;
-                    
+
                     // Preu unitari amb benefici i descompte (en %)
                     decimal priceWithProfit = detail.TotalCost + (detail.TotalCost * (detail.Profit / 100m));
                     detail.UnitPrice = priceWithProfit - (priceWithProfit * (detail.Discount / 100m));
-                    
+
                     // Import total de la línia
                     detail.Amount = detail.UnitPrice * detail.Quantity;
 
+                    // Nullify navigation properties to avoid EF tracking issues
+                    detail.Reference = null;
+                    detail.Budget = null;
+                    detail.WorkMaster = null;
+
                     unitOfWork.Budgets.Details.UpdateWithoutSave(detail);
                 }
-                
+
                 await unitOfWork.CompleteAsync();
                 return new GenericResponse(true);
             }
@@ -543,8 +576,8 @@ namespace Application.Services.Sales
         /// </summary>
         private async Task AddExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, BudgetDetail detail)
         {
-            var lineWeight = detail.DetailWeight * detail.Quantity;
-            var lineVolume = workmaster.volume * detail.Quantity;
+            var lineWeight = detail.DetailWeight;
+            var lineVolume = workmaster.Volume * detail.Quantity;
 
             foreach (var phase in workmaster.Phases)
             {
@@ -589,6 +622,10 @@ namespace Application.Services.Sales
                         existingDetail.Quantity = detail.Quantity;
                         existingDetail.Weight = lineWeight;
                         existingDetail.Volume = lineVolume;
+
+                        existingDetail.BudgetExternalService = null;
+                        existingDetail.BudgetDetail = null;
+
                         await unitOfWork.Budgets.ExternalServiceDetails.Update(existingDetail);
                     }
                     else
@@ -634,7 +671,7 @@ namespace Application.Services.Sales
                         }
 
                         existing.Quantity -= detail.Quantity;
-                        existing.Volume -= workmaster.volume * detail.Quantity;
+                        existing.Volume -= workmaster.Volume * detail.Quantity;
                         existing.Weight -= detail.DetailWeight * detail.Quantity;
 
                         if (existing.Quantity <= 0)

@@ -83,7 +83,7 @@ namespace Application.Services.Sales
                 {
                     SalesOrderHeaderId = salesOrder.Id
                 };
-                await AddDetail(salesOrderDetail);
+                await AddDetail(salesOrderDetail, skipExternalServices: true);
                 detailMap[detail.Id] = salesOrderDetail.Id;
             }
 
@@ -235,7 +235,7 @@ namespace Application.Services.Sales
                     var workMaster = unitOfWork.WorkMasters.Find(e => e.ReferenceId == detail.ReferenceId).FirstOrDefault();
                     if (workMaster != null)
                     {
-                        detail.WorkMasterCost = (workMaster.materialCost + workMaster.machineCost + workMaster.operatorCost + workMaster.externalCost);
+                        detail.WorkMasterCost = (workMaster.MaterialCost + workMaster.MachineCost + workMaster.OperatorCost + workMaster.ExternalCost);
                     }
                     await unitOfWork.SalesOrderHeaders.UpdateDetail(detail);
                 }
@@ -300,7 +300,7 @@ namespace Application.Services.Sales
             var totalWeight = salesOrder.SalesOrderDetails.Sum(d => 
             {
                 var master = unitOfWork.WorkMasters.Find(w => w.ReferenceId == d.ReferenceId).FirstOrDefault();
-                return master?.totalWeight * d.Quantity ?? 0;
+                return master?.TotalWeight * d.Quantity ?? 0;
             });
 
             var budgetDate = DateOnly.FromDateTime(salesOrder.Date);
@@ -313,7 +313,7 @@ namespace Application.Services.Sales
                 foreach (var detail in salesOrder.SalesOrderDetails)
                 {
                     var master = unitOfWork.WorkMasters.Find(w => w.ReferenceId == detail.ReferenceId).FirstOrDefault();
-                    var detailWeight = master?.totalWeight * detail.Quantity ?? 0;
+                    var detailWeight = master?.TotalWeight * detail.Quantity ?? 0;
 
                     decimal totalTransportShare = totalWeight > 0 ? (detailWeight / totalWeight) * totalTransportCost : 0;
                     detail.TransportCost = detail.Quantity > 0 ? totalTransportShare / detail.Quantity : 0;
@@ -350,17 +350,17 @@ namespace Application.Services.Sales
 
                         int calculationType = rateDetail?.CalculationType ?? 2; // Default Unitats
 
-                        // 1 = Pes, 2 = Unitats, 3 = Volum
+                        // 0 = Volum, 1 = Pes, 2 = Unitats (default)
                         decimal totalMagnitude = calculationType switch
                         {
+                            0 => extService.Volume,
                             1 => extService.Weight,
-                            3 => extService.Volume,
                             _ => extService.Quantity
                         };
 
                         if (totalMagnitude <= 0)
                         {
-                            if (calculationType == 1 || calculationType == 3)
+                            if (calculationType == 0 || calculationType == 1)
                             {
                                 logger.LogWarning("La magnitud (pes/volum) del servei extern {ServiceId} és {Magnitude}, es canvia a repartir per unitats.", extService.Id, totalMagnitude);
                                 calculationType = 2; // Fallback to Units
@@ -378,8 +378,8 @@ namespace Application.Services.Sales
                             {
                                 var detailMagnitude = calculationType switch
                                 {
+                                    0 => esd.Volume,
                                     1 => esd.Weight,
-                                    3 => esd.Volume,
                                     _ => esd.Quantity
                                 };
 
@@ -445,13 +445,76 @@ namespace Application.Services.Sales
             return detail;
         }
         public async Task<GenericResponse> AddDetail(SalesOrderDetail salesOrderDetail)
+            => await AddDetail(salesOrderDetail, skipExternalServices: false);
+
+        private async Task<GenericResponse> AddDetail(SalesOrderDetail salesOrderDetail, bool skipExternalServices)
         {
             await unitOfWork.SalesOrderHeaders.AddDetail(salesOrderDetail);
+
+            // Afegir serveis externs si té WorkMaster (no quan ve de CreateFromBudget, ja que es copien directament)
+            if (!skipExternalServices && salesOrderDetail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(salesOrderDetail.WorkMasterId.Value);
+                if (workmaster != null)
+                {
+                    await AddExternalServicesFromWorkmaster(workmaster, salesOrderDetail);
+                }
+            }
 
             return new GenericResponse(true);
         }
         public async Task<GenericResponse> UpdateDetail(SalesOrderDetail salesOrderDetail)
         {
+            // Recuperar el detall antic per obtenir la quantitat anterior
+            var oldDetail = unitOfWork.SalesOrderDetails.Find(d => d.Id == salesOrderDetail.Id).FirstOrDefault();
+            var oldQuantity = oldDetail?.Quantity ?? 0;
+
+            if (salesOrderDetail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(salesOrderDetail.WorkMasterId.Value);
+                if (workmaster != null)
+                {
+                    var quantityDiff = salesOrderDetail.Quantity - oldQuantity;
+                    var volumeDiff = workmaster.Volume * quantityDiff;
+                    
+                    var masterForWeight = unitOfWork.WorkMasters.Find(w => w.ReferenceId == salesOrderDetail.ReferenceId).FirstOrDefault();
+                    var oldWeight = (masterForWeight?.TotalWeight ?? 0) * oldQuantity;
+                    var newWeight = (masterForWeight?.TotalWeight ?? 0) * salesOrderDetail.Quantity;
+                    var weightDiff = newWeight - oldWeight;
+
+                    foreach (var phase in workmaster.Phases)
+                    {
+                        if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                        {
+                            var serviceRefId = phase.ServiceReferenceId.Value;
+                            var existing = unitOfWork.SalesOrderHeaders.ExternalServices
+                                .Find(es => es.SalesOrderHeaderId == salesOrderDetail.SalesOrderHeaderId && es.ReferenceId == serviceRefId)
+                                .FirstOrDefault();
+
+                            if (existing != null)
+                            {
+                                existing.Quantity += quantityDiff;
+                                existing.Volume += volumeDiff;
+                                existing.Weight += weightDiff;
+                                await unitOfWork.SalesOrderHeaders.ExternalServices.Update(existing);
+
+                                var existingServiceDetail = unitOfWork.SalesOrderHeaders.ExternalServiceDetails
+                                    .Find(d => d.SalesOrderExternalServiceId == existing.Id && d.SalesOrderDetailId == salesOrderDetail.Id)
+                                    .FirstOrDefault();
+
+                                if (existingServiceDetail != null)
+                                {
+                                    existingServiceDetail.Quantity = salesOrderDetail.Quantity;
+                                    existingServiceDetail.Weight = newWeight;
+                                    existingServiceDetail.Volume = workmaster.Volume * salesOrderDetail.Quantity;
+                                    await unitOfWork.SalesOrderHeaders.ExternalServiceDetails.Update(existingServiceDetail);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             salesOrderDetail.Reference = null;
             salesOrderDetail.SalesOrderHeader = null;
 
@@ -463,8 +526,18 @@ namespace Application.Services.Sales
             var detail = unitOfWork.SalesOrderDetails.Find(d => d.Id == id).FirstOrDefault();
             if (detail == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("BudgetDetailNotFound", id));
-            var deleted = await unitOfWork.SalesOrderHeaders.RemoveDetail(detail);
 
+            // Eliminar serveis externs associats
+            if (detail.WorkMasterId != null)
+            {
+                var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                if (workmaster != null)
+                {
+                    await RemoveExternalServicesFromWorkmaster(workmaster, detail);
+                }
+            }
+
+            var deleted = await unitOfWork.SalesOrderHeaders.RemoveDetail(detail);
             return new GenericResponse(true, detail);
         }
 
@@ -552,6 +625,117 @@ namespace Application.Services.Sales
         }
 
         #endregion
+
+        private async Task AddExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, SalesOrderDetail detail)
+        {
+            var masterForWeight = unitOfWork.WorkMasters.Find(w => w.ReferenceId == detail.ReferenceId).FirstOrDefault();
+            var lineWeight = (masterForWeight?.TotalWeight ?? 0) * detail.Quantity;
+            var lineVolume = workmaster.Volume * detail.Quantity;
+
+            foreach (var phase in workmaster.Phases)
+            {
+                if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                {
+                    var serviceRefId = phase.ServiceReferenceId.Value;
+                    var existing = unitOfWork.SalesOrderHeaders.ExternalServices
+                        .Find(es => es.SalesOrderHeaderId == detail.SalesOrderHeaderId && es.ReferenceId == serviceRefId)
+                        .FirstOrDefault();
+
+                    Guid externalServiceId;
+                    if (existing != null)
+                    {
+                        existing.Quantity += detail.Quantity;
+                        existing.Volume += lineVolume;
+                        existing.Weight += lineWeight;
+                        await unitOfWork.SalesOrderHeaders.ExternalServices.Update(existing);
+                        externalServiceId = existing.Id;
+                    }
+                    else
+                    {
+                        var salesOrderExternalService = new SalesOrderExternalServices
+                        {
+                            SalesOrderHeaderId = detail.SalesOrderHeaderId,
+                            ReferenceId = serviceRefId,
+                            Description = phase.Description,
+                            Weight = lineWeight,
+                            Volume = lineVolume,
+                            Quantity = detail.Quantity,
+                        };
+                        await unitOfWork.SalesOrderHeaders.ExternalServices.Add(salesOrderExternalService);
+                        externalServiceId = salesOrderExternalService.Id;
+                    }
+
+                    var existingDetail = unitOfWork.SalesOrderHeaders.ExternalServiceDetails
+                        .Find(d => d.SalesOrderExternalServiceId == externalServiceId && d.SalesOrderDetailId == detail.Id)
+                        .FirstOrDefault();
+
+                    if (existingDetail != null)
+                    {
+                        existingDetail.Quantity = detail.Quantity;
+                        existingDetail.Weight = lineWeight;
+                        existingDetail.Volume = lineVolume;
+
+                        existingDetail.SalesOrderExternalService = null;
+                        existingDetail.SalesOrderDetail = null;
+
+                        await unitOfWork.SalesOrderHeaders.ExternalServiceDetails.Update(existingDetail);
+                    }
+                    else
+                    {
+                        var serviceDetail = new SalesOrderExternalServiceDetail
+                        {
+                            SalesOrderExternalServiceId = externalServiceId,
+                            SalesOrderDetailId = detail.Id,
+                            Quantity = detail.Quantity,
+                            Weight = lineWeight,
+                            Volume = lineVolume,
+                        };
+                        await unitOfWork.SalesOrderHeaders.ExternalServiceDetails.Add(serviceDetail);
+                    }
+                }
+            }
+        }
+
+        private async Task RemoveExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, SalesOrderDetail detail)
+        {
+            foreach (var phase in workmaster.Phases)
+            {
+                if (phase.IsExternalWork && phase.ServiceReferenceId != null)
+                {
+                    var serviceRefId = phase.ServiceReferenceId.Value;
+                    var existing = unitOfWork.SalesOrderHeaders.ExternalServices
+                        .Find(es => es.SalesOrderHeaderId == detail.SalesOrderHeaderId && es.ReferenceId == serviceRefId)
+                        .FirstOrDefault();
+
+                    if (existing != null)
+                    {
+                        var serviceDetail = unitOfWork.SalesOrderHeaders.ExternalServiceDetails
+                            .Find(d => d.SalesOrderExternalServiceId == existing.Id && d.SalesOrderDetailId == detail.Id)
+                            .FirstOrDefault();
+                        if (serviceDetail != null)
+                        {
+                            await unitOfWork.SalesOrderHeaders.ExternalServiceDetails.Remove(serviceDetail);
+                        }
+
+                        var masterForWeight = unitOfWork.WorkMasters.Find(w => w.ReferenceId == detail.ReferenceId).FirstOrDefault();
+                        var lineWeight = (masterForWeight?.TotalWeight ?? 0) * detail.Quantity;
+
+                        existing.Quantity -= detail.Quantity;
+                        existing.Volume -= workmaster.Volume * detail.Quantity;
+                        existing.Weight -= lineWeight;
+
+                        if (existing.Quantity <= 0)
+                        {
+                            await unitOfWork.SalesOrderHeaders.ExternalServices.Remove(existing);
+                        }
+                        else
+                        {
+                            await unitOfWork.SalesOrderHeaders.ExternalServices.Update(existing);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

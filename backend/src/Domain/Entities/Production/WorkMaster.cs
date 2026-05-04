@@ -7,12 +7,12 @@ public class WorkMaster : Entity
     public Guid ReferenceId { get; set;}
     public Reference? Reference { get; set;}
     public decimal BaseQuantity { get; set;}
-    public decimal operatorCost { get; set;} = decimal.Zero;
-    public decimal machineCost { get; set; } = decimal.Zero;
-    public decimal externalCost { get; set; } = decimal.Zero;
-    public decimal materialCost { get; set; } = decimal.Zero;
-    public decimal totalWeight { get; set; } = decimal.Zero;
-    public decimal volume { get; set; } = decimal.Zero;
+    public decimal OperatorCost { get; set;} = decimal.Zero;
+    public decimal MachineCost { get; set; } = decimal.Zero;
+    public decimal ExternalCost { get; set; } = decimal.Zero;
+    public decimal MaterialCost { get; set; } = decimal.Zero;
+    public decimal TotalWeight { get; set; } = decimal.Zero;
+    public decimal Volume { get; set; } = decimal.Zero;
     public int Mode { get; set; } //1 - prototip, 2 - srie curta, 3 - srie llarga
 
     public ICollection<WorkMasterPhase> Phases { get; set; } = new List<WorkMasterPhase>();

@@ -337,7 +337,8 @@ const loadView = async (salesOrderId: string) => {
   await salesOrderStore.GetById(salesOrderId);
   await loadExternalServiceSuppliers();
 
-  referenceStore.fetchReferencesByModule("sales");
+  await referenceStore.fetchReferences();
+  referenceStore.module = "sales";
   lifeCycleStore.fetchOneByName("SalesOrder");
   lifeCycleStore.fetchSecondaryByName("WorkOrder");
   plantModelStore.fetchSites();

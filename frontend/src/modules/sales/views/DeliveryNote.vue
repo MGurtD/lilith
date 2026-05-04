@@ -134,7 +134,8 @@ const loadView = async () => {
   await deliveryNoteStore.GetById(id);
   initialStatusId.value = deliveryNoteStore.deliveryNote!.statusId;
   await salesOrderStore.GetByDeliveryNote(id);
-  referenceStore.fetchReferencesByModule("sales");
+  await referenceStore.fetchReferences();
+  referenceStore.module = "sales";
   plantModelStore.fetchSites();
 
   if (!customerStore.customers) customerStore.fetchCustomers();

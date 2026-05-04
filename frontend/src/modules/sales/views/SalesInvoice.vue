@@ -165,7 +165,8 @@ onMounted(async () => {
 
   if (!taxesStore.taxes) await taxesStore.fetchAll();
   if (!customersStore.customers) await customersStore.fetchCustomers();
-  await referenceStore.fetchReferencesByModule("sales");
+  await referenceStore.fetchReferences();
+  referenceStore.module = "sales";
   await lifecycleStore.fetchOneByName("SalesInvoice");
   await invoiceStore.GetById(invoiceId.value);
   await deliveryNoteStore.GetByInvoiceId(invoiceId.value);

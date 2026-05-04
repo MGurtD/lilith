@@ -10,7 +10,7 @@
   </div>
 
   <form v-if="reference">
-    <section class="four-columns">
+    <section class="five-columns">
       <div class="mt-1">
         <BaseInput
           class="mb-2"
@@ -32,6 +32,9 @@
             'p-invalid': validation.errors.description,
           }"
         ></BaseInput>
+      </div>
+      <div class="mt-1">        
+        <DropdownReferenceType label="Tipus de material" v-model="reference.referenceTypeId" />
       </div>
       <div class="mt-1">
         <BaseInput
@@ -105,6 +108,8 @@ import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../../types/component";
 import { useTaxesStore } from "../../shared/store/tax";
+import FormReferenceType from "@/modules/shared/components/FormReferenceType.vue";
+import DropdownReferenceType from "@/modules/shared/components/DropdownReferenceType.vue";
 
 const props = defineProps<{
   reference: Reference;

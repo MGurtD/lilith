@@ -336,7 +336,8 @@ const loadView = async () => {
   await budgetStore.GetAssociatedSalesOrders(budgetId);
   await loadExternalServiceSuppliers();
 
-  referenceStore.fetchReferencesByModule("sales");
+  await referenceStore.fetchReferences();
+  referenceStore.module = "sales";
   workMasterStore.fetchAllActives();
   lifeCycleStore.fetchOneByName("Budget");
   plantModelStore.fetchSites();
