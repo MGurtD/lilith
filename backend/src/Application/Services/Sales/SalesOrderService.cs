@@ -214,6 +214,31 @@ namespace Application.Services.Sales
             }
             else
             {
+                if (salesOrder.BudgetId.HasValue)
+                {
+                    var budget = await unitOfWork.Budgets.Get(salesOrder.BudgetId.Value);
+                    if (budget == null)
+                    {
+                        return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", salesOrder.BudgetId.Value));
+                    }
+
+                    var lifecycle = unitOfWork.Lifecycles.Find(l => l.Name == StatusConstants.Lifecycles.Budget).FirstOrDefault();
+                    if (lifecycle == null)
+                    {
+                        return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNotFound", StatusConstants.Lifecycles.Budget));
+                    }
+
+                    if (!lifecycle.InitialStatusId.HasValue)
+                    {
+                        return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNoInitialStatus", StatusConstants.Lifecycles.Budget));
+                    }
+
+                    budget.StatusId = lifecycle.InitialStatusId.Value;
+                    budget.AcceptanceDate = null;
+
+                    await unitOfWork.Budgets.Update(budget);
+                }
+
                 await unitOfWork.SalesOrderHeaders.Remove(salesOrder);
                 return new GenericResponse(true, new List<string> { });
             }
