@@ -95,6 +95,14 @@
       <Column style="width: 10%">
         <template #body="slotProps">
           <div class="flex gap-2">
+            <Button
+              :icon="PrimeIcons.PENCIL"
+              text
+              rounded
+              size="small"
+              class="w-2rem h-2rem p-0"
+              @click.stop="editRate(slotProps.data)"
+            />
             <i
               :class="PrimeIcons.COPY"
               class="grid_copy_column_button mr-2"
@@ -234,6 +242,9 @@ const createRate = () => {
 
 const editRate = (rate: PurchaseRate) => {
   selectedRate.value = { ...rate };
+  if (selectedRate.value.validFrom) selectedRate.value.validFrom = new Date(selectedRate.value.validFrom);
+  if (selectedRate.value.validTo) selectedRate.value.validTo = new Date(selectedRate.value.validTo);
+  
   rateFormMode.value = FormActionMode.EDIT;
   rateDialogVisible.value = true;
 };
@@ -243,13 +254,12 @@ const onRateRowClick = (row: DataTableRowClickEvent) => {
   if (
     target?.className &&
     typeof target.className === "string" &&
-    target.className.includes("grid_delete_column_button")
+    (target.className.includes("grid_delete_column_button") || target.className.includes("grid_copy_column_button") || target.className.includes("p-button"))
   )
     return;
 
   const rate = row.data as PurchaseRate;
   purchaseRateStore.fetchPurchaseRateDetails(rate);
-  editRate(rate);
 };
 
 const submitRateForm = async (rate: PurchaseRate) => {

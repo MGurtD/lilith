@@ -69,7 +69,7 @@
         <BaseInput
           class="mb-2"
           label="Pes (kg)"
-          v-model="header.totalWeight"
+          v-model="transport.weight"
           :type="BaseInputType.NUMERIC"
           :decimals="2"
           :class="{ 'p-invalid': validation.errors.weight }"
@@ -91,7 +91,7 @@
           disabled
           class="mb-2"
           label="Distància (km)"
-          :modelValue="distance"
+          v-model="transport.distance"
           :type="BaseInputType.NUMERIC"
           :decimals="2"
           :class="{ 'p-invalid': validation.errors.distance }"
@@ -304,18 +304,26 @@ onMounted(async () => {
   ) {
     onCustomerToggleChange();
   } else {
-    const cust = customerStore.customers?.find(
-      (c) => c.id === props.header.customerId,
-    );
-    if (cust && transport.value.destination === cust.comercialName) {
-      isFinalCustomer.value = true;
-    } else {
-      isFinalCustomer.value = false;
-      const destSup = supplierStore.suppliers?.find(
-        (s) => s.comercialName === transport.value.destination,
+    // Restaurar el proveïdor logístic seleccionat
+    if (transport.value.logisticSupplierId) {
+      localSupplierId.value = transport.value.logisticSupplierId;
+      await transportRateStore.fetchTransportRatesBySupplierId(
+        transport.value.logisticSupplierId,
       );
-      if (destSup) {
-        destinationSupplierId.value = destSup.id;
+    }
+
+    // Restaurar destinació
+    if (transport.value.destinationSupplierId) {
+      isFinalCustomer.value = false;
+      destinationSupplierId.value = transport.value.destinationSupplierId;
+    } else {
+      const cust = customerStore.customers?.find(
+        (c) => c.id === props.header.customerId,
+      );
+      if (cust && transport.value.destination === cust.comercialName) {
+        isFinalCustomer.value = true;
+      } else if (transport.value.destination) {
+        isFinalCustomer.value = false;
       }
     }
   }
@@ -332,18 +340,21 @@ const onCustomerToggleChange = () => {
       transport.value.distance = mainAddr?.distanceFromSite || 0;
     }
     destinationSupplierId.value = null;
+    transport.value.destinationSupplierId = null;
   } else {
     if (destinationSupplierId.value) {
       onDestinationSupplierChange();
     } else {
       transport.value.destination = "";
       transport.value.distance = 0;
+      transport.value.destinationSupplierId = null;
     }
   }
 };
 
 const onTransportSupplierChange = async () => {
   transport.value.transportRateDetailId = "";
+  transport.value.logisticSupplierId = localSupplierId.value ?? "";
   if (localSupplierId.value) {
     await transportRateStore.fetchTransportRatesBySupplierId(
       localSupplierId.value,
@@ -369,9 +380,11 @@ const onDestinationSupplierChange = () => {
   if (sup) {
     transport.value.destination = sup.comercialName;
     transport.value.distance = sup.distanceFromSite || 0;
+    transport.value.destinationSupplierId = sup.id;
   } else {
     transport.value.destination = "";
     transport.value.distance = 0;
+    transport.value.destinationSupplierId = null;
   }
 };
 

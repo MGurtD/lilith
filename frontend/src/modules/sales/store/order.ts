@@ -80,8 +80,11 @@ export const useSalesOrderStore = defineStore({
     },
     async GetDetailsById(id: string) {
       const updatedOrder = await SalesServices.SalesOrder.getById(id);
-      if (this.salesOrder && updatedOrder)
+      if (this.salesOrder && updatedOrder) {
         this.salesOrder.salesOrderDetails = updatedOrder?.salesOrderDetails;
+        this.salesOrder.externalServices = updatedOrder?.externalServices;
+        this.salesOrder.transports = updatedOrder?.transports;
+      }
     },
     async GetFiltered(
       startTime: string,

@@ -122,6 +122,17 @@ html {
   }
 }
 
+.grid_edit_column_button {
+  color: var(--p-primary-600);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--p-primary-800);
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+  }
+}
+
 .grid_copy_column_button {
   cursor: pointer;
 }

@@ -34,12 +34,12 @@
     <Column field="quantity" header="Quantitat" style="width: 8%" />
     <Column field="weight" header="Pes (kg)" style="width: 10%">
       <template #body="slotProps">
-        {{ slotProps.data.weight.toFixed(4) }}
+        {{ slotProps.data.weight.toFixed(2) }}
       </template>
     </Column>
-    <Column field="volume" header="Volum (m³)" style="width: 10%">
+    <Column field="volume" header="Volum (mm³)" style="width: 10%">
       <template #body="slotProps">
-        {{ slotProps.data.volume.toFixed(4) }}
+        {{ slotProps.data.volume.toFixed(2) }}
       </template>
     </Column>
     <Column field="unitPrice" header="Preu unit." style="width: 8%">

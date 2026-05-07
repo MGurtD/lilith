@@ -231,10 +231,15 @@ const externalServicesWithSuppliers = ref<SalesOrderExternalServiceRow[]>([]);
 
 const calculatePriceForRow = async (row: SalesOrderExternalServiceRow): Promise<void> => {
   if (!row.supplierId) return;
-  const unitPrice = await referenceService.getPriceBySupplier(row.referenceId, row.supplierId);
-  if (unitPrice !== null) {
-    row.unitPrice = unitPrice;
-    row.totalPrice = unitPrice * row.quantity;
+  const rateInfo = await referenceService.getRateInfo(row.referenceId, row.supplierId);
+  if (rateInfo !== null) {
+    row.unitPrice = rateInfo.unitPrice;
+    // 0 = Volum, 1 = Pes, 2 = Unitats (default)
+    const magnitude =
+      rateInfo.calculationType === 0 ? row.volume :
+      rateInfo.calculationType === 1 ? row.weight :
+      row.quantity;
+    row.totalPrice = rateInfo.unitPrice * magnitude;
   }
 };
 
@@ -257,6 +262,23 @@ const loadExternalServiceSuppliers = async () => {
         supplierId: prev?.supplierId ?? svc.supplierId,
       };
       await calculatePriceForRow(row);
+      
+      // Auto-save if the locally calculated total price is different from the DB
+      if (row.supplierId && Math.abs(row.totalPrice - svc.totalPrice) > 0.001) {
+        services.SalesOrder.UpdateExternalService({
+          id: row.id,
+          salesOrderHeaderId: row.salesOrderHeaderId,
+          referenceId: row.referenceId,
+          description: row.description,
+          weight: row.weight,
+          volume: row.volume,
+          quantity: row.quantity,
+          supplierId: row.supplierId,
+          unitPrice: row.unitPrice,
+          totalPrice: row.totalPrice
+        });
+      }
+      
       return row;
     })
   );

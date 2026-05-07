@@ -66,6 +66,14 @@ namespace Api.Controllers.Shared
             return Ok(price);
         }
 
+        [HttpGet("{referenceId:guid}/rateinfo/{supplierId:guid}")]
+        public async Task<IActionResult> GetExternalServiceRateInfo(Guid referenceId, Guid supplierId, [FromQuery] DateOnly? date)
+        {
+            var effectiveDate = date ?? DateOnly.FromDateTime(DateTime.Today);
+            var (unitPrice, calculationType) = await service.GetExternalServiceRateInfo(referenceId, supplierId, effectiveDate);
+            return Ok(new { unitPrice, calculationType });
+        }
+
         [HttpGet("{referenceId:guid}/price")]
         public async Task<IActionResult> GetPriceNoSupplier(Guid referenceId)
         {

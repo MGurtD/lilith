@@ -197,6 +197,7 @@ import { useTaxesStore } from "../../shared/store/tax";
 import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import Services from "../services";
+
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useBudgetStore } from "../store/budget";
 import TableBudgetDetails from "../components/TableBudgetDetails.vue";
@@ -235,10 +236,15 @@ const externalServicesWithSuppliers = ref<BudgetExternalServiceRow[]>([]);
 
 const calculatePriceForRow = async (row: BudgetExternalServiceRow): Promise<void> => {
   if (!row.supplierId) return;
-  const unitPrice = await referenceService.getPriceBySupplier(row.referenceId, row.supplierId);
-  if (unitPrice !== null) {
-    row.unitPrice = unitPrice;
-    row.totalPrice = unitPrice * row.quantity;
+  const rateInfo = await referenceService.getRateInfo(row.referenceId, row.supplierId);
+  if (rateInfo !== null) {
+    row.unitPrice = rateInfo.unitPrice;
+    // 0 = Volum, 1 = Pes, 2 = Unitats (default)
+    const magnitude =
+      rateInfo.calculationType === 0 ? row.volume :
+      rateInfo.calculationType === 1 ? row.weight :
+      row.quantity;
+    row.totalPrice = rateInfo.unitPrice * magnitude;
   }
 };
 
@@ -263,6 +269,23 @@ const loadExternalServiceSuppliers = async () => {
       };
       // Recalcular preu si ja hi ha un proveïdor seleccionat
       await calculatePriceForRow(row);
+      
+      // Auto-save if the locally calculated total price is different from the DB
+      if (row.supplierId && Math.abs(row.totalPrice - svc.totalPrice) > 0.001) {
+        Services.Budget.UpdateExternalService({
+          id: row.id,
+          budgetId: row.budgetId,
+          referenceId: row.referenceId,
+          description: row.description,
+          weight: row.weight,
+          volume: row.volume,
+          quantity: row.quantity,
+          supplierId: row.supplierId,
+          unitPrice: row.unitPrice,
+          totalPrice: row.totalPrice
+        });
+      }
+      
       return row;
     })
   );
@@ -473,10 +496,14 @@ const openBudgetTransportDialog = (
       id: getNewUuid(),
       budgetId: budget.value!.id,
       transportRateDetailId: "",
+      logisticSupplierId: "",
+      destinationSupplierId: null,
       weight: 0,
       volume: 0,
       distance: 0,
       price: 0,
+      description: "",
+      destination: "",
     } as BudgetTransport;
   }
   budgetTransport.value = Object.assign({}, transport);

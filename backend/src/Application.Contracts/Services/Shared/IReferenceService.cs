@@ -26,4 +26,5 @@ public interface IReferenceService
     Task<List<Reference>> GetReferenceByCategory(string categoryName);
     Task<GenericResponse> UpdatePriceFromReceipt(Receipt receipt);
     Task<decimal> GetPrice(Guid referenceId, Guid? supplierId);
+    Task<(decimal UnitPrice, int CalculationType)> GetExternalServiceRateInfo(Guid referenceId, Guid supplierId, DateOnly date);
 }

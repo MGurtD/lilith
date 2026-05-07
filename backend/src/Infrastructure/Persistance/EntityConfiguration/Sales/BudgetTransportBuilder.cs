@@ -19,6 +19,13 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
             .IsRequired()
             .HasColumnType("uuid");
         builder
+            .Property(b => b.LogisticSupplierId)
+            .IsRequired()
+            .HasColumnType("uuid");
+        builder
+            .Property(b => b.DestinationSupplierId)
+            .HasColumnType("uuid");
+        builder
             .Property(b => b.Weight)
             .IsRequired()
             .HasColumnType("decimal")

@@ -60,6 +60,8 @@ export interface BudgetTransport {
   id: string;
   budgetId: string;
   transportRateDetailId: string;
+  logisticSupplierId: string;
+  destinationSupplierId: string | null;
   weight: number;
   volume: number;
   distance: number;
