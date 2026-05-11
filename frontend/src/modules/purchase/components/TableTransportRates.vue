@@ -62,11 +62,18 @@
       </Column>
       <Column style="width: 5%">
         <template #body="slotProps">
-          <i
-            :class="PrimeIcons.PENCIL"
-            class="grid_copy_column_button mr-2"
+          <Button
+            :icon="PrimeIcons.PENCIL"
+            text
+            rounded
+            size="small"
+            class="w-2rem h-2rem p-0"
             @click.stop="editRate(slotProps.data)"
           />
+        </template>
+      </Column>
+      <Column style="width: 5%">
+        <template #body="slotProps">
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
@@ -87,9 +94,9 @@
     >
       <template #header>
         <div class="flex flex-wrap align-items-center justify-content-between gap-2">
-          <span class="text-l text-900 font-bold">
+          <span class="text-l text-900 font-bold flex align-items-center">
             Detalls
-            <span v-if="transportRateStore.transportRate" class="text-600 font-normal ml-2">
+            <span v-if="transportRateStore.transportRate" class="text-600 font-normal ml-2 flex align-items-center">
               — {{ transportRateStore.transportRate.name }}
             </span>
           </span>
@@ -124,11 +131,6 @@
       </Column>
       <Column style="width: 5%">
         <template #body="slotProps">
-          <i
-            :class="PrimeIcons.PENCIL"
-            class="grid_copy_column_button mr-2"
-            @click.stop="editDetail(slotProps.data)"
-          />
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
@@ -180,6 +182,9 @@ const createRate = () => {
 
 const editRate = (rate: TransportRate) => {
   selectedRate.value = { ...rate };
+  if (selectedRate.value.validFrom) selectedRate.value.validFrom = new Date(selectedRate.value.validFrom);
+  if (selectedRate.value.validTo) selectedRate.value.validTo = new Date(selectedRate.value.validTo);
+  
   rateFormMode.value = FormActionMode.EDIT;
   rateDialogVisible.value = true;
 };
@@ -189,13 +194,12 @@ const onRateRowClick = (row: DataTableRowClickEvent) => {
   if (
     target?.className &&
     typeof target.className === "string" &&
-    target.className.includes("grid_delete_column_button")
+    (target.className.includes("grid_delete_column_button") || target.className.includes("grid_edit_column_button") || target.className.includes("p-button"))
   )
     return;
 
   const rate = row.data as TransportRate;
   transportRateStore.fetchTransportRateDetails(rate);
-  editRate(rate);
 };
 
 const submitRateForm = async (rate: TransportRate) => {
@@ -242,7 +246,13 @@ const editDetail = (detail: TransportRateDetail) => {
 
 const onDetailRowClick = (row: DataTableRowClickEvent) => {
   const target = row.originalEvent.target as HTMLElement;
-  if (target.className.includes("grid_delete_column_button")) return;
+  if (
+    target?.className &&
+    typeof target.className === "string" &&
+    target.className.includes("grid_delete_column_button")
+  )
+    return;
+    
   editDetail(row.data as TransportRateDetail);
 };
 

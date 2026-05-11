@@ -2,7 +2,7 @@
   <form v-if="model">
     <section class="mb-2">
       <label class="block text-900 mb-2">Referència</label>
-      <Dropdown
+      <Select
         v-model="model.referenceId"
         :options="referenceStore.references"
         optionLabel="code"
@@ -10,6 +10,7 @@
         placeholder="Selecciona una referència"
         filter
         class="w-full"
+        :virtualScrollerOptions="{ itemSize: 38 }"
       >
         <template #option="slotProps">
           <div class="flex flex-column">
@@ -17,12 +18,12 @@
             <small class="text-600">{{ slotProps.option.description }}</small>
           </div>
         </template>
-      </Dropdown>
+      </Select>
     </section>
 
     <section class="mb-2">
       <label class="block text-900 mb-2">Tipus de càlcul</label>
-      <Dropdown
+      <Select
         v-model="model.calculationType"
         :options="calculationTypes"
         optionLabel="label"
@@ -85,9 +86,9 @@ const referenceStore = useReferenceStore();
 const model = ref<PurchaseRateDetail>({ ...props.detail });
 
 const calculationTypes = [
+  { label: "Unitats", value: CalculationType.Units },
   { label: "Volum", value: CalculationType.Volume },
   { label: "Pes", value: CalculationType.Weight },
-  { label: "Unitats", value: CalculationType.Units },
 ];
 
 onMounted(async () => {

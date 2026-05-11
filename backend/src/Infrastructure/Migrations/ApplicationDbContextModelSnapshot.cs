@@ -1744,54 +1744,60 @@ namespace Infrastructure.Migrations
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
 
+                    b.Property<decimal>("ExternalCost")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("externalCost");
+
+                    b.Property<decimal>("MachineCost")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("machineCost");
+
+                    b.Property<decimal>("MaterialCost")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("materialCost");
+
                     b.Property<int>("Mode")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(1);
 
+                    b.Property<decimal>("OperatorCost")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("operatorCost");
+
                     b.Property<Guid>("ReferenceId")
                         .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalWeight")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("totalWeight");
 
                     b.Property<DateTime>("UpdatedOn")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp without time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<decimal>("externalCost")
+                    b.Property<decimal>("Volume")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("machineCost")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("materialCost")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("operatorCost")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("totalWeight")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("volume")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 4)
-                        .HasColumnType("decimal")
-                        .HasDefaultValue(0m);
+                        .HasDefaultValue(0m)
+                        .HasColumnName("volume");
 
                     b.HasKey("Id")
                         .HasName("PK_WorkMaster");
@@ -3876,6 +3882,114 @@ namespace Infrastructure.Migrations
                     b.ToTable("BudgetDetails", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServiceDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BudgetDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BudgetExternalServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<decimal>("Volume")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BudgetDetailId");
+
+                    b.HasIndex("BudgetExternalServiceId");
+
+                    b.ToTable("BudgetExternalServiceDetails", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServices", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BudgetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<decimal>("Volume")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<decimal>("Weight")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BudgetId");
+
+                    b.ToTable("BudgetExternalServices", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.BudgetTransport", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3899,6 +4013,9 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("varchar");
 
+                    b.Property<Guid?>("DestinationSupplierId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("Disabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bool")
@@ -3907,6 +4024,9 @@ namespace Infrastructure.Migrations
                     b.Property<decimal>("Distance")
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal");
+
+                    b.Property<Guid>("LogisticSupplierId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -4865,6 +4985,94 @@ namespace Infrastructure.Migrations
                     b.ToTable("SalesOrderDetail");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("SalesOrderDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SalesOrderExternalServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Volume")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesOrderDetailId");
+
+                    b.HasIndex("SalesOrderExternalServiceId");
+
+                    b.ToTable("SalesOrderExternalServiceDetails");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Quantity")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SalesOrderHeaderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Volume")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesOrderHeaderId");
+
+                    b.ToTable("SalesOrderExternalServices");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4971,6 +5179,12 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("StatusId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("TotalVolume")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("TotalWeight")
+                        .HasColumnType("numeric");
+
                     b.Property<DateTime>("UpdatedOn")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp without time zone")
@@ -5002,6 +5216,55 @@ namespace Infrastructure.Migrations
                     b.HasIndex(new[] { "ExerciseId" }, "IDX_SalesOrderHeader_Exercise");
 
                     b.ToTable("SalesOrderHeader");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderTransport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<bool>("Disabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Distance")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("SalesOrderHeaderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TransportRateDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Volume")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesOrderHeaderId");
+
+                    b.ToTable("SalesOrderTransports");
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.InvoiceSerie", b =>
@@ -6751,6 +7014,34 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkMaster");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServiceDetail", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.BudgetDetail", "BudgetDetail")
+                        .WithMany()
+                        .HasForeignKey("BudgetDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Sales.BudgetExternalServices", "BudgetExternalService")
+                        .WithMany("Details")
+                        .HasForeignKey("BudgetExternalServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BudgetDetail");
+
+                    b.Navigation("BudgetExternalService");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServices", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.Budget", null)
+                        .WithMany("ExternalServices")
+                        .HasForeignKey("BudgetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.BudgetTransport", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.Budget", null)
@@ -7011,6 +7302,34 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkOrder");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.SalesOrderDetail", "SalesOrderDetail")
+                        .WithMany()
+                        .HasForeignKey("SalesOrderDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Sales.SalesOrderExternalServices", "SalesOrderExternalService")
+                        .WithMany("Details")
+                        .HasForeignKey("SalesOrderExternalServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SalesOrderDetail");
+
+                    b.Navigation("SalesOrderExternalService");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.SalesOrderHeader", null)
+                        .WithMany("ExternalServices")
+                        .HasForeignKey("SalesOrderHeaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.Budget", "Budget")
@@ -7048,6 +7367,15 @@ namespace Infrastructure.Migrations
                     b.Navigation("Site");
 
                     b.Navigation("Status");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderTransport", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.SalesOrderHeader", null)
+                        .WithMany("Transports")
+                        .HasForeignKey("SalesOrderHeaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.LifecycleTag", b =>
@@ -7322,7 +7650,14 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("Details");
 
+                    b.Navigation("ExternalServices");
+
                     b.Navigation("Transports");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServices", b =>
+                {
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.Customer", b =>
@@ -7348,9 +7683,18 @@ namespace Infrastructure.Migrations
                     b.Navigation("VerifactuRequests");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>
+                {
+                    b.Navigation("Details");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderHeader", b =>
                 {
+                    b.Navigation("ExternalServices");
+
                     b.Navigation("SalesOrderDetails");
+
+                    b.Navigation("Transports");
                 });
 
             modelBuilder.Entity("Domain.Entities.Shared.Lifecycle", b =>

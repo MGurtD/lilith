@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistance
@@ -18,6 +18,10 @@ namespace Infrastructure.Persistance
 
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
+        public DbSet<Domain.Entities.Sales.SalesOrderTransport> SalesOrderTransports { get; set; }
+        public DbSet<Domain.Entities.Sales.SalesOrderExternalServices> SalesOrderExternalServices { get; set; }
+        public DbSet<Domain.Entities.Sales.SalesOrderExternalServiceDetail> SalesOrderExternalServiceDetails { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

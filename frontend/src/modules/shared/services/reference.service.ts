@@ -74,6 +74,26 @@ export class ReferenceService extends BaseService<Reference> {
     );
     return response.data;
   }
+
+  async getPriceBySupplier(referenceId: string, supplierId: string): Promise<number | null> {
+    const response = await this.apiClient.get(
+      `${this.resource}/${referenceId}/price/${supplierId}`
+    );
+    if (response.status === 200) {
+      return response.data as number;
+    }
+    return null;
+  }
+  async getRateInfo(referenceId: string, supplierId: string): Promise<{ unitPrice: number; calculationType: number } | null> {
+    const response = await this.apiClient.get(
+      `${this.resource}/${referenceId}/rateinfo/${supplierId}`
+    );
+    if (response.status === 200) {
+      return response.data as { unitPrice: number; calculationType: number };
+    }
+    return null;
+  }
+
   async addSupplier(model: SupplierReference): Promise<boolean> {
     const response = await this.apiClient.post(`Supplier/Reference`, model);
     return response.status === 200 || response.status === 201;

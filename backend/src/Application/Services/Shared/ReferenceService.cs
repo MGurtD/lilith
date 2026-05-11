@@ -265,6 +265,40 @@ namespace Application.Services.System
 
             return decimal.Zero;
         }
+
+        public async Task<(decimal UnitPrice, int CalculationType)> GetExternalServiceRateInfo(Guid referenceId, Guid supplierId, DateOnly date)
+        {
+            // Obtenir el preu del proveïdor per a la referència
+            decimal unitPrice = decimal.Zero;
+            var supplierReference = await unitOfWork.Suppliers.GetSupplierReferenceBySupplierAndId(referenceId, supplierId);
+            if (supplierReference != null)
+                unitPrice = supplierReference.SupplierPrice;
+            else
+            {
+                var reference = await unitOfWork.References.Get(referenceId);
+                if (reference != null)
+                    unitPrice = reference.Price;
+            }
+
+            // Obtenir el CalculationType de la tarifa de compra activa
+            int calculationType = 2; // Default: Unitats
+            var activeRates = await unitOfWork.PurchaseRates.FindAsync(r =>
+                r.SupplierId == supplierId &&
+                r.ValidFrom <= date &&
+                r.ValidTo >= date);
+
+            var activeRate = activeRates.FirstOrDefault();
+            if (activeRate != null)
+            {
+                var rateDetails = await unitOfWork.PurchaseRateDetails.FindAsync(d =>
+                    d.PurchaseRateId == activeRate.Id && d.ReferenceId == referenceId);
+                var rateDetail = rateDetails.FirstOrDefault();
+                if (rateDetail != null)
+                    calculationType = rateDetail.CalculationType;
+            }
+
+            return (unitPrice, calculationType);
+        }
     }
 }
 

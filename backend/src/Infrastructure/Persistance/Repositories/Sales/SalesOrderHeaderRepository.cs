@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities.Sales;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -8,9 +8,16 @@ namespace Infrastructure.Persistance.Repositories.Sales
     public class SalesOrderHeaderRepository : Repository<SalesOrderHeader, Guid>, ISalesOrderHeaderRepository
     {
         private readonly ISalesOrderDetailRepository _salesOrderDetailRepository;
+        public IRepository<SalesOrderTransport, Guid> Transports { get; }
+        public IRepository<SalesOrderExternalServices, Guid> ExternalServices { get; }
+        public IRepository<SalesOrderExternalServiceDetail, Guid> ExternalServiceDetails { get; }
+
         public SalesOrderHeaderRepository(ApplicationDbContext context, ISalesOrderDetailRepository salesOrderDetailRepository) : base(context)
         {
             _salesOrderDetailRepository = salesOrderDetailRepository;
+            Transports = new Repository<SalesOrderTransport, Guid>(context);
+            ExternalServices = new Repository<SalesOrderExternalServices, Guid>(context);
+            ExternalServiceDetails = new Repository<SalesOrderExternalServiceDetail, Guid>(context);
         }
 
         public override async Task<SalesOrderHeader?> Get(Guid id)
@@ -18,6 +25,8 @@ namespace Infrastructure.Persistance.Repositories.Sales
             var salesOrder = 
                 await dbSet
                     .Include("SalesOrderDetails.Reference")
+                    .Include(b => b.Transports)
+                    .Include(b => b.ExternalServices).ThenInclude(es => es.Details)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(e => e.Id == id);
 
@@ -32,6 +41,8 @@ namespace Infrastructure.Persistance.Repositories.Sales
             return dbSet
                 .AsNoTracking()                
                 .Include("SalesOrderDetails.Reference")
+                .Include(b => b.Transports)
+                .Include(b => b.ExternalServices).ThenInclude(es => es.Details)
                 .Where(predicate)
                 .OrderBy(s => s.Number);
         }

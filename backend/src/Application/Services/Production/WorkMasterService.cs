@@ -60,11 +60,11 @@ namespace Application.Services.Production
             var resultCosts = await metricsService.GetWorkmasterMetrics(workMaster, workMaster.BaseQuantity);
             if (resultCosts.Result && resultCosts.Content is ProductionMetrics workMasterMetrics)
             {
-                workMaster.operatorCost = workMasterMetrics.OperatorCost;
-                workMaster.machineCost = workMasterMetrics.MachineCost;
-                workMaster.externalCost = workMasterMetrics.ExternalServiceCost + workMasterMetrics.ExternalTransportCost;
-                workMaster.materialCost = workMasterMetrics.MaterialCost;
-                workMaster.totalWeight = workMasterMetrics.TotalWeight;
+                workMaster.OperatorCost = workMasterMetrics.OperatorCost;
+                workMaster.MachineCost = workMasterMetrics.MachineCost;
+                workMaster.ExternalCost = workMasterMetrics.ExternalServiceCost + workMasterMetrics.ExternalTransportCost;
+                workMaster.MaterialCost = workMasterMetrics.MaterialCost;
+                workMaster.TotalWeight = workMasterMetrics.TotalWeight;
             }
 
             await unitOfWork.WorkMasters.Update(workMaster);
@@ -73,8 +73,8 @@ namespace Application.Services.Production
             var reference = await unitOfWork.References.Get(workMaster.ReferenceId);
             if (reference != null)
             {
-                reference.WorkMasterCost = workMaster.operatorCost + workMaster.machineCost + 
-                    workMaster.externalCost + workMaster.materialCost;
+                reference.WorkMasterCost = workMaster.OperatorCost + workMaster.MachineCost + 
+                    workMaster.ExternalCost + workMaster.MaterialCost;
                 await unitOfWork.References.Update(reference);
             }
 
@@ -168,11 +168,12 @@ namespace Application.Services.Production
                 Id = Guid.NewGuid(),
                 ReferenceId = targetReferenceId,
                 BaseQuantity = source.BaseQuantity,
-                operatorCost = source.operatorCost,
-                machineCost = source.machineCost,
-                externalCost = source.externalCost,
-                materialCost = source.materialCost,
-                totalWeight = source.totalWeight,
+                OperatorCost = source.OperatorCost,
+                MachineCost = source.MachineCost,
+                ExternalCost = source.ExternalCost,
+                MaterialCost = source.MaterialCost,
+                TotalWeight = source.TotalWeight,
+                Volume = source.Volume,
                 Mode = request.Mode,
                 Disabled = false
             };
