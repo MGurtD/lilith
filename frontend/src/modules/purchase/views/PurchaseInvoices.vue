@@ -120,7 +120,13 @@
       </template>
     </Column>
     <Column header="Import" style="width: 10%">
-      <template #body="slotProps"> {{ slotProps.data.netAmount }} € </template>
+      <template #body="slotProps"> {{ formatCurrency(slotProps.data.netAmount) }} </template>
+      <template #footer>
+        <div class="total-footer">
+          <span class="total-label">Total</span>
+          <span class="total-value">{{ formatCurrency(totalNetAmount) }}</span>
+        </div>
+      </template>
     </Column>
     <Column style="width: 5%">
       <template #body="slotProps">
@@ -144,11 +150,12 @@ import { usePurchaseMasterDataStore } from "../store/purchase";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
 import { useSuppliersStore } from "../store/suppliers";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
   formatDateForQueryParameter,
   formatDate,
+  formatCurrency,
 } from "../../../utils/functions";
 import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
@@ -310,6 +317,13 @@ const getLastDueDate = (invoice: PurchaseInvoice): string => {
   }
 };
 
+const totalNetAmount = computed(() =>
+  (purchaseInvoiceStore.purchaseInvoices ?? []).reduce(
+    (sum, inv) => sum + (inv.netAmount ?? 0),
+    0,
+  ),
+);
+
 const createButtonClick = () => {
   router.push({ path: `/purchaseInvoice/${uuidv4()}` });
 };
@@ -345,3 +359,22 @@ const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
   });
 };
 </script>
+
+<style scoped>
+.total-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.total-label {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.total-value {
+  font-weight: 700;
+}
+</style>
