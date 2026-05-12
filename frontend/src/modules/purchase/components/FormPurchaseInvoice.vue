@@ -122,20 +122,27 @@
         </div>
       </section>
 
-      <section class="four-columns">
-        <div class="mt-1">
-          <label class="block text-900 mb-2">Base</label>
-          <span class="summary-field">{{ purchaseInvoice.baseAmount }} €</span>
+      <section class="four-columns mb-2">
+        <div class="cost-card">
+          <div class="cost-card-icon"><i class="pi pi-file" /></div>
+          <div class="cost-card-content">
+            <span class="cost-card-label">Base</span>
+            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.baseAmount) }}</span>
+          </div>
         </div>
-
-        <div class="mt-1">
-          <label class="block text-900 mb-2">Impostos</label>
-          <span class="summary-field">{{ purchaseInvoice.taxAmount }} €</span>
+        <div class="cost-card">
+          <div class="cost-card-icon"><i class="pi pi-receipt" /></div>
+          <div class="cost-card-content">
+            <span class="cost-card-label">Impostos</span>
+            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.taxAmount) }}</span>
+          </div>
         </div>
-
-        <div class="mt-1">
-          <label class="block text-900 mb-2">Total</label>
-          <span class="summary-field">{{ purchaseInvoice.netAmount }} €</span>
+        <div class="cost-card cost-card-total">
+          <div class="cost-card-icon"><i class="pi pi-calculator" /></div>
+          <div class="cost-card-content">
+            <span class="cost-card-label">Total</span>
+            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.netAmount) }}</span>
+          </div>
         </div>
       </section>
     </form>
@@ -153,7 +160,7 @@ import { FormValidation, FormValidationResult } from "@/utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { storeToRefs } from "pinia";
 import { BaseInputType } from "@/types/component";
-import { convertDateTimeToJSON } from "@/utils/functions";
+import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
 const emit = defineEmits<{
   (e: "submit", purchaseInvoice: PurchaseInvoice): void;
   (e: "cancel"): void;
@@ -334,5 +341,66 @@ defineExpose({
   position: absolute;
   top: 0;
   right: 1rem;
+}
+
+.cost-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  background: var(--p-content-background, #fff);
+  transition: box-shadow 0.15s ease;
+}
+
+.cost-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cost-card-total {
+  background: var(--p-primary-50, #eef2ff);
+  border-color: var(--p-primary-200, #c7d2fe);
+}
+
+.cost-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: var(--p-surface-100, #f1f5f9);
+  color: var(--p-primary-color, #3b82f6);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cost-card-total .cost-card-icon {
+  background: var(--p-primary-100, #dbeafe);
+  color: var(--p-primary-700, #1d4ed8);
+}
+
+.cost-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cost-card-label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  white-space: nowrap;
+}
+
+.cost-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+}
+
+.cost-card-total .cost-card-value {
+  color: var(--p-primary-700, #1d4ed8);
 }
 </style>
