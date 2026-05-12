@@ -20,5 +20,7 @@ namespace Application.Contracts
         Task AddSupplierReference(SupplierReference reference);
         Task UpdateSupplierReference(SupplierReference reference);
         Task RemoveSupplierReference(SupplierReference reference);
+
+        Task<List<string>> GetAccountNumbersUsedInPurchaseInvoices();
     }
 }

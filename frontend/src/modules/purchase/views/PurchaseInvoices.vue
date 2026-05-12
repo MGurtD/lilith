@@ -28,12 +28,9 @@
         </div>
         <div class="filter-toolbar__field">
           <label class="filter-label">Proveïdor</label>
-          <Select
+          <DropdownSupplier
+            label=""
             v-model="filter.supplierId"
-            :options="puchaseMasterDataStore.masterData.suppliers"
-            optionValue="id"
-            optionLabel="comercialName"
-            showClear
           />
         </div>
         <div class="filter-toolbar__field">
@@ -43,6 +40,14 @@
             :options="puchaseMasterDataStore.masterData.paymentMethods"
             optionValue="id"
             optionLabel="name"
+            showClear
+          />
+        </div>
+        <div class="filter-toolbar__field">
+          <label class="filter-label">Número de compte</label>
+          <Select
+            v-model="filter.accountNumber"
+            :options="suppliersStore.accountNumbers"
             showClear
           />
         </div>
@@ -138,6 +143,7 @@ import { useStore } from "../../../store";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
+import { useSuppliersStore } from "../store/suppliers";
 import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
@@ -147,6 +153,7 @@ import {
 import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
+import DropdownSupplier from "../components/DropdownSupplier.vue";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -157,12 +164,14 @@ const lifecycleName = "PurchaseInvoice";
 const lifecycleStore = useLifecyclesStore();
 const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
+const suppliersStore = useSuppliersStore();
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   dueDates: undefined as Array<Date> | undefined,
   supplierId: undefined as string | undefined,
   paymentMethodId: undefined as string | undefined,
+  accountNumber: undefined as string | undefined,
 });
 
 onMounted(async () => {
@@ -173,6 +182,7 @@ onMounted(async () => {
 
   await lifecycleStore.fetchOneByName(lifecycleName);
   await puchaseMasterDataStore.fetchMasterData();
+  await suppliersStore.fetchAccountNumbers();
   getUserFilter();
 
   if (!filter.value.dates) {
@@ -187,6 +197,7 @@ const getUserFilter = () => {
   if (userFilter) {
     filter.value.supplierId = userFilter.supplierId;
     filter.value.paymentMethodId = userFilter.paymentMethodId;
+    filter.value.accountNumber = userFilter.accountNumber;
     if (userFilter.dates) {
       filter.value.dates = [
         new Date(userFilter.dates[0]),
@@ -221,6 +232,7 @@ const cleanFilter = () => {
   filter.value.dueDates = undefined;
   filter.value.supplierId = undefined;
   filter.value.paymentMethodId = undefined;
+  filter.value.accountNumber = undefined;
   setCurrentYear();
 };
 
@@ -254,6 +266,7 @@ const filterInvoices = async () => {
       filter.value.paymentMethodId,
       dueDateStartTime,
       dueDateEndTime,
+      filter.value.accountNumber,
     );
 
     userFilterStore.addFilter("PurchaseInvoices", "", filter.value);

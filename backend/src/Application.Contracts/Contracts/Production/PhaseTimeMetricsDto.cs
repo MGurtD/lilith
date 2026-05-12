@@ -12,9 +12,6 @@ public class PhaseTimeMetricsDto
     /// <summary>Machine Status ID used for filtering actual machine time</summary>
     public Guid MachineStatusId { get; set; }
 
-    /// <summary>Operator ID used for filtering actual operator time (optional)</summary>
-    public Guid? OperatorId { get; set; }
-
     /// <summary>
     /// Estimated machine time in minutes based on phase details.
     /// Calculated from WorkOrderPhaseDetail.EstimatedTime, multiplied by PlannedQuantity if IsCycleTime is true.
@@ -38,7 +35,7 @@ public class PhaseTimeMetricsDto
 
     /// <summary>
     /// Actual operator time in minutes accumulated from WorkcenterShiftDetail records.
-    /// Filtered by WorkOrderPhaseId and OperatorId.
+    /// Filtered by WorkOrderPhaseId, MachineStatusId, and OperatorId != null.
     /// Time is divided by ConcurrentOperatorWorkcenters for each record.
     /// Includes time from StartTime to EndTime (or current time if EndTime is null).
     /// </summary>

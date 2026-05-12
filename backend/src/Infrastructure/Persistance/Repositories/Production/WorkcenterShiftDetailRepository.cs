@@ -28,12 +28,15 @@ namespace Infrastructure.Persistance.Repositories.Production
         }
 
         /// <inheritdoc />
-        public async Task<decimal> GetTotalOperatorTimeByPhaseAndOperator(Guid phaseId, Guid operatorId)
+        public async Task<decimal> GetTotalOperatorTimeByPhaseAndStatus(Guid phaseId, Guid machineStatusId)
         {
             var now = DateTime.Now;
 
             var details = await dbSet
-                .Where(d => d.WorkOrderPhaseId == phaseId && d.OperatorId == operatorId && !d.Disabled)
+                .Where(d => d.WorkOrderPhaseId == phaseId
+                    && d.MachineStatusId == machineStatusId
+                    && d.OperatorId.HasValue
+                    && !d.Disabled)
                 .ToListAsync();
 
             decimal totalMinutes = 0;

@@ -221,15 +221,11 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
       const activeWorkOrder = workcenterStore.workcenterRt.workorders[0];
       const phaseId = activeWorkOrder.workOrderPhaseId;
       const machineStatusId = workcenterStore.workcenterRt.statusId;
-      const operatorId =
-        workcenterStore.workcenterRt.operators?.[0]?.operatorId;
-
       try {
         const metrics =
           await ProductionServices.WorkOrderPhase.GetPhaseTimeMetrics(
             phaseId,
             machineStatusId,
-            operatorId,
           );
         this.phaseTimeMetrics = metrics;
       } catch (error) {

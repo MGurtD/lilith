@@ -23,6 +23,7 @@ export const useSuppliersStore = defineStore({
     logisticSuppliers: undefined as Array<Supplier> | undefined,
     supplierReferences: undefined as Array<SupplierReference> | undefined,
     supplierReference: undefined as SupplierReference | undefined,
+    accountNumbers: undefined as Array<string> | undefined,
   }),
   getters: {
     getName: (state) => {
@@ -58,6 +59,9 @@ export const useSuppliersStore = defineStore({
     },
     async fetchLogisticSuppliers() {
       this.logisticSuppliers = await service.getLogisticSuppliers();
+    },
+    async fetchAccountNumbers() {
+      this.accountNumbers = await service.getAccountNumbers();
     },
     async fetchSupplier(id: string) {
       this.supplier = await service.getById(id);
