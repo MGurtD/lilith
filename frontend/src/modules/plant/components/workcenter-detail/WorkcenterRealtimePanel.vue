@@ -70,7 +70,7 @@
           :operator="operator"
         />
         <TimeProgressBar
-          v-if="activePhaseStore.phaseTimeMetrics?.operatorId"
+          v-if="activePhaseStore.phaseTimeMetrics"
           :estimatedMinutes="
             activePhaseStore.phaseTimeMetrics.estimatedOperatorTimeMinutes
           "
