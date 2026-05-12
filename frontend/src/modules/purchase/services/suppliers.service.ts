@@ -12,6 +12,12 @@ export class SupplierService extends BaseService<Supplier> {
     return response.data as Array<Supplier>;
   }
 
+  async getAccountNumbers(): Promise<Array<string>> {
+    const response = await this.apiClient.get(`${this.resource}/AccountNumbers`);
+    if (response.status === 200) return response.data as Array<string>;
+    return [];
+  }
+
   async getReference(id: string) {
     const response = await this.apiClient.get(
       `${this.resource}/Reference/${id}`
