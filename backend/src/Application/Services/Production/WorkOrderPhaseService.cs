@@ -726,7 +726,7 @@ public class WorkOrderPhaseService(
 
     #region Time Metrics
 
-    public async Task<GenericResponse> GetPhaseTimeMetrics(Guid phaseId, Guid machineStatusId, Guid? operatorId)
+    public async Task<GenericResponse> GetPhaseTimeMetrics(Guid phaseId, Guid machineStatusId)
     {
         // 1. Get phase with details
         var phase = await unitOfWork.WorkOrders.Phases.Get(phaseId);
@@ -771,19 +771,14 @@ public class WorkOrderPhaseService(
         var actualMachineTimeMinutes = await unitOfWork.WorkcenterShifts.Details
             .GetTotalMachineTimeByPhaseAndStatus(phaseId, machineStatusId);
 
-        decimal actualOperatorTimeMinutes = 0;
-        if (operatorId.HasValue)
-        {
-            actualOperatorTimeMinutes = await unitOfWork.WorkcenterShifts.Details
-                .GetTotalOperatorTimeByPhaseAndOperator(phaseId, operatorId.Value);
-        }
+        var actualOperatorTimeMinutes = await unitOfWork.WorkcenterShifts.Details
+            .GetTotalOperatorTimeByPhaseAndStatus(phaseId, machineStatusId);
 
         // 5. Build and return metrics DTO
         var metrics = new PhaseTimeMetricsDto
         {
             PhaseId = phaseId,
             MachineStatusId = machineStatusId,
-            OperatorId = operatorId,
             EstimatedMachineTimeMinutes = estimatedMachineTimeMinutes,
             EstimatedOperatorTimeMinutes = estimatedOperatorTimeMinutes,
             ActualMachineTimeMinutes = actualMachineTimeMinutes,

@@ -191,5 +191,12 @@ namespace Api.Controllers.Purchase
                 return NotFound(response);
         }
         #endregion
+
+        [HttpGet("AccountNumbers")]
+        public async Task<IActionResult> GetAccountNumbers()
+        {
+            var accountNumbers = await service.GetAccountNumbersUsedInPurchaseInvoices();
+            return Ok(accountNumbers);
+        }
     }
 }

@@ -107,5 +107,16 @@ namespace Infrastructure.Persistance.Repositories.Purchase
             var supplierReference = (await _supplierReferenceRepository.FindAsync(s => s.SupplierId == supplierId && s.ReferenceId == referenceId)).FirstOrDefault();
             return supplierReference;
         }
+
+        public async Task<List<string>> GetAccountNumbersUsedInPurchaseInvoices()
+        {
+            return await context.Set<PurchaseInvoice>()
+                .Include(pi => pi.Supplier)
+                .Where(pi => pi.Supplier != null && pi.Supplier.AccountNumber != string.Empty)
+                .Select(pi => pi.Supplier!.AccountNumber)
+                .Distinct()
+                .OrderBy(a => a)
+                .ToListAsync();
+        }
     }
 }

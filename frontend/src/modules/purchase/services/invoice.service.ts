@@ -20,6 +20,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     paymentMethodId?: string,
     dueDateStartTime?: string,
     dueDateEndTime?: string,
+    accountNumber?: string,
   ): Promise<Array<PurchaseInvoice> | undefined> {
     const params = new URLSearchParams();
     params.append("startTime", startTime);
@@ -30,6 +31,7 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     if (paymentMethodId) params.append("paymentMethodId", paymentMethodId);
     if (dueDateStartTime) params.append("dueDateStartTime", dueDateStartTime);
     if (dueDateEndTime) params.append("dueDateEndTime", dueDateEndTime);
+    if (accountNumber) params.append("accountNumber", accountNumber);
 
     const endpoint = `${this.resource}?${params.toString()}`;
     const response = await apiClient.get(endpoint);

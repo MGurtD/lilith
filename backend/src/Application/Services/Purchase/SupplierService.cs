@@ -267,4 +267,9 @@ public class SupplierService(
             }
         }
     }
+
+    public async Task<List<string>> GetAccountNumbersUsedInPurchaseInvoices()
+    {
+        return await unitOfWork.Suppliers.GetAccountNumbersUsedInPurchaseInvoices();
+    }
 }

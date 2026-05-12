@@ -25,4 +25,6 @@ public interface ISupplierService
     Task<GenericResponse> CreateSupplierReference(SupplierReference supplierReference);
     Task<GenericResponse> UpdateSupplierReference(Guid id, SupplierReference supplierReference);
     Task<GenericResponse> RemoveSupplierReference(Guid id);
+
+    Task<List<string>> GetAccountNumbersUsedInPurchaseInvoices();
 }
