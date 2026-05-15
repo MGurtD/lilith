@@ -25,6 +25,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { onMounted } from "vue";
 import { useReferenceTypeStore } from "../store/referenceType";
 
 const props = defineProps<{
@@ -37,4 +38,8 @@ const emit = defineEmits<{
 }>();
 
 const referenceTypeStore = useReferenceTypeStore();
+
+onMounted(async () => {
+  await referenceTypeStore.fetchAll();
+});
 </script>

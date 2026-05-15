@@ -28,6 +28,20 @@ html {
   --loaded-row-border: var(--p-green-600);
 }
 
+.two-columns,
+.two-columns-7525,
+.two-columns-2575,
+.three-columns,
+.three-columns-7525,
+.four-columns,
+.five-columns,
+.six-columns,
+.seven-columns {
+  > * {
+    min-width: 0;
+  }
+}
+
 .two-columns {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

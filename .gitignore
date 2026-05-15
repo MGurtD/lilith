@@ -23,6 +23,9 @@ frontend/.vite/
 .env.local
 frontend/.env.local
 
+# Language server cache
+*.lscache
+
 # OS
 .DS_Store
 Thumbs.db
