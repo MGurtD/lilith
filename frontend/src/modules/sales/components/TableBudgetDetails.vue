@@ -21,7 +21,7 @@
       style="width: 15%"
     >
       <template #body="slotProps">
-        <LinkReference :id="slotProps.data.referenceId" />
+        <LinkReference :id="slotProps.data.referenceId" :hide-type="true"/>
       </template>
     </Column>
     <Column field="description" header="Descripció" style="width: 25%" />

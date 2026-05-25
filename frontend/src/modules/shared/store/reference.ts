@@ -30,38 +30,40 @@ export const useReferenceStore = defineStore({
       };
     },
     getFullName: (state) => {
-      return (reference: Reference) => {
+      return (reference: Reference, hideType?: boolean) => {
         if (!reference) return "";
+        const code = hideType ? reference.code.split(" (")[0] : reference.code;
 
         if (reference.sales) {
-          return `${reference.code} (v. ${reference.version}) - ${reference.description}`;
+          return `${code} (v. ${reference.version}) - ${reference.description}`;
         } else {
-          return `${reference.code} - ${reference.description}`;
+          return `${code} - ${reference.description}`;
         }
       };
     },
     getShortName: (state) => {
-      return (reference: Reference) => {
+      return (reference: Reference, hideType?: boolean) => {
         if (!reference) return "";
+        const code = hideType ? reference.code.split(" (")[0] : reference.code;
 
         if (reference.sales) {
-          return `${reference.code} (v. ${reference.version})`;
+          return `${code} (v. ${reference.version})`;
         } else {
-          return `${reference.code}`;
+          return `${code}`;
         }
       };
     },
   },
   actions: {
-    getFullNameById(id: string) {
+    getFullNameById(id: string, hideType?: boolean) {
       const ref = this.references?.find((r) => r.id === id);
       if (!ref) return "";
-      return this.getFullName(ref);
+      return this.getFullName(ref, hideType);
     },
-    getShortNameById(id: string) {
+    getShortNameById(id: string, hideType?: boolean) {
       const ref = this.references?.find((r) => r.id === id);
       if (!ref) return "";
-      return this.getShortName(ref);
+      return this.getShortName(ref, hideType);
     },
     setNewReference(id: string, category: ReferenceCategoryEnum) {
       this.reference = {

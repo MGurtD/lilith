@@ -6,8 +6,8 @@
   >
     {{
       fullName
-        ? referenceStore.getFullNameById(id)
-        : referenceStore.getShortNameById(id)
+        ? referenceStore.getFullNameById(id, hideType)
+        : referenceStore.getShortNameById(id, hideType)
     }}
   </span>
 </template>
@@ -19,6 +19,7 @@ const props = defineProps<{
   id: string;
   category?: string;
   fullName?: boolean;
+  hideType?: boolean;
 }>();
 
 const referenceStore = useReferenceStore();
