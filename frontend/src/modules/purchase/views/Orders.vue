@@ -11,50 +11,44 @@
     @row-click="edit"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="filterData"
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="exerciseStore.exercises"
-              @range-selected="filterData"
-            />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Proveïdor</label>
-            <Select
-              v-model="filter.supplierId"
-              :options="suppliersStore.suppliers"
-              optionValue="id"
-              optionLabel="comercialName"
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
               class="w-full"
+              size="small"
             />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterData"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Proveïdor</label
+            >
+            <DropdownSupplier label="" v-model="filter.supplierId" />
+          </div>
+        </template>
+      </TableFilter>
     </template>
     <Column
       field="number"
@@ -107,14 +101,15 @@
 </template>
 <script setup lang="ts">
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
+import DropdownSupplier from "../components/DropdownSupplier.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useOrderStore } from "../store/order";
 import { useSuppliersStore } from "../store/suppliers";
-import { useExerciseStore } from "../../shared/store/exercise";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -125,7 +120,6 @@ import {
   getNewUuid,
 } from "../../../utils/functions";
 import { CreatePurchaseDocumentRequest, PurchaseInvoice } from "../types";
-import { Exercise } from "../../shared/types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 
 const toast = useToast();
@@ -133,13 +127,14 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const suppliersStore = useSuppliersStore();
-const exerciseStore = useExerciseStore();
 const lifecycleStore = useLifecyclesStore();
 const ordersStore = useOrderStore();
 
+const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   supplierId: undefined as string | undefined,
-  exercise: undefined as Exercise | undefined,
 });
 const dialogOptions = reactive({
   visible: false,
@@ -149,6 +144,14 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
+const setCurrentYear = () => {
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
+};
+
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
@@ -156,37 +159,25 @@ onMounted(async () => {
   });
 
   suppliersStore.fetchSuppliers();
-  await exerciseStore.fetchActive();
   await lifecycleStore.fetchOneByName("PurchaseOrder");
   setCurrentYear();
 
   await filterData();
 });
 
-const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
-
-  if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
-    ];
-  }
-};
-
 const cleanFilter = () => {
-  store.cleanExercisePicker();
   filter.value.supplierId = undefined;
+  setCurrentYear();
 };
 
 const filterData = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await ordersStore.fetchFiltered(
       startTime,

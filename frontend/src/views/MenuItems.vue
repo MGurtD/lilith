@@ -9,6 +9,10 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useMenusStore } from "../store/menus";
 import { v4 as uuidv4 } from "uuid";
+import TableFilter, {
+  type FilterConfig,
+  type FilterBodyWidth,
+} from "../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const appStore = useStore();
@@ -29,7 +33,25 @@ const toTreeNode = (n: MenuItemNode): TreeNodeLocal => ({
   children: n.children?.map(toTreeNode),
 });
 
-const searchFilter = ref("");
+const filter = ref({
+  search: "",
+});
+
+const filterConfig: Array<FilterConfig> = [
+  {
+    key: "search",
+    label: t("common.search"),
+    type: "text",
+    placeholder: t("common.search"),
+    size: "md",
+    row: 0,
+  },
+];
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "25%",
+  tablet: "40%",
+};
 
 const filterNode = (node: MenuItemNode, search: string): boolean => {
   const searchLower = search.toLowerCase();
@@ -48,12 +70,12 @@ const filterNode = (node: MenuItemNode, search: string): boolean => {
 };
 
 const filteredTree = computed<MenuItemNode[]>(() => {
-  if (!searchFilter.value) return menusStore.tree;
+  if (!filter.value.search) return menusStore.tree;
 
   const filterTree = (nodes: MenuItemNode[]): MenuItemNode[] => {
     return nodes
       .map((node) => {
-        const matches = filterNode(node, searchFilter.value);
+        const matches = filterNode(node, filter.value.search);
         if (matches) {
           // If node or any descendant matches, include it with filtered children
           if (node.children) {
@@ -85,6 +107,10 @@ const loading = computed(
 );
 
 const createNew = () => router.push({ path: `/menuitem/${uuidv4()}` });
+
+const clearFilter = () => {
+  filter.value.search = "";
+};
 
 const open = (event: any) => {
   console.log(event);
@@ -138,25 +164,17 @@ onMounted(async () => {
       scrollable
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <div class="datatable-filter-1">
-            <IconField iconPosition="left">
-              <InputIcon>
-                <i :class="PrimeIcons.SEARCH" />
-              </InputIcon>
-              <InputText
-                v-model="searchFilter"
-                :placeholder="t('common.search')"
-                class="w-full"
-              />
-            </IconField>
-          </div>
-          <div class="datatable-buttons">
-            <Button :icon="PrimeIcons.PLUS" rounded raised @click="createNew" />
-          </div>
-        </div>
+        <TableFilter
+          :config="filterConfig"
+          v-model="filter"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-filter-action="false"
+          :body-width="filterBodyWidth"
+          embedded
+          @clear="clearFilter"
+          @create="createNew"
+        />
       </template>
       <Column
         expander

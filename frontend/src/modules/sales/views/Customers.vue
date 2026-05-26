@@ -1,11 +1,4 @@
 <template>
-  <Button
-    :icon="PrimeIcons.PLUS"
-    class="grid_add_row_button"
-    rounded
-    @click="createButtonClick"
-  />
-
   <Tabs v-model:value="selectedTabIndex">
     <TabList>
       <Tab value="0">
@@ -32,12 +25,17 @@
             @row-click="editCustomer"
           >
             <template #header>
-              <div class="references-header">
-                <div class="references-filter">
-                  <label>Nom comercial</label>
-                  <BaseInput v-model="filter.code" />
-                </div>
-              </div>
+              <TableFilter
+                :config="customerFilterConfig"
+                v-model="filter"
+                :show-title="false"
+                :show-action-labels="false"
+                :show-filter-action="false"
+                :body-width="customerFilterBodyWidth"
+                embedded
+                @clear="cleanFilter"
+                @create="createCustomer"
+              />
             </template>
             <Column
               field="comercialName"
@@ -87,6 +85,18 @@
             :scrollHeight="typesScrollHeight"
             @row-click="editCustomerType"
           >
+            <template #header>
+              <TableFilter
+                :config="[]"
+                v-model="emptyFilter"
+                :show-title="false"
+                :show-action-labels="false"
+                :show-filter-action="false"
+                :show-create="true"
+                embedded
+                @create="createCustomerType"
+              />
+            </template>
             <Column field="name" header="Nom" style="width: 33%"></Column>
             <Column
               field="description"
@@ -125,6 +135,11 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
 import { useScrollHeight } from "@/composables/useScrollHeight";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterConfig,
+  FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
@@ -138,9 +153,26 @@ const { tableRef: customersTableRef, scrollHeight: customersScrollHeight } =
 const { tableRef: typesTableRef, scrollHeight: typesScrollHeight } =
   useScrollHeight();
 
+const customerFilterBodyWidth: FilterBodyWidth = {
+  desktop: "33%",
+  tablet: "50%",
+};
+
+const customerFilterConfig: FilterConfig[] = [
+  {
+    key: "code",
+    label: "Nom comercial",
+    type: "text",
+    placeholder: "Nom comercial",
+    size: "md",
+  },
+];
+
 const filter = ref({
   code: "",
 });
+
+const emptyFilter = ref({});
 
 const filteredData = computed(() => {
   if (!customerStore.customers) return [];
@@ -153,6 +185,18 @@ const filteredData = computed(() => {
     return customerStore.customers;
   }
 });
+
+const cleanFilter = () => {
+  filter.value.code = "";
+};
+
+const createCustomer = () => {
+  router.push({ path: `/customers/${uuidv4()}` });
+};
+
+const createCustomerType = () => {
+  router.push({ path: `/customer-types/${uuidv4()}` });
+};
 
 onMounted(async () => {
   await customerStore.fetchCustomers();
@@ -234,24 +278,4 @@ const editCustomerType = (row: DataTableRowClickEvent) => {
     router.push({ path: `/customer-types/${row.data.id}` });
   }
 };
-
-const createButtonClick = () => {
-  if (selectedTabIndex.value === "0") {
-    router.push({ path: `/customers/${uuidv4()}` });
-  } else {
-    router.push({ path: `/customer-types/${uuidv4()}` });
-  }
-};
 </script>
-<style scoped>
-.references-header {
-  display: grid;
-  grid-template-columns: 3fr 0.1fr;
-}
-.references-filter {
-  display: grid;
-  grid-template-columns: 0.3fr 0.7fr;
-  align-items: center;
-  width: 25vw;
-}
-</style>

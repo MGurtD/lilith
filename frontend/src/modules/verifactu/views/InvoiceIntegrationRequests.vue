@@ -7,45 +7,50 @@
       responsiveLayout="scroll"
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-1"
+        <TableFilter
+          :config="filterConfig"
+          :body-width="filterBodyWidth"
+          v-model="filters"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-filter-action="false"
+          :show-create="false"
+          embedded
+          @clear="clearFilters"
         >
-          <div class="datatable-filter flex gap-3 flex-wrap">
-            <div class="flex align-items-center gap-2">
-              <label class="auto-width-label">{{
+          <template #prepend>
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--md"
+            >
+              <label class="filter-label table-filter-prepend-label">{{
                 $t("verifactu.integrationRequests.filters.fromDate")
               }}</label>
               <DatePicker
                 v-model="filters.fromDate"
                 dateFormat="dd/mm/yy"
                 showIcon
-                @date-select="onDateSelect"
                 inputId="fromDate"
+                size="small"
+                class="w-full"
               />
             </div>
-            <div class="flex align-items-center gap-2">
-              <label class="auto-width-label">{{
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--md"
+            >
+              <label class="filter-label table-filter-prepend-label">{{
                 $t("verifactu.integrationRequests.filters.toDate")
               }}</label>
               <DatePicker
                 v-model="filters.toDate"
                 dateFormat="dd/mm/yy"
                 showIcon
-                @date-select="onDateSelect"
                 inputId="toDate"
+                size="small"
+                class="w-full"
               />
             </div>
-          </div>
-          <div class="datatable-buttons">
-            <span class="p-input-icon-left">
-              <InputText
-                v-model="searchQuery"
-                :placeholder="$t('common.search') + ' …'"
-                class="w-18rem"
-              />
-            </span>
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
 
       <Column
@@ -194,7 +199,10 @@ import { useToast } from "primevue/usetoast";
 import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
 import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { PrimeIcons } from "@primevue/core/api";
@@ -215,13 +223,28 @@ store.setMenuItem({
 const { integrationsBetweenDates, loading } = storeToRefs(verifactuStore);
 
 // Filters
-const filters = ref<{ fromDate: Date | null; toDate: Date | null }>({
+const filters = ref<{
+  fromDate: Date | null;
+  toDate: Date | null;
+  searchQuery: string;
+}>({
   fromDate: null,
   toDate: null,
+  searchQuery: "",
 });
-
-// Search box state
-const searchQuery = ref("");
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "66%",
+  tablet: "50%",
+};
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "searchQuery",
+    label: t("common.search") || "Cercar",
+    type: "text",
+    placeholder: `${t("common.search")} ...`,
+    size: "lg",
+  },
+]);
 
 // Each sales invoice can have multiple Verifactu requests -> flatten for the table
 const flattenedRequests = computed(() => {
@@ -252,7 +275,7 @@ const flattenedRequests = computed(() => {
 
 // Client-side filter for invoiceNumber or customerComercialName
 const filteredRequests = computed(() => {
-  const q = (searchQuery.value || "").toLowerCase().trim();
+  const q = (filters.value.searchQuery || "").toLowerCase().trim();
   if (!q) return flattenedRequests.value;
   return flattenedRequests.value.filter((row: any) => {
     const inv = (row.invoiceNumber || "").toString().toLowerCase();
@@ -284,11 +307,10 @@ const loadRequests = async () => {
   }
 };
 
-const onDateSelect = () => {
-  // Auto-refresh after both dates selected
-  if (isRangeValid()) {
-    loadRequests();
-  }
+const clearFilters = () => {
+  filters.value.fromDate = null;
+  filters.value.toDate = null;
+  filters.value.searchQuery = "";
 };
 
 // Also react on model changes (manual typing)
@@ -325,13 +347,6 @@ function copyToClipboard(text?: string) {
 </script>
 
 <style scoped>
-.auto-width-label {
-  display: inline-flex;
-  width: auto;
-  white-space: nowrap;
-  align-items: center;
-}
-
 .truncate-text {
   max-width: 320px;
   display: inline-block;

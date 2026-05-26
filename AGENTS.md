@@ -249,3 +249,25 @@ cd frontend
 pnpm install
 pnpm run dev
 ```
+
+## CodeGraph (Semantic Code Intelligence)
+
+This project has CodeGraph initialized (`.codegraph/` exists). It provides a pre-indexed knowledge graph via MCP tools.
+
+**Rules for the main agent (build):**
+- **NEVER** use `codegraph_explore` or `codegraph_context` directly — they return large source dumps that inflate context
+- **DO** use these lightweight tools for targeted lookups before editing:
+  - `codegraph_search` — find symbols by name
+  - `codegraph_callers` / `codegraph_callees` — trace call flow
+  - `codegraph_impact` — check what's affected before editing
+  - `codegraph_node` — get a single symbol's details
+
+**Rules for subagents (explore, backend, frontend):**
+- Use `codegraph_explore` as the PRIMARY tool for exploration questions
+- Do NOT re-read files that `codegraph_explore` already returned source code for
+- Only fall back to grep/glob/read if codegraph returned no results
+
+**Maintenance:**
+- `codegraph sync` — incremental update (auto-sync runs via file watcher in MCP server)
+- `codegraph status` — check index health
+- After major refactors: `codegraph index --force` to rebuild

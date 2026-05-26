@@ -11,14 +11,24 @@
     :rows="20"
   >
     <template #header>
-      <div class="flex flex-wrap align-items-center justify-content-between gap-2">
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Magatzem</label>
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        :show-create="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+      >
+        <template #prepend>
+          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+            <label class="filter-label table-filter-prepend-label">Magatzem</label>
             <DropdownWarehouses label="" v-model="filter.warehouseId" />
           </div>
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Referència</label>
+          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+            <label class="filter-label table-filter-prepend-label">Referència</label>
             <DropdownReference
               label=""
               :fullName="true"
@@ -26,17 +36,8 @@
               v-model="filter.referenceId"
             />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 28%" />
     <Column field="warehouseName" header="Magatzem" style="width: 16%" />
@@ -53,6 +54,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
+import TableFilter, {
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 import DropdownWarehouses from "../components/DropdownWarehouses.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { useStore } from "../../../store";
@@ -67,6 +71,11 @@ const filter = ref({
   referenceId: undefined as string | undefined,
   warehouseId: undefined as string | undefined,
 });
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "55%",
+  tablet: "70%",
+};
 
 const filteredStocks = computed(() => {
   if (!stockStore.stocks) return [];

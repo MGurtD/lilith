@@ -1,22 +1,21 @@
 <template>
   <DataTable
-    :value="paymentMethodStore.paymentMethods"
+    :value="filteredPaymentMethods"
     tableStyle="min-width: 100%"
     scrollHeight="flex"
     @row-click="editPaymentMethod"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Formes de pagament</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+      <TableFilter
+        :config="filterConfig"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
+      />
     </template>
     <Column field="name" header="Nom" style="width: 20%"></Column>
     <Column field="description" header="Descripció" style="width: 20%"></Column>
@@ -38,18 +37,50 @@ import { v4 as uuidv4 } from "uuid";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { PaymentMethod } from "../types";
 import { useStore } from "../../../store";
 import { usePaymentMethodStore } from "../store/paymentMethod";
+import TableFilter, {
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 
 const toast = useToast();
 const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const paymentMethodStore = usePaymentMethodStore();
+
+const filter = ref({
+  search: "",
+});
+
+const filterConfig: Array<FilterConfig> = [
+  {
+    key: "search",
+    label: "Cercar",
+    type: "text",
+    placeholder: "Nom o descripció",
+    size: "sm",
+    row: 0,
+  },
+];
+
+const filteredPaymentMethods = computed(() => {
+  if (!paymentMethodStore.paymentMethods) return [];
+
+  const search = filter.value.search.trim().toLowerCase();
+  if (!search) return paymentMethodStore.paymentMethods;
+
+  return paymentMethodStore.paymentMethods.filter((paymentMethod) => {
+    return (
+      paymentMethod.name.toLowerCase().includes(search) ||
+      paymentMethod.description.toLowerCase().includes(search)
+    );
+  });
+});
 
 onMounted(async () => {
   await paymentMethodStore.fetchAll();
@@ -62,6 +93,10 @@ onMounted(async () => {
 
 const createButtonClick = () => {
   router.push({ path: `/payment-methods/${uuidv4()}` });
+};
+
+const cleanFilter = () => {
+  filter.value.search = "";
 };
 
 const editPaymentMethod = (row: DataTableRowClickEvent) => {
@@ -96,3 +131,21 @@ const deletePaymentMethod = (event: any, model: PaymentMethod) => {
   });
 };
 </script>
+
+<style scoped>
+:deep(.table-filter__field) {
+  max-width: 25%;
+}
+
+@media (max-width: 1200px) {
+  :deep(.table-filter__field) {
+    max-width: 40%;
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.table-filter__field) {
+    max-width: 100%;
+  }
+}
+</style>

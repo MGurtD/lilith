@@ -8,12 +8,22 @@
     @row-click="editRow"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <label>Tipus</label>
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label">Tipus</label>
             <Select
               v-model="filter.workcenterTypeId"
               :options="plantmodelStore.workcenterTypes"
@@ -22,10 +32,13 @@
               placeholder="Tots"
               :showClear="true"
               class="w-full"
+              size="small"
             />
           </div>
-          <div class="filter-field">
-            <label>Àrea</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label">Àrea</label>
             <Select
               v-model="filter.areaId"
               :options="plantmodelStore.areas"
@@ -34,25 +47,11 @@
               placeholder="Totes"
               :showClear="true"
               class="w-full"
+              size="small"
             />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="name" header="Nom" style="width: 20%"></Column>
     <Column field="description" header="Descripció" style="width: 40%"></Column>
@@ -83,6 +82,8 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -101,6 +102,8 @@ const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
 const shiftStore = useShiftStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
 onMounted(async () => {
   await plantmodelStore.fetchWorkcenters();

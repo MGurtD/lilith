@@ -11,44 +11,44 @@
     @row-click="editRow"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="filterData"
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="sharedDataStore.exercises"
-              @range-selected="filterData"
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
             />
           </div>
-          <div class="filter-field">
-            <label>Client</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Client</label
+            >
             <DropdownCustomers label="" v-model="filter.customerId" />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterData"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="number" header="Número" sortable style="width: 15%"></Column>
     <Column field="createdOn" header="Data Creació" sortable style="width: 15%">
@@ -104,14 +104,14 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
-import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../store/customers";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { PrimeIcons } from "@primevue/core/api";
@@ -125,7 +125,6 @@ import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
-import { useSharedDataStore } from "../../shared/store/masterData";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const router = useRouter();
@@ -133,15 +132,15 @@ const toast = useToast();
 const confirm = useConfirm();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
-const sharedDataStore = useSharedDataStore();
 const deliveryNoteStore = useDeliveryNoteStore();
-const referenceStore = useReferenceStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
 
+const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
-  referenceId: undefined as string | undefined,
 });
 const dialogOptions = reactive({
   visible: false,
@@ -151,11 +150,17 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
+const setCurrentYear = () => {
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
+};
+
 onMounted(async () => {
   lifecycleStore.fetchOneByName("DeliveryNote");
-  referenceStore.fetchReferences();
   customerStore.fetchCustomers();
-  await sharedDataStore.fetchMasterData();
 
   setCurrentYear();
   getUserFilter();
@@ -168,50 +173,26 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  const savedFilter = {
-    referenceId: filter.value.referenceId,
-    customerId: filter.value.customerId,
-    exercisePicker: store.exercisePicker,
-  };
-
-  userFilterStore.addFilter("DeliveryNotes", "", savedFilter);
-
+  userFilterStore.addFilter("DeliveryNotes", "", filter.value);
   deliveryNoteStore.deliveryNotes = undefined;
 });
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("DeliveryNotes", "");
   if (userFilter) {
-    filter.value.referenceId = userFilter.referenceId;
     filter.value.customerId = userFilter.customerId;
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
   }
 };
 
-const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = sharedDataStore.exercises?.find(
-    (e) => e.name === year,
-  );
-
-  if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
-    ];
-  }
-};
-
 const cleanFilter = () => {
-  store.cleanExercisePicker();
   filter.value.customerId = undefined;
+  setCurrentYear();
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
@@ -230,11 +211,13 @@ const createButtonClick = () => {
 };
 
 const filterData = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await deliveryNoteStore.GetFiltered(
       startTime,
@@ -269,7 +252,9 @@ const createDeliveryNote = async () => {
     toast.add({
       severity: "warn",
       summary: "Error al crear l'albarà",
-      detail: response?.errors?.[0] ?? "Error desconegut, contacte amb l'administrador.",
+      detail:
+        response?.errors?.[0] ??
+        "Error desconegut, contacte amb l'administrador.",
       life: 10000,
     });
     return;

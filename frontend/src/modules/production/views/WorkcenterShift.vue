@@ -12,57 +12,35 @@
       sortMode="multiple"
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
+        <TableFilter
+          :config="filterConfig"
+          v-model="filter"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-create="false"
+          :body-width="filterBodyWidth"
+          embedded
+          @filter="filterData"
+          @clear="cleanFilter"
         >
-          <div class="flex flex-wrap gap-3 flex-1 align-items-end">
-            <div style="min-width: 300px">
-              <label class="block text-900 mb-2">Període</label>
+          <template #prepend>
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--lg"
+            >
+              <label class="filter-label table-filter-prepend-label"
+                >Període</label
+              >
               <DatePicker
                 v-model="filter.dates"
                 selectionMode="range"
                 dateFormat="dd/mm/yy"
                 showIcon
-              />
-            </div>
-            <div style="min-width: 200px">
-              <label class="block text-900 mb-2">Grup</label>
-              <Select
-                v-model="filter.groupBy"
-                :options="groupByOptions"
-                optionLabel="label"
-                optionValue="value"
                 class="w-full"
+                size="small"
               />
             </div>
-            <div style="min-width: 200px">
-              <label class="block text-900 mb-2">Grup per temps</label>
-              <Select
-                v-model="filter.timeGroupBy"
-                :options="timeGroupByOptions"
-                optionLabel="label"
-                optionValue="value"
-                class="w-full"
-              />
-            </div>
-          </div>
-          <div class="datatable-buttons">
-            <Button
-              class="datatable-button mr-2"
-              :icon="PrimeIcons.FILTER"
-              rounded
-              raised
-              @click="filterData"
-            />
-            <Button
-              class="datatable-button mr-2"
-              :icon="PrimeIcons.FILTER_SLASH"
-              rounded
-              raised
-              @click="cleanFilter"
-            />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
       <Column field="workcenter" header="Centre de treball" sortable> </Column>
       <Column field="operator" header="Operari" sortable> </Column>
@@ -146,12 +124,18 @@ import {
   formatDateTimeUTCWithSeconds,
 } from "../../../utils/functions";
 import { useStore } from "@/store";
+import TableFilter, {
+  type FilterConfig,
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 
 const store = useStore();
 const toast = useToast();
 
 const workcenterShifts = ref<WorkcenterShiftHistorical[]>([]);
 const workcenterShiftStore = useWorkcenterShiftStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const groupByOptions = [
   { label: "Operari", value: "Operator" },
@@ -173,6 +157,29 @@ const filter = ref({
   groupBy: "None",
   timeGroupBy: "None",
 });
+
+const filterConfig: Array<FilterConfig> = [
+  {
+    key: "groupBy",
+    label: "Grup",
+    type: "select",
+    options: groupByOptions,
+    optionLabel: "label",
+    optionValue: "value",
+    size: "md",
+    row: 0,
+  },
+  {
+    key: "timeGroupBy",
+    label: "Grup per temps",
+    type: "select",
+    options: timeGroupByOptions,
+    optionLabel: "label",
+    optionValue: "value",
+    size: "md",
+    row: 0,
+  },
+];
 
 onMounted(async () => {
   store.setMenuItem({

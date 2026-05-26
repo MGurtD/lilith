@@ -1,40 +1,41 @@
 <template>
   <div class="dashboard-filter">
-    <div class="dashboard-filter-field">
-      <ExerciseDatePicker
-        :exercises="sharedDataStore.exercises"
-        @range-selected="filterDashboard(false)"
-      />
+    <div class="dashboard-filter-left">
+      <TableFilter
+        :config="filterConfig"
+        v-model="filter"
+        :show-title="false"
+        :show-filter-action="false"
+        :show-create="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="clearFilter"
+      >
+        <template #prepend>
+          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+            <label class="filter-label table-filter-prepend-label">Període</label>
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              size="small"
+              class="w-full"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </div>
-    <div class="dashboard-filter-field">
-      <label>Tipus</label>
-      <Select
-        :options="['Compra', 'Despesa']"
-        v-model="filter.type"
-        @change="filterDashboard(true)"
-      />
+    <div class="dashboard-kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Total despesa</div>
+        <div class="kpi-value text-primary">
+          {{ formatCurrency(totalAmount) }}
+        </div>
+      </div>
     </div>
-    <div class="dashboard-filter-field">
-      <label>Detall</label>
-      <Select
-        showClear
-        filter
-        :options="pieChartData?.labels"
-        v-model="filter.typeDetail"
-        @change="filterDashboard(false)"
-      />
-    </div>
-    <div class="dashboard-filter-field">
-      <label class="block text-900">
-        <i :class="PrimeIcons.WALLET"></i>
-        &nbsp; Total despesa <b>{{ formatCurrency(totalAmount) }}</b>
-      </label>
-    </div>
-    <Button
-      class="grid_add_row_button"
-      :icon="PrimeIcons.FILTER_SLASH"
-      @click="clearFilter"
-    />
   </div>
 
   <Tabs v-model:value="selectedTabIndex">
@@ -90,12 +91,15 @@
   </Tabs>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Chart from "primevue/chart";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "../../../store";
 import { useSharedDataStore } from "../../shared/store/masterData";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import _ from "lodash";
 import {
   formatCurrency,
@@ -110,19 +114,79 @@ const store = useStore();
 const sharedDataStore = useSharedDataStore();
 const selectedTabIndex = ref("0");
 
+const currentYear = new Date().getFullYear();
 const filter = ref({
-  dates: undefined as Array<Date> | undefined,
+  dates: [new Date(currentYear, 0, 1), new Date(currentYear, 11, 31)] as
+    | Array<Date>
+    | undefined,
   type: "" as string,
   typeDetail: "" as string,
 });
+
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "type",
+    label: "Tipus",
+    type: "select",
+    options: [
+      { label: "Compra", value: "Compra" },
+      { label: "Despesa", value: "Despesa" },
+    ],
+    placeholder: "Selecciona tipus",
+    size: "md",
+  },
+  {
+    key: "typeDetail",
+    label: "Detall",
+    type: "select",
+    options: (pieChartData.value?.labels ?? []).map((label) => ({
+      label,
+      value: label,
+    })),
+    placeholder: "Selecciona detall",
+    size: "md",
+  },
+]);
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "75%",
+  tablet: "100%",
+};
+
 const expenseTypes = ref(undefined as Array<ExpenseType> | undefined);
 const consolidatedExpenses = ref([] as Array<ConsolidatedExpense>);
 
 const clearFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = undefined;
   filter.value.type = "";
   filter.value.typeDetail = "";
 };
+
+watch(
+  () => filter.value.dates,
+  (dates) => {
+    if (dates && dates.length === 2 && dates[1]) {
+      filterDashboard(false);
+    }
+  },
+  { deep: true },
+);
+
+watch(
+  () => filter.value.type,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    filterDashboard(true);
+  },
+);
+
+watch(
+  () => filter.value.typeDetail,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    filterDashboard(false);
+  },
+);
 
 onMounted(async () => {
   store.setMenuItem({
@@ -132,6 +196,7 @@ onMounted(async () => {
 
   await sharedDataStore.fetchMasterData();
   expenseTypes.value = await ExpenseServices.ExpenseType.getAll();
+  await filterDashboard(false);
 });
 
 const pieChartData = ref(undefined as undefined | ChartOptions);
@@ -163,11 +228,13 @@ const totalAmount = computed((): number => {
 });
 
 const filterDashboard = async (clearDetail: boolean) => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     if (clearDetail) filter.value.typeDetail = "";
 
@@ -252,18 +319,49 @@ const getChartColors = (numberOfColors: number): Array<string> => {
 <style scoped>
 .dashboard-filter {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 1rem;
-  color: black;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.dashboard-filter-field {
+.dashboard-filter-left {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: 1rem;
-  align-items: center;
+  flex: 1 1 0;
+  min-width: 22rem;
+  align-self: center;
+}
+
+.dashboard-filter-left :deep(.table-filter) {
+  width: 100%;
+}
+
+.dashboard-filter-left :deep(.table-filter__body--constrained) {
+  width: var(--filter-body-max-desktop);
+}
+
+.dashboard-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.kpi-card {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: var(--p-content-background);
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: var(--p-text-muted-color);
+}
+
+.kpi-value {
+  font-size: 1.4rem;
+  font-weight: 700;
 }
 
 .dashboard-container {
@@ -306,11 +404,16 @@ const getChartColors = (numberOfColors: number): Array<string> => {
   }
 
   .dashboard-filter {
-    display: block;
+    align-items: stretch;
   }
 
-  .dashboard-filter-field {
-    padding-bottom: 1rem;
+  .dashboard-filter-left {
+    min-width: 100%;
+  }
+
+  .dashboard-kpis {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .dashboard-item {

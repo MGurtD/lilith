@@ -7,14 +7,22 @@
     <template #header>
       <TableFilter
         :config="filterConfig"
-        :model-value="filter"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
         @filter="filterData"
         @clear="cleanFilter"
         @create="createButtonClick"
       >
         <template #prepend>
-          <div class="flex-1 min-w-0">
-            <label class="filter-label">Període</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
@@ -22,6 +30,7 @@
               placeholder="Seleccioni un període"
               showIcon
               class="w-full"
+              size="small"
             />
           </div>
         </template>
@@ -62,7 +71,10 @@ import { useWorkOrderStore } from "../store/workorder";
 import { useWorkMasterStore } from "../store/workmaster";
 import { useUserFilterStore } from "../../../store/userfilter";
 import { useCustomersStore } from "../../sales/store/customers";
-import { FilterConfig } from "../../../components/tables/TableFilter.vue";
+import {
+  FilterConfig,
+  FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const store = useStore();
@@ -76,6 +88,8 @@ const exerciseStore = useExerciseStore();
 const lifecycleStore = useLifecyclesStore();
 const customersStore = useCustomersStore();
 
+const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
+
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   referenceId: undefined,
@@ -86,14 +100,6 @@ const filter = ref({
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {
-    key: "code",
-    label: "Codi",
-    type: "text",
-    placeholder: "Codi",
-    size: "sm",
-    row: 0,
-  },
-  {
     key: "customerId",
     label: "Client",
     type: "select",
@@ -101,7 +107,15 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionLabel: "comercialName",
     optionValue: "id",
     placeholder: "Selecciona un client",
-    size: "lg",
+    size: "md",
+    row: 0,
+  },
+  {
+    key: "code",
+    label: "Codi",
+    type: "text",
+    placeholder: "Codi",
+    size: "md",
     row: 0,
   },
   {
@@ -112,15 +126,14 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionLabel: "name",
     optionValue: "id",
     placeholder: "Selecciona un estat",
+    size: "md",
     row: 0,
   },
 ]);
 
 const setCurrentYear = () => {
   const year = new Date().getFullYear().toString();
-  const currentExercise = exerciseStore.exercises?.find(
-    (e) => e.name === year,
-  );
+  const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
 
   if (currentExercise) {
     filter.value.dates = [
@@ -144,7 +157,11 @@ const filteredWorkorders = computed(() => {
   return workOrderStore.workorders ?? [];
 });
 const filterData = async () => {
-  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
     const startTime = formatDateForQueryParameter(filter.value.dates[0]);
     const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 

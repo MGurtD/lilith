@@ -11,42 +11,46 @@
     :rows="20"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Màquina</label>
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Màquina</label
+            >
             <Select
               v-model="filter.workcenterId"
               :options="plantmodelStore.workcenters"
               optionValue="id"
               optionLabel="name"
               class="w-full"
+              size="small"
+              showClear
             />
           </div>
-          <div class="filter-field">
-            <label class="block text-900 mb-2">Cost 0</label>
-            <Checkbox :binary="true" v-model="filter.zerocost" />
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--sm"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Cost 0</label
+            >
+            <div class="table-filter-checkbox-field">
+              <Checkbox :binary="true" v-model="filter.zerocost" />
+            </div>
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="workcenterName" header="Màquina" style="width: 30%" sortable>
     </Column>
@@ -79,6 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -98,6 +104,8 @@ const plantmodelStore = usePlantModelStore();
 const userFilterStore = useUserFilterStore();
 const toast = useToast();
 const confirm = useConfirm();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("WorkcenterCosts", "");
@@ -214,3 +222,11 @@ const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
   });
 };
 </script>
+
+<style scoped>
+.table-filter-checkbox-field {
+  display: flex;
+  align-items: center;
+  min-height: 2.375rem;
+}
+</style>

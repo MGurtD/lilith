@@ -1,3 +1,6 @@
+# CodeGraph (local semantic index)
+.codegraph/
+
 # Build outputs
 **/bin/
 **/obj/

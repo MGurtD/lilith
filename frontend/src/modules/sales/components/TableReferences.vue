@@ -9,45 +9,44 @@
     @row-click="editRow"
   >
     <template #header>
-      <div class="filter-toolbar">
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Codi</label>
-          <BaseInput v-model="filter.code" />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Descripció</label>
-          <BaseInput v-model="filter.description" />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Client</label>
-          <DropdownCustomers label="" v-model="filter.customerId" />
-        </div>
-        <div class="filter-toolbar__field filter-toolbar__field--date">
-          <label class="filter-label">Data creació</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            :showIcon="true"
-            class="w-full"
-            placeholder="Selecciona periode"
-          />
-        </div>
-        <div class="filter-toolbar__actions">
-          <Button
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+      <TableFilter
+        :config="filterConfig"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
+      >
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Client</label
+            >
+            <DropdownCustomers label="" v-model="filter.customerId" />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Data creació</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              :showIcon="true"
+              class="w-full"
+              size="small"
+              placeholder="Selecciona periode"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="code" header="Codi" style="width: 10%"></Column>
     <Column field="description" header="Descripció" style="width: 30%"></Column>
@@ -57,12 +56,7 @@
         <span>{{ getCustomerById(slotProps.data.customerId) }}</span>
       </template>
     </Column>
-    <Column
-      field="createdOn"
-      header="Data creació"
-      sortable
-      style="width: 10%"
-    >
+    <Column field="createdOn" header="Data creació" sortable style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.createdOn) }}
       </template>
@@ -96,7 +90,11 @@
 
 <script setup lang="ts">
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
-import BaseInput from "../../../components/BaseInput.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterConfig,
+  FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 import { computed, ref, onUnmounted, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -107,6 +105,26 @@ import { useUserFilterStore } from "../../../store/userfilter";
 
 const userFilterStore = useUserFilterStore();
 const customerStore = useCustomersStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
+
+const filterConfig: FilterConfig[] = [
+  {
+    key: "code",
+    label: "Codi",
+    type: "text",
+    placeholder: "Codi",
+    size: "sm",
+  },
+  {
+    key: "description",
+    label: "Descripció",
+    type: "text",
+    placeholder: "Descripció",
+    size: "md",
+  },
+];
+
 const filter = ref({
   code: "",
   description: "",

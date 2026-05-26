@@ -1,17 +1,32 @@
 <template>
   <div class="dashboard-filter">
     <div class="dashboard-filter-left">
-      <div class="dashboard-filter-field">
-        <ExerciseDatePicker
-          :exercises="exercicesStore.exercises"
-          @range-selected="onRangeSelected"
-        />
-      </div>
-      <Button
-        class="grid_add_row_button"
-        :icon="PrimeIcons.FILTER_SLASH"
-        @click="clearFilter"
-      />
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-filter-action="false"
+        :show-create="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="clearFilter"
+      >
+        <template #prepend>
+          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+            <label class="filter-label table-filter-prepend-label">Període</label>
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              size="small"
+              class="w-full"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </div>
     <div class="dashboard-kpis">
       <div class="kpi-card">
@@ -130,16 +145,17 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useStore } from "../../../store";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
+import TableFilter, {
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 
 import {
   formatDateForQueryParameter,
   formatDate,
   formatCurrency,
 } from "../../../utils/functions";
-import { useExerciseStore } from "../../shared/store/exercise";
 
 import { PrimeIcons } from "@primevue/core/api";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 
 import { ConsolidatedIncomes } from "../../sales/types";
 import { IncomeService } from "../../sales/services/income.service";
@@ -148,18 +164,28 @@ import ExpenseServices from "../../purchase/services";
 import { ConsolidatedExpense, ExpenseType } from "../../purchase/types";
 
 const store = useStore();
-const exercicesStore = useExerciseStore();
 const incomeService = new IncomeService("/income");
 const { t } = useI18n();
 const toast = useToast();
 
+const currentYear = new Date().getFullYear();
 const filter = ref({
-  dates: undefined as Array<Date> | undefined,
+  dates: [new Date(currentYear, 0, 1), new Date(currentYear, 11, 31)] as
+    | Array<Date>
+    | undefined,
   consolidatedBy: undefined as string | undefined,
 });
 
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "28rem",
+  tablet: "32rem",
+};
+
 const clearFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = [
+    new Date(currentYear, 0, 1),
+    new Date(currentYear, 11, 31),
+  ];
   filter.value.consolidatedBy = "";
   filterDashboard();
 };
@@ -173,27 +199,24 @@ onMounted(async () => {
     title: "Dashboard comparatiu flux de caixa",
   });
 
-  await exercicesStore.fetchActive();
-
-  if (!store.exercisePicker.exercise) store.setCurrentYear();
-  filterDashboard();
+  await filterDashboard();
 });
 
-let debounceTimer: number | undefined;
-const onRangeSelected = () => {
-  if (debounceTimer) window.clearTimeout(debounceTimer);
-  debounceTimer = window.setTimeout(() => {
-    filterDashboard();
-  }, 300);
-};
+watch(
+  () => filter.value.dates,
+  (dates) => {
+    if (dates && dates.length === 2 && dates[1]) {
+      filterDashboard();
+    }
+  },
+  { deep: true },
+);
 
 const filterDashboard = async () => {
   totals.value = [];
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     let incomeResponse: Array<ConsolidatedIncomes> | undefined;
     let expenseResponse: Array<ConsolidatedExpense> | undefined;
@@ -501,19 +524,15 @@ watch([incomes, expenses], () => {
 }
 .dashboard-filter {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: stretch;
   justify-content: space-between;
-  color: black;
   flex-wrap: wrap;
 }
 .dashboard-filter-left {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-.dashboard-filter-field {
-  display: contents;
+  flex: 1 1 28rem;
+  min-width: 20rem;
+  align-self: center;
 }
 
 .dashboard-container {
@@ -558,11 +577,11 @@ watch([incomes, expenses], () => {
   }
 
   .dashboard-filter {
-    display: block;
+    gap: 1rem;
   }
 
-  .dashboard-filter-field {
-    padding-bottom: 1rem;
+  .dashboard-filter-left {
+    min-width: 100%;
   }
 
   .dashboard-item {
