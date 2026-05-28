@@ -20,31 +20,18 @@
         >
           <template #prepend>
             <div
-              class="table-filter-prepend-field table-filter-prepend-field--md"
+              class="table-filter-prepend-field table-filter-prepend-field--lg"
             >
               <label class="filter-label table-filter-prepend-label">{{
-                $t("verifactu.integrationRequests.filters.fromDate")
+                $t("common.period")
               }}</label>
               <DatePicker
-                v-model="filters.fromDate"
+                v-model="filters.dates"
+                selectionMode="range"
                 dateFormat="dd/mm/yy"
                 showIcon
-                inputId="fromDate"
-                size="small"
-                class="w-full"
-              />
-            </div>
-            <div
-              class="table-filter-prepend-field table-filter-prepend-field--md"
-            >
-              <label class="filter-label table-filter-prepend-label">{{
-                $t("verifactu.integrationRequests.filters.toDate")
-              }}</label>
-              <DatePicker
-                v-model="filters.toDate"
-                dateFormat="dd/mm/yy"
-                showIcon
-                inputId="toDate"
+                inputId="period"
+                placeholder="Selecciona període"
                 size="small"
                 class="w-full"
               />
@@ -224,17 +211,15 @@ const { integrationsBetweenDates, loading } = storeToRefs(verifactuStore);
 
 // Filters
 const filters = ref<{
-  fromDate: Date | null;
-  toDate: Date | null;
+  dates: Array<Date> | null;
   searchQuery: string;
 }>({
-  fromDate: null,
-  toDate: null,
+  dates: null,
   searchQuery: "",
 });
 const filterBodyWidth: FilterBodyWidth = {
-  desktop: "66%",
-  tablet: "50%",
+  desktop: "58%",
+  tablet: "76%",
 };
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
@@ -285,16 +270,16 @@ const filteredRequests = computed(() => {
 });
 
 const isRangeValid = () => {
-  const { fromDate, toDate } = filters.value;
-  return !!fromDate && !!toDate && fromDate <= toDate;
+  const dates = filters.value.dates;
+  return !!dates && dates.length === 2 && !!dates[0] && !!dates[1] && dates[0] <= dates[1];
 };
 
 const loadRequests = async () => {
   if (!isRangeValid()) return;
   try {
     await verifactuStore.GetIntegrationsBetweenDates(
-      filters.value.fromDate as Date,
-      filters.value.toDate as Date,
+      filters.value.dates?.[0] as Date,
+      filters.value.dates?.[1] as Date,
     );
   } catch (err) {
     console.error("Error loading integration requests:", err);
@@ -308,19 +293,19 @@ const loadRequests = async () => {
 };
 
 const clearFilters = () => {
-  filters.value.fromDate = null;
-  filters.value.toDate = null;
+  filters.value.dates = null;
   filters.value.searchQuery = "";
 };
 
 // Also react on model changes (manual typing)
 watch(
-  () => [filters.value.fromDate, filters.value.toDate],
+  () => filters.value.dates,
   () => {
     if (isRangeValid()) {
       loadRequests();
     }
   },
+  { deep: true },
 );
 
 onMounted(() => {
@@ -328,8 +313,7 @@ onMounted(() => {
   const to = new Date();
   const from = new Date();
   from.setDate(to.getDate() - 7);
-  filters.value.fromDate = from;
-  filters.value.toDate = to;
+  filters.value.dates = [from, to];
   loadRequests();
 });
 
