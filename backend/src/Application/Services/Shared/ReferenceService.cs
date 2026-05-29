@@ -125,29 +125,27 @@ namespace Application.Services.System
             return new GenericResponse(true, reference);
         }
 
-        // Private helper method
         private async Task<string> GetReferenceCode(Reference reference)
         {
             if (reference.Purchase && !reference.Sales)
             {
                 if (reference.ReferenceTypeId.HasValue)
-            {
-                var referenceType = await unitOfWork.ReferenceTypes.Get(reference.ReferenceTypeId.Value);
-                if (referenceType is not null && !reference.Code.Contains($" ({referenceType.Name})"))
                 {
-                    var codeParts = reference.Code.Split(" (");
-                    if (codeParts.Length >= 1)
+                    var referenceType = await unitOfWork.ReferenceTypes.Get(reference.ReferenceTypeId.Value);
+                    if (referenceType is not null && !reference.Code.Contains($" ({referenceType.Name})"))
                     {
-                        return $"{codeParts[0]} ({referenceType.Name})";
-                    }
-                    else
-                    {
-                        return $"{reference.Code} ({referenceType.Name})";
+                        var codeParts = reference.Code.Split(" (");
+                        if (codeParts.Length >= 1)
+                        {
+                            return $"{codeParts[0]} ({referenceType.Name})";
+                        }
+                        else
+                        {
+                            return $"{reference.Code} ({referenceType.Name})";
+                        }
                     }
                 }
             }
-            }
-            
 
             return reference.Code;
         }
