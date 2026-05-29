@@ -128,7 +128,9 @@ namespace Application.Services.System
         // Private helper method
         private async Task<string> GetReferenceCode(Reference reference)
         {
-            if (reference.ReferenceTypeId.HasValue)
+            if (reference.Purchase && !reference.Sales)
+            {
+                if (reference.ReferenceTypeId.HasValue)
             {
                 var referenceType = await unitOfWork.ReferenceTypes.Get(reference.ReferenceTypeId.Value);
                 if (referenceType is not null && !reference.Code.Contains($" ({referenceType.Name})"))
@@ -144,6 +146,8 @@ namespace Application.Services.System
                     }
                 }
             }
+            }
+            
 
             return reference.Code;
         }
@@ -301,8 +305,3 @@ namespace Application.Services.System
         }
     }
 }
-
-
-
-
-
