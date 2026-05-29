@@ -124,6 +124,7 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, localizationService.GetLocalizedString("InvoiceRectifyNoDetails"));
 
             var negativeNumber = await GetNextInvoiceCounter(Guid.Parse(originalInvoice.ExerciseId!.Value.ToString()));
+            var verifactuInitialStatusId = await unitOfWork.Lifecycles.GetInitialStatusByName(StatusConstants.Lifecycles.Verifactu);
 
             var orderId = Guid.NewGuid();
             var negativeInvoice = new SalesInvoice()
@@ -137,9 +138,10 @@ namespace Application.Services.Sales
                 SiteId = originalInvoice.SiteId,
                 ExerciseId = originalInvoice.ExerciseId,
                 StatusId = originalInvoice.StatusId,
+                IntegrationStatusId = verifactuInitialStatusId,
                 Name = originalInvoice.Name,
                 Address = originalInvoice.Address,
-                BaseAmount = originalInvoice.BaseAmount,
+                BaseAmount = originalInvoice.BaseAmount * -1,
                 City = originalInvoice.City,
                 PostalCode = originalInvoice.PostalCode,
                 Country = originalInvoice.Country,
@@ -192,7 +194,12 @@ namespace Application.Services.Sales
             };
             await unitOfWork.SalesInvoices.Add(negativeInvoice);
 
-            // Crear la factura rectificativa
+            if (!dto.CreateCorrectionInvoice)
+            {
+                return new GenericResponse(true, negativeInvoice);
+            }
+
+            // Crear la factura rectificativa amb l'import corregit
             var import = originalInvoice.SalesInvoiceImports.FirstOrDefault();
             var tax = await unitOfWork.Taxes.Get(import!.TaxId);
             if (tax == null)
@@ -210,6 +217,7 @@ namespace Application.Services.Sales
                 SiteId = originalInvoice.SiteId,
                 ExerciseId = originalInvoice.ExerciseId,
                 StatusId = originalInvoice.StatusId,
+                IntegrationStatusId = verifactuInitialStatusId,
                 Name = originalInvoice.Name,
                 Address = originalInvoice.Address,
                 BaseAmount = originalInvoice.BaseAmount,

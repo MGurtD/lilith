@@ -250,6 +250,7 @@ export interface CreateSalesHeaderRequest {
 
 export interface CreateRectificativeInvoiceRequest {
   id: string;
+  createCorrectionInvoice: boolean;
   quantity: number;
 }
 

@@ -61,7 +61,7 @@ namespace Application.Contracts
             public const string Recepcionat = "Recepcionat";
 
             // Verifactu statuses
-            public const string Ok = "Ok";
+            public const string Ok = "OK";
             public const string Error = "Error";
         }
 

@@ -72,7 +72,19 @@ public static class VerifactuRequestFactory
                 FechaExpedicionFactura = VerifactuFormatUtils.FormatDate(invoice.InvoiceDate)
             },
             NombreRazonEmisor = enterprise.Name,
-            TipoFactura = ClaveTipoFacturaType.F1,
+            TipoFactura = invoice.ParentSalesInvoiceId != null ? ClaveTipoFacturaType.R1 : ClaveTipoFacturaType.F1,
+            TipoRectificativa = invoice.ParentSalesInvoiceId != null ? ClaveTipoRectificativaType.I : default,
+            TipoRectificativaSpecified = invoice.ParentSalesInvoiceId != null,
+            FacturasRectificadas = invoice.ParentSalesInvoiceId != null && invoice.ParentSalesInvoice != null
+                ? [
+                    new IDFacturaARType
+                    {
+                        IDEmisorFactura = invoice.ParentSalesInvoice.VatNumber,
+                        NumSerieFactura = invoice.ParentSalesInvoice.InvoiceNumber,
+                        FechaExpedicionFactura = VerifactuFormatUtils.FormatDate(invoice.ParentSalesInvoice.InvoiceDate)
+                    }
+                ]
+                : null,
             DescripcionOperacion = enterprise.Description,
             Destinatarios = [
                 new PersonaFisicaJuridicaType
