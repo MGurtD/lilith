@@ -341,6 +341,11 @@ const items = [
     icon: PrimeIcons.FLAG_FILL,
     command: () => createSalesOrder(),
   },
+  {
+    label: "Clonar pressupost",
+    icon: PrimeIcons.COPY,
+    command: () => cloneBudget(),
+  },
 ];
 
 const detailDialogTitle = "Línia del pressupost";
@@ -595,6 +600,30 @@ const onDistributeAllCosts = async (budgetId: string) => {
       summary: "Error al ponderar",
       detail:
         "No s'han pogut ponderar els costos (és possible que hi hagi un error al servidor).",
+      life: 5000,
+    });
+  }
+};
+
+const cloneBudget = async () => {
+  if (!budget.value) return;
+
+  const newId = getNewUuid();
+  const result = await budgetStore.Clone(budget.value.id, newId);
+
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Pressupost clonat",
+      detail: "S'ha creat un nou pressupost amb les mateixes línies.",
+      life: 4000,
+    });
+    router.push(`/budget/${newId}`);
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error al clonar",
+      detail: "No s'ha pogut clonar el pressupost.",
       life: 5000,
     });
   }

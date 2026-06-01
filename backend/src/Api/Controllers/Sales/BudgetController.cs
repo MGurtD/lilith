@@ -185,5 +185,19 @@ namespace Api.Controllers.Sales
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);
         }
+
+        [HttpPost("{id:guid}/Clone")]
+        [SwaggerOperation("BudgetClone")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Clone(Guid id, [FromBody] CloneBudgetRequest request)
+        {
+            var response = await service.Clone(id, request.NewId);
+
+            if (response.Result) return Ok(response);
+            else return BadRequest(response.Errors);
+        }
     }
 }
+
+public record CloneBudgetRequest(Guid NewId);

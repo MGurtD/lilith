@@ -25,6 +25,11 @@ namespace Infrastructure.Persistance.EntityConfiguration
                               ApplicationDbContextConstants.DECIMAL_SCALE);
 
             builder
+                .Property(b => b.IsReverseCharge)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName($"PK_{TABLE_NAME}");
 

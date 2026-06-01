@@ -21,7 +21,11 @@
       ></BaseInput>
     </div>
 
-    <div>
+    <div class="two-columns mt-2">
+      <div>
+        <label class="block text-900 mb-2">Inversió del subjecte passiu (ISP)</label>
+        <Checkbox v-model="tax.isReverseCharge" class="w-full" :binary="true" />
+      </div>
       <div>
         <label class="block text-900 mb-2">Desactivada</label>
         <Checkbox v-model="tax.disabled" class="w-full" :binary="true" />
@@ -62,6 +66,7 @@ const schema = Yup.object().shape({
     .required("El nom és obligatori")
     .max(250, "El nom comercial no pot superar els 250 carácters"),
   percentatge: Yup.number().required("La freqüència és obligatoria"),
+  isReverseCharge: Yup.bool().required("El camp inversió del subjecte passiu és obligatori"),
   disabled: Yup.bool().required("El camp deshabilitat és obligatori"),
 });
 const validation = ref({

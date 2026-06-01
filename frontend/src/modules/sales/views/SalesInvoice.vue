@@ -375,7 +375,7 @@ const deleteInvoiceDetail = async (detail: SalesInvoiceDetail) => {
 const rectificativeRequest = ref(
   undefined as undefined | CreateRectificativeInvoiceRequest
 );
-const requestRectificativeQuantity = () => {
+const requestRectificativeQuantity = async () => {
   rectificativeRequest.value = {
     id: invoice.value!.id,
     createCorrectionInvoice: false,

@@ -98,4 +98,10 @@ export class BudgetService extends BaseService<Budget> {
     const response = await apiClient.put(endpoint, request);
     return response.status === 200;
   }
+
+  async Clone(id: string, newId: string): Promise<boolean> {
+    const endpoint = `${this.resource}/${id}/Clone`;
+    const response = await apiClient.post(endpoint, { newId });
+    return response.status === 200;
+  }
 }

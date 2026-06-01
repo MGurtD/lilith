@@ -553,6 +553,146 @@ namespace Application.Services.Sales
             }
         }
 
+        public async Task<GenericResponse> Clone(Guid id, Guid newId)
+        {
+            var source = await unitOfWork.Budgets.Get(id);
+            if (source == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", id));
+
+            var counterObj = await exerciseService.GetNextCounter(source.ExerciseId, "budget");
+            if (!counterObj.Result || counterObj.Content == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterError"));
+
+            var lifecycle = unitOfWork.Lifecycles.Find(l => l.Name == StatusConstants.Lifecycles.Budget).FirstOrDefault();
+            if (lifecycle == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNotFound", StatusConstants.Lifecycles.Budget));
+            if (!lifecycle.InitialStatusId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNoInitialStatus", StatusConstants.Lifecycles.Budget));
+
+            var newBudget = new Budget
+            {
+                Id = newId,
+                Number = counterObj.Content.ToString()!,
+                Date = DateTime.Now,
+                ExerciseId = source.ExerciseId,
+                CustomerId = source.CustomerId,
+                DeliveryDays = source.DeliveryDays,
+                UserNotes = source.UserNotes,
+                TotalWeight = source.TotalWeight,
+                TransportCost = source.TransportCost,
+                StatusId = lifecycle.InitialStatusId,
+            };
+
+            await unitOfWork.Budgets.AddWithoutSave(newBudget);
+
+            // Mapa oldDetailId -> newDetailId per mantenir les FKs dels ExternalServiceDetails
+            var detailIdMap = new Dictionary<Guid, Guid>();
+
+            if (source.Details != null)
+            {
+                foreach (var detail in source.Details)
+                {
+                    var newDetailId = Guid.NewGuid();
+                    detailIdMap[detail.Id] = newDetailId;
+
+                    var newDetail = new BudgetDetail
+                    {
+                        Id = newDetailId,
+                        BudgetId = newId,
+                        ReferenceId = detail.ReferenceId,
+                        WorkMasterId = detail.WorkMasterId,
+                        Description = detail.Description,
+                        Quantity = detail.Quantity,
+                        Profit = detail.Profit,
+                        ProductionProfit = detail.ProductionProfit,
+                        MaterialProfit = detail.MaterialProfit,
+                        ExternalProfit = detail.ExternalProfit,
+                        Discount = detail.Discount,
+                        UnitCost = detail.UnitCost,
+                        ProductionCost = detail.ProductionCost,
+                        MaterialCost = detail.MaterialCost,
+                        TransportCost = detail.TransportCost,
+                        ServiceCost = detail.ServiceCost,
+                        TotalCost = detail.TotalCost,
+                        UnitPrice = detail.UnitPrice,
+                        Amount = detail.Amount,
+                        DetailWeight = detail.DetailWeight,
+                        UserNotes = detail.UserNotes,
+                    };
+                    await unitOfWork.Budgets.Details.AddWithoutSave(newDetail);
+                }
+            }
+
+            if (source.Transports != null)
+            {
+                foreach (var transport in source.Transports)
+                {
+                    var newTransport = new BudgetTransport
+                    {
+                        Id = Guid.NewGuid(),
+                        BudgetId = newId,
+                        TransportRateDetailId = transport.TransportRateDetailId,
+                        LogisticSupplierId = transport.LogisticSupplierId,
+                        DestinationSupplierId = transport.DestinationSupplierId,
+                        Weight = transport.Weight,
+                        Volume = transport.Volume,
+                        Distance = transport.Distance,
+                        Price = transport.Price,
+                        Description = transport.Description,
+                        Destination = transport.Destination,
+                    };
+                    await unitOfWork.Budgets.Transports.AddWithoutSave(newTransport);
+                }
+            }
+
+            if (source.ExternalServices != null)
+            {
+                foreach (var extService in source.ExternalServices)
+                {
+                    var newExtServiceId = Guid.NewGuid();
+                    var newExtService = new BudgetExternalServices
+                    {
+                        Id = newExtServiceId,
+                        BudgetId = newId,
+                        ReferenceId = extService.ReferenceId,
+                        Description = extService.Description,
+                        Weight = extService.Weight,
+                        Volume = extService.Volume,
+                        Quantity = extService.Quantity,
+                        SupplierId = extService.SupplierId,
+                        UnitPrice = extService.UnitPrice,
+                        TotalPrice = extService.TotalPrice,
+                    };
+                    await unitOfWork.Budgets.ExternalServices.AddWithoutSave(newExtService);
+
+                    if (extService.Details != null)
+                    {
+                        foreach (var esd in extService.Details)
+                        {
+                            if (!detailIdMap.TryGetValue(esd.BudgetDetailId, out var newBudgetDetailId))
+                                continue;
+
+                            var newEsd = new BudgetExternalServiceDetail
+                            {
+                                Id = Guid.NewGuid(),
+                                BudgetExternalServiceId = newExtServiceId,
+                                BudgetDetailId = newBudgetDetailId,
+                                Quantity = esd.Quantity,
+                                Weight = esd.Weight,
+                                Volume = esd.Volume,
+                            };
+                            await unitOfWork.Budgets.ExternalServiceDetails.AddWithoutSave(newEsd);
+                        }
+                    }
+                }
+            }
+
+            // Un sol SaveChanges transaccional per a tota l'operació
+            await unitOfWork.CompleteAsync();
+
+            return new GenericResponse(true, newBudget);
+        }
+
         public async Task<GenericResponse> UpdateExternalService(BudgetExternalServices externalService)
         {
             var exists = await unitOfWork.Budgets.ExternalServices.Get(externalService.Id);
