@@ -4,61 +4,31 @@
     :loading="verifactuStore.loading"
   >
     <template #filter>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-1"
-      >
-        <div class="datatable-filter">
-          <div class="filter-field m-1">
-            <label class="block text-900">Any</label>
-            <Select
-              v-model="filter.year"
-              :options="yearOptions"
-              optionValue="value"
-              optionLabel="label"
-              class="w-full ml-2"
-              placeholder="Selecciona un any"
-            />
-          </div>
-          <div class="filter-field m-1">
-            <label class="block text-900">Mes</label>
-            <Select
-              v-model="filter.month"
-              :options="monthOptions"
-              optionValue="value"
-              optionLabel="label"
-              class="w-full ml-1"
-              placeholder="Selecciona un mes"
-            />
-          </div>
-        </div>
-      </div>
-      <div class="datatable-buttons" style="margin-left: auto">
-        <Button
-          class="datatable-button mr-2"
-          :icon="PrimeIcons.FILTER"
-          rounded
-          raised
-          @click="searchInvoices"
-          :disabled="!filter.year || !filter.month"
-        />
-        <Button
-          class="datatable-button mr-2"
-          :icon="PrimeIcons.FILTER_SLASH"
-          rounded
-          raised
-          @click="cleanFilter"
-        />
-      </div>
+      <TableFilter
+        :config="filterConfig"
+        :body-width="filterBodyWidth"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-create="false"
+        embedded
+        @filter="searchInvoices"
+        @clear="cleanFilter"
+      />
     </template>
   </TableVerifactuInvoices>
 </template>
 
 <script setup lang="ts">
 import TableVerifactuInvoices from "../components/TableVerifactuInvoices.vue";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
 import { useVerifactuStore } from "../store/verifactu";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useUserFilterStore } from "../../../store/userfilter";
 
@@ -71,6 +41,11 @@ const filter = ref({
   year: undefined as number | undefined,
   month: undefined as number | undefined,
 });
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "36rem",
+  tablet: "46rem",
+};
 
 // Generate year options from 2024 to current year
 const currentYear = new Date().getFullYear();
@@ -94,6 +69,25 @@ const monthOptions = [
   { value: 11, label: "Novembre" },
   { value: 12, label: "Desembre" },
 ];
+
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "year",
+    label: "Any",
+    type: "select",
+    options: yearOptions,
+    placeholder: "Selecciona un any",
+    size: "md",
+  },
+  {
+    key: "month",
+    label: "Mes",
+    type: "select",
+    options: monthOptions,
+    placeholder: "Selecciona un mes",
+    size: "md",
+  },
+]);
 
 onMounted(async () => {
   setCurrentMonth();

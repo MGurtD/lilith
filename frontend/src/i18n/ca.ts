@@ -20,6 +20,7 @@ const ca = {
     number: "Número",
     type: "Tipus",
     detail: "Detall",
+    period: "Període",
     description: "Descripció",
     total: "Total",
     close: "Tancar",

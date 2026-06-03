@@ -139,9 +139,43 @@ export class WorkOrderService extends BaseService<WorkOrder> {
 
 ### Date Handling
 
-- **Always normalize dates before API calls**: `convertDateTimeToJSON(date)`
-- Use `formatDateForQueryParameter()` for URL query strings
-- Display format: `dd/MM/yyyy` (Catalan convention)
+`Date.prototype.toJSON` is globally overridden in `utils/functions.ts` to adjust timezone before serialization. This means `JSON.stringify` (used by Axios) automatically converts any `Date` object to ISO format. **This only works for native `Date` objects, not strings.**
+
+**The correct pattern for dates with PrimeVue DatePicker:**
+
+1. **Store `GetById`**: Convert API date strings to `Date` objects immediately after fetching:
+
+```typescript
+async GetById(id: string) {
+  const data = await Service.getById(id);
+  if (data) {
+    if (data.date) data.date = new Date(data.date) as any;
+  }
+  this.entity = data;
+}
+```
+
+2. **Component `onMounted`**: Do NOT re-format dates. The store already provides `Date` objects that PrimeVue DatePicker accepts natively.
+
+3. **Component save/update**: Send the entity directly to the store. `Date.prototype.toJSON` handles serialization automatically. No need to call `convertDateTimeToJSON()`.
+
+```typescript
+// ✅ Correct — Date objects serialize automatically
+const updated = await store.Update(entity.value);
+
+// ❌ WRONG — formatDate() converts Date to string "dd/MM/yyyy",
+//    breaking both DatePicker binding and JSON serialization
+entity.value.date = formatDate(entity.value.date);
+
+// ❌ WRONG — mutating a reactive ref triggers re-render race conditions
+entity.value.date = convertDateTimeToJSON(entity.value.date);
+```
+
+**Key rules:**
+- `formatDate()` returns a **string** — use it only for display (columns, labels), never to set DatePicker model values
+- `convertDateTimeToJSON()` is for non-reactive contexts only (e.g., building query parameters on a local variable)
+- Never mutate date fields on a `storeToRefs` reactive ref before navigation — it triggers re-renders that race with `router.back()` and cause DOM crashes (`Cannot read properties of null (reading 'parentNode')`)
+- Use `formatDateForQueryParameter()` for URL query strings in list view filters
 
 ### UI Conventions
 
@@ -176,6 +210,8 @@ Use these instead of reimplementing:
 - Using `any` type
 - Forgetting to re-fetch after nested entity changes
 - Creating new utility functions that already exist
+- Using `formatDate()` to set DatePicker model values (use `new Date()` in store `GetById` instead)
+- Mutating reactive ref date fields before `router.back()` (causes DOM unmount crashes)
 
 ## Route Pattern
 

@@ -1,47 +1,34 @@
 <template>
   <div class="dashboard-filter">
-    <div class="dashboard-filter-field">
-      <label>{{ t("analytics.customerRanking.filters.year") }}</label>
-      <Select
-        v-model="selectedYear"
-        :options="availableYears"
-        :placeholder="t('analytics.customerRanking.filters.yearPlaceholder')"
-        @change="loadRankingData"
+    <div class="dashboard-filter-left">
+      <TableFilter
+        :config="filterConfig"
+        v-model="filter"
+        :show-title="false"
+        :show-filter-action="false"
+        :show-create="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="clearFilter"
       />
     </div>
-    <div class="dashboard-filter-field">
-      <label>{{ t("analytics.customerRanking.filters.aggregation") }}</label>
-      <Select
-        v-model="aggregationType"
-        :options="aggregationOptions"
-        optionLabel="label"
-        optionValue="value"
-        :placeholder="
-          t('analytics.customerRanking.filters.aggregationPlaceholder')
-        "
-        @change="prepareData"
-      />
-    </div>
-    <Button
-      class="grid_add_row_button"
-      :icon="PrimeIcons.FILTER_SLASH"
-      @click="clearFilter"
-      severity="secondary"
-    />
-    <div class="kpi-card">
-      <div class="kpi-label">
-        {{ t("analytics.customerRanking.kpi.totalInvoices") }}
+    <div class="dashboard-kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">
+          {{ t("analytics.customerRanking.kpi.totalInvoices") }}
+        </div>
+        <div class="kpi-value text-purple-500">
+          {{ totalInvoices }}
+        </div>
       </div>
-      <div class="kpi-value text-purple-500">
-        {{ totalInvoices }}
-      </div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">
-        {{ t("analytics.customerRanking.kpi.totalSales") }}
-      </div>
-      <div class="kpi-value text-green-500">
-        {{ formatCurrency(totalSales) }}
+      <div class="kpi-card">
+        <div class="kpi-label">
+          {{ t("analytics.customerRanking.kpi.totalSales") }}
+        </div>
+        <div class="kpi-value text-green-500">
+          {{ formatCurrency(totalSales) }}
+        </div>
       </div>
     </div>
   </div>
@@ -128,12 +115,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatCurrency } from "../../../utils/functions";
 import { useI18n } from "vue-i18n";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 
 import { CustomerSalesRanking } from "../types";
 import { CustomerRankingService } from "../services/customerRanking.service";
@@ -143,26 +134,55 @@ const toast = useToast();
 const { t } = useI18n();
 const customerRankingService = new CustomerRankingService("/customerranking");
 
-const selectedYear = ref(new Date().getFullYear());
-const aggregationType = ref<"monthly" | "quarterly">("monthly");
+const filter = ref({
+  year: new Date().getFullYear(),
+  aggregationType: "monthly" as "monthly" | "quarterly",
+});
 const rawRankings = ref<Array<CustomerSalesRanking>>([]);
+const isResettingFilter = ref(false);
 
-const aggregationOptions = [
+const aggregationOptions = computed(() => [
   { label: t("analytics.customerRanking.filters.monthly"), value: "monthly" },
   {
     label: t("analytics.customerRanking.filters.quarterly"),
     value: "quarterly",
   },
-];
+]);
 
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear();
-  const years = [];
-  for (let i = currentYear; i >= currentYear - 10; i--) {
-    years.push(i);
-  }
-  return years;
+  return Array.from({ length: 11 }, (_, index) => {
+    const year = currentYear - index;
+    return {
+      label: year.toString(),
+      value: year,
+    };
+  });
 });
+
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "year",
+    label: t("analytics.customerRanking.filters.year"),
+    type: "select",
+    options: availableYears.value,
+    placeholder: t("analytics.customerRanking.filters.yearPlaceholder"),
+    size: "md",
+  },
+  {
+    key: "aggregationType",
+    label: t("analytics.customerRanking.filters.aggregation"),
+    type: "select",
+    options: aggregationOptions.value,
+    placeholder: t("analytics.customerRanking.filters.aggregationPlaceholder"),
+    size: "md",
+  },
+]);
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "28rem",
+  tablet: "32rem",
+};
 
 onMounted(async () => {
   store.setMenuItem({
@@ -174,7 +194,7 @@ onMounted(async () => {
 });
 
 const loadRankingData = async () => {
-  if (!selectedYear.value) {
+  if (!filter.value.year) {
     toast.add({
       severity: "warn",
       summary: t("analytics.customerRanking.messages.selectYear"),
@@ -185,7 +205,7 @@ const loadRankingData = async () => {
 
   try {
     const response = await customerRankingService.GetAnnualRanking(
-      selectedYear.value,
+      filter.value.year,
     );
     if (response) {
       rawRankings.value = response;
@@ -195,7 +215,7 @@ const loadRankingData = async () => {
       toast.add({
         severity: "info",
         summary: t("analytics.customerRanking.messages.noDataFound", {
-          year: selectedYear.value,
+          year: filter.value.year,
         }),
         life: 4000,
       });
@@ -210,10 +230,31 @@ const loadRankingData = async () => {
   }
 };
 
-const clearFilter = () => {
-  selectedYear.value = new Date().getFullYear();
-  aggregationType.value = "monthly";
-  loadRankingData();
+watch(
+  () => filter.value.year,
+  async (newYear, oldYear) => {
+    if (isResettingFilter.value || newYear === oldYear) return;
+    await loadRankingData();
+  },
+);
+
+watch(
+  () => filter.value.aggregationType,
+  (newAggregation, oldAggregation) => {
+    if (isResettingFilter.value || newAggregation === oldAggregation) return;
+    prepareData();
+  },
+);
+
+const clearFilter = async () => {
+  isResettingFilter.value = true;
+  filter.value = {
+    year: new Date().getFullYear(),
+    aggregationType: "monthly",
+  };
+  isResettingFilter.value = false;
+
+  await loadRankingData();
 };
 
 // KPIs
@@ -312,7 +353,7 @@ const prepareData = () => {
     row.totalSales += ranking.totalSales;
 
     // Add period column
-    if (aggregationType.value === "monthly") {
+    if (filter.value.aggregationType === "monthly") {
       const monthKey = `month-${ranking.month}`;
       row[monthKey] = (row[monthKey] || 0) + ranking.totalSales;
     } else {
@@ -322,7 +363,7 @@ const prepareData = () => {
   });
 
   // Generate dynamic periods
-  if (aggregationType.value === "monthly") {
+  if (filter.value.aggregationType === "monthly") {
     const monthKeys = [
       "january",
       "february",
@@ -409,23 +450,23 @@ const prepareData = () => {
 .dashboard-filter {
   display: flex;
   align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  background: var(--p-content-background);
-  border: 1px solid var(--p-content-border-color);
-  border-radius: 8px;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.dashboard-filter-field {
+.dashboard-filter-left {
+  flex: 1 1 28rem;
+  min-width: 20rem;
+  align-self: center;
+}
+
+.dashboard-kpis {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.dashboard-filter-field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--p-text-color);
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .kpi-card {
@@ -454,5 +495,20 @@ const prepareData = () => {
 .chart-area {
   width: 100%;
   height: 500px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-filter-left {
+    min-width: 100%;
+  }
+
+  .dashboard-kpis {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .kpi-card {
+    flex: 1 1 12rem;
+  }
 }
 </style>

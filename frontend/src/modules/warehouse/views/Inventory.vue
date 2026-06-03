@@ -1,6 +1,6 @@
 <template>
   <DataTable
-    :value="inventoryStore.inventories"
+    :value="filteredInventories"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
@@ -8,36 +8,36 @@
     :rows="20"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="filterConfig"
+        v-model="filter"
+        :show-title="false"
+        :show-filter-action="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @create="newMovement"
+        @clear="cleanFilter"
       >
-        <div class="datatable-filter flex flex-wrap gap-4 flex-1">
-          <div class="filter-field flex gap-4">
-            <label>Referencia</label>
-            <BaseInput
+        <template #prepend>
+          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+            <label class="filter-label table-filter-prepend-label">Ubicació</label>
+            <DropdownWarehousesWithLocations
               label=""
-              v-model="filter.referenceName"
-              @update:modelValue="filterMovements"
+              v-model="filter.locationId"
             />
           </div>
-          <div class="filter-field flex gap-2">
-              <label>Ubicació</label>
-              <DropdownWarehousesWithLocations
-                label=""
-                v-model="filter.locationId"
-              />
-            </div>
-        </div>
-        <div class="flex gap-2 flex-shrink-0">
-          <Button :icon="PrimeIcons.PLUS" rounded raised @click="newMovement" />
+        </template>
+        <template #append>
           <Button
-            :icon="PrimeIcons.SAVE"
+            label="Guardar"
+            icon="pi pi-save"
+            size="small"
             rounded
-            raised
+            aria-label="Guardar moviments"
             @click="saveMovement"
           />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="referenceName" header="Referència" style="width: 28%">
     </Column>
@@ -68,12 +68,16 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
 import BaseInput from "../../../components/BaseInput.vue";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
 
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
@@ -94,6 +98,22 @@ const filter = ref({
   referenceName: "",
   locationId: undefined as string | undefined,
 });
+
+const filterConfig: Array<FilterConfig> = [
+  {
+    key: "referenceName",
+    label: "Referència",
+    type: "text",
+    placeholder: "Referència",
+    size: "md",
+    row: 0,
+  },
+];
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "55%",
+  tablet: "70%",
+};
 
 onMounted(async () => {
   store.setMenuItem({
@@ -127,22 +147,29 @@ const refreshData = async () => {
     } as Inventory;
     inventoryStore.inventories?.push(invent);
   });
-  filterMovements();
 };
 
-const filterMovements = () => {
+const filteredInventories = computed(() => {
+  let result = inventoryStore.inventories ?? [];
+
   if (filter.value.referenceName) {
-    inventoryStore.inventories = inventoryStore.inventories?.filter((inv) =>
+    result = result.filter((inv) =>
       inv.referenceName
         ?.toLowerCase()
         .includes(filter.value.referenceName.toLowerCase()),
     );
   }
+
   if (filter.value.locationId) {
-    inventoryStore.inventories = inventoryStore.inventories?.filter(
-      (inv) => inv.locationId === filter.value.locationId,
-    );
+    result = result.filter((inv) => inv.locationId === filter.value.locationId);
   }
+
+  return result;
+});
+
+const cleanFilter = () => {
+  filter.value.referenceName = "";
+  filter.value.locationId = undefined;
 };
 
 const isDialogVisible = ref(false);

@@ -1,63 +1,54 @@
 <template>
-  <div>
-    <DataTable
-      class="small-datatable"
-      tableStyle="min-width: 100%"
-      scrollable
-      scrollHeight="flex"
-      sortMode="multiple"
-      :value="purchaseInvoiceStore.purchaseInvoices"
-      v-model:selection="selectedInvoices"
-    >
+  <DataTable
+    class="small-datatable"
+    tableStyle="min-width: 100%"
+    scrollable
+    scrollHeight="flex"
+    sortMode="multiple"
+    :value="purchaseInvoiceStore.purchaseInvoices"
+    v-model:selection="selectedInvoices"
+  >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
+        <TableFilter
+          :config="filterConfig"
+          :body-width="filterBodyWidth"
+          v-model="filter"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-create="false"
+          embedded
+          @filter="filterInvoices"
+          @clear="clearFilter"
         >
-          <div class="datatable-filter-3">
-            <div class="filter-field">
-              <label class="block text-900">Període</label>
+          <template #prepend>
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--md"
+            >
+              <label class="filter-label table-filter-prepend-label"
+                >Període</label
+              >
               <DatePicker
                 v-model="filter.dates"
                 :numberOfMonths="2"
                 selectionMode="range"
                 dateFormat="dd/mm/yy"
+                size="small"
+                class="w-full"
               />
             </div>
-            <div class="filter-field">
-              <label class="block text-900">Proveïdor</label>
-              <DropdownSupplier label="" v-model="filter.supplierId" />
-            </div>
-            <div class="filter-field">
-              <label class="block text-900">Gestionades</label>
-              <div class="flex flex-wrap gap-3">
-                <div class="flex align-items-center">
-                  <Checkbox
-                    v-model="filter.showManaged"
-                    :binary="true"
-                    @change="filterInvoices"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="datatable-buttons">
-            <Button
-              class="datatable-button"
-              :icon="PrimeIcons.FILTER"
-              rounded
-              raised
-              @click="filterInvoices"
-            />
+          </template>
+          <template #append>
             <Button
               :icon="PrimeIcons.CHECK"
               :disabled="selectedInvoices.length === 0"
               rounded
               raised
               severity="success"
+              size="small"
               @click="updateSelectedInvoiceStatusToManaged"
             />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
       <Column selectionMode="multiple" style="width: 2%"></Column>
       <Column
@@ -116,14 +107,16 @@
           />
         </template>
       </Column>
-    </DataTable>
-  </div>
+  </DataTable>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import DropdownSupplier from "../components/DropdownSupplier.vue";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useStore } from "../../../store";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
@@ -148,6 +141,29 @@ const filter = ref({
   showManaged: false,
   supplierId: undefined as string | undefined,
 });
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "66%",
+  tablet: "100%",
+};
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "supplierId",
+    label: "Proveïdor",
+    type: "select",
+    options: (purchaseStore.masterData.suppliers ?? []).map((supplier) => ({
+      label: supplier.comercialName,
+      value: supplier.id,
+    })),
+    placeholder: "Selecciona proveïdor",
+    size: "lg",
+  },
+  {
+    key: "showManaged",
+    label: "Gestionades",
+    type: "checkbox",
+    size: "sm",
+  },
+]);
 const selectedInvoices = ref([] as Array<PurchaseInvoice>);
 const lifecycleName = "PurchaseInvoice";
 
@@ -162,6 +178,16 @@ onMounted(async () => {
     title: "Comptabilització de factures de compra",
   });
 });
+
+watch(
+  () => filter.value.showManaged,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    if (filter.value.dates?.[1]) {
+      filterInvoices();
+    }
+  },
+);
 
 const getSupplierNameById = (id: string) => {
   const supplier = purchaseStore.masterData.suppliers?.find((s) => s.id === id);
@@ -195,6 +221,13 @@ const isManagedStatus = (statusId: string): boolean => {
   );
 
   return (managedStatus && managedStatus.id === statusId) as boolean;
+};
+
+const clearFilter = () => {
+  filter.value.dates = undefined;
+  filter.value.showManaged = false;
+  filter.value.supplierId = undefined;
+  purchaseInvoiceStore.purchaseInvoices = [];
 };
 
 const filterInvoices = async () => {
@@ -278,4 +311,5 @@ const downloadInvoices = async (invoice: PurchaseInvoice) => {
 .managed-status {
   color: green;
 }
+
 </style>

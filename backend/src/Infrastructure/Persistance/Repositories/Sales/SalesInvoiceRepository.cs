@@ -16,6 +16,7 @@ namespace Infrastructure.Persistance.Repositories.Sales
             return await dbSet
                         .Include(s => s.Customer)
                         .Include(s => s.Site)
+                        .Include(s => s.ParentSalesInvoice)
                         .Include(s => s.SalesInvoiceDetails)
                             .ThenInclude(d => d.DeliveryNoteDetail)
                         .Include(s => s.SalesInvoiceImports)

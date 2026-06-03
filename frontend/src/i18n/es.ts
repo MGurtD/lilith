@@ -20,6 +20,7 @@ const es = {
     number: "Número",
     type: "Tipo",
     detail: "Detalle",
+    period: "Período",
     description: "Descripción",
     total: "Total",
     close: "Cerrar",

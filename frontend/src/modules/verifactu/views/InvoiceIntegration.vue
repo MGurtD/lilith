@@ -7,25 +7,37 @@
       responsiveLayout="scroll"
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-1"
+        <TableFilter
+          :config="[]"
+          :body-width="filterBodyWidth"
+          v-model="filters"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-filter-action="false"
+          :show-create="false"
+          embedded
+          @clear="clearFilters"
         >
-          <div class="flex gap-2">
-            <label class="form-label pr-1 auto-width-label">{{
-              $t("verifactu.invoiceIntegration.filters.toDate")
-            }}</label>
-            <DatePicker
-              v-model="filters.limitDate"
-              dateFormat="dd/mm/yy"
-              :placeholder="
-                $t('verifactu.invoiceIntegration.filters.selectToDate')
-              "
-              showIcon
-              class="date-input"
-              @date-select="onLimitDateSelect"
-            />
-          </div>
-          <div class="datatable-buttons">
+          <template #prepend>
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--md"
+            >
+              <label class="filter-label table-filter-prepend-label">{{
+                $t("verifactu.invoiceIntegration.filters.toDate")
+              }}</label>
+              <DatePicker
+                v-model="filters.limitDate"
+                dateFormat="dd/mm/yy"
+                :placeholder="
+                  $t('verifactu.invoiceIntegration.filters.selectToDate')
+                "
+                showIcon
+                class="w-full"
+                size="small"
+              />
+            </div>
+          </template>
+          <template #append>
             <Button
               :label="
                 $t('verifactu.invoiceIntegration.actions.integrateSelected')
@@ -35,10 +47,9 @@
               @click="integrateVisibleInvoices"
               :disabled="!invoices.length || integrating"
               :loading="integrating"
-              class="filter-button"
             />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
       <Column
         field="invoiceNumber"
@@ -178,6 +189,9 @@ import { storeToRefs } from "pinia";
 import DatePicker from "primevue/datepicker";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
+import TableFilter, {
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { formatDate, formatCurrency } from "../../../utils/functions";
@@ -235,6 +249,10 @@ const errorCount = computed(
 const filters = ref({
   limitDate: new Date(), // Date limit
 });
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "25%",
+  tablet: "33%",
+};
 
 // Computed for date validation
 // no extra min/max constraints for single date filter
@@ -253,10 +271,8 @@ const naturalCompare = (a: string, b: string) =>
 // No range validation needed; single date
 const validateDate = () => !!filters.value.limitDate;
 
-const onLimitDateSelect = () => {
-  if (validateDate()) {
-    loadInvoices();
-  }
+const clearFilters = () => {
+  filters.value.limitDate = new Date();
 };
 
 const loadInvoices = async () => {
@@ -370,20 +386,4 @@ watch(
 );
 </script>
 
-<style scoped>
-.auto-width-label {
-  display: inline-flex;
-  width: auto;
-  white-space: nowrap;
-  align-items: center;
-}
-
-.date-input {
-  width: 100%;
-}
-
-.filter-button {
-  height: 2.5rem;
-  white-space: nowrap;
-}
-</style>
+<style scoped></style>

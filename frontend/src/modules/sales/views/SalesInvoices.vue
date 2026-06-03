@@ -6,44 +6,44 @@
     @delete="deleteSalesInvoice"
   >
     <template #filter>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-1"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="filterInvoices"
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="sharedStore.exercises"
-              @range-selected="filterInvoices"
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
             />
           </div>
-          <div class="filter-field">
-            <label>Client</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Client</label
+            >
             <DropdownCustomers label="" v-model="filter.customerId" />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterInvoices"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
   </TableInvoices>
 
@@ -62,15 +62,15 @@
 </template>
 <script setup lang="ts">
 import TableInvoices from "../components/TableInvoices.vue";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { useCustomersStore } from "../store/customers";
-import { useSharedDataStore } from "../../shared/store/masterData";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
@@ -87,11 +87,13 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
-const sharedStore = useSharedDataStore();
 const customersStore = useCustomersStore();
 const invoiceStore = useSalesInvoiceStore();
 
+const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
 });
 const dialogOptions = reactive({
@@ -102,9 +104,17 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
+const setCurrentYear = () => {
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
+};
+
 onMounted(async () => {
   customersStore.fetchCustomers();
-  await sharedStore.fetchMasterData();
+
   setCurrentYear();
   getUserFilter();
   await filterInvoices();
@@ -116,12 +126,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  const savedFilter = {
-    customerId: filter.value.customerId,
-    exercisePicker: store.exercisePicker,
-  };
-  userFilterStore.addFilter("SalesInvoices", "", savedFilter);
-
+  userFilterStore.addFilter("SalesInvoices", "", filter.value);
   invoiceStore.invoices = undefined;
 });
 
@@ -129,41 +134,31 @@ const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("SalesInvoices", "");
   if (userFilter) {
     filter.value.customerId = userFilter.customerId;
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
   }
 };
 
 const cleanFilter = () => {
-  store.cleanExercisePicker();
   filter.value.customerId = undefined;
-};
-
-const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = sharedStore.exercises?.find((e) => e.name === year);
-
-  if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
-    ];
-  }
+  setCurrentYear();
 };
 
 const filterInvoices = async () => {
   let startTime = "";
   let endTime = "";
 
-  if (store.exercisePicker.dates) {
-    startTime = formatDateForQueryParameter(store.exercisePicker.dates[0]);
-    endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    endTime = formatDateForQueryParameter(filter.value.dates[1]);
   }
 
   await invoiceStore.GetFiltered(

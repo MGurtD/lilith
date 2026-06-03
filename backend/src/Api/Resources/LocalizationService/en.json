@@ -258,6 +258,7 @@
     "ErrorResponse.Conflict": "Conflict with the current state of the resource",
     "ApiKey.InvalidFormat": "Invalid API key format",
     "ApiKey.NotFoundOrDisabled": "API key not found or disabled",
-    "ApiKey.Expired": "API key has expired"
+    "ApiKey.Expired": "API key has expired",
+    "TaxInUse": "Cannot delete the tax because it is in use by references or invoices"
   }
 }

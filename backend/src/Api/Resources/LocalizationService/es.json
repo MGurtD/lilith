@@ -258,6 +258,7 @@
     "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso",
     "ApiKey.InvalidFormat": "Formato de clave API inválido",
     "ApiKey.NotFoundOrDisabled": "Clave API no válida o desactivada",
-    "ApiKey.Expired": "Clave API caducada"
+    "ApiKey.Expired": "Clave API caducada",
+    "TaxInUse": "No se puede eliminar el impuesto porque está en uso en referencias o facturas"
   }
 }

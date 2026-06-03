@@ -11,58 +11,68 @@
     @row-click="editExpense"
   >
     <template #header>
-      <div class="filter-toolbar">
-        <div class="filter-toolbar__field filter-toolbar__field--exercise">
-          <label class="filter-label">Periode</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            :showIcon="true"
-            class="w-full"
-            placeholder="Selecciona periode"
-            @update:model-value="filterExpense"
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Tipus</label>
-          <Select
-            v-model="filter.expenseTypeId"
-            :options="expenseStore.expenseTypes"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            placeholder="Tots els tipus"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Freqüència</label>
-          <Select
-            v-model="filter.frecuency"
-            :options="frequencyOptions"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            placeholder="Totes"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__actions">
-          <Button
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="clearFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="filterExpense"
+        @clear="clearFilter"
+        @create="createButtonClick"
+      >
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label">Tipus</label>
+            <Select
+              v-model="filter.expenseTypeId"
+              :options="expenseStore.expenseTypes"
+              optionValue="id"
+              optionLabel="name"
+              class="w-full"
+              placeholder="Tots els tipus"
+              showClear
+              size="small"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--sm"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Freqüència</label
+            >
+            <Select
+              v-model="filter.frecuency"
+              :options="frequencyOptions"
+              optionValue="id"
+              optionLabel="name"
+              class="w-full"
+              placeholder="Totes"
+              showClear
+              size="small"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </template>
     <Column header="Tipus" style="width: 15%">
       <template #body="slotProps">
@@ -134,16 +144,18 @@ import {
 import { Expense } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import { useExerciseStore } from "../../shared/store/exercise";
 import { useUserFilterStore } from "../../../store/userfilter";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const store = useStore();
-const exerciseStore = useExerciseStore();
 const expenseStore = useExpenseStore();
 const userFilterStore = useUserFilterStore();
 const toast = useToast();
 const confirm = useConfirm();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const filter = ref({
   expenseTypeId: undefined as string | undefined,
@@ -211,9 +223,6 @@ onMounted(async () => {
   });
 
   await expenseStore.fetchExpenseTypes();
-  if (!exerciseStore.exercises?.length) {
-    await exerciseStore.fetchActive();
-  }
   setCurrentYear();
   getUserFilter();
   filterExpense();
@@ -246,15 +255,11 @@ const filterExpense = async () => {
 };
 
 const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
-
-  if (currentExercise) {
-    filter.value.dates = [
-      new Date(currentExercise.startDate),
-      new Date(currentExercise.endDate),
-    ];
-  }
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
 };
 
 const clearFilter = async () => {
@@ -318,72 +323,9 @@ const getFrequencyName = (frequency: number, recurring: boolean) => {
 </script>
 
 <style scoped>
-.filter-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: end;
-}
-
-.filter-toolbar__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 0 0 auto;
-}
-
-.filter-toolbar__field--exercise {
-  width: 22rem;
-}
-
-.filter-toolbar__field:not(.filter-toolbar__field--exercise) {
-  width: 16rem;
-}
-
-.filter-toolbar__exercise-picker {
-  width: 100%;
-}
-
-.filter-toolbar__actions {
-  display: flex;
-  gap: 0.5rem;
-  align-self: end;
-}
-
 .expenses-footer-total {
   display: flex;
   justify-content: flex-end;
   font-weight: 600;
-}
-
-:deep(.filter-toolbar__exercise-picker > *) {
-  width: 100%;
-}
-
-@media (max-width: 1200px) {
-  .filter-toolbar {
-    align-items: stretch;
-  }
-
-  .filter-toolbar__actions {
-    min-width: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .filter-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .filter-toolbar__field,
-  .filter-toolbar__field--exercise,
-  .filter-toolbar__field:not(.filter-toolbar__field--exercise) {
-    width: 100%;
-  }
-
-  .filter-toolbar__actions {
-    justify-content: flex-end;
-  }
 }
 </style>

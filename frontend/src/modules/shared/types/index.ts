@@ -33,6 +33,7 @@ export interface Tax {
   id: string;
   name: string;
   percentatge: number;
+  isReverseCharge: boolean;
   disabled: boolean;
 }
 

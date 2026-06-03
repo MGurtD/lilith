@@ -174,19 +174,27 @@ import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import { useToast } from "primevue/usetoast";
 import { useVerifactuStore } from "../../verifactu/store/verifactu";
+import { useSharedDataStore } from "../../shared/store/masterData";
 
-const items = [
-  {
-    label: "Descarregar",
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(),
-  },
-  {
-    label: "Rectificativa",
-    icon: PrimeIcons.FILE_IMPORT,
-    command: () => requestRectificativeQuantity(),
-  },
-];
+const items = computed(() => {
+  const options = [
+    {
+      label: "Descarregar",
+      icon: PrimeIcons.FILE_WORD,
+      command: () => printInvoice(),
+    },
+  ];
+
+  if (!invoice.value?.parentSalesInvoiceId) {
+    options.push({
+      label: "Rectificativa",
+      icon: PrimeIcons.FILE_IMPORT,
+      command: () => requestRectificativeQuantity(),
+    });
+  }
+
+  return options;
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -199,6 +207,7 @@ const invoiceStore = useSalesInvoiceStore();
 const deliveryNoteStore = useDeliveryNoteStore();
 const referenceStore = useReferenceStore();
 const verifactuStore = useVerifactuStore();
+const sharedDataStore = useSharedDataStore();
 const { invoice } = storeToRefs(invoiceStore);
 
 const dialogType = {
@@ -221,15 +230,12 @@ onMounted(async () => {
 
   if (!taxesStore.taxes) await taxesStore.fetchAll();
   if (!customersStore.customers) await customersStore.fetchCustomers();
+  await sharedDataStore.fetchMasterData();
   await referenceStore.fetchReferences();
   referenceStore.module = "sales";
   await lifecycleStore.fetchOneByName("SalesInvoice");
   await invoiceStore.GetById(invoiceId.value);
   await deliveryNoteStore.GetByInvoiceId(invoiceId.value);
-
-  if (invoice.value) {
-    invoice.value.invoiceDate = formatDate(invoice.value.invoiceDate);
-  }
 
   store.setMenuItem({
     icon: PrimeIcons.WALLET,
@@ -239,6 +245,7 @@ onMounted(async () => {
     backButtonVisible: true,
   });
 });
+
 
 onUnmounted(() => {
   invoiceStore.invoice = undefined;
@@ -275,10 +282,6 @@ const getVerifactuStatusClass = () => {
 
 const updateInvoice = async () => {
   if (invoice.value) {
-    invoice.value.invoiceDate = convertDateTimeToJSON(
-      invoice.value.invoiceDate
-    );
-
     const updated = await invoiceStore.Update(invoice.value);
     if (updated) {
       router.back();
@@ -372,9 +375,10 @@ const deleteInvoiceDetail = async (detail: SalesInvoiceDetail) => {
 const rectificativeRequest = ref(
   undefined as undefined | CreateRectificativeInvoiceRequest
 );
-const requestRectificativeQuantity = () => {
+const requestRectificativeQuantity = async () => {
   rectificativeRequest.value = {
     id: invoice.value!.id,
+    createCorrectionInvoice: false,
     quantity: 0,
   };
 

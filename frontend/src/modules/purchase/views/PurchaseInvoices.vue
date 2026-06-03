@@ -14,74 +14,90 @@
     @row-click="editPurchaseInvoice"
   >
     <template #header>
-      <div class="filter-toolbar">
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Període</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            placeholder="Seleccioni un període"
-            showIcon
-            @date-select="filterInvoices"
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Proveïdor</label>
-          <DropdownSupplier
-            label=""
-            v-model="filter.supplierId"
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Mètode de pagament</label>
-          <Select
-            v-model="filter.paymentMethodId"
-            :options="puchaseMasterDataStore.masterData.paymentMethods"
-            optionValue="id"
-            optionLabel="name"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Número de compte</label>
-          <Select
-            v-model="filter.accountNumber"
-            :options="suppliersStore.accountNumbers"
-            showClear
-          />
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Venciment</label>
-          <DatePicker
-            v-model="filter.dueDates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            placeholder="Seleccioni un període"
-            showIcon
-          />
-        </div>
-        <div class="filter-toolbar__actions">
-          <Button
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterInvoices"
-          />
-          <Button
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="filterInvoices"
+        @clear="cleanFilter"
+        @create="createButtonClick"
+      >
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Proveïdor</label
+            >
+            <DropdownSupplier label="" v-model="filter.supplierId" />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Mètode de pagament</label
+            >
+            <Select
+              v-model="filter.paymentMethodId"
+              :options="puchaseMasterDataStore.masterData.paymentMethods"
+              optionValue="id"
+              optionLabel="name"
+              showClear
+              class="w-full"
+              size="small"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--sm"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Número de compte</label
+            >
+            <Select
+              v-model="filter.accountNumber"
+              :options="suppliersStore.accountNumbers"
+              showClear
+              class="w-full"
+              size="small"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Venciment</label
+            >
+            <DatePicker
+              v-model="filter.dueDates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </template>
     <Column
       field="number"
@@ -120,7 +136,9 @@
       </template>
     </Column>
     <Column header="Import" style="width: 10%">
-      <template #body="slotProps"> {{ formatCurrency(slotProps.data.netAmount) }} </template>
+      <template #body="slotProps">
+        {{ formatCurrency(slotProps.data.netAmount) }}
+      </template>
       <template #footer>
         <div class="total-footer">
           <span class="total-label">Total</span>
@@ -161,6 +179,8 @@ import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -172,6 +192,8 @@ const lifecycleStore = useLifecyclesStore();
 const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const suppliersStore = useSuppliersStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "100%", tablet: "100%" };
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -221,17 +243,11 @@ const getUserFilter = () => {
 };
 
 const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = puchaseMasterDataStore.masterData.exercises?.find(
-    (e) => e.name === year,
-  );
-
-  if (currentExercise) {
-    filter.value.dates = [
-      new Date(currentExercise.startDate),
-      new Date(currentExercise.endDate),
-    ];
-  }
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
 };
 
 const cleanFilter = () => {

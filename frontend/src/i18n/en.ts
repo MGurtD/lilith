@@ -20,6 +20,7 @@ const en = {
     number: "Number",
     type: "Type",
     detail: "Detail",
+    period: "Period",
     description: "Description",
     total: "Total",
     close: "Close",

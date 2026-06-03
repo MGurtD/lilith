@@ -113,5 +113,8 @@ export const useBudgetStore = defineStore({
       if (result) await this.GetById(externalService.budgetId);
       return result;
     },
+    async Clone(id: string, newId: string): Promise<boolean> {
+      return await SalesServices.Budget.Clone(id, newId);
+    },
   },
 });

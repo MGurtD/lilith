@@ -72,7 +72,19 @@ public static class VerifactuRequestFactory
                 FechaExpedicionFactura = VerifactuFormatUtils.FormatDate(invoice.InvoiceDate)
             },
             NombreRazonEmisor = enterprise.Name,
-            TipoFactura = ClaveTipoFacturaType.F1,
+            TipoFactura = invoice.ParentSalesInvoiceId != null ? ClaveTipoFacturaType.R1 : ClaveTipoFacturaType.F1,
+            TipoRectificativa = invoice.ParentSalesInvoiceId != null ? ClaveTipoRectificativaType.I : default,
+            TipoRectificativaSpecified = invoice.ParentSalesInvoiceId != null,
+            FacturasRectificadas = invoice.ParentSalesInvoiceId != null && invoice.ParentSalesInvoice != null
+                ? [
+                    new IDFacturaARType
+                    {
+                        IDEmisorFactura = invoice.ParentSalesInvoice.VatNumber,
+                        NumSerieFactura = invoice.ParentSalesInvoice.InvoiceNumber,
+                        FechaExpedicionFactura = VerifactuFormatUtils.FormatDate(invoice.ParentSalesInvoice.InvoiceDate)
+                    }
+                ]
+                : null,
             DescripcionOperacion = enterprise.Description,
             Destinatarios = [
                 new PersonaFisicaJuridicaType
@@ -81,14 +93,17 @@ public static class VerifactuRequestFactory
                     Item = invoice.CustomerVatNumber
                 }
             ],
-            Desglose = invoice.SalesInvoiceImports.Select(i => new DetalleType
-            {
-                ClaveRegimen = IdOperacionesTrascendenciaTributariaType.Item01,
-                ClaveRegimenSpecified = true,
-                Item = CalificacionOperacionType.S1,
-                TipoImpositivo = VerifactuFormatUtils.FormatNumberWithLeadingZeros((int)i.Tax!.Percentatge, 2),
-                BaseImponibleOimporteNoSujeto = VerifactuFormatUtils.FormatDecimal(i.BaseAmount),
-                CuotaRepercutida = VerifactuFormatUtils.FormatDecimal(i.TaxAmount)
+            Desglose = invoice.SalesInvoiceImports.Select(i => {
+                var isReverseCharge = i.Tax?.IsReverseCharge == true;
+                return new DetalleType
+                {
+                    ClaveRegimen = IdOperacionesTrascendenciaTributariaType.Item01,
+                    ClaveRegimenSpecified = true,
+                    Item = isReverseCharge ? CalificacionOperacionType.S2 : CalificacionOperacionType.S1,
+                    TipoImpositivo = isReverseCharge ? "0" : VerifactuFormatUtils.FormatNumberWithLeadingZeros((int)i.Tax!.Percentatge, 2),
+                    BaseImponibleOimporteNoSujeto = VerifactuFormatUtils.FormatDecimal(i.BaseAmount),
+                    CuotaRepercutida = isReverseCharge ? "0.00" : VerifactuFormatUtils.FormatDecimal(i.TaxAmount)
+                };
             }).ToArray(),
             CuotaTotal = VerifactuFormatUtils.FormatDecimal(invoice.TaxAmount),
             ImporteTotal = VerifactuFormatUtils.FormatDecimal(invoice.BaseAmount + invoice.TaxAmount),

@@ -10,23 +10,38 @@
     @row-click="editRow"
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        :model-value="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
       >
-        <div class="datatable-filter-3">
-          <div class="filter-field">
-            <label>Categoria</label>
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Categoria</label
+            >
             <DropdownReferenceCategory
               label=""
               v-model="filter.referenceCategory"
             />
           </div>
-          <div class="filter-field">
-            <label>Codi</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--sm"
+          >
+            <label class="filter-label table-filter-prepend-label">Codi</label>
             <BaseInput v-model="filter.code" />
           </div>
-          <div class="filter-field">
-            <label>Tipus</label>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label">Tipus</label>
             <DropdownReferenceTypes
               label=""
               v-model="filter.referenceTypeId"
@@ -36,24 +51,8 @@
               @change="cleanFilter"
             />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <Column field="code" header="Codi" style="width: 15%"></Column>
     <Column field="description" header="Descripció" style="width: 25%"></Column>
@@ -117,6 +116,8 @@
 <script setup lang="ts">
 import DropdownReferenceTypes from "../../../modules/shared/components/DropdownReferenceType.vue";
 import BaseInput from "../../../components/BaseInput.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { computed, onMounted, onUnmounted, Ref, ref } from "vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import { PrimeIcons } from "@primevue/core/api";
@@ -132,6 +133,8 @@ const userFilterStore = useUserFilterStore();
 const referenceTypeStore = useReferenceTypeStore();
 const referenceStore = useReferenceStore();
 const plantModelStore = usePlantModelStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const props = defineProps<{
   references: Array<Reference> | undefined;

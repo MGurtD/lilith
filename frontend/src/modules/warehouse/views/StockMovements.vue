@@ -12,41 +12,39 @@
       :rows="20"
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
+        <TableFilter
+          :config="[]"
+          v-model="filter"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-create="false"
+          :body-width="filterBodyWidth"
+          embedded
+          @filter="filterMovements"
+          @clear="cleanFilter"
         >
-          <div class="datatable-filter flex flex-wrap gap-4 flex-1">
-            <div class="filter-field">
-              <ExerciseDatePicker
-                :exercises="exerciseStore.exercises"
-                @range-selected="filterMovements"
+          <template #prepend>
+            <div class="table-filter-prepend-field table-filter-prepend-field--lg">
+              <label class="filter-label table-filter-prepend-label">Període</label>
+              <DatePicker
+                v-model="filter.dates"
+                selectionMode="range"
+                dateFormat="dd/mm/yy"
+                showIcon
+                class="w-full"
+                size="small"
+                placeholder="Selecciona període"
               />
             </div>
-            <div class="filter-field flex gap-2">
-              <label>Ubicació</label>
+            <div class="table-filter-prepend-field table-filter-prepend-field--md">
+              <label class="filter-label table-filter-prepend-label">Ubicació</label>
               <DropdownWarehousesWithLocations
                 label=""
                 v-model="filter.locationId"
               />
             </div>
-          </div>
-          <div class="datatable-buttons flex gap-2 flex-shrink-0">
-            <Button
-              class="datatable-button"
-              :icon="PrimeIcons.FILTER"
-              rounded
-              raised
-              @click="filterMovements"
-            />
-            <Button
-              class="datatable-button"
-              :icon="PrimeIcons.FILTER_SLASH"
-              rounded
-              raised
-              @click="cleanFilter"
-            />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
       <Column header="Data" field="movementDate" sortable style="width: 10%">
         <template #body="slotProps">
@@ -87,7 +85,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
+import TableFilter, {
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
 import TagMovementType from "../../../components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
@@ -97,7 +97,6 @@ import { useReferenceStore } from "../../shared/store/reference";
 import { useExerciseStore } from "../../shared/store/exercise";
 import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
-import { Exercise } from "../../shared/types";
 import {
   formatDateForQueryParameter,
   formatDateTime,
@@ -110,9 +109,14 @@ const referenceStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
 
 const filter = ref({
-  exercise: undefined as Exercise | undefined,
+  dates: undefined as Array<Date> | undefined,
   locationId: undefined as string | undefined,
 });
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "55%",
+  tablet: "70%",
+};
 
 onMounted(async () => {
   store.setMenuItem({
@@ -129,25 +133,22 @@ const setCurrentYear = () => {
   const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
 
   if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
+    filter.value.dates = [
+      new Date(currentExercise.startDate),
+      new Date(currentExercise.endDate),
     ];
   }
 };
 
 const cleanFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = undefined;
   filter.value.locationId = undefined;
 };
 
 const filterMovements = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (filter.value.dates && filter.value.dates[1]) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await stockMovementStore.getBetweenDates(
       startTime,
