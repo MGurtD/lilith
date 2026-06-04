@@ -48,7 +48,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Data creació</label
+              >Última actual.</label
             >
             <DatePicker
               v-model="filter.dates"
@@ -82,9 +82,9 @@
         }}
       </template>
     </Column>
-    <Column field="createdOn" header="Data creació" sortable style="width: 10%">
+    <Column field="updatedOn" header="Actualitzada" sortable style="width: 10%">
       <template #body="slotProps">
-        {{ formatDate(slotProps.data.createdOn) }}
+        {{ formatDate(slotProps.data.updatedOn) }}
       </template>
     </Column>
     <Column header="Mode" style="width: 12.5%">
@@ -327,14 +327,14 @@ const filteredData = computed(() => {
     const startDate = filter.value.dates[0];
     if (startDate) {
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn!) >= startDate,
+        (w) => new Date(w.updatedOn!) >= startDate,
       );
     }
     if (filter.value.dates.length > 1 && filter.value.dates[1]) {
       const endDate = new Date(filter.value.dates[1]);
       endDate.setHours(23, 59, 59, 999);
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn!) <= endDate,
+        (w) => new Date(w.updatedOn!) <= endDate,
       );
     }
   }

@@ -8,6 +8,7 @@ public interface IWorkMasterService
     Task<WorkMaster?> GetById(Guid id);
     Task<WorkMaster?> GetByIdForCostCalculation(Guid id);
     Task<IEnumerable<WorkMaster>> GetAll();
+    Task<IEnumerable<WorkMaster>> GetByUpdatedOnFilter(DateTime? startDate, DateTime? endDate);
     Task<IEnumerable<WorkMaster>> GetByReferenceId(Guid referenceId);
     Task<GenericResponse> Create(WorkMaster workMaster);
     Task<GenericResponse> Update(WorkMaster workMaster);
