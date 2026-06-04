@@ -136,6 +136,7 @@ export interface WorkMaster {
   mode: number;
   disabled: boolean;
   createdOn?: Date;
+  updatedOn?: Date;
   phases: Array<WorkMasterPhase>;
 }
 
