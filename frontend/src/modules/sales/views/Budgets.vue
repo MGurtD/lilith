@@ -1,6 +1,10 @@
 <template>
-  <DataTable
-    :value="budgetStore.budgets"
+  <Table
+    :columns="columns"
+    :items="budgetStore.budgets ?? []"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
@@ -11,105 +15,68 @@
     paginator
     :rows="20"
     @row-click="editRow"
+    @filter="filterBudget"
+    @clear="cleanFilter"
+    @create="createButtonClick"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterBudget"
-        @clear="cleanFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">Estat</label>
-            <DropdownLifecycle
-              label=""
-              name="Budget"
-              v-model="filter.statusId"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="number" header="Número" style="width: 10%"></Column>
-    <Column field="date" header="Data" style="width: 15%" sortable>
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column header="Client" style="width: 20%">
-      <template #body="slotProps">
-        {{ getCustomerById(slotProps.data.customerId) }}
-      </template>
-    </Column>
-    <Column header="Estat" style="width: 20%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column
-      field="acceptanceDate"
-      header="Data d'acceptació"
-      style="width: 15%"
-    >
-      <template #body="slotProps">
-        {{
-          slotProps.data.acceptanceDate
-            ? formatDate(slotProps.data.acceptanceDate)
-            : ""
-        }}
-      </template>
-    </Column>
-    <Column
-      field="deliveryDays"
-      header="Dies d'entrega"
-      style="width: 10%"
-    ></Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            slotProps.data.statusId ===
-            lifecycleStore.lifecycle?.initialStatusId
-          "
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteBudget($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >Període</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Selecciona període"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >Client</label
+        >
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label">Estat</label>
+        <DropdownLifecycle
+          label=""
+          name="Budget"
+          v-model="filter.statusId"
+        />
+      </div>
+    </template>
+
+    <template #body-date="{ data }">
+      {{ formatDate(data.date) }}
+    </template>
+    <template #body-_customer="{ data }">
+      {{ getCustomerById(data.customerId) }}
+    </template>
+    <template #body-_status="{ data }">
+      {{ getStatusNameById(data.statusId) }}
+    </template>
+    <template #body-acceptanceDate="{ data }">
+      {{ data.acceptanceDate ? formatDate(data.acceptanceDate) : "" }}
+    </template>
+    <template #body-_actions="{ data }">
+      <i
+        v-if="data.statusId === lifecycleStore.lifecycle?.initialStatusId"
+        :class="PrimeIcons.TIMES"
+        class="grid_delete_column_button"
+        @click="deleteBudget($event, data)"
+      />
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -128,7 +95,8 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/Table.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -159,6 +127,16 @@ const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
+
+const columns: Column[] = [
+  { field: "number", header: "Número" },
+  { field: "date", header: "Data", sortable: true },
+  { field: "_customer", header: "Client" },
+  { field: "_status", header: "Estat" },
+  { field: "acceptanceDate", header: "Data d'acceptació" },
+  { field: "deliveryDays", header: "Dies d'entrega" },
+  { field: "_actions", header: "" },
+];
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
