@@ -28,7 +28,7 @@
         <span class="text-l text-900 font-bold">Linies de l'albarà</span>
         <div>
           <Button
-            :disabled="!canModifyDetails"
+            :disabled="!canModifyDetails || isAddingOrders"
             :size="'small'"
             label="Afegir comanda"
             @click="openSalesOrderSelector()"
@@ -204,6 +204,8 @@ const onDeliveryNoteSubmit = async (deliveryNote: DeliveryNote) => {
   }
 };
 
+const isAddingOrders = ref(false);
+
 const openSalesOrderSelector = async () => {
   if (deliveryNote.value)
     await salesOrderStore.GetToDeliver(deliveryNote.value.customerId);
@@ -214,13 +216,38 @@ const openSalesOrderSelector = async () => {
 const addSalesOrdersToDeliveryNote = async (
   orders: Array<SalesOrderHeader>
 ) => {
-  for (let index = 0; index < orders.length; index++) {
-    const order = orders[index];
-    await deliveryNoteStore.AddOrder(deliveryNote.value!.id, order);
-  }
-
-  await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
+  isAddingOrders.value = true;
   isDialogVisible.value = false;
+
+  try {
+    for (const order of orders) {
+      const response = await deliveryNoteStore.AddOrder(
+        deliveryNote.value!.id,
+        order
+      );
+      if (!response.result) {
+        toast.add({
+          severity: "error",
+          summary: "Error en afegir la comanda",
+          detail:
+            typeof response.content === "string"
+              ? response.content
+              : `No s'ha pogut afegir la comanda`,
+          life: 6000,
+        });
+        continue;
+      }
+
+      salesOrderStore.salesOrdersToDeliver =
+        salesOrderStore.salesOrdersToDeliver?.filter(
+          (o) => o.id !== order.id
+        );
+    }
+
+    await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
+  } finally {
+    isAddingOrders.value = false;
+  }
 };
 
 const deleteSalesOrder = async (order: SalesOrderHeader) => {

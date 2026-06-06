@@ -259,6 +259,9 @@
     "ApiKey.InvalidFormat": "Format de clau API invàlid",
     "ApiKey.NotFoundOrDisabled": "Clau API no vàlida o desactivada",
     "ApiKey.Expired": "Clau API caducada",
-    "TaxInUse": "No es pot eliminar l'impost perquè està en ús a referències o factures"
+    "TaxInUse": "No es pot eliminar l'impost perquè està en ús a referències o factures",
+    "SalesOrderNotFound": "No s'ha trobat la comanda de venda",
+    "SalesOrderAlreadyInThisNote": "La comanda ja està afegida a aquest albarà",
+    "SalesOrderAlreadyAssigned": "La comanda ja està assignada a un altre albarà"
   }
 }
