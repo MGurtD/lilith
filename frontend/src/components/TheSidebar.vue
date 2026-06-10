@@ -23,30 +23,49 @@
         >
       </div>
     </template>
+    <template #footer>
+      <div class="sidebar-footer">
+        <Button
+          :label="store.sidebar.collapsed ? '' : 'Sol·licitud de suport'"
+          icon="pi pi-question-circle"
+          severity="secondary"
+          text
+          class="support-btn"
+          @click="showSupportDialog = true"
+        />
+      </div>
+    </template>
   </sidebar-menu>
+
+  <Dialog
+    v-model:visible="showSupportDialog"
+    header="Sol·licitud de suport"
+    :modal="true"
+    :style="{ width: '480px' }"
+    @hide="showSupportDialog = false"
+  >
+    <FormSupportRequest @close="showSupportDialog = false" />
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { SidebarMenu } from "vue-sidebar-menu";
 import "vue-sidebar-menu/dist/vue-sidebar-menu.css";
 import { useStore } from "../store";
 import { branding, getCompanyName } from "../config/branding";
 import { useRouter } from "vue-router";
+import FormSupportRequest from "../modules/shared/components/FormSupportRequest.vue";
 
 const router = useRouter();
 const store = useStore();
+const showSupportDialog = ref(false);
 
 // Derive dynamic company name depending on collapsed state
 const companyName = computed(() => getCompanyName(store.sidebar.collapsed));
 
 function toggleCollapse() {
   store.sidebar.collapsed = !store.sidebar.collapsed;
-}
-
-function t(text: string) {
-  // Placeholder translation hook; integrate with existing i18n if available
-  return text;
 }
 </script>
 
@@ -103,6 +122,15 @@ function t(text: string) {
   justify-content: center;
   font-size: 0.7rem;
   letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.support-btn {
+  width: 100%;
+  color: var(--p-surface-300) !important;
+  justify-content: flex-start;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 </style>

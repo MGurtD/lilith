@@ -8,6 +8,7 @@ public class AppSettings
     public VerifactuSettings? Verifactu { get; set; }
     public GeolocalizationSettings? Geolocalization { get; set; }
     public GeoapifySettings? Geoapify { get; set; }
+    public GitHubSettings? GitHub { get; set; }
     public OpenTelemetrySettings? OpenTelemetry { get; set; }
     public void Validate()
     {
@@ -22,6 +23,8 @@ public class AppSettings
             Geolocalization?.Validate();
         if (Geoapify != null)
             Geoapify?.Validate();
+        if (GitHub != null)
+            GitHub?.Validate();
     }
 }
 
@@ -128,6 +131,20 @@ public class GeoapifySettings
     {
         if (string.IsNullOrWhiteSpace(ApiKey))
             throw new ArgumentException("Geoapify:ApiKey configuration key is required");
+    }
+}
+
+public class GitHubSettings
+{
+    public string Token { get; set; } = string.Empty;
+    public string GraphQlUrl { get; set; } = "https://api.github.com/graphql";
+    public string ProjectId { get; set; } = "PVT_kwHOAbG_qs4BYFcU";
+    public string UserAgent { get; set; } = "Lilith-ERP";
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+            throw new ArgumentException("GitHub:Token configuration key is required");
     }
 }
 

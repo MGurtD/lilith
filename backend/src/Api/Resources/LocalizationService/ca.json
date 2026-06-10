@@ -1,6 +1,8 @@
 {
   "culture": "ca",
   "texts": {
+    "GitHubNotConfigured": "La integració amb GitHub no està configurada",
+    "GitHubDraftIssueError": "No s'ha pogut crear la incidència esborrany a GitHub",
     "EntityNotFound": "L'entitat amb ID {0} no existeix",
     "EntityAlreadyExists": "L'entitat ja existeix",
     "EntityDisabled": "L'entitat amb ID {0} està deshabilitada",

@@ -1,6 +1,8 @@
 {
   "culture": "en",
   "texts": {
+    "GitHubNotConfigured": "GitHub integration is not configured",
+    "GitHubDraftIssueError": "Could not create the draft issue on GitHub",
     "EntityNotFound": "Entity with ID {0} not found",
     "EntityAlreadyExists": "Entity already exists",
     "EntityDisabled": "Entity with ID {0} is disabled",
