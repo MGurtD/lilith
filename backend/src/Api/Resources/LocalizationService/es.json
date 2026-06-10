@@ -1,6 +1,8 @@
 {
   "culture": "es",
   "texts": {
+    "GitHubNotConfigured": "La integración con GitHub no está configurada",
+    "GitHubDraftIssueError": "No se ha podido crear la incidencia borrador en GitHub",
     "EntityNotFound": "La entidad con ID {0} no existe",
     "EntityAlreadyExists": "La entidad ya existe",
     "EntityDisabled": "La entidad con ID {0} está deshabilitada",
