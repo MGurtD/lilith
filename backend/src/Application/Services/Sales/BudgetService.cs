@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Domain.Entities.Sales;
 using Microsoft.Extensions.Logging;
+// ReSharper disable All
 
 
 namespace Application.Services.Sales
@@ -8,7 +9,6 @@ namespace Application.Services.Sales
     public class BudgetService(
         IUnitOfWork unitOfWork,
         IExerciseService exerciseService,
-        IMetricsService metricsService,
         ILocalizationService localizationService,
         ILogger<BudgetService> logger) : IBudgetService
     {
@@ -134,6 +134,11 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                if (workmaster?.Reference is null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterReferenceNotFound", detail.WorkMasterId));
+                }
+                
                 // Recollir mètriques
                 /*var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
                 
@@ -142,9 +147,7 @@ namespace Application.Services.Sales
                 {
                     detail.DetailWeight = productionMetrics.TotalWeight;
                 }*/
-
-
-
+                
                 var referenceTypeId = workmaster.Reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
                 if (referenceTypeId != null)
@@ -173,6 +176,7 @@ namespace Application.Services.Sales
             await unitOfWork.Budgets.Details.Add(detail);
             return new GenericResponse(true, detail);
         }
+        
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
             // Recuperar el detall antic per obtenir la quantitat anterior
@@ -183,7 +187,12 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
-                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                if (workmaster?.Reference is null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterReferenceNotFound", detail.WorkMasterId));
+                }
+                var reference = workmaster.Reference;
+                var referenceTypeId = reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
                 if (referenceTypeId != null)
                 {
@@ -259,6 +268,10 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                if (workmaster == null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterNotFound", detail.WorkMasterId.Value));
+                }
 
                 // Restar pes del total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
@@ -456,7 +469,7 @@ namespace Application.Services.Sales
                         };
 
                         logger.LogInformation("Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", activeRate.Id, calculationType, calculationTypeName);
-                        logger.LogInformation("Detall Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", rateDetail.Id, calculationType, calculationTypeName);
+                        logger.LogInformation("Detall Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", rateDetail?.Id ?? Guid.Empty, calculationType, calculationTypeName);
 
                         // 0 = Volum, 1 = Pes, 2 = Unitats (default)
                         decimal totalMagnitude = calculationType switch
@@ -786,7 +799,7 @@ namespace Application.Services.Sales
 
         /// <summary>
         /// Per cada fase ExternalWork del workmaster, resta la contribució de la línia eliminada.
-        /// Si la quantitat resultant és <= 0, elimina el registre.
+        /// Si la quantitat resultant és menor o igual a 0, elimina el registre.
         /// </summary>
         private async Task RemoveExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, BudgetDetail detail)
         {

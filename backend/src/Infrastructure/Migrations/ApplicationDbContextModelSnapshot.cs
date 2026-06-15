@@ -17,7 +17,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -854,6 +854,60 @@ namespace Infrastructure.Migrations
                     b.HasIndex(new[] { "JwtId" }, "UK_UserRefreshToken_JwtId");
 
                     b.ToTable("UserRefreshTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Auth.UserTableView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<string>("Page")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ViewConfig")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("varchar");
+
+                    b.HasKey("Id")
+                        .HasName("PK_UserTableView");
+
+                    b.HasIndex(new[] { "UserId", "Page", "IsDefault" }, "IX_UserTableView_UserId_Page_IsDefault");
+
+                    b.HasIndex(new[] { "UserId", "Page", "Name" }, "UK_UserTableView_UserId_Page_Name")
+                        .IsUnique();
+
+                    b.ToTable("UserTableViews", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Exercise", b =>
@@ -6215,6 +6269,17 @@ namespace Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Auth.UserTableView", b =>
+                {
+                    b.HasOne("Domain.Entities.Auth.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");

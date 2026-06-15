@@ -27,6 +27,7 @@ namespace Infrastructure.Persistance
         public IRepository<ApiKey, Guid> ApiKeys { get; private set; } = new Repository<ApiKey, Guid>(context);
         public IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; private set; } = new Repository<UserRefreshToken, Guid>(context);
         public IRepository<UserFilter, Guid> UserFilters { get; private set; } = new Repository<UserFilter, Guid>(context);
+        public IRepository<UserTableView, Guid> UserTableViews { get; private set; } = new Repository<UserTableView, Guid>(context);
         public IRepository<Profile, Guid> Profiles { get; private set; } = new Repository<Profile, Guid>(context);
         public IRepository<MenuItem, Guid> MenuItems { get; private set; } = new Repository<MenuItem, Guid>(context);
         public IRepository<ProfileMenuItem, Guid> ProfileMenuItems { get; private set; } = new Repository<ProfileMenuItem, Guid>(context);

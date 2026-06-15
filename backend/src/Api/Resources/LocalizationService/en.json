@@ -262,6 +262,13 @@
     "TaxInUse": "Cannot delete the tax because it is in use by references or invoices",
     "SalesOrderNotFound": "Sales order not found",
     "SalesOrderAlreadyInThisNote": "The order is already added to this delivery note",
-    "SalesOrderAlreadyAssigned": "The order is already assigned to another delivery note"
+    "SalesOrderAlreadyAssigned": "The order is already assigned to another delivery note",
+    "TableViewNameExists": "A view with this name already exists for this page",
+    "TableViewCreated": "View created successfully",
+    "TableViewUpdated": "View updated successfully",
+    "TableViewDeleted": "View deleted successfully",
+    "TableViewNotFound": "View not found",
+    "CannotDeleteDefaultView": "Cannot delete the default view",
+    "DefaultViewSet": "Default view set"
   }
 }

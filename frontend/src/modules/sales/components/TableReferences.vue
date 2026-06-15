@@ -1,109 +1,67 @@
 <template>
-  <DataTable
-    :value="filteredData"
-    tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    paginator
-    :rows="20"
+  <Table
+    :columns="columns"
+    :items="filteredData"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    preset="crud-list"
+    page="References"
+    showDeleteColumn
+    :canDelete="() => true"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="onDeleteRow"
     @row-click="editRow"
   >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Data creació</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :showIcon="true"
-              class="w-full"
-              size="small"
-              placeholder="Selecciona periode"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="code" header="Codi" style="width: 10%"></Column>
-    <Column field="description" header="Descripció" style="width: 30%"></Column>
-    <Column field="version" header="Versió" style="width: 8%"></Column>
-    <Column field="customerId" header="Client" style="width: 18%">
-      <template #body="slotProps">
-        <span>{{ getCustomerById(slotProps.data.customerId) }}</span>
-      </template>
-    </Column>
-    <Column field="createdOn" header="Data creació" sortable style="width: 10%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.createdOn) }}
-      </template>
-    </Column>
-    <Column field="price" header="Preu" style="width: 8%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.price) }}
-      </template>
-    </Column>
-    <Column field="cost" header="Cost" style="width: 8%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.workMasterCost) }}
-      </template>
-    </Column>
-    <Column header="Servei" style="width: 5%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.isService" />
-      </template>
-    </Column>
-    <Column style="width: 3%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">Client</label>
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">Data creació</label>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :showIcon="true"
+          class="w-full"
+          size="small"
+          placeholder="Selecciona periode"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+    </template>
+    <template #body-customerId="{ data }">
+      <span>{{ getCustomerById(data.customerId) }}</span>
+    </template>
+    <template #body-createdOn="{ data }">
+      {{ formatDate(data.createdOn) }}
+    </template>
+    <template #body-price="{ data }">
+      {{ formatCurrency(data.price) }}
+    </template>
+    <template #body-cost="{ data }">
+      {{ formatCurrency(data.workMasterCost) }}
+    </template>
+    <template #body-isService="{ data }">
+      <BooleanColumn :value="data.isService" />
+    </template>
+  </Table>
 </template>
 
 <script setup lang="ts">
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type {
-  FilterConfig,
-  FilterBodyWidth,
-} from "../../../components/tables/TableFilter.vue";
-import { computed, ref, onUnmounted, onMounted } from "vue";
-import { PrimeIcons } from "@primevue/core/api";
+import Table from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/Table.vue";
+import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import { computed, ref } from "vue";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency, formatDate } from "../../../utils/functions";
-import { useUserFilterStore } from "../../../store/userfilter";
+import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
 
-const userFilterStore = useUserFilterStore();
 const customerStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
@@ -125,23 +83,22 @@ const filterConfig: FilterConfig[] = [
   },
 ];
 
+const columns = ref<Column[]>([
+  { field: "code", header: "Codi", style: "width: 10%" },
+  { field: "description", header: "Descripció", style: "width: 30%" },
+  { field: "version", header: "Versió", style: "width: 8%" },
+  { field: "customerId", header: "Client", style: "width: 18%" },
+  { field: "createdOn", header: "Data creació", sortable: true, style: "width: 10%" },
+  { field: "price", header: "Preu", style: "width: 8%" },
+  { field: "cost", header: "Cost", style: "width: 8%" },
+  { field: "isService", header: "Servei", style: "width: 5%" },
+]);
+
 const filter = ref({
   code: "",
   description: "",
   customerId: "",
   dates: undefined as Array<Date> | undefined,
-});
-
-onMounted(() => {
-  const userFilter = userFilterStore.getFilter("References", "");
-  if (userFilter) {
-    if (userFilter.code) filter.value.code = userFilter.code;
-    if (userFilter.customerId) filter.value.customerId = userFilter.customerId;
-    if (userFilter.dates) filter.value.dates = userFilter.dates;
-  }
-});
-onUnmounted(async () => {
-  await userFilterStore.addFilter("References", "", filter.value);
 });
 
 const cleanFilter = () => {
@@ -212,16 +169,10 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    emit("edit", row.data);
-  }
+  emit("edit", row.data);
 };
 
-const onDeleteRow = (event: any, reference: Reference) => {
+const onDeleteRow = (reference: Reference) => {
   emit("delete", reference);
 };
 

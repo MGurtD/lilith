@@ -42,6 +42,15 @@ export interface UserFilter {
   filter: string;
 }
 
+export interface UserTableView {
+  id: string;
+  userId: string;
+  page: string;
+  name: string;
+  isDefault: boolean;
+  viewConfig: string;
+}
+
 export interface Language {
   id: string;
   code: string;

@@ -262,6 +262,13 @@
     "TaxInUse": "No se puede eliminar el impuesto porque está en uso en referencias o facturas",
     "SalesOrderNotFound": "No se ha encontrado la orden de venta",
     "SalesOrderAlreadyInThisNote": "La orden ya está añadida a este albarán",
-    "SalesOrderAlreadyAssigned": "La orden ya está asignada a otro albarán"
+    "SalesOrderAlreadyAssigned": "La orden ya está asignada a otro albarán",
+    "TableViewNameExists": "Ya existe una vista con este nombre para esta página",
+    "TableViewCreated": "Vista creada correctamente",
+    "TableViewUpdated": "Vista actualizada correctamente",
+    "TableViewDeleted": "Vista eliminada correctamente",
+    "TableViewNotFound": "Vista no encontrada",
+    "CannotDeleteDefaultView": "No se puede eliminar la vista por defecto",
+    "DefaultViewSet": "Vista por defecto establecida"
   }
 }

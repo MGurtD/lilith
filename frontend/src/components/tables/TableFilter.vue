@@ -76,6 +76,7 @@
         </div>
 
         <div class="table-filter__actions">
+          <slot name="action-prepend"></slot>
           <Button
             v-if="showFilterAction"
             :label="showActionLabels ? 'Filtrar' : undefined"
@@ -85,6 +86,7 @@
             size="small"
             rounded
             aria-label="Filtrar"
+            v-tooltip.top="'Filtrar'"
           />
           <Button
             v-if="hasFilters"
@@ -95,6 +97,7 @@
             size="small"
             rounded
             aria-label="Netejar"
+            v-tooltip.top="'Netejar filtres'"
           />
           <div
             v-if="showCreate"
@@ -109,6 +112,7 @@
             size="small"
             rounded
             aria-label="Nou"
+            v-tooltip.top="'Crear nou'"
           />
           <slot name="append"></slot>
         </div>

@@ -12,113 +12,54 @@
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <div ref="customersTableRef">
-          <DataTable
-            :value="filteredData"
-            tableStyle="min-width: 100%"
-            sort-field="comercialName"
-            :sort-order="1"
-            scrollable
-            :scrollHeight="customersScrollHeight"
-            paginator
-            :rows="20"
-            @row-click="editCustomer"
-          >
-            <template #header>
-              <TableFilter
-                :config="customerFilterConfig"
-                v-model="filter"
-                :show-title="false"
-                :show-action-labels="false"
-                :show-filter-action="false"
-                :body-width="customerFilterBodyWidth"
-                embedded
-                @clear="cleanFilter"
-                @create="createCustomer"
-              />
-            </template>
-            <Column
-              field="comercialName"
-              header="Nom comercial"
-              sortable
-              style="width: 20%"
-            ></Column>
-            <Column
-              field="taxName"
-              header="Nom Fiscal"
-              style="width: 20%"
-            ></Column>
-            <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
-            <Column header="Tipus" style="width: 20%">
-              <template #body="slotProps">
-                <span>{{
-                  getCustomerTypeName(slotProps.data.customerTypeId)
-                }}</span>
-              </template>
-            </Column>
-            <Column header="Desactivat" sortable style="width: 20%">
-              <template #body="slotProps">
-                <BooleanColumn
-                  :value="slotProps.data.disabled"
-                  :showColor="false"
-                />
-              </template>
-            </Column>
-            <Column>
-              <template #body="slotProps">
-                <i
-                  :class="PrimeIcons.TIMES"
-                  class="grid_delete_column_button"
-                  @click="deleteCustomer($event, slotProps.data)"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+        <Table
+          :columns="customerColumns"
+          :items="filteredData"
+          :filter-config="customerFilterConfig"
+          v-model:filter-values="customerFilter"
+          :filter-body-width="customerFilterBodyWidth"
+          preset="crud-list"
+          page="Customers"
+          tableStyle="min-width: 100%"
+          sort-field="comercialName"
+          :sort-order="1"
+          :scroll-height="customersScrollHeight"
+          showDeleteColumn
+          :canDelete="() => true"
+          @clear="cleanCustomerFilter"
+          @create="createCustomer"
+          @delete="deleteCustomer"
+          @row-click="editCustomer"
+        >
+          <template #body-customerTypeId="{ data }">
+            <span>{{ getCustomerTypeName(data.customerTypeId) }}</span>
+          </template>
+          <template #body-disabled="{ data }">
+            <BooleanColumn :value="data.disabled" :showColor="false" />
+          </template>
+        </Table>
       </TabPanel>
       <TabPanel value="1">
-        <div ref="typesTableRef">
-          <DataTable
-            :value="customerStore.customerTypes"
-            tableStyle="min-width: 100%"
-            scrollable
-            :scrollHeight="typesScrollHeight"
-            @row-click="editCustomerType"
-          >
-            <template #header>
-              <TableFilter
-                :config="[]"
-                v-model="emptyFilter"
-                :show-title="false"
-                :show-action-labels="false"
-                :show-filter-action="false"
-                :show-create="true"
-                embedded
-                @create="createCustomerType"
-              />
-            </template>
-            <Column field="name" header="Nom" style="width: 33%"></Column>
-            <Column
-              field="description"
-              header="Descripció"
-              style="width: 33%"
-            ></Column>
-            <Column header="Desactivat" style="width: 33%">
-              <template #body="slotProps">
-                <BooleanColumn :value="slotProps.data.disabled" />
-              </template>
-            </Column>
-            <Column>
-              <template #body="slotProps">
-                <i
-                  :class="PrimeIcons.TIMES"
-                  class="grid_delete_column_button"
-                  @click="deleteCustomerType($event, slotProps.data)"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+        <Table
+          :columns="customerTypeColumns"
+          :items="customerStore.customerTypes ?? []"
+          :filter-config="[]"
+          v-model:filter-values="emptyFilter"
+          :filter-body-width="typesFilterBodyWidth"
+          preset="crud-list"
+          page="CustomerTypes"
+          tableStyle="min-width: 100%"
+          :scroll-height="typesScrollHeight"
+          showDeleteColumn
+          :canDelete="() => true"
+          @create="createCustomerType"
+          @delete="deleteCustomerType"
+          @row-click="editCustomerType"
+        >
+          <template #body-disabled="{ data }">
+            <BooleanColumn :value="data.disabled" />
+          </template>
+        </Table>
       </TabPanel>
     </TabPanels>
   </Tabs>
@@ -134,12 +75,10 @@ import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
-import { useScrollHeight } from "@/composables/useScrollHeight";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type {
-  FilterConfig,
-  FilterBodyWidth,
-} from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/Table.vue";
+import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
@@ -148,13 +87,16 @@ const router = useRouter();
 const store = useStore();
 const customerStore = useCustomersStore();
 
-const { tableRef: customersTableRef, scrollHeight: customersScrollHeight } =
-  useScrollHeight(140);
-const { tableRef: typesTableRef, scrollHeight: typesScrollHeight } =
-  useScrollHeight();
+const customersScrollHeight = "flex";
+const typesScrollHeight = "flex";
 
 const customerFilterBodyWidth: FilterBodyWidth = {
   desktop: "33%",
+  tablet: "50%",
+};
+
+const typesFilterBodyWidth: FilterBodyWidth = {
+  desktop: "25%",
   tablet: "50%",
 };
 
@@ -168,7 +110,21 @@ const customerFilterConfig: FilterConfig[] = [
   },
 ];
 
-const filter = ref({
+const customerColumns = ref<Column[]>([
+  { field: "comercialName", header: "Nom comercial", sortable: true, style: "width: 20%" },
+  { field: "taxName", header: "Nom Fiscal", style: "width: 20%" },
+  { field: "vatNumber", header: "CIF", style: "width: 20%" },
+  { field: "customerTypeId", header: "Tipus", style: "width: 20%" },
+  { field: "disabled", header: "Desactivat", sortable: true, style: "width: 20%" },
+]);
+
+const customerTypeColumns = ref<Column[]>([
+  { field: "name", header: "Nom", style: "width: 33%" },
+  { field: "description", header: "Descripció", style: "width: 33%" },
+  { field: "disabled", header: "Desactivat", style: "width: 33%" },
+]);
+
+const customerFilter = ref({
   code: "",
 });
 
@@ -177,17 +133,17 @@ const emptyFilter = ref({});
 const filteredData = computed(() => {
   if (!customerStore.customers) return [];
 
-  if (filter.value.code.length > 0) {
+  if (customerFilter.value.code.length > 0) {
     return customerStore.customers.filter((r: Customer) =>
-      r.comercialName.toLowerCase().includes(filter.value.code.toLowerCase()),
+      r.comercialName.toLowerCase().includes(customerFilter.value.code.toLowerCase()),
     );
   } else {
     return customerStore.customers;
   }
 });
 
-const cleanFilter = () => {
-  filter.value.code = "";
+const cleanCustomerFilter = () => {
+  customerFilter.value.code = "";
 };
 
 const createCustomer = () => {
@@ -215,9 +171,8 @@ const getCustomerTypeName = (id: string) => {
   }
 };
 
-const deleteCustomer = (event: any, customer: Customer) => {
+const deleteCustomer = (customer: Customer) => {
   confirm.require({
-    target: event.currentTarget,
     message: `Está segur que vol eliminar el client ${customer.comercialName}?`,
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -237,9 +192,8 @@ const deleteCustomer = (event: any, customer: Customer) => {
   });
 };
 
-const deleteCustomerType = (event: any, customerType: CustomerType) => {
+const deleteCustomerType = (customerType: CustomerType) => {
   confirm.require({
-    target: event.currentTarget,
     message: `Está segur que vol eliminar el tipus de client ${customerType.name}?`,
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -260,22 +214,10 @@ const deleteCustomerType = (event: any, customerType: CustomerType) => {
 };
 
 const editCustomer = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/customers/${row.data.id}` });
-  }
+  router.push({ path: `/customers/${row.data.id}` });
 };
 
 const editCustomerType = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/customer-types/${row.data.id}` });
-  }
+  router.push({ path: `/customer-types/${row.data.id}` });
 };
 </script>

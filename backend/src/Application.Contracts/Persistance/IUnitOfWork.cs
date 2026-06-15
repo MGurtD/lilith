@@ -19,6 +19,7 @@ namespace Application.Contracts
         IRepository<ApiKey, Guid> ApiKeys { get; }
         IRepository<UserRefreshToken, Guid> UserRefreshTokens { get; }
         IRepository<UserFilter, Guid> UserFilters { get; }
+        IRepository<UserTableView, Guid> UserTableViews { get; }
         IRepository<Profile, Guid> Profiles { get; }
         IRepository<MenuItem, Guid> MenuItems { get; }
         IRepository<ProfileMenuItem, Guid> ProfileMenuItems { get; }
