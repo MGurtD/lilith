@@ -2,50 +2,56 @@
 
 ## Per a que serveix aquesta pantalla
 
-La pantalla d'inventari permet fer el recompte física de les existències i registrar les diferències entre l'estoc registrat al sistema i el recompte real. Es carreguen totes les existències actuals i es permet modificar la quantitat (newQuantity) per generar els moviments d'ajust corresponents.
+La pantalla d'inventari permet gestionar les existències d'una ubicació de magatzem: afegir unitats, modificar el recompte o deixar a zero l'estoc d'una referència. Cada línia mostra el que hi ha registrat al sistema (`Uds.`) i permet introduir el recompte real (`Recompte`). Quan es guarda, el sistema genera automàticament els moviments d'estoc necessaris per ajustar l'estat real.
 
 ## Accions disponibles
 
-- Carregar les existències actuals del sistema
-- Filtrar per ubicació
+- Carregar les existències actuals del sistema per a una ubicació
+- Filtrar per ubicació de magatzem
 - Cercar per nom de referència
-- Modificar la quantitat de recompte (newQuantity) per a cada línia
-- Crear un moviment de sortida o entrada segons la diferència amb l'estoc anterior
-- Guardar els moviments d'inventari generats
+- Modificar la quantitat de recompte (`Recompte`) per a cada línia de la graella
+- Crear un moviment d'entrada (afegir existències)
+- Crear un moviment de sortida (reduir o posar a zero existències)
+- Posar totes les unitats a zero d'una referència (genera un moviment de sortida)
+- Guardar tots els canvis (genera moviments INPUT/OUTPUT automàticament)
 
 ## Flux habitual
 
-1. Carrega les existències des del sistema (es fan automàticament en obrir).
-2. Filtra per ubicació o cerca per referència si cal.
-3. Revisa cada línia i introdueix el recompte real a la columna "Recompte".
-4. Prem "Guardar" per generar els moviments d'inventari (entrades si hi ha excés, sortides si falta estoc).
-5. El sistema crea automàticament els moviments d'ajust i actualitza les existències.
+1. Selecciona la ubicació de magatzem per on vols fer el recompte.
+2. Cerca o filtra la referència que vols inventariar.
+3. Introdueix el recompte real a la columna `Recompte`:
+   - **Més del que hi ha**: genera un moviment d'entrada (`INPUT`).
+   - **Menos del que hi ha**: genera un moviment de sortida (`OUTPUT`).
+   - **Zero**: genera un moviment de sortida per tota la quantitat (deixa l'estoc a zero).
+4. Prem **Guardar** per generar i aplicar els moviments.
 
 ## Aspectes importants
 
-- **Generació automàtica de moviments**: quan es guarda, el sistema compara `oldQuantity` (estoc registrat) amb `newQuantity` (recompte). Si son diferents, genera automàticament un moviment INPUT (si s'ha trobat més) o OUTPUT (si falta estoc) amb la descripció "Entrada per inventari" o "Sortida per inventari".
-- Cal prémer "Guardar" per aplicar els canvis. No es generen moviments automàticament en introduir el recompte.
-- Es poden crear nous moviments de tipus personalitzat des del botó de creació (després de filtrar o sense filtre).
+- **Generació automàtica de moviments**: en prémer Guardar, el sistema compara `Uds.` (estoc registrat) amb `Recompte`. Per a cada diferència genera un `StockMovement` amb tipus `INPUT` o `OUTPUT` i la descripció "Entrada per inventari" o "Sortida per inventari".
+- **No es generen moviments automàticament en introduir el recompte** — cal prémer Guardar per aplicar els canvis.
+- **Tot en una mateixa ubicació**: tots els moviments generats s'assignen a la ubicació seleccionada.
+- Es poden crear nous moviments de tipus personalitzat des del botó de creació (obre un formulari independent).
 
 ## Errors frequents
 
 - Si es guarda sense haver modificat cap quantitat, no es genera cap moviment.
-- Si falta alguna referència a l'inventari, comprova que tingui existències al sistema abans d'obrir la pantalla.
+- Si es posa una referència a zero però no es prem Guardar, el canvi no es perd (roman a la graella) però no es tradueix en moviment.
+- Si falta alguna referència, comprova que tingui existències a la ubicació seleccionada al sistema.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Carregar existències] --> B[Filtrar per ubicació]
-    B --> C[Introduir recompte]
-    C --> D{Introdueix nous moviments?}
-    D -->|Sí| E[Crear moviment manualment]
-    D -->|No| F[Modificar recompte a la graella]
+    A[Seleccionar ubicació] --> B[Cercar o filtrar referència]
+    B --> C[Introdueix recompte a la graella]
+    C --> D{Vol afegir moviment manual?}
+    D -->|Sí| E[Crear moviment personalitzat]
+    D -->|No| F[Revisar diferencies a la graella]
     E --> G[Premdre Guardar]
     F --> G
-    G --> H{Hi ha diferències?}
-    H -->|Sí| I[Generar moviments INPUT/OUTPUT]
-    H -->|No| J[No es genera cap moviment]
+    G --> H{Hi ha diferencia?}
+    H -->|Sí| I[Generar INPUT o OUTPUT]
+    H -->|No| J[No es genera moviment]
     I --> K[Existències actualitzades]
     J --> K
 ```
