@@ -78,6 +78,11 @@ namespace Application.Services.Sales
             return deliveryNotes;
         }
 
+        public async Task<IEnumerable<DeliveryNote>> GetByReferenceId(Guid referenceId)
+        {
+            return await unitOfWork.DeliveryNotes.GetByReferenceId(referenceId);
+        }
+
         public async Task<GenericResponse> Create(CreateHeaderRequest createRequest)
         {
             var response = await ValidateCreateInvoiceRequest(createRequest);
@@ -341,8 +346,3 @@ namespace Application.Services.Sales
         }
     }
 }
-
-
-
-
-

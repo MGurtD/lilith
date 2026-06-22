@@ -46,6 +46,13 @@ namespace Api.Controllers.Purchase
             return Ok(salesOrders);
         }
 
+        [HttpGet("ByReferenceId/{id:guid}")]
+        public async Task<IActionResult> GetByReferenceId(Guid id)
+        {
+            var deliveryNotes = await service.GetByReferenceId(id);
+            return Ok(deliveryNotes);
+        }
+
         [HttpGet("ToInvoice")]
         public IActionResult GetDeliveryNotesToInvoice(Guid customerId)
         {

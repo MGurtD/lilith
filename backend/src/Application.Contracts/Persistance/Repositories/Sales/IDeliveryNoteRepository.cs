@@ -7,5 +7,7 @@ namespace Application.Contracts
         IRepository<DeliveryNoteDetail, Guid> Details { get; }
 
         IEnumerable<DeliveryNote> GetByInvoiceId(Guid invoiceId);
+
+        Task<List<DeliveryNote>> GetByReferenceId(Guid referenceId);
     }
 }

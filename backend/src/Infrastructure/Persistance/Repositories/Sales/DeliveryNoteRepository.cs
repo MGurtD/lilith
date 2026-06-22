@@ -32,5 +32,18 @@ namespace Infrastructure.Persistance.Repositories.Purchase
                     .Where(e => e.SalesInvoiceId == invoiceId);
         }
 
+        public async Task<List<DeliveryNote>> GetByReferenceId(Guid referenceId)
+        {
+            return await dbSet
+                    .Include(d => d.Customer)
+                    .Include(d => d.Details)
+                        .ThenInclude(d => d.Reference)
+                    .Where(d => d.Details.Any(det => det.ReferenceId == referenceId))
+                    .AsSplitQuery()
+                    .AsNoTracking()
+                    .OrderByDescending(d => d.DeliveryDate)
+                    .ToListAsync();
+        }
+
     }
 }

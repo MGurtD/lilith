@@ -44,6 +44,18 @@ export class StockService extends BaseService<Stock> {
     }
   }
 
+  async getByReference(referenceId: string): Promise<StockListItem[]> {
+    try {
+      const response = await this.apiClient.get(
+        `${this.resource}?referenceId=${referenceId}`
+      );
+      return response.data ?? [];
+    } catch (err) {
+      logException(err);
+      return [];
+    }
+  }
+
   async getByBillOfMaterialsId(bomId: string): Promise<StockResponse[]> {
     try {
       const endpoint = `${this.resource}/ByBillOfMaterials/${bomId}`;
