@@ -14,5 +14,17 @@ namespace Infrastructure.Persistance.Repositories.Purchase
                         .AsNoTracking()
                         .FirstOrDefaultAsync(x => x.Id == id);
         }
+
+        public async Task<IEnumerable<PurchaseRate>> GetByReferenceId(Guid referenceId)
+        {
+            return await dbSet
+                        .Include(x => x.Supplier)
+                        .Include(x => x.Details).ThenInclude(d => d.Reference)
+                        .Where(x => x.Details.Any(d => d.ReferenceId == referenceId))
+                        .AsSplitQuery()
+                        .AsNoTracking()
+                        .OrderByDescending(x => x.ValidFrom)
+                        .ToListAsync();
+        }
     }
 }

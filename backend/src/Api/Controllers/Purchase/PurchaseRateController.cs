@@ -15,6 +15,13 @@ public class PurchaseRateController(IPurchaseRateService service) : ControllerBa
         return Ok(entities);
     }
 
+    [HttpGet("Reference/{referenceId:guid}")]
+    public async Task<IActionResult> GetByReferenceId(Guid referenceId)
+    {
+        var entities = await service.GetPurchaseRatesByReferenceId(referenceId);
+        return Ok(entities);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

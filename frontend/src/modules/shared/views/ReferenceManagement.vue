@@ -221,89 +221,163 @@
             </div>
           </section>
 
-          <DataTable
-            :value="referenceStore.referenceSuppliers"
-            tableStyle="min-width: 100%"
-            scrollable
-            scrollHeight="flex"
-            :loading="suppliersLoading"
-          >
-            <template #header>
-              <div
-                class="flex flex-wrap align-items-center justify-content-between gap-2"
-              >
-                <label class="block text-900">Proveïdors i tarifes</label>
-                <Button
-                  :icon="PrimeIcons.PLUS"
-                  rounded
-                  raised
-                  @click="newSupplier"
-                />
-              </div>
-            </template>
-            <template #empty>Sense proveïdors assignats.</template>
-            <Column header="Proveïdor">
-              <template #body="{ data }">{{
-                suppliersStore.getName(data.supplierId)
-              }}</template>
-            </Column>
-            <Column field="supplierCode" header="Codi proveïdor" />
-            <Column field="supplierDescription" header="Descripció proveïdor" />
-            <Column field="supplierPrice" header="Preu">
-              <template #body="{ data }">{{
-                formatCurrency(data.supplierPrice)
-              }}</template>
-            </Column>
-            <Column field="supplyDays" header="Dies entrega" />
-            <Column>
-              <template #body="{ data }">
-                <i
-                  :class="PrimeIcons.PENCIL"
-                  class="cursor-pointer mr-3"
-                  @click="editSupplier(data)"
-                />
-                <i
-                  :class="PrimeIcons.TIMES"
-                  class="grid_delete_column_button"
-                  @click="removeSupplier(data)"
-                />
-              </template>
-            </Column>
-          </DataTable>
+          <Tabs value="suppliers">
+            <TabList>
+              <Tab value="suppliers">Proveïdors i tarifes</Tab>
+              <Tab value="externalServices">Tarifes de serveis externs</Tab>
+              <Tab value="transport">Tarifes de transport</Tab>
+              <Tab value="purchaseHistory">Històric de compres</Tab>
+            </TabList>
+            <TabPanels>
+              <TabPanel value="suppliers">
+                <DataTable
+                  :value="referenceStore.referenceSuppliers"
+                  tableStyle="min-width: 100%"
+                  scrollable
+                  scrollHeight="flex"
+                  :loading="suppliersLoading"
+                >
+                  <template #header>
+                    <div
+                      class="flex flex-wrap align-items-center justify-content-between gap-2"
+                    >
+                      <label class="block text-900">Proveïdors i tarifes</label>
+                      <Button
+                        :icon="PrimeIcons.PLUS"
+                        rounded
+                        raised
+                        @click="newSupplier"
+                      />
+                    </div>
+                  </template>
+                  <template #empty>Sense proveïdors assignats.</template>
+                  <Column header="Proveïdor">
+                    <template #body="{ data }">{{
+                      suppliersStore.getName(data.supplierId)
+                    }}</template>
+                  </Column>
+                  <Column field="supplierCode" header="Codi proveïdor" />
+                  <Column
+                    field="supplierDescription"
+                    header="Descripció proveïdor"
+                  />
+                  <Column field="supplierPrice" header="Preu">
+                    <template #body="{ data }">{{
+                      formatCurrency(data.supplierPrice)
+                    }}</template>
+                  </Column>
+                  <Column field="supplyDays" header="Dies entrega" />
+                  <Column>
+                    <template #body="{ data }">
+                      <i
+                        :class="PrimeIcons.PENCIL"
+                        class="cursor-pointer mr-3"
+                        @click="editSupplier(data)"
+                      />
+                      <i
+                        :class="PrimeIcons.TIMES"
+                        class="grid_delete_column_button"
+                        @click="removeSupplier(data)"
+                      />
+                    </template>
+                  </Column>
+                </DataTable>
+              </TabPanel>
 
-          <DataTable
-            :value="purchaseHistoryRows"
-            tableStyle="min-width: 100%"
-            scrollable
-            scrollHeight="flex"
-            :loading="purchaseLoading"
-            paginator
-            :rows="10"
-            class="mt-4"
-          >
-            <template #header>
-              <label class="block text-900"
-                >Històric de compres (albarans de compra)</label
-              >
-            </template>
-            <template #empty>Sense compres registrades.</template>
-            <Column field="date" header="Data">
-              <template #body="{ data }">{{ formatDate(data.date) }}</template>
-            </Column>
-            <Column field="number" header="Albarà" />
-            <Column field="supplierName" header="Proveïdor" />
-            <Column field="quantity" header="Quantitat" />
-            <Column field="unitPrice" header="Preu unitari">
-              <template #body="{ data }">{{
-                formatCurrency(data.unitPrice)
-              }}</template>
-            </Column>
-            <Column field="amount" header="Import">
-              <template #body="{ data }">{{
-                formatCurrency(data.amount)
-              }}</template>
-            </Column>
-          </DataTable>
+              <TabPanel value="externalServices">
+                <DataTable
+                  :value="externalServiceRateRows"
+                  tableStyle="min-width: 100%"
+                  scrollable
+                  scrollHeight="flex"
+                  :loading="ratesLoading"
+                >
+                  <template #empty>Sense tarifes de serveis externs.</template>
+                  <Column field="supplierName" header="Proveïdor" />
+                  <Column field="rateName" header="Tarifa" />
+                  <Column header="Vàlid des de">
+                    <template #body="{ data }">{{
+                      formatDate(data.validFrom)
+                    }}</template>
+                  </Column>
+                  <Column header="Vàlid fins a">
+                    <template #body="{ data }">{{
+                      formatDate(data.validTo)
+                    }}</template>
+                  </Column>
+                  <Column header="Càlcul">
+                    <template #body="{ data }">{{
+                      getCalculationTypeLabel(data.calculationType)
+                    }}</template>
+                  </Column>
+                  <Column field="from" header="Des de" />
+                  <Column field="to" header="Fins a" />
+                  <Column field="price" header="Preu">
+                    <template #body="{ data }">{{
+                      formatCurrency(data.price)
+                    }}</template>
+                  </Column>
+                </DataTable>
+              </TabPanel>
+
+              <TabPanel value="transport">
+                <DataTable
+                  :value="transportRateRows"
+                  tableStyle="min-width: 100%"
+                  scrollable
+                  scrollHeight="flex"
+                  :loading="ratesLoading"
+                >
+                  <template #empty>Sense tarifes de transport.</template>
+                  <Column field="supplierName" header="Proveïdor" />
+                  <Column field="rateName" header="Tarifa" />
+                  <Column field="description" header="Descripció" />
+                  <Column header="Vàlid des de">
+                    <template #body="{ data }">{{
+                      formatDate(data.validFrom)
+                    }}</template>
+                  </Column>
+                  <Column header="Vàlid fins a">
+                    <template #body="{ data }">{{
+                      formatDate(data.validTo)
+                    }}</template>
+                  </Column>
+                </DataTable>
+              </TabPanel>
+
+              <TabPanel value="purchaseHistory">
+                <DataTable
+                  :value="purchaseHistoryRows"
+                  tableStyle="min-width: 100%"
+                  scrollable
+                  scrollHeight="flex"
+                  :loading="purchaseLoading"
+                  paginator
+                  :rows="10"
+                >
+                  <template #empty>Sense compres registrades.</template>
+                  <Column field="date" header="Data">
+                    <template #body="{ data }">{{
+                      formatDate(data.date)
+                    }}</template>
+                  </Column>
+                  <Column field="number" header="Albarà" />
+                  <Column field="supplierName" header="Proveïdor" />
+                  <Column field="quantity" header="Quantitat" />
+                  <Column field="unitPrice" header="Preu unitari">
+                    <template #body="{ data }">{{
+                      formatCurrency(data.unitPrice)
+                    }}</template>
+                  </Column>
+                  <Column field="amount" header="Import">
+                    <template #body="{ data }">{{
+                      formatCurrency(data.amount)
+                    }}</template>
+                  </Column>
+                </DataTable>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
         </TabPanel>
 
         <!-- ============ PRODUCCIÓ ============ -->
@@ -502,7 +576,12 @@ import { useCustomersStore } from "../../sales/store/customers";
 import { Reference, ReferenceCategoryEnum } from "../types";
 import { SupplierReference } from "../../purchase/types";
 import { DeliveryNote } from "../../sales/types";
-import { Receipt } from "../../purchase/types";
+import {
+  Receipt,
+  PurchaseRate,
+  TransportRate,
+  CalculationType,
+} from "../../purchase/types";
 import { WorkMaster, WorkOrder } from "../../production/types";
 import { StockListItem } from "../../warehouse/types";
 
@@ -511,6 +590,8 @@ import { ReceiptService } from "../../purchase/services/receipt.service";
 import { WorkOrderService } from "../../production/services/workorder.service";
 import { WorkMasterService } from "../../production/services/workmaster.service";
 import { StockService } from "../../warehouse/services/warehouse.service";
+import { PurchaseRateService } from "../../purchase/services/purchaseRate.service";
+import { TransportRateService } from "../../purchase/services/transportRate.service";
 
 const route = useRoute();
 const router = useRouter();
@@ -528,6 +609,8 @@ const receiptService = new ReceiptService("/Receipt");
 const workOrderService = new WorkOrderService("/WorkOrder");
 const workMasterService = new WorkMasterService("/WorkMaster");
 const stockService = new StockService("/Stock");
+const purchaseRateService = new PurchaseRateService("/PurchaseRate");
+const transportRateService = new TransportRateService("/TransportRate");
 
 const { reference } = storeToRefs(referenceStore);
 const id = ref("");
@@ -538,10 +621,13 @@ const purchaseLoading = ref(false);
 const productionLoading = ref(false);
 const stockLoading = ref(false);
 const suppliersLoading = ref(false);
+const ratesLoading = ref(false);
 const formMode = ref(FormActionMode.EDIT);
 
 const salesHistory = ref<Array<DeliveryNote>>([]);
 const purchaseHistory = ref<Array<Receipt>>([]);
+const purchaseRates = ref<Array<PurchaseRate>>([]);
+const transportRates = ref<Array<TransportRate>>([]);
 const workMasters = ref<Array<WorkMaster>>([]);
 const workOrders = ref<Array<WorkOrder>>([]);
 const stock = ref<Array<StockListItem>>([]);
@@ -583,6 +669,46 @@ const purchaseHistoryRows = computed(() =>
   )
 );
 
+const externalServiceRateRows = computed(() =>
+  purchaseRates.value.flatMap((rate) =>
+    (rate.details ?? [])
+      .filter((d) => d.referenceId === id.value)
+      .map((d) => ({
+        supplierName: suppliersStore.getName(rate.supplierId),
+        rateName: rate.name,
+        validFrom: rate.validFrom,
+        validTo: rate.validTo,
+        calculationType: d.calculationType,
+        from: d.from,
+        to: d.to,
+        price: d.price,
+      }))
+  )
+);
+
+const transportRateRows = computed(() =>
+  transportRates.value.map((rate) => ({
+    supplierName: suppliersStore.getName(rate.supplierId),
+    rateName: rate.name,
+    description: rate.description,
+    validFrom: rate.validFrom,
+    validTo: rate.validTo,
+  }))
+);
+
+const getCalculationTypeLabel = (type: CalculationType) => {
+  switch (type) {
+    case CalculationType.Volume:
+      return "Volum";
+    case CalculationType.Weight:
+      return "Pes";
+    case CalculationType.Units:
+      return "Unitats";
+    default:
+      return "";
+  }
+};
+
 const workMasterTotal = (wm: WorkMaster) =>
   (wm.machineCost ?? 0) +
   (wm.operatorCost ?? 0) +
@@ -620,11 +746,26 @@ const loadRelated = async () => {
   if (reference.value.purchase) {
     suppliersLoading.value = true;
     purchaseLoading.value = true;
+    ratesLoading.value = true;
     await referenceStore.fetchReferenceSuppliers(refId);
     suppliersLoading.value = false;
     purchaseHistory.value =
       (await receiptService.GetByReferenceId(refId)) ?? [];
     purchaseLoading.value = false;
+
+    purchaseRates.value =
+      (await purchaseRateService.getByReferenceId(refId)) ?? [];
+
+    const supplierIds = [
+      ...new Set(
+        (referenceStore.referenceSuppliers ?? []).map((s) => s.supplierId)
+      ),
+    ];
+    const transportResults = await Promise.all(
+      supplierIds.map((sid) => transportRateService.getBySupplierId(sid))
+    );
+    transportRates.value = transportResults.flatMap((r) => r ?? []);
+    ratesLoading.value = false;
   }
 
   if (reference.value.production) {

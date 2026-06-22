@@ -5,6 +5,7 @@ namespace Application.Contracts;
 public interface IPurchaseRateService
 {
     Task<IEnumerable<PurchaseRate>> GetPurchaseRatesBySupplierId(Guid supplierId);
+    Task<IEnumerable<PurchaseRate>> GetPurchaseRatesByReferenceId(Guid referenceId);
     Task<PurchaseRate?> GetPurchaseRateById(Guid id);
     Task<GenericResponse> CreatePurchaseRate(PurchaseRate purchaseRate);
     Task<GenericResponse> UpdatePurchaseRate(Guid id, PurchaseRate purchaseRate);

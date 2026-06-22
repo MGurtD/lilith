@@ -10,6 +10,14 @@ export class PurchaseRateService extends BaseService<PurchaseRate> {
     return undefined;
   }
 
+  async getByReferenceId(referenceId: string): Promise<Array<PurchaseRate> | undefined> {
+    const response = await this.apiClient.get(`${this.resource}/Reference/${referenceId}`);
+    if (response.status === 200) {
+      return response.data as Array<PurchaseRate>;
+    }
+    return undefined;
+  }
+
   async getDetails(purchaseRateId: string): Promise<Array<PurchaseRateDetail> | undefined> {
     const response = await this.apiClient.get(`${this.resource}/Detail/${purchaseRateId}`);
     if (response.status === 200) {
