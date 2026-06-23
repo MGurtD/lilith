@@ -5,6 +5,7 @@ namespace Application.Contracts;
 public interface IWorkOrderService
 {
     Task<WorkOrder?> GetById(Guid id);
+    Task<IEnumerable<Contracts.Production.WorkOrderDashboardDto>> GetDashboardData();
     Task<GenericResponse> Create(WorkOrder workOrder);
     Task<GenericResponse> CreateFromWorkMaster(CreateWorkOrderDto dto);
     Task<GenericResponse> Start(Guid id);

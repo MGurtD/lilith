@@ -179,11 +179,97 @@ namespace Application.Services.Production
 
             return new GenericResponse(true, productionMetrics);
         }
+
+        /// <summary>
+        /// Calcula el cost real de material consumit per una OF a partir dels moviments
+        /// de magatzem de tipus CONSUMPTION vinculats a les seves fases. Utilitza el mateix
+        /// càlcul de cost que GetWorkmasterMetrics (pes per format de referència × cost).
+        /// Quantitat negativa = consum (suma cost), positiva = retorn (resta cost).
+        /// </summary>
+        public async Task<decimal> GetWorkOrderConsumedMaterialCost(Guid workOrderId)
+        {
+            var phaseIds = unitOfWork.WorkOrders.Phases
+                .Find(p => p.WorkOrderId == workOrderId)
+                .Select(p => p.Id)
+                .ToList();
+
+            if (phaseIds.Count == 0) return 0;
+
+            var consumptionMovements = unitOfWork.StockMovements
+                .Find(m => m.Entity == StockMovementEntities.WorkOrderPhase
+                         && m.EntityId.HasValue
+                         && phaseIds.Contains(m.EntityId.Value)
+                         && m.MovementType == StockMovementType.CONSUMPTION)
+                .ToList();
+
+            if (consumptionMovements.Count == 0) return 0;
+
+            var referenceCache = new Dictionary<Guid, (decimal LastCost, string FormatCode, decimal Density)>();
+            decimal totalMaterialCost = 0;
+
+            foreach (var movement in consumptionMovements)
+            {
+                if (!referenceCache.TryGetValue(movement.ReferenceId, out var refData))
+                {
+                    var reference = await unitOfWork.References.Get(movement.ReferenceId);
+                    if (reference == null) continue;
+
+                    var formatCode = ReferenceFormatCodes.UNITATS;
+                    decimal density = 0;
+
+                    if (reference.ReferenceFormatId.HasValue)
+                    {
+                        var format = await unitOfWork.ReferenceFormats.Get(reference.ReferenceFormatId.Value);
+                        if (format != null) formatCode = format.Code;
+                    }
+
+                    if (reference.ReferenceTypeId.HasValue)
+                    {
+                        var referenceType = await unitOfWork.ReferenceTypes.Get(reference.ReferenceTypeId.Value);
+                        if (referenceType != null) density = referenceType.Density;
+                    }
+
+                    refData = (reference.LastCost, formatCode, density);
+                    referenceCache[movement.ReferenceId] = refData;
+                }
+
+                decimal movementCost;
+                if (refData.FormatCode == ReferenceFormatCodes.UNITATS)
+                {
+                    movementCost = Math.Abs(movement.Quantity) * refData.LastCost;
+                }
+                else
+                {
+                    var calculator = ReferenceFormatCalculationFactory.Create(refData.FormatCode);
+                    var dimensions = new ReferenceDimensions
+                    {
+                        Quantity = Math.Abs(movement.Quantity),
+                        Width = movement.Width,
+                        Length = movement.Length,
+                        Height = movement.Height,
+                        Diameter = movement.Diameter,
+                        Thickness = movement.Thickness,
+                        Density = refData.Density
+                    };
+
+                    try
+                    {
+                        var unitWeight = Math.Round(calculator.Calculate(dimensions), 2);
+                        movementCost = Math.Abs(movement.Quantity) * unitWeight * refData.LastCost;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                if (movement.Quantity < 0)
+                    totalMaterialCost += movementCost;
+                else
+                    totalMaterialCost -= movementCost;
+            }
+
+            return Math.Max(0, Math.Round(totalMaterialCost, 2));
+        }
     }
 }
-
-
-
-
-
-
