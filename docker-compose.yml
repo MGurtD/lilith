@@ -1,0 +1,53 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/src
+      - /src/src/Api/obj
+      - /src/src/Api/bin
+      - /src/src/Infrastructure/obj
+      - /src/src/Infrastructure/bin
+      - backend-nuget:/root/.nuget/packages
+      - ./backend/files:/files
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: ${DATABASE_CONNECTION_STRING}
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      JwtConfig__Secret: ${JWT_CONFIG_SECRET}
+      JwtConfig__ExpirationTimeFrame: ${JWT_CONFIG_EXPIRATION_TIME_FRAME:-00:05:00}
+      FileManagment__UploadPath: ${FILE_MANAGMENT_UPLOAD_PATH:-/files}
+      FileManagment__LimitSize: ${FILE_MANAGMENT_LIMIT_SIZE:-250}
+      Verifactu__Url: ${VERIFACTU_URL}
+      Verifactu__UrlQr: ${VERIFACTU_URL_QR}
+      Verifactu__Certificate__Path: ${VERIFACTU_CERTIFICATE_PATH}
+      Verifactu__Certificate__Password: ${VERIFACTU_CERTIFICATE_PASSWORD}
+    working_dir: /src
+    command: >
+      sh -c "dotnet watch run --project src/Api/ --urls http://0.0.0.0:5000 --no-launch-profile"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:5000/api
+      CHOKIDAR_USEPOLLING: "1"
+    depends_on:
+      - backend
+    working_dir: /app
+    command: sh -c "pnpm install && npx vite --host 0.0.0.0 --force"
+
+volumes:
+  backend-nuget:
+  pnpm-store:

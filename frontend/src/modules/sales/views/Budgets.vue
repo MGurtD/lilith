@@ -1,115 +1,67 @@
 <template>
-  <DataTable
-    :value="budgetStore.budgets"
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="budgetStore.budgets ?? []"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="Budgets"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
-    sort-mode="single"
     :sort-order="1"
-    scrollable
-    scrollHeight="flex"
-    paginator
-    :rows="20"
+    showDeleteColumn
+    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @row-click="editRow"
+    @filter="filterBudget"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteBudget"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterBudget"
-        @clear="cleanFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">Estat</label>
-            <DropdownLifecycle
-              label=""
-              name="Budget"
-              v-model="filter.statusId"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="number" header="Número" style="width: 10%"></Column>
-    <Column field="date" header="Data" style="width: 15%" sortable>
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column header="Client" style="width: 20%">
-      <template #body="slotProps">
-        {{ getCustomerById(slotProps.data.customerId) }}
-      </template>
-    </Column>
-    <Column header="Estat" style="width: 20%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column
-      field="acceptanceDate"
-      header="Data d'acceptació"
-      style="width: 15%"
-    >
-      <template #body="slotProps">
-        {{
-          slotProps.data.acceptanceDate
-            ? formatDate(slotProps.data.acceptanceDate)
-            : ""
-        }}
-      </template>
-    </Column>
-    <Column
-      field="deliveryDays"
-      header="Dies d'entrega"
-      style="width: 10%"
-    ></Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            slotProps.data.statusId ===
-            lifecycleStore.lifecycle?.initialStatusId
-          "
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteBudget($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >Període</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Selecciona període"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >Client</label
+        >
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label">Estat</label>
+        <MultiSelect
+          v-model="statusIds"
+          :options="lifecycleStore.lifecycle?.statuses || []"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecciona estats"
+          display="chip"
+          :showToggleAll="false"
+          class="w-full"
+        />
+      </div>
+    </template>
+
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -123,48 +75,67 @@
       @submit="createOrder"
     />
   </Dialog>
+
+
 </template>
 <script setup lang="ts">
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
-import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import { useStore } from "../../../store";
+import { useStore } from "@/store";
 import { useCustomersStore } from "../store/customers";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
-} from "../../../utils/functions";
-import { DialogOptions } from "../../../types/component";
+} from "@/utils/functions";
+import { DialogOptions } from "@/types/component";
 import { Budget, CreateSalesHeaderRequest } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useBudgetStore } from "../store/budget";
-import { useUserFilterStore } from "../../../store/userfilter";
 
 const router = useRouter();
 const toast = useToast();
 const confirm = useConfirm();
 const store = useStore();
-const userFilterStore = useUserFilterStore();
 const budgetStore = useBudgetStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
+const columns = ref<Column[]>([
+  { field: "number", header: "Número" },
+  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+  },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+  },
+  { field: "acceptanceDate", header: "Data d'acceptació", columnType: ColumnType.Date },
+  { field: "deliveryDays", header: "Dies d'entrega" },
+]);
+
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
-  statusId: undefined as string | undefined,
 });
+const statusIds = ref<Array<string>>([]);
+
 const dialogOptions = reactive({
   visible: false,
   title: "Crear pressupost",
@@ -182,11 +153,10 @@ const setCurrentYear = () => {
 };
 
 onMounted(async () => {
-  lifecycleStore.fetchOneByName("Budget");
-  customerStore.fetchCustomers();
+  await lifecycleStore.fetchOneByName("Budget");
+  await customerStore.fetchCustomers();
 
   setCurrentYear();
-  getUserFilter();
   await filterBudget();
 
   store.setMenuItem({
@@ -195,27 +165,12 @@ onMounted(async () => {
   });
 });
 onUnmounted(() => {
-  userFilterStore.addFilter("Budgets", "", filter.value);
   budgetStore.budgets = undefined;
 });
 
-const getUserFilter = () => {
-  const userFilter = userFilterStore.getFilter("Budgets", "");
-  if (userFilter) {
-    filter.value.statusId = userFilter.statusId;
-    filter.value.customerId = userFilter.customerId;
-    if (userFilter.dates) {
-      filter.value.dates = [
-        new Date(userFilter.dates[0]),
-        new Date(userFilter.dates[1]),
-      ];
-    }
-  }
-};
-
 const cleanFilter = () => {
   filter.value.customerId = undefined;
-  filter.value.statusId = undefined;
+  statusIds.value = [];
   setCurrentYear();
   filterBudget();
 };
@@ -248,7 +203,7 @@ const filterBudget = async () => {
       startTime,
       endTime,
       filter.value.customerId,
-      filter.value.statusId,
+      statusIds.value,
     );
   } else {
     toast.add({
@@ -258,17 +213,6 @@ const filterBudget = async () => {
       life: 5000,
     });
   }
-};
-
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
-};
-const getCustomerById = (id: string) => {
-  const customer = customerStore.customers?.find((c) => c.id === id);
-  if (customer) return customer.comercialName;
-  else return "";
 };
 
 const createOrder = async () => {
@@ -287,16 +231,10 @@ const createOrder = async () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/budget/${row.data.id}` });
-  }
+  router.push({ path: `/budget/${row.data.id}` });
 };
 
-const deleteBudget = async (event: any, budget: Budget) => {
+const deleteBudget = async (budget: Budget) => {
   await budgetStore.GetAssociatedSalesOrders(budget.id);
 
   if (budgetStore.order) {

@@ -59,6 +59,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserFilterService, UserFilterService>();
+        services.AddScoped<IUserTableViewService, UserTableViewService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ICustomerTypeService, CustomerTypeService>();
         services.AddScoped<IIncomeService, IncomeService>();

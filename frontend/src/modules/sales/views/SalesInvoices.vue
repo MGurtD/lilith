@@ -1,51 +1,44 @@
 <template>
-  <TableInvoices
-    :invoices="invoiceStore.invoices"
-    :customers="customersStore.customers"
-    @edit="editSalesInvoice"
+  <Table
+    :columns="columns"
+    :items="invoiceStore.invoices ?? []"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    preset="crud-list"
+    page="SalesInvoices"
+    sortMode="multiple"
+    showDeleteColumn
+    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
+    @filter="filterInvoices"
+    @clear="cleanFilter"
+    @create="createButtonClick"
     @delete="deleteSalesInvoice"
+    @row-click="editRow"
   >
-    <template #filter>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterInvoices"
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">Període</label>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Selecciona període"
+          showIcon
+          class="w-full"
+          size="small"
+        />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">Client</label>
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
     </template>
-  </TableInvoices>
+
+    <template #body-dueDate="{ data }">
+      {{ getLastDueDate(data) }}
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -61,9 +54,10 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import TableInvoices from "../components/TableInvoices.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
+import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -71,15 +65,17 @@ import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { useCustomersStore } from "../store/customers";
+import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
+import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
+  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { CreateSalesHeaderRequest, SalesInvoice } from "../types";
 import { DialogOptions } from "../../../types/component";
-import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const toast = useToast();
@@ -89,8 +85,30 @@ const store = useStore();
 const userFilterStore = useUserFilterStore();
 const customersStore = useCustomersStore();
 const invoiceStore = useSalesInvoiceStore();
+const lifecycleStore = useLifecyclesStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
+const columns = ref<Column[]>([
+  { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
+  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customersStore.getCustomerNameById,
+    style: "width: 25%",
+  },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 15%",
+  },
+  { field: "dueDate", header: "Venciment", style: "width: 15%" },
+  { field: "netAmount", header: "Import", columnType: ColumnType.Currency, style: "width: 20%" },
+]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -114,6 +132,7 @@ const setCurrentYear = () => {
 
 onMounted(async () => {
   customersStore.fetchCustomers();
+  lifecycleStore.fetchOneByName("SalesInvoice");
 
   setCurrentYear();
   getUserFilter();
@@ -170,6 +189,14 @@ const filterInvoices = async () => {
   );
 };
 
+const getLastDueDate = (invoice: SalesInvoice): string => {
+  if (!invoice.salesInvoiceDueDates) return "";
+  if (invoice.salesInvoiceDueDates.length === 0) return formatDate(invoice.invoiceDate);
+  return formatDate(
+    invoice.salesInvoiceDueDates[invoice.salesInvoiceDueDates.length - 1].dueDate,
+  );
+};
+
 const createRequest = ref({} as CreateSalesHeaderRequest);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
@@ -206,8 +233,8 @@ const createInvoice = async () => {
     router.push({ path: `/sales-invoice/${createRequest.value.id}` });
 };
 
-const editSalesInvoice = (invoice: SalesInvoice) => {
-  router.push({ path: `/sales-invoice/${invoice.id}` });
+const editRow = (row: DataTableRowClickEvent) => {
+  router.push({ path: `/sales-invoice/${row.data.id}` });
 };
 
 const deleteSalesInvoice = (invoice: SalesInvoice) => {
@@ -224,7 +251,6 @@ const deleteSalesInvoice = (invoice: SalesInvoice) => {
           summary: "Eliminada",
           life: 3000,
         });
-
         await filterInvoices();
       }
     },

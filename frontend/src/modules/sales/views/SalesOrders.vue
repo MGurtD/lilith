@@ -1,116 +1,62 @@
 <template>
-  <DataTable
-    :value="salesOrderStore.salesOrders"
+  <Table
+    :columns="columns"
+    :items="salesOrderStore.salesOrders ?? []"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    preset="crud-list"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
     sort-mode="single"
     :sort-order="1"
-    scrollable
-    scrollHeight="flex"
-    paginator
-    :rows="20"
+    showDeleteColumn
+    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
+    @filter="filterSalesOrder"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteSalesInvoice"
     @row-click="editRow"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterSalesOrder"
-        @clear="cleanFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">Estat</label>
-            <DropdownLifecycle
-              label=""
-              name="SalesOrder"
-              v-model="filter.statusId"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="number" header="Número" sortable style="width: 10%"></Column>
-    <Column field="date" header="Data" style="width: 10%" sortable>
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column
-      field="expectedDate"
-      header="Data Entrega"
-      style="width: 10%"
-      sortable
-    >
-      <template #body="slotProps">
-        {{
-          slotProps.data.expectedDate
-            ? formatDate(slotProps.data.expectedDate)
-            : ""
-        }}
-      </template>
-    </Column>
-    <Column
-      field="customerComercialName"
-      header="Client"
-      style="width: 30%"
-    ></Column>
-    <Column
-      field="customerNumber"
-      header="Comanda client"
-      style="width: 15%"
-    ></Column>
-    <Column header="Estat" style="width: 20%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            slotProps.data.statusId ===
-            lifecycleStore.lifecycle?.initialStatusId
-          "
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteSalesInvoice($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >Període</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Selecciona període"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >Client</label
+        >
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label">Estat</label>
+        <DropdownLifecycle
+          label=""
+          name="SalesOrder"
+          v-model="filter.statusId"
+        />
+      </div>
+    </template>
+
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -129,7 +75,8 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -142,11 +89,10 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
-import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
+import { CreateSalesHeaderRequest } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useUserFilterStore } from "../../../store/userfilter";
 
@@ -159,6 +105,21 @@ const userFilterStore = useUserFilterStore();
 const salesOrderStore = useSalesOrderStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+
+const columns = ref<Column[]>([
+  { field: "number", header: "Número", sortable: true, style: "width: 10%" },
+  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "expectedDate", header: "Data Entrega", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "customerComercialName", header: "Client", style: "width: 30%" },
+  { field: "customerNumber", header: "Comanda client", style: "width: 15%" },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 20%",
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
@@ -262,12 +223,6 @@ const filterSalesOrder = async () => {
   }
 };
 
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
-};
-
 const createOrder = async () => {
   const response = await salesOrderStore.Create(createRequest.value);
   if (!response?.result) {
@@ -286,16 +241,10 @@ const createOrder = async () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/salesorder/${row.data.id}` });
-  }
+  router.push({ path: `/salesorder/${row.data.id}` });
 };
 
-const deleteSalesInvoice = (event: any, order: SalesOrderHeader) => {
+const deleteSalesInvoice = (order: any) => {
   confirm.require({
     message: `Està segur que vol eliminar la comanda?`,
     icon: "pi pi-question-circle",

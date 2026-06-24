@@ -1,119 +1,85 @@
 <template>
-  <DataTable
+  <Table
+    :columns="columns"
+    :items="invoiceStore.invoices ?? []"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    preset="crud-list"
+    page="SalesInvoicesByDates"
     class="small-datatable"
     tableStyle="min-width: 100%"
+    sort-mode="multiple"
+    :selection-mode="'multiple'"
+    v-model:selection="selectedInvoices"
     scrollable
     scrollHeight="flex"
-    sortMode="multiple"
-    :value="invoiceStore.invoices"
-    v-model:selection="selectedInvoices"
+    @clear="clearFilter"
+    @filter="filterInvoices"
   >
-      <template #header>
-        <TableFilter
-          :config="filterConfig"
-          :body-width="filterBodyWidth"
-          v-model="filter"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-create="false"
-          embedded
-          @filter="filterInvoices"
-          @clear="clearFilter"
-        >
-          <template #prepend>
-            <div class="table-filter-prepend-field table-filter-prepend-field--md">
-              <label class="filter-label table-filter-prepend-label">Període</label>
-              <DatePicker
-                v-model="filter.dates"
-                :numberOfMonths="2"
-                selectionMode="range"
-                dateFormat="dd/mm/yy"
-                size="small"
-                class="w-full"
-              />
-            </div>
-          </template>
-          <template #append>
-            <Button
-              :icon="PrimeIcons.CHECK"
-              :disabled="selectedInvoices.length === 0"
-              rounded
-              raised
-              severity="success"
-              size="small"
-              @click="updateSelectedInvoiceStatusToManaged"
-            />
-          </template>
-        </TableFilter>
-      </template>
-      <Column selectionMode="multiple" style="width: 2%"></Column>
-      <Column
-        field="invoiceNumber"
-        header="Número"
-        sortable
-        style="width: 10%"
-      ></Column>
-      <Column header="Client" style="width: 15%">
-        <template #body="slotProps">
-          {{ customerStore.getCustomerNameById(slotProps.data.customerId) }}
-        </template>
-      </Column>
-      <Column header="Estat" style="width: 15%">
-        <template #body="slotProps">
-          <span
-            :class="{
-              'managed-status': isManagedStatus(slotProps.data.statusId),
-            }"
-          >
-            {{ getStatusNameById(slotProps.data.statusId) }}
-          </span>
-        </template>
-      </Column>
-      <Column header="Data" field="invoiceDate" sortable style="width: 15%">
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.invoiceDate) }}
-        </template>
-      </Column>
-      <Column header="Venciment" style="width: 15%">
-        <template #body="slotProps">
-          {{ getLastDueDate(slotProps.data) }}
-        </template>
-      </Column>
-      <Column field="baseAmount" header="Import Base" style="width: 15%">
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.baseAmount) }}
-        </template>
-      </Column>
-      <Column style="width: 2%">
-        <template #body="slotProps">
-          <i
-            :class="PrimeIcons.DOWNLOAD"
-            class="download_column"
-            @click="downloadInvoices(slotProps.data)"
-          />
-        </template>
-      </Column>
-  </DataTable>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">Període</label>
+        <DatePicker
+          v-model="filter.dates"
+          :numberOfMonths="2"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          size="small"
+          class="w-full"
+        />
+      </div>
+    </template>
+
+    <template #append>
+      <Button
+        :icon="PrimeIcons.CHECK"
+        :disabled="selectedInvoices.length === 0"
+        rounded
+        raised
+        severity="success"
+        size="small"
+        @click="updateSelectedInvoiceStatusToManaged"
+      />
+    </template>
+
+    <template #body-invoiceNumber="{ data }">
+      {{ data.invoiceNumber }}
+    </template>
+    <template #body-_status="{ data }">
+      <span :class="{ 'managed-status': isManagedStatus(data.statusId) }">
+        {{ getStatusNameById(data.statusId) }}
+      </span>
+    </template>
+    <template #body-_dueDate="{ data }">
+      {{ getLastDueDate(data) }}
+    </template>
+    <template #body-download="{ data }">
+      <i
+        :class="PrimeIcons.DOWNLOAD"
+        class="download_column"
+        @click="downloadInvoices(data)"
+      />
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import TableFilter, {
-  type FilterBodyWidth,
-  type FilterConfig,
-} from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth, FilterConfig } from "../../../components/tables/TableFilter.vue";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { SalesInvoice } from "../types";
 import {
-  formatCurrency,
   formatDate,
   formatDateForQueryParameter,
 } from "../../../utils/functions";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useCustomersStore } from "../store/customers";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 
 const toast = useToast();
 const store = useStore();
@@ -137,6 +103,23 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
     size: "sm",
   },
 ]);
+
+const columns = ref<Column[]>([
+  { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+    style: "width: 15%",
+  },
+  { field: "_status", header: "Estat", style: "width: 15%" },
+  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "_dueDate", header: "Venciment", style: "width: 15%" },
+  { field: "baseAmount", header: "Import Base", columnType: ColumnType.Currency, style: "width: 15%" },
+  { field: "download", header: "", style: "width: 2%" },
+]);
+
 const selectedInvoices = ref([] as Array<SalesInvoice>);
 const lifecycleName = "SalesInvoice";
 
@@ -280,10 +263,6 @@ const downloadInvoices = async (invoice: SalesInvoice) => {
 };
 </script>
 <style scoped>
-.datatable-button {
-  margin-right: 1rem;
-}
-
 .download_column:hover {
   color: var(--p-blue-500);
   cursor: pointer;
@@ -292,5 +271,4 @@ const downloadInvoices = async (invoice: SalesInvoice) => {
 .managed-status {
   color: green;
 }
-
 </style>

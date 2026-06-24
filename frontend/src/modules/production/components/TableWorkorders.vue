@@ -32,7 +32,7 @@
     </Column>
     <Column field="statusId" header="Estat" style="width: 10%">
       <template #body="slotProps">
-        {{ lifecycleStore.getStatusName(slotProps.data.statusId) }}
+        {{ lifecycleStore.getStatusNameById(slotProps.data.statusId) }}
       </template>
     </Column>
     <Column

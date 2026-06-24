@@ -45,6 +45,12 @@ try
         // Language catalog singleton
         builder.Services.AddSingleton<ILanguageCatalog, LanguageCatalog>();
 
+        // Automatic database migrations in Development
+        if (builder.Environment.IsDevelopment())
+        {
+            builder.Services.AddHostedService<DatabaseMigrationService>();
+        }
+
         builder.Services.AddControllers(options =>
                         {
                             // Global authorization filter: all endpoints require authentication by default.
