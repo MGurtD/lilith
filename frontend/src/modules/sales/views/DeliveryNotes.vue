@@ -39,18 +39,6 @@
       </div>
     </template>
 
-    <template #body-createdOn="{ data }">
-      {{ formatDate(data.createdOn) }}
-    </template>
-    <template #body-deliveryDate="{ data }">
-      {{ data.deliveryDate ? formatDate(data.deliveryDate) : "" }}
-    </template>
-    <template #body-_customer="{ data }">
-      {{ getCustomerById(data.customerId) }}
-    </template>
-    <template #body-_status="{ data }">
-      {{ getStatusNameById(data.statusId) }}
-    </template>
   </Table>
 
   <Dialog
@@ -70,7 +58,7 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -82,7 +70,6 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
@@ -102,10 +89,22 @@ const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
 const columns = ref<Column[]>([
   { field: "number", header: "Número", sortable: true, style: "width: 15%" },
-  { field: "createdOn", header: "Data Creació", sortable: true, style: "width: 15%" },
-  { field: "deliveryDate", header: "Data Entrega", style: "width: 15%" },
-  { field: "_customer", header: "Client", style: "width: 30%" },
-  { field: "_status", header: "Estat", style: "width: 30%" },
+  { field: "createdOn", header: "Data Creació", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "deliveryDate", header: "Data Entrega", columnType: ColumnType.Date, style: "width: 15%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+    style: "width: 30%",
+  },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 30%",
+  },
 ]);
 
 const filter = ref({
@@ -187,18 +186,6 @@ const filterData = async () => {
       life: 5000,
     });
   }
-};
-
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
-};
-
-const getCustomerById = (id: string) => {
-  const customer = customerStore.customers?.find((c) => c.id === id);
-  if (customer) return customer.comercialName;
-  else return "";
 };
 
 const createDeliveryNote = async () => {

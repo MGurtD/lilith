@@ -56,15 +56,6 @@
       </div>
     </template>
 
-    <template #body-date="{ data }">
-      {{ formatDate(data.date) }}
-    </template>
-    <template #body-expectedDate="{ data }">
-      {{ data.expectedDate ? formatDate(data.expectedDate) : "" }}
-    </template>
-    <template #body-statusId="{ data }">
-      {{ getStatusNameById(data.statusId) }}
-    </template>
   </Table>
 
   <Dialog
@@ -85,7 +76,7 @@ import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -98,22 +89,12 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useUserFilterStore } from "../../../store/userfilter";
-
-const columns = ref<Column[]>([
-  { field: "number", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "date", header: "Data", sortable: true, style: "width: 10%" },
-  { field: "expectedDate", header: "Data Entrega", sortable: true, style: "width: 10%" },
-  { field: "customerComercialName", header: "Client", style: "width: 30%" },
-  { field: "customerNumber", header: "Comanda client", style: "width: 15%" },
-  { field: "statusId", header: "Estat", style: "width: 20%" },
-]);
 
 const router = useRouter();
 const toast = useToast();
@@ -124,6 +105,21 @@ const userFilterStore = useUserFilterStore();
 const salesOrderStore = useSalesOrderStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+
+const columns = ref<Column[]>([
+  { field: "number", header: "Número", sortable: true, style: "width: 10%" },
+  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "expectedDate", header: "Data Entrega", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "customerComercialName", header: "Client", style: "width: 30%" },
+  { field: "customerNumber", header: "Comanda client", style: "width: 15%" },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 20%",
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
@@ -225,12 +221,6 @@ const filterSalesOrder = async () => {
       life: 5000,
     });
   }
-};
-
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
 };
 
 const createOrder = async () => {

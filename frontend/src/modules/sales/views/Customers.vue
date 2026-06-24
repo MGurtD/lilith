@@ -30,14 +30,7 @@
           @create="createCustomer"
           @delete="deleteCustomer"
           @row-click="editCustomer"
-        >
-          <template #body-customerTypeId="{ data }">
-            <span>{{ getCustomerTypeName(data.customerTypeId) }}</span>
-          </template>
-          <template #body-disabled="{ data }">
-            <BooleanColumn :value="data.disabled" :showColor="false" />
-          </template>
-        </Table>
+        />
       </TabPanel>
       <TabPanel value="1">
         <Table
@@ -55,11 +48,7 @@
           @create="createCustomerType"
           @delete="deleteCustomerType"
           @row-click="editCustomerType"
-        >
-          <template #body-disabled="{ data }">
-            <BooleanColumn :value="data.disabled" />
-          </template>
-        </Table>
+        />
       </TabPanel>
     </TabPanels>
   </Tabs>
@@ -76,10 +65,9 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/types";
+import { ColumnType } from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
-
 const selectedTabIndex = ref("0");
 const toast = useToast();
 const confirm = useConfirm();
@@ -114,14 +102,20 @@ const customerColumns = ref<Column[]>([
   { field: "comercialName", header: "Nom comercial", sortable: true, style: "width: 20%" },
   { field: "taxName", header: "Nom Fiscal", style: "width: 20%" },
   { field: "vatNumber", header: "CIF", style: "width: 20%" },
-  { field: "customerTypeId", header: "Tipus", style: "width: 20%" },
-  { field: "disabled", header: "Desactivat", sortable: true, style: "width: 20%" },
+  {
+    field: "customerTypeId",
+    header: "Tipus",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerTypeNameById,
+    style: "width: 20%",
+  },
+  { field: "disabled", header: "Desactivat", sortable: true, columnType: ColumnType.Boolean, style: "width: 20%" },
 ]);
 
 const customerTypeColumns = ref<Column[]>([
   { field: "name", header: "Nom", style: "width: 33%" },
   { field: "description", header: "Descripció", style: "width: 33%" },
-  { field: "disabled", header: "Desactivat", style: "width: 33%" },
+  { field: "disabled", header: "Desactivat", columnType: ColumnType.Boolean, style: "width: 33%" },
 ]);
 
 const customerFilter = ref({
@@ -163,13 +157,6 @@ onMounted(async () => {
     icon: PrimeIcons.HASHTAG,
   });
 });
-
-const getCustomerTypeName = (id: string) => {
-  const customerType = customerStore.customerTypes?.find((st) => st.id === id);
-  if (customerType) {
-    return customerType.name;
-  }
-};
 
 const deleteCustomer = (customer: Customer) => {
   confirm.require({

@@ -72,6 +72,23 @@
                 @update:model-value="updateField(field.key, $event)"
               />
             </div>
+
+            <MultiSelect
+              v-else-if="field.type === 'multiselect'"
+              :inputId="field.key"
+              :model-value="arrayValue(field.key)"
+              :options="field.options"
+              :optionLabel="field.optionLabel || 'label'"
+              :optionValue="field.optionValue || 'value'"
+              :placeholder="field.placeholder || 'Selecciona...'"
+              :display="field.display || 'chip'"
+              :maxSelectedLabels="field.maxSelectedLabels ?? 3"
+              :filter="field.filter ?? true"
+              showClear
+              class="w-full"
+              size="small"
+              @update:model-value="updateField(field.key, $event)"
+            />
           </div>
         </div>
 
@@ -184,6 +201,24 @@
                 @update:model-value="updateField(field.key, $event)"
               />
             </div>
+
+            <!-- MultiSelect -->
+            <MultiSelect
+              v-else-if="field.type === 'multiselect'"
+              :inputId="field.key"
+              :model-value="arrayValue(field.key)"
+              :options="field.options"
+              :optionLabel="field.optionLabel || 'label'"
+              :optionValue="field.optionValue || 'value'"
+              :placeholder="field.placeholder || 'Selecciona...'"
+              :display="field.display || 'chip'"
+              :maxSelectedLabels="field.maxSelectedLabels ?? 3"
+              :filter="field.filter ?? true"
+              showClear
+              class="w-full"
+              size="small"
+              @update:model-value="updateField(field.key, $event)"
+            />
           </div>
         </div>
       </div>
@@ -199,7 +234,7 @@ const slots = useSlots();
 export interface FilterConfig {
   key: string;
   label?: string;
-  type: "select" | "text" | "number" | "checkbox";
+  type: "select" | "text" | "number" | "checkbox" | "multiselect";
   options?: any[];
   optionLabel?: string;
   optionValue?: string;
@@ -207,6 +242,12 @@ export interface FilterConfig {
   row?: number;
   /** Flex sizing: 'sm' = 0.5, 'md' = 1 (default), 'lg' = 1.5, 'xl' = 2 */
   size?: "sm" | "md" | "lg" | "xl";
+  /** Only for type: 'multiselect'. How selected items are displayed. Default: 'chip' */
+  display?: "comma" | "chip";
+  /** Only for type: 'multiselect'. Max labels shown before '+N more'. Default: 3 */
+  maxSelectedLabels?: number;
+  /** Only for type: 'multiselect'. Enable header filter input. Default: true */
+  filter?: boolean;
 }
 
 export interface FilterBodyWidth {
@@ -280,6 +321,11 @@ const numberValue = (key: string): number | null | undefined => {
 
 const booleanValue = (key: string): boolean => {
   return fieldValue(key) === true;
+};
+
+const arrayValue = (key: string): unknown[] => {
+  const value = fieldValue(key);
+  return Array.isArray(value) ? value : [];
 };
 
 const updateField = (key: string, value: unknown): void => {
@@ -428,6 +474,8 @@ const tableFilterClassName = computed(() => ({
 
 .table-filter :deep(.p-inputtext),
 .table-filter :deep(.p-select-label),
+.table-filter :deep(.p-multiselect-label),
+.table-filter :deep(.p-multiselect-chip-label),
 .table-filter :deep(.p-inputnumber-input),
 .table-filter :deep(.p-datepicker-input) {
   font-size: 0.875rem;
@@ -437,15 +485,50 @@ const tableFilterClassName = computed(() => ({
 }
 
 .table-filter :deep(.p-select),
+.table-filter :deep(.p-multiselect),
 .table-filter :deep(.p-inputtext),
 .table-filter :deep(.p-inputnumber),
 .table-filter :deep(.p-datepicker-input) {
+  height: 2.375rem;
   min-height: 2.375rem;
 }
 
 .table-filter :deep(.p-select-dropdown),
+.table-filter :deep(.p-multiselect-dropdown),
 .table-filter :deep(.p-datepicker-dropdown) {
   width: 2.375rem;
+}
+
+.table-filter :deep(.p-multiselect) {
+  display: flex;
+  align-items: center;
+  padding-block: 0.25rem;
+}
+
+.table-filter :deep(.p-multiselect-label-container) {
+  padding: 0;
+  overflow: hidden;
+  max-height: 1.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.table-filter :deep(.p-multiselect-chip-item) {
+  font-size: 0.75rem;
+  padding-block: 0;
+  padding-inline: 0.4rem;
+  border-radius: 0.25rem;
+  gap: 0.25rem;
+  line-height: 1.5;
+}
+
+.table-filter :deep(.p-multiselect-chip-label) {
+  font-size: 0.75rem;
+}
+
+.table-filter :deep(.p-multiselect-chip-icon) {
+  font-size: 0.65rem;
 }
 
 .table-filter :deep(.table-filter-prepend-field) {

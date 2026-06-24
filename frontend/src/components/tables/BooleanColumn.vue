@@ -1,18 +1,20 @@
 <template>
   <i
+    v-if="value === true"
     class="pi"
-    :class="{
-      'true-icon': showColor && value,
-      'false-icon': showColor && !value,
-      'pi-circle-fill': value,
-      'pi-circle': !value,
-    }"
-  ></i>
+    :class="[showColor ? 'pi-circle-fill true-icon' : 'pi-circle']"
+  />
+  <i
+    v-else-if="value === false"
+    class="pi"
+    :class="[showColor ? 'pi-circle false-icon' : 'pi-circle']"
+  />
+  <span v-else class="text-color-secondary">—</span>
 </template>
 
 <script setup lang="ts">
 defineProps<{
-  value: boolean;
+  value: boolean | null | undefined;
   showColor?: boolean;
 }>();
 </script>

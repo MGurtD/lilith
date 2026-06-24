@@ -46,22 +46,13 @@
     <template #body-invoiceNumber="{ data }">
       {{ data.invoiceNumber }}
     </template>
-    <template #body-_customer="{ data }">
-      {{ customerStore.getCustomerNameById(data.customerId) }}
-    </template>
     <template #body-_status="{ data }">
       <span :class="{ 'managed-status': isManagedStatus(data.statusId) }">
         {{ getStatusNameById(data.statusId) }}
       </span>
     </template>
-    <template #body-invoiceDate="{ data }">
-      {{ formatDate(data.invoiceDate) }}
-    </template>
     <template #body-_dueDate="{ data }">
       {{ getLastDueDate(data) }}
-    </template>
-    <template #body-baseAmount="{ data }">
-      {{ formatCurrency(data.baseAmount) }}
     </template>
     <template #body-download="{ data }">
       <i
@@ -81,7 +72,6 @@ import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { SalesInvoice } from "../types";
 import {
-  formatCurrency,
   formatDate,
   formatDateForQueryParameter,
 } from "../../../utils/functions";
@@ -89,7 +79,7 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useCustomersStore } from "../store/customers";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 
 const toast = useToast();
 const store = useStore();
@@ -116,11 +106,17 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
 
 const columns = ref<Column[]>([
   { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "_customer", header: "Client", style: "width: 15%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+    style: "width: 15%",
+  },
   { field: "_status", header: "Estat", style: "width: 15%" },
-  { field: "invoiceDate", header: "Data", sortable: true, style: "width: 15%" },
+  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
   { field: "_dueDate", header: "Venciment", style: "width: 15%" },
-  { field: "baseAmount", header: "Import Base", style: "width: 15%" },
+  { field: "baseAmount", header: "Import Base", columnType: ColumnType.Currency, style: "width: 15%" },
   { field: "download", header: "", style: "width: 2%" },
 ]);
 

@@ -35,20 +35,8 @@
       </div>
     </template>
 
-    <template #body-invoiceDate="{ data }">
-      {{ formatDate(data.invoiceDate) }}
-    </template>
-    <template #body-customerId="{ data }">
-      {{ getCustomerNameById(data.customerId) }}
-    </template>
-    <template #body-statusId="{ data }">
-      {{ getStatusNameById(data.statusId) }}
-    </template>
     <template #body-dueDate="{ data }">
       {{ getLastDueDate(data) }}
-    </template>
-    <template #body-netAmount="{ data }">
-      {{ formatCurrency(data.netAmount) }}
     </template>
   </Table>
 
@@ -69,7 +57,7 @@
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -84,7 +72,6 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
   formatDate,
-  formatCurrency,
   getNewUuid,
 } from "../../../utils/functions";
 import { CreateSalesHeaderRequest, SalesInvoice } from "../types";
@@ -104,11 +91,23 @@ const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
 const columns = ref<Column[]>([
   { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "invoiceDate", header: "Data", sortable: true, style: "width: 15%" },
-  { field: "customerId", header: "Client", style: "width: 25%" },
-  { field: "statusId", header: "Estat", style: "width: 15%" },
+  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customersStore.getCustomerNameById,
+    style: "width: 25%",
+  },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 15%",
+  },
   { field: "dueDate", header: "Venciment", style: "width: 15%" },
-  { field: "netAmount", header: "Import", style: "width: 20%" },
+  { field: "netAmount", header: "Import", columnType: ColumnType.Currency, style: "width: 20%" },
 ]);
 
 const filter = ref({
@@ -188,16 +187,6 @@ const filterInvoices = async () => {
     filter.value.customerId,
     undefined,
   );
-};
-
-const getCustomerNameById = (id: string) => {
-  const customer = customersStore.customers?.find((c) => c.id === id);
-  return customer ? customer.comercialName : "";
-};
-
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses.find((s) => s.id === id);
-  return status ? status.name : "";
 };
 
 const getLastDueDate = (invoice: SalesInvoice): string => {

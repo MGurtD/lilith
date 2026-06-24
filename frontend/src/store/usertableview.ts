@@ -3,7 +3,7 @@ import { UserTableView } from "../types";
 import AppServices from "../services";
 import { useStore } from "./index";
 import { getNewUuid } from "../utils/functions";
-import type { Column, Aggregation } from "@/components/tables/Table.vue";
+import type { Column, Aggregation } from "@/components/tables/types";
 import { hydrateFilter } from "../utils/filter-hydrate";
 
 interface ColumnConfig {
@@ -13,9 +13,15 @@ interface ColumnConfig {
   total?: Aggregation;
 }
 
+export interface SortConfig {
+  field: string;
+  order: 1 | -1;
+}
+
 interface ViewConfig {
   columns: ColumnConfig[];
   filters?: Record<string, unknown>;
+  sort?: SortConfig;
 }
 
 export const useUserTableViewStore = defineStore("userTableViewStore", {
@@ -147,6 +153,20 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
         return hydrateFilter(config.filters);
       } catch {
         // Invalid JSON, return null
+        return null;
+      }
+    },
+
+    /**
+     * Apply a saved view's sort configuration.
+     * Returns { field, order } or null if no sort is stored.
+     */
+    applySortConfig(view: UserTableView): SortConfig | null {
+      if (!view || !view.viewConfig) return null;
+      try {
+        const config: ViewConfig = JSON.parse(view.viewConfig);
+        return config.sort ?? null;
+      } catch {
         return null;
       }
     },

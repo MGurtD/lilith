@@ -3,23 +3,20 @@ import { computed, useSlots, useAttrs, ref, watch, onMounted, onUnmounted } from
 import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
 import TableViewConfig from "./TableViewConfig.vue";
+import BooleanColumn from "./BooleanColumn.vue";
+import TruncatedCell from "./TruncatedCell.vue";
+import ColumnGroup from "primevue/columngroup";
+import Row from "primevue/row";
 import { useStore } from "@/store";
 import { useUserTableViewStore } from "@/store/usertableview";
-
-export type Aggregation = "sum" | "avg" | "count" | "min" | "max";
-
-export type TablePreset = "crud-list" | "read-only" | "detail-lines" | "selector";
-
-export interface Column {
-  field: string;
-  header: string;
-  sortable?: boolean;
-  total?: Aggregation;
-  totalFormat?: (value: number) => string;
-  visible?: boolean;
-  order?: number;
-  style?: string;
-}
+import type { SortConfig } from "@/store/usertableview";
+import {
+  formatDate,
+  formatDateTime,
+  formatTime,
+  formatCurrency,
+} from "@/utils/functions";
+import { ColumnType, type Aggregation, type TablePreset, type Column } from "./types";
 
 const PRESET_DEFAULTS: Record<TablePreset, Record<string, unknown>> = {
   "crud-list": {
@@ -77,6 +74,8 @@ const props = withDefaults(
     rows?: number;
     scrollable?: boolean | null;
     scrollHeight?: string;
+    sortField?: string;
+    sortOrder?: number;
   }>(),
   { showFilters: true, paginator: null, scrollable: null },
 );
@@ -91,10 +90,49 @@ const resolvedDataTableProps = computed(() => {
   if (props.selectionMode !== undefined) explicit.selectionMode = props.selectionMode;
   if (props.rowGroupMode !== undefined) explicit.rowGroupMode = props.rowGroupMode;
   if (props.expandedRows !== undefined) explicit.expandedRows = props.expandedRows;
-  // Exclude paginator, rows, scrollable, scrollHeight from the spread —
-  // they are bound explicitly in the template to avoid PrimeVue coercion issues.
+  // Exclude paginator, rows, scrollable, scrollHeight, sortField, sortOrder from the spread —
+  // they are bound explicitly in the template to avoid PrimeVue reactivity issues.
   const { paginator: _p, rows: _r, scrollable: _s, scrollHeight: _sh, ...presetRest } = preset;
   return { ...presetRest, ...explicit, ...attrs };
+});
+
+// Sort: consumer prop takes priority, then active view config.
+// Bound explicitly in template so PrimeVue detects each prop change independently.
+// Guarded against incomplete sort configs — PrimeVue's multiSortField accessor
+// crashes on `multiSortMeta[0].field` when sortField is undefined but sortOrder
+// is set (or vice versa), especially when sortMode="multiple".
+// In sortMode="multiple", sortField/sortOrder are single-mode props and are
+// ignored by PrimeVue — instead, multiSortMeta (array) is used. We adapt
+// the single {field, order} sort config into a single-element multiSortMeta
+// array, and skip the sortField/sortOrder bindings to avoid feeding PrimeVue
+// an inconsistent state.
+const isMultipleSort = computed(() => attrs.sortMode === "multiple");
+const resolvedSortField = computed(() => {
+  if (isMultipleSort.value) return undefined;
+  const field = props.sortField ?? activeSortConfig.value?.field;
+  return field ? field : undefined;
+});
+const resolvedSortOrder = computed(() => {
+  if (isMultipleSort.value) return undefined;
+  if (!resolvedSortField.value) return undefined;
+  return props.sortOrder ?? activeSortConfig.value?.order;
+});
+const resolvedMultiSortMeta = computed(() => {
+  if (!isMultipleSort.value) return undefined;
+  const field = props.sortField ?? activeSortConfig.value?.field;
+  const order = props.sortOrder ?? activeSortConfig.value?.order;
+  if (!field || order === undefined) return undefined;
+  return [{ field, order: order as 1 | -1 }];
+});
+// PrimeVue DataTable caches sort state internally and ignores subsequent
+// sortField/sortOrder prop changes. A reactive :key forces re-mount when
+// the sort config changes so the new props are picked up as initial state.
+const sortKey = computed(() => {
+  if (isMultipleSort.value) {
+    const meta = resolvedMultiSortMeta.value;
+    return `multi_${meta?.[0]?.field ?? ''}_${meta?.[0]?.order ?? ''}`;
+  }
+  return `${resolvedSortField.value ?? ''}_${resolvedSortOrder.value ?? ''}`;
 });
 
 const resolvedRows = computed(() => {
@@ -139,6 +177,7 @@ const emit = defineEmits<{
   (e: "clear"): void;
   (e: "create"): void;
   (e: "delete", item: any): void;
+  (e: "update:sortConfig", value: SortConfig | null): void;
 }>();
 
 const slots = useSlots();
@@ -151,6 +190,7 @@ const viewStore = useUserTableViewStore();
 const appliedColumns = ref<Column[]>([...props.columns]);
 const activeViewId = ref<string>("");
 const viewConfigVisible = ref(false);
+const activeSortConfig = ref<SortConfig | null>(null);
 
 function onApplyViewConfig(columns: Column[], viewId: string) {
   appliedColumns.value = columns;
@@ -164,6 +204,11 @@ function onApplyViewConfig(columns: Column[], viewId: string) {
       emit("filter");
     }
   }
+}
+
+function onSortConfigUpdate(sortConfig: SortConfig | null) {
+  activeSortConfig.value = sortConfig;
+  emit("update:sortConfig", sortConfig);
 }
 
 async function loadDefaultView() {
@@ -181,9 +226,15 @@ async function loadDefaultView() {
       emit("update:filterValues", filterValues);
       emit("filter");
     }
+    // Apply sort config if present
+    const sortConfig = viewStore.applySortConfig(defaultView);
+    activeSortConfig.value = sortConfig;
+    emit("update:sortConfig", sortConfig);
   } else {
     appliedColumns.value = [...props.columns];
     activeViewId.value = "";
+    activeSortConfig.value = null;
+    emit("update:sortConfig", null);
   }
 }
 
@@ -338,10 +389,36 @@ function isFilterSlot(name: string | number | symbol): boolean {
 function filterSlotName(name: string | number | symbol): string {
   return typeof name === "string" ? name.slice(7) : "";
 }
+
+// Empty-value guard: prevents Date/DateTime/Time columns from rendering
+// the epoch (01/01/1970) when the field is null/undefined/empty string.
+// `new Date(null)` is `Date(0)` → epoch, which Intl then formats as 01/01/1970.
+function hasValue(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string" && value.trim() === "") return false;
+  return true;
+}
+
+// Single source of truth for the display string of a cell value.
+// Used by the default/typed body templates so the rendered text matches
+// what consumers see, regardless of columnType.
+function formatCellValue(col: Column, data: any): string {
+  const value = data[col.field];
+  switch (col.columnType) {
+    case ColumnType.Date: return formatDate(value);
+    case ColumnType.DateTime: return formatDateTime(value);
+    case ColumnType.Time: return formatTime(value);
+    case ColumnType.Currency: return formatCurrency(value);
+    case ColumnType.Lookup: return col.resolver?.(value) ?? "";
+    case ColumnType.Number: return String(value);
+    default: return String(value ?? "");
+  }
+}
 </script>
 
 <template>
   <DataTable
+    :key="sortKey"
     showGridlines
     v-bind="resolvedDataTableProps"
     :value="items"
@@ -349,6 +426,9 @@ function filterSlotName(name: string | number | symbol): string {
     :rows="resolvedRows"
     :scrollable="resolvedScrollable"
     :scrollHeight="resolvedScrollHeight"
+    :sortField="resolvedSortField"
+    :sortOrder="resolvedSortOrder"
+    :multiSortMeta="resolvedMultiSortMeta"
   >
     <!-- TableFilter embedded in DataTable's native header slot -->
     <template
@@ -405,11 +485,29 @@ function filterSlotName(name: string | number | symbol): string {
       :key="col.field"
       :field="col.field"
       :header="col.header"
-      :sortable="col.sortable ?? false"
+      :sortable="col.sortable || activeSortConfig?.field === col.field"
       :style="col.style"
+      :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
     >
+      <!-- Custom body slot from consumer takes priority -->
       <template v-if="slots[`body-${col.field}`]" #body="slotProps">
         <slot :name="`body-${col.field}`" v-bind="slotProps" />
+      </template>
+      <!-- Boolean: not affected by truncation (its own component) -->
+      <template v-else-if="col.columnType === ColumnType.Boolean" #body="slotProps">
+        <BooleanColumn
+          :value="slotProps.data[col.field]"
+          :show-color="col.showColor"
+        />
+      </template>
+      <!-- Default + all text-typed columns: route through TruncatedCell.
+           Default is true; opt out per column with `truncate: false`. -->
+      <template v-else #body="slotProps">
+        <TruncatedCell
+          v-if="hasValue(slotProps.data[col.field])"
+          :value="formatCellValue(col, slotProps.data)"
+          :truncate="col.truncate !== false"
+        />
       </template>
     </Column>
 
@@ -419,7 +517,7 @@ function filterSlotName(name: string | number | symbol): string {
         <div
           v-if="canDelete ? canDelete(slotProps.data) : true"
           class="delete-cell"
-          @click="emit('delete', slotProps.data)"
+          @click.stop="emit('delete', slotProps.data)"
           v-tooltip.top="'Eliminar'"
         >
           <i class="pi pi-trash delete-icon"></i>
@@ -466,7 +564,10 @@ function filterSlotName(name: string | number | symbol): string {
     :page="page"
     :active-view-id="activeViewId"
     :filter-values="filterValues"
+    :active-sort-config="activeSortConfig"
     @apply-config="onApplyViewConfig"
+    @update:sort-config="onSortConfigUpdate"
+    @update:filter-values="emit('update:filterValues', $event)"
   />
 </template>
 
@@ -493,5 +594,18 @@ function filterSlotName(name: string | number | symbol): string {
 .delete-icon {
   font-size: 0.75rem;
   pointer-events: none;
+}
+</style>
+
+<style>
+/* Non-scoped: targets the <td> cells marked via Column's `pt` prop.
+   Constrains cell width so the inner TruncatedCell span can apply ellipsis.
+   In table-layout: auto (PrimeVue default) the column sizes to the widest
+   cell, so the max-width effectively becomes the column width. */
+.p-datatable .truncate-cell {
+  max-width: var(--table-cell-truncate-max-width, 300px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

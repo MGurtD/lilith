@@ -27,6 +27,9 @@ export const useCustomersStore = defineStore({
       if (customer) return customer.comercialName;
       return "";
     },
+    getCustomerTypeNameById: (state) => (id: string) => {
+      return state.customerTypes?.find((t) => t.id === id)?.name ?? "";
+    },
   },
   actions: {
     // Customers

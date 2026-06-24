@@ -1,5 +1,6 @@
 <template>
   <Table
+    preset="crud-list"
     :columns="columns"
     :items="budgetStore.budgets ?? []"
     :filter-config="[]"
@@ -9,13 +10,7 @@
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
-    sort-mode="single"
-    selectionMode="single"
     :sort-order="1"
-    scrollable
-    scrollHeight="flex"
-    paginator
-    :rows="20"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @row-click="editRow"
@@ -53,26 +48,19 @@
         class="table-filter-prepend-field table-filter-prepend-field--md"
       >
         <label class="filter-label table-filter-prepend-label">Estat</label>
-        <DropdownLifecycle
-          label=""
-          name="Budget"
-          v-model="filter.statusId"
+        <MultiSelect
+          v-model="statusIds"
+          :options="lifecycleStore.lifecycle?.statuses || []"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecciona estats"
+          display="chip"
+          :showToggleAll="false"
+          class="w-full"
         />
       </div>
     </template>
 
-    <template #body-date="{ data }">
-      {{ formatDate(data.date) }}
-    </template>
-    <template #body-_customer="{ data }">
-      {{ getCustomerById(data.customerId) }}
-    </template>
-    <template #body-_status="{ data }">
-      {{ getStatusNameById(data.statusId) }}
-    </template>
-    <template #body-acceptanceDate="{ data }">
-      {{ data.acceptanceDate ? formatDate(data.acceptanceDate) : "" }}
-    </template>
   </Table>
 
   <Dialog
@@ -93,9 +81,8 @@
 <script setup lang="ts">
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
-import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -107,7 +94,6 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "@/utils/functions";
 import { DialogOptions } from "@/types/component";
@@ -127,18 +113,29 @@ const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const columns = ref<Column[]>([
   { field: "number", header: "Número" },
-  { field: "date", header: "Data", sortable: true },
-  { field: "_customer", header: "Client" },
-  { field: "_status", header: "Estat" },
-  { field: "acceptanceDate", header: "Data d'acceptació" },
+  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+  },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+  },
+  { field: "acceptanceDate", header: "Data d'acceptació", columnType: ColumnType.Date },
   { field: "deliveryDays", header: "Dies d'entrega" },
 ]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
-  statusId: undefined as string | undefined,
 });
+const statusIds = ref<Array<string>>([]);
+
 const dialogOptions = reactive({
   visible: false,
   title: "Crear pressupost",
@@ -156,8 +153,8 @@ const setCurrentYear = () => {
 };
 
 onMounted(async () => {
-  lifecycleStore.fetchOneByName("Budget");
-  customerStore.fetchCustomers();
+  await lifecycleStore.fetchOneByName("Budget");
+  await customerStore.fetchCustomers();
 
   setCurrentYear();
   await filterBudget();
@@ -173,7 +170,7 @@ onUnmounted(() => {
 
 const cleanFilter = () => {
   filter.value.customerId = undefined;
-  filter.value.statusId = undefined;
+  statusIds.value = [];
   setCurrentYear();
   filterBudget();
 };
@@ -206,7 +203,7 @@ const filterBudget = async () => {
       startTime,
       endTime,
       filter.value.customerId,
-      filter.value.statusId,
+      statusIds.value,
     );
   } else {
     toast.add({
@@ -216,17 +213,6 @@ const filterBudget = async () => {
       life: 5000,
     });
   }
-};
-
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
-};
-const getCustomerById = (id: string) => {
-  const customer = customerStore.customers?.find((c) => c.id === id);
-  if (customer) return customer.comercialName;
-  else return "";
 };
 
 const createOrder = async () => {

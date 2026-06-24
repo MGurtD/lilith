@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import type { Column } from "./Table.vue";
+import type { Column } from "./types";
 import { useUserTableViewStore } from "@/store/usertableview";
+import type { SortConfig } from "@/store/usertableview";
 import { useStore } from "@/store";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -13,12 +14,14 @@ const props = defineProps<{
   page: string;
   activeViewId?: string;
   filterValues?: any;
+  activeSortConfig?: SortConfig | null;
 }>();
 
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
   (e: "apply-config", columns: Column[], viewId: string): void;
   (e: "update:filterValues", value: any): void;
+  (e: "update:sortConfig", value: SortConfig | null): void;
 }>();
 
 const confirm = useConfirm();
@@ -35,6 +38,30 @@ const dragSourceIndex = ref<number | null>(null);
 const dragOverIndex = ref<number | null>(null);
 const newViewNameInput = ref<HTMLInputElement | null>(null);
 
+// Local sort config
+const localSortField = ref<string>("");
+const localSortOrder = ref<1 | -1>(1);
+
+// Cycle sort state for a column: none → asc → desc → none
+// Emits immediately for hot reload
+function cycleSortForColumn(field: string) {
+  if (localSortField.value !== field) {
+    localSortField.value = field;
+    localSortOrder.value = 1;
+  } else if (localSortOrder.value === 1) {
+    localSortOrder.value = -1;
+  } else {
+    localSortField.value = "";
+    localSortOrder.value = 1;
+  }
+  emit(
+    "update:sortConfig",
+    localSortField.value
+      ? { field: localSortField.value, order: localSortOrder.value }
+      : null
+  );
+}
+
 // Initialize local columns when dialog opens
 watch(
   () => props.visible,
@@ -48,6 +75,9 @@ watch(
       }));
       // Clear the new view name field — it is for creating only
       newViewName.value = "";
+      // Initialize sort from active sort config
+      localSortField.value = props.activeSortConfig?.field ?? "";
+      localSortOrder.value = (props.activeSortConfig?.order ?? 1) as 1 | -1;
       // Load views for this user and page
       const userId = store.user?.id;
       if (userId) {
@@ -90,6 +120,11 @@ watch(selectedViewId, (newId) => {
       if (filterValues) {
         emit("update:filterValues", filterValues);
       }
+      // Apply sort configuration if present
+      const sortConfig = viewStore.applySortConfig(view);
+      localSortField.value = sortConfig?.field ?? "";
+      localSortOrder.value = (sortConfig?.order ?? 1) as 1 | -1;
+      emit("update:sortConfig", sortConfig);
     }
   } else {
     // Reset to base columns
@@ -99,6 +134,10 @@ watch(selectedViewId, (newId) => {
       order: col.order ?? index,
     }));
     emit("apply-config", props.columns, "");
+    // Reset sort
+    localSortField.value = "";
+    localSortOrder.value = 1;
+    emit("update:sortConfig", null);
   }
 });
 
@@ -304,7 +343,7 @@ async function toggleDefault() {
   }
 }
 
-// Build unified view config JSON from local columns and filter values
+// Build unified view config JSON from local columns, filter values, and sort
 function buildViewConfig(): string {
   const columns = localColumns.value
     .filter((col) => col.order !== undefined || col.visible === false)
@@ -317,6 +356,9 @@ function buildViewConfig(): string {
   const config: Record<string, unknown> = { columns };
   if (props.filterValues) {
     config.filters = props.filterValues;
+  }
+  if (localSortField.value) {
+    config.sort = { field: localSortField.value, order: localSortOrder.value };
   }
   return JSON.stringify(config);
 }
@@ -433,6 +475,35 @@ function buildViewConfig(): string {
               @update:model-value="toggleTotal(index)"
             />
             <span v-if="col.total !== undefined" class="total-label">Total</span>
+            <!-- Sort toggle -->
+            <Button
+              :icon="
+                localSortField !== col.field
+                  ? 'pi pi-sort'
+                  : localSortOrder === 1
+                    ? 'pi pi-sort-amount-up'
+                    : 'pi pi-sort-amount-down'
+              "
+              :severity="localSortField === col.field ? 'primary' : 'secondary'"
+              size="small"
+              rounded
+              text
+              :aria-label="
+                localSortField !== col.field
+                  ? 'Sense ordenació'
+                  : localSortOrder === 1
+                    ? 'Ascendent'
+                    : 'Descendent'
+              "
+              v-tooltip.top="
+                localSortField !== col.field
+                  ? 'Sense ordenació'
+                  : localSortOrder === 1
+                    ? 'Ascendent'
+                    : 'Descendent'
+              "
+              @click.stop="cycleSortForColumn(col.field)"
+            />
           </div>
         </div>
       </div>

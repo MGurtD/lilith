@@ -32,20 +32,8 @@
         />
       </div>
     </template>
-    <template #body-customerId="{ data }">
-      <span>{{ getCustomerById(data.customerId) }}</span>
-    </template>
-    <template #body-createdOn="{ data }">
-      {{ formatDate(data.createdOn) }}
-    </template>
-    <template #body-price="{ data }">
-      {{ formatCurrency(data.price) }}
-    </template>
     <template #body-cost="{ data }">
       {{ formatCurrency(data.workMasterCost) }}
-    </template>
-    <template #body-isService="{ data }">
-      <BooleanColumn :value="data.isService" />
     </template>
   </Table>
 </template>
@@ -53,14 +41,13 @@
 <script setup lang="ts">
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { computed, ref } from "vue";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
-import { formatCurrency, formatDate } from "../../../utils/functions";
-import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
+import { formatCurrency } from "../../../utils/functions";
 
 const customerStore = useCustomersStore();
 
@@ -87,11 +74,17 @@ const columns = ref<Column[]>([
   { field: "code", header: "Codi", style: "width: 10%" },
   { field: "description", header: "Descripció", style: "width: 30%" },
   { field: "version", header: "Versió", style: "width: 8%" },
-  { field: "customerId", header: "Client", style: "width: 18%" },
-  { field: "createdOn", header: "Data creació", sortable: true, style: "width: 10%" },
-  { field: "price", header: "Preu", style: "width: 8%" },
+  {
+    field: "customerId",
+    header: "Client",
+    columnType: ColumnType.Lookup,
+    resolver: customerStore.getCustomerNameById,
+    style: "width: 18%",
+  },
+  { field: "createdOn", header: "Data creació", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "price", header: "Preu", columnType: ColumnType.Currency, style: "width: 8%" },
   { field: "cost", header: "Cost", style: "width: 8%" },
-  { field: "isService", header: "Servei", style: "width: 5%" },
+  { field: "isService", header: "Servei", columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
 
 const filter = ref({
@@ -174,11 +167,6 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const onDeleteRow = (reference: Reference) => {
   emit("delete", reference);
-};
-
-const getCustomerById = (customerId: string) => {
-  const customer = customerStore.customers?.find((c) => c.id === customerId);
-  return customer ? customer.comercialName : "";
 };
 </script>
 
