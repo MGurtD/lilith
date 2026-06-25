@@ -10,5 +10,6 @@ namespace Application.Contracts
 
         Task<GenericResponse> GetWorkmasterMetrics(WorkMaster workMaster, decimal? productedQuantity);
         Task<GenericResponse> GetProductionPartCosts(ProductionPart productionPart);
+        Task<decimal> GetWorkOrderConsumedMaterialCost(Guid workOrderId);
     }
 }

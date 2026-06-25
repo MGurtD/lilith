@@ -59,6 +59,13 @@ namespace Api.Controllers.Production
             return Ok(workOrders.OrderBy(e => e.Code));
         }
 
+        [HttpGet("Dashboard")]
+        public async Task<IActionResult> GetDashboardData()
+        {
+            var data = await workOrderService.GetDashboardData();
+            return Ok(data);
+        }
+
         [HttpPost("Loaded")]
         [SwaggerOperation("GetLoadedWorkOrdersByPhaseIds")]
         [ProducesResponseType(typeof(IEnumerable<WorkOrderWithPhasesDto>), StatusCodes.Status200OK)]

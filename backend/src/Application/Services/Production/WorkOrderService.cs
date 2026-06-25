@@ -1,16 +1,109 @@
 
 
 using Application.Contracts;
+using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
 using Domain.Entities.Sales;
 
 namespace Application.Services.Production
 {
-    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService) : IWorkOrderService
+    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService, IMetricsService metricsService) : IWorkOrderService
     {
         public async Task<WorkOrder?> GetById(Guid id)
         {
             return await unitOfWork.WorkOrders.Get(id);
+        }
+
+        public async Task<IEnumerable<WorkOrderDashboardDto>> GetDashboardData()
+        {
+            var result = new List<WorkOrderDashboardDto>();
+
+            var productionStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Production);
+            if (productionStatus == null)
+                return result;
+
+            var closedStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                StatusConstants.Lifecycles.WorkOrder, StatusConstants.Statuses.Tancada);
+
+            var inProgressWorkOrders = unitOfWork.WorkOrders
+                .Find(w => w.StatusId == productionStatus.Id)
+                .ToList();
+
+            foreach (var workOrder in inProgressWorkOrders)
+            {
+                var detailed = await unitOfWork.WorkOrders.GetDetailed(workOrder.Id);
+                if (detailed == null)
+                    continue;
+
+                var reference = detailed.Reference;
+                var plannedQuantity = detailed.PlannedQuantity;
+                var phases = detailed.Phases.OrderBy(p => p.Code).ToList();
+
+                // Preu de la comanda i cost teòric (totals) des de la fitxa de la referència
+                var orderPrice = (reference?.Price ?? 0) * plannedQuantity;
+                var theoreticalCost = (reference?.WorkMasterCost ?? 0) * plannedQuantity;
+
+                // Cost acumulat: operari i màquina des dels parts de treball
+                var productionParts = unitOfWork.ProductionParts
+                    .Find(pp => pp.WorkOrderId == workOrder.Id)
+                    .ToList();
+                var accumulatedOperatorCost = productionParts.Sum(pp => pp.OperatorTime / 60 * pp.OperatorHourCost);
+                var accumulatedMachineCost = productionParts.Sum(pp => pp.WorkcenterTime / 60 * pp.MachineHourCost);
+
+                // Cost acumulat: material real consumit (mateix càlcul que el cost teòric)
+                var accumulatedMaterialCost = await metricsService.GetWorkOrderConsumedMaterialCost(workOrder.Id);
+
+                // Cost acumulat: serveis externs de les fases externes tancades
+                var accumulatedExternalCost = phases
+                    .Where(p => p.IsExternalWork && closedStatus != null && p.StatusId == closedStatus.Id)
+                    .Sum(p => p.ExternalWorkCost + p.TransportCost);
+
+                var accumulatedTotalCost =
+                    accumulatedOperatorCost + accumulatedMachineCost + accumulatedMaterialCost + accumulatedExternalCost;
+
+                // Progrés per nombre de fases tancades
+                var totalPhases = phases.Count;
+                var closedPhases = closedStatus != null
+                    ? phases.Count(p => p.StatusId == closedStatus.Id)
+                    : 0;
+                var phaseProgress = totalPhases > 0
+                    ? Math.Round((decimal)closedPhases / totalPhases * 100, 1)
+                    : 0;
+
+                // Progrés per temps: temps real vs temps teòric (tenint en compte el temps de cicle)
+                var theoreticalTime = phases
+                    .Sum(p => p.Details.Sum(d => d.IsCycleTime ? d.EstimatedTime * plannedQuantity : d.EstimatedTime));
+                var actualTime = productionParts.Sum(pp => pp.WorkcenterTime);
+                var timeProgress = theoreticalTime > 0
+                    ? Math.Round(actualTime / theoreticalTime * 100, 1)
+                    : 0;
+
+                result.Add(new WorkOrderDashboardDto
+                {
+                    Id = workOrder.Id,
+                    Code = workOrder.Code,
+                    ReferenceCode = reference?.Code ?? string.Empty,
+                    ReferenceDescription = reference?.Description ?? string.Empty,
+                    PlannedQuantity = plannedQuantity,
+                    PlannedDate = detailed.PlannedDate,
+                    StartTime = detailed.StartTime,
+                    PhaseProgressPercentage = phaseProgress,
+                    TimeProgressPercentage = timeProgress,
+                    TheoreticalTimeMinutes = theoreticalTime,
+                    ActualTimeMinutes = actualTime,
+                    OrderPrice = orderPrice,
+                    TheoreticalCost = theoreticalCost,
+                    AccumulatedMaterialCost = accumulatedMaterialCost,
+                    AccumulatedMachineCost = accumulatedMachineCost,
+                    AccumulatedOperatorCost = accumulatedOperatorCost,
+                    AccumulatedExternalCost = accumulatedExternalCost,
+                    AccumulatedTotalCost = accumulatedTotalCost,
+                    Margin = orderPrice - accumulatedTotalCost,
+                });
+            }
+
+            return result.OrderBy(r => r.Code);
         }
 
         public async Task<GenericResponse> Create(WorkOrder workOrder)
@@ -571,9 +664,3 @@ namespace Application.Services.Production
         }
     }
 }
-
-
-
-
-
-
