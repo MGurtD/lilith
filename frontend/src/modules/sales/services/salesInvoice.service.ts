@@ -6,6 +6,7 @@ import {
   CreateSalesHeaderRequest,
   DeliveryNote,
   SalesInvoice,
+  SalesInvoiceCustomerDataPropagationResponse,
   SalesInvoiceCustomerDataUpdate,
   SalesInvoiceDetail,
 } from "../types";
@@ -108,6 +109,21 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
     const response = await this.apiClient.put(endpoint, dto);
     if (response.status === 200) {
       return response.data as GenericResponse<SalesInvoice>;
+    }
+  }
+
+  /**
+   * Returns the list of sibling invoices (same customer, status Pendent|Error)
+   * that would be updated if the user confirms propagation. Used by the
+   * frontend to render the confirmation dialog (issue #69 follow-up).
+   */
+  async GetCustomerDataPropagation(
+    id: string,
+  ): Promise<SalesInvoiceCustomerDataPropagationResponse | undefined> {
+    const endpoint = `${this.resource}/${id}/customer-data/propagation`;
+    const response = await this.apiClient.get(endpoint);
+    if (response.status === 200) {
+      return response.data as SalesInvoiceCustomerDataPropagationResponse;
     }
   }
 

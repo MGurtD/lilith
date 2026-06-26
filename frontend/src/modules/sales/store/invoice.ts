@@ -8,6 +8,7 @@ import {
   DeliveryNote,
   CreateRectificativeInvoiceRequest,
   SalesInvoiceCustomerDataUpdate,
+  SalesInvoiceCustomerDataPropagationResponse,
 } from "../types";
 import { GenericResponse } from "../../../types";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
@@ -139,6 +140,11 @@ export const useSalesInvoiceStore = defineStore({
         await this.GetById(id);
       }
       return response;
+    },
+    async GetCustomerDataPropagation(
+      id: string,
+    ): Promise<SalesInvoiceCustomerDataPropagationResponse | undefined> {
+      return await SalesService.SalesInvoice.GetCustomerDataPropagation(id);
     },
     async UpdateInvoicesStatuses(
       invoiceImport: InvoiceUpdateStatues,

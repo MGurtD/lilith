@@ -20,6 +20,8 @@
     "CustomerCifInvalid": "CIF/NIF invàlid",
     "CustomerFiscalAddressInvalid": "La direcció fiscal principal del client és incompleta. Cal omplir país, codi postal, ciutat i adreça",
     "SalesInvoiceCustomerDataUpdated": "Dades fiscals del client de la factura actualitzades correctament",
+    "SalesInvoiceCustomerDataPropagated": "Dades fiscals actualitzades a la factura actual i a {0} factura(es) més del mateix client",
+    "SalesInvoiceCustomerDataPropagationPrompt": "S'actualitzaran les dades fiscals en {0} factura(es) més pendents o amb error d'aquest client. Vols continuar?",
     "SalesInvoiceCustomerDataNotEditable": "No es poden modificar les dades del client: la factura ja ha estat integrada correctament amb Verifactu",
     "SalesInvoiceCustomerDataInvalidStatus": "No es poden modificar les dades del client en l'estat actual d'integració amb Verifactu",
     "SupplierNotFound": "El proveïdor no existeix",

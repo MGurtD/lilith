@@ -20,6 +20,8 @@
     "CustomerCifInvalid": "Invalid CIF/NIF",
     "CustomerFiscalAddressInvalid": "The main fiscal address of the customer is incomplete. Country, postal code, city and address are required",
     "SalesInvoiceCustomerDataUpdated": "Customer fiscal data of the invoice updated successfully",
+    "SalesInvoiceCustomerDataPropagated": "Customer fiscal data updated on the current invoice and on {0} more invoice(s) of the same customer",
+    "SalesInvoiceCustomerDataPropagationPrompt": "Customer fiscal data will be updated on {0} more pending or errored invoice(s) of this customer. Do you want to continue?",
     "SalesInvoiceCustomerDataNotEditable": "Customer data cannot be modified: the invoice has already been integrated successfully with Verifactu",
     "SalesInvoiceCustomerDataInvalidStatus": "Customer data cannot be modified in the current Verifactu integration status",
     "SupplierNotFound": "Supplier not found",

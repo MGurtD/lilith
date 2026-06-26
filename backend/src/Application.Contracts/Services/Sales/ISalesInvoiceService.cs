@@ -20,6 +20,7 @@ public interface ISalesInvoiceService
 
     Task<GenericResponse> Update(SalesInvoice SalesInvoice);
     Task<GenericResponse> UpdateCustomerDataAsync(Guid id, SalesInvoiceCustomerDataUpdateDto dto);
+    Task<SalesInvoiceCustomerDataUpdatePropagationResponse> GetPendingPropagationInvoicesAsync(Guid invoiceId);
     Task<GenericResponse> ChangeStatuses(ChangeStatusOfInvoicesRequest changeStatusOfPurchaseInvoicesRequest);
     Task<GenericResponse> Remove(Guid id);
 

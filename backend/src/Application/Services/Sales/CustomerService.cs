@@ -45,6 +45,14 @@ public class CustomerService(
         return new GenericResponse(true, customer);
     }
 
+    /// <summary>
+    /// Updates a Customer without blocking on fiscal-data validation issues.
+    /// Fiscal warnings are returned in <see cref="GenericResponse.Warnings"/> so the
+    /// caller can surface them but still proceed — required for the Verifactu resend
+    /// workflow (issue #69 follow-up): admins must be able to save a Customer even
+    /// if its CIF or fiscal address is wrong, fix the data later from the invoice
+    /// view, and re-trigger the Verifactu request.
+    /// </summary>
     public async Task<GenericResponse> UpdateCustomer(Customer customer)
     {
         var exists = await unitOfWork.Customers.Get(customer.Id);
@@ -54,11 +62,22 @@ public class CustomerService(
                 localizationService.GetLocalizedString("EntityNotFound", customer.Id));
         }
 
-        var fiscalValidation = ValidateCustomerFiscalData(customer);
-        if (fiscalValidation != null) return fiscalValidation;
-
         await unitOfWork.Customers.Update(customer);
-        return new GenericResponse(true, customer);
+
+        var warnings = CollectCustomerFiscalWarnings(customer);
+        if (warnings.Count == 0)
+        {
+            return new GenericResponse(true, customer);
+        }
+
+        logger.LogWarning(
+            "Customer {CustomerId} updated with {WarningCount} fiscal warning(s): {Warnings}",
+            customer.Id, warnings.Count, string.Join(" | ", warnings));
+
+        return new GenericResponse(true, customer)
+        {
+            Warnings = warnings,
+        };
     }
 
     public async Task<GenericResponse> RemoveCustomer(Guid id)
@@ -187,35 +206,60 @@ public class CustomerService(
 
     private GenericResponse? ValidateCustomerFiscalData(Customer customer)
     {
-        if (!customer.IsValidForSales())
+        var warnings = CollectCustomerFiscalWarnings(customer);
+        if (warnings.Count == 0) return null;
+
+        // CreateCustomer is a hard-fail path: we do not want to persist a brand-new
+        // customer whose fiscal data is malformed. Map the warnings to the most
+        // relevant single message for the UI.
+        var first = warnings[0];
+        if (first.Contains("CIF", StringComparison.OrdinalIgnoreCase) ||
+            first.Contains("NIF", StringComparison.OrdinalIgnoreCase))
         {
             return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerCifInvalid"));
+        }
+        return new GenericResponse(false,
+            localizationService.GetLocalizedString("CustomerFiscalAddressInvalid"));
+    }
+
+    /// <summary>
+    /// Builds a non-blocking list of human-readable fiscal warnings for the given
+    /// Customer. Used by <see cref="UpdateCustomer"/> so the operation can succeed
+    /// while still surfacing problems to the user (issue #69 follow-up).
+    /// </summary>
+    private List<string> CollectCustomerFiscalWarnings(Customer customer)
+    {
+        var warnings = new List<string>();
+
+        if (!customer.IsValidForSales())
+        {
+            warnings.Add(
                 localizationService.GetLocalizedString("CustomerInvalid"));
         }
 
         if (!SpanishFiscalIdValidator.IsValidSpanishFiscalId(customer.VatNumber))
         {
-            return new GenericResponse(false,
+            warnings.Add(
                 localizationService.GetLocalizedString("CustomerCifInvalid"));
         }
 
         var mainAddress = customer.MainAddress();
         if (mainAddress == null)
         {
-            return new GenericResponse(false,
+            warnings.Add(
                 localizationService.GetLocalizedString("CustomerNoAddresses"));
         }
-
-        if (string.IsNullOrWhiteSpace(mainAddress.Country)
+        else if (string.IsNullOrWhiteSpace(mainAddress.Country)
             || string.IsNullOrWhiteSpace(mainAddress.PostalCode)
             || string.IsNullOrWhiteSpace(mainAddress.City)
             || string.IsNullOrWhiteSpace(mainAddress.Address))
         {
-            return new GenericResponse(false,
+            warnings.Add(
                 localizationService.GetLocalizedString("CustomerFiscalAddressInvalid"));
         }
 
-        return null;
+        return warnings;
     }
 
     private async Task UpdateCoordinatesAndDistanceAsync(CustomerAddress address)

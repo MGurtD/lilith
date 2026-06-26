@@ -86,7 +86,7 @@
             :size="'small'"
             :loading="savingCustomerData"
             :disabled="savingCustomerData"
-            @click="saveCustomerFiscalData"
+            @click="saveCustomerFiscalDataWithPropagationCheck"
           />
         </div>
       </div>
@@ -253,6 +253,7 @@ import SelectorDeliveryNotes from "../components/SelectorDeliveryNotes.vue";
 import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import { useVerifactuStore } from "../../verifactu/store/verifactu";
 import { useSharedDataStore } from "../../shared/store/masterData";
 
@@ -280,6 +281,7 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
+const confirm = useConfirm();
 const taxesStore = useTaxesStore();
 const customersStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
@@ -388,20 +390,26 @@ watch(
   { immediate: true },
 );
 
-const saveCustomerFiscalData = async () => {
+const saveCustomerFiscalData = async (propagateToAll = false) => {
   if (!invoice.value) return;
   savingCustomerData.value = true;
   try {
     const response = await invoiceStore.UpdateCustomerData(
       invoice.value.id,
-      { ...customerFiscalData },
+      { ...customerFiscalData, propagateToAll },
     );
     if (response?.result) {
+      const propagatedCount =
+        (response.content as { propagatedInvoiceCount?: number } | undefined)
+          ?.propagatedInvoiceCount ?? 0;
+      const detail =
+        propagatedCount > 0
+          ? `Dades fiscals del client actualitzades i propagades a ${propagatedCount} factura(es) més del mateix client`
+          : "Dades fiscals del client actualitzades correctament";
       toast.add({
         severity: "success",
         summary: "Dades fiscals",
-        detail:
-          "Dades fiscals del client actualitzades correctament",
+        detail,
         life: 5000,
       });
       syncCustomerFiscalDataFromInvoice();
@@ -420,6 +428,41 @@ const saveCustomerFiscalData = async () => {
   } finally {
     savingCustomerData.value = false;
   }
+};
+
+const saveCustomerFiscalDataWithPropagationCheck = async () => {
+  if (!invoice.value) return;
+
+  // Ask the backend whether there are sibling invoices (same customer, status
+  // Pendent | Error) that would also be updated if the user confirms
+  // propagation. If none, just save normally (issue #69 follow-up).
+  const propagation =
+    await invoiceStore.GetCustomerDataPropagation(invoice.value.id);
+  const pendingCount = propagation?.pendingInvoicesCount ?? 0;
+
+  if (pendingCount === 0) {
+    await saveCustomerFiscalData(false);
+    return;
+  }
+
+  confirm.require({
+    header: "Propagar dades fiscals",
+    message: `S'actualitzaran les dades fiscals en ${pendingCount} factura(es) més pendents o amb error d'aquest client. Vols continuar?`,
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: "Sí, propagar",
+    rejectLabel: "Cancel·lar",
+    acceptClass: "p-button-warning",
+    accept: async () => {
+      await saveCustomerFiscalData(true);
+    },
+    reject: () => {
+      // User cancelled — do NOT save anything. The previous implementation
+      // silently called saveCustomerFiscalData(false) on reject, which still
+      // persisted the current invoice's fiscal data while skipping propagation.
+      // Issue #69 follow-up: a true cancel must leave the invoice untouched so
+      // the admin can fix the data and re-trigger the dialog intentionally.
+    },
+  });
 };
 
 const getVerifactuStatusClass = () => {
