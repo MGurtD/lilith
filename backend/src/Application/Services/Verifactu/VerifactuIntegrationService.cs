@@ -38,6 +38,25 @@ public class VerifactuIntegrationService(IUnitOfWork unitOfWork,
         return await ProcessVerifactuResponse(invoice!, response, true);
     }
 
+    /// <summary>
+    /// Re-sends an invoice to Verifactu after an integration error.
+    /// Reuses the same registration flow as <see cref="SendInvoiceToVerifactu"/>;
+    /// rejected when the invoice was already integrated successfully.
+    /// </summary>
+    public async Task<GenericResponse> ResendInvoiceToVerifactu(Guid id)
+    {
+        var validationResult = await ValidateInvoiceExistsForVerifactu(id);
+        if (!validationResult.Result) return validationResult;
+
+        if (await HasInvoiceBeenIntegrated(id))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("VerifactuInvoiceAlreadyIntegrated"));
+        }
+
+        return await SendInvoiceToVerifactu(id);
+    }
+
     public async Task<GenericResponse> RemoveInvoiceFromVerifactu(Guid id)
     {
         var validationResult = await ValidateInvoiceExistsForVerifactu(id);

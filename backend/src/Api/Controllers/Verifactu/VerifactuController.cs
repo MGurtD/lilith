@@ -84,6 +84,17 @@ public class VerifactuController(
         else return BadRequest(response.Errors);
     }
 
+    [HttpPost("{id:guid}/ResendToVerifactu")]
+    [SwaggerOperation("SalesInvoiceResendToVerifactu")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendToVerifactu(Guid id)
+    {
+        var response = await service.ResendInvoiceToVerifactu(id);
+        if (response.Result) return Ok(response);
+        else return BadRequest(response);
+    }
+
     [HttpPost("{id:guid}/RemoveFromVerifactu")]
     [SwaggerOperation("SalesInvoiceRemoveFromVerifactu")]
     [ProducesResponseType(StatusCodes.Status200OK)]

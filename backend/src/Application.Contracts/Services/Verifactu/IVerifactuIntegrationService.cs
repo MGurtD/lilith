@@ -7,6 +7,7 @@ public interface IVerifactuIntegrationService
 {
     Task<GenericResponse> FindInvoicesInVerifactu(int month, int year);
     Task<GenericResponse> SendInvoiceToVerifactu(Guid id);
+    Task<GenericResponse> ResendInvoiceToVerifactu(Guid id);
     Task<GenericResponse> RemoveInvoiceFromVerifactu(Guid id);
     Task<IEnumerable<SalesInvoice>> GetInvoicesToIntegrateWithVerifactu(DateTime? toDate, Guid? initialStatusId);
     Task<IEnumerable<SalesInvoice>> GetIntegrationsBetweenDates(DateTime fromDate, DateTime toDate);
