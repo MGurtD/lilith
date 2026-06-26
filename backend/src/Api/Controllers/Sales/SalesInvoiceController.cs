@@ -89,6 +89,18 @@ namespace Api.Controllers.Sales
             else return BadRequest(response.Errors);
         }
 
+        [HttpPut("{id:guid}/customer-data")]
+        [SwaggerOperation("SalesInvoiceUpdateCustomerData")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCustomerData(Guid id, [FromBody] SalesInvoiceCustomerDataUpdateDto dto)
+        {
+            var response = await service.UpdateCustomerDataAsync(id, dto);
+
+            if (response.Result) return Ok(response);
+            else return BadRequest(response);
+        }
+
         [HttpPost]
         [Route("UpdateStatuses")]
         [ProducesResponseType(StatusCodes.Status200OK)]

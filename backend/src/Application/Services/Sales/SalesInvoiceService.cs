@@ -19,6 +19,7 @@ namespace Application.Services.Sales
         IDueDateService dueDateService,
         IDeliveryNoteService deliveryNoteService,
         IExerciseService exerciseService,
+        ICustomerService customerService,
         ILocalizationService localizationService) : ISalesInvoiceService
     {
         private readonly string LifecycleName = StatusConstants.Lifecycles.SalesInvoice;
@@ -307,6 +308,71 @@ namespace Application.Services.Sales
             await UpdateRelatedDeliveryNote(invoice.Id, currentStatus!, updatedStatus!);
 
             return new GenericResponse(true, invoice);
+        }
+
+        public async Task<GenericResponse> UpdateCustomerDataAsync(Guid id, SalesInvoiceCustomerDataUpdateDto dto)
+        {
+            var invoice = await unitOfWork.SalesInvoices.Get(id);
+            if (invoice == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesInvoiceNotFound", id));
+
+            // Block if any VerifactuRequest for this invoice has Success=true
+            var verifactuRequests = await unitOfWork.VerifactuRequests
+                .FindAsync(r => r.SalesInvoiceId == id);
+            if (verifactuRequests.Any(r => r.Success))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataNotEditable"));
+            }
+
+            // Only allow edits while IntegrationStatusId ∈ { Pendent, Error }
+            var pendingStatusId = await unitOfWork.Lifecycles
+                .GetInitialStatusByName(StatusConstants.Lifecycles.Verifactu);
+            var errorStatus = await unitOfWork.Lifecycles
+                .GetStatusByName(StatusConstants.Lifecycles.Verifactu, StatusConstants.Statuses.Error);
+
+            var allowedStatusIds = new List<Guid?>();
+            if (pendingStatusId.HasValue) allowedStatusIds.Add(pendingStatusId);
+            if (errorStatus != null) allowedStatusIds.Add(errorStatus.Id);
+
+            if (invoice.IntegrationStatusId == null
+                || !allowedStatusIds.Contains(invoice.IntegrationStatusId))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataInvalidStatus"));
+            }
+
+            // Copy the 9 customer fields onto the invoice header
+            invoice.CustomerComercialName = dto.CustomerComercialName;
+            invoice.CustomerTaxName = dto.CustomerTaxName;
+            invoice.CustomerVatNumber = dto.CustomerVatNumber;
+            invoice.CustomerAccountNumber = dto.CustomerAccountNumber;
+            invoice.CustomerAddress = dto.CustomerAddress;
+            invoice.CustomerCity = dto.CustomerCity;
+            invoice.CustomerPostalCode = dto.CustomerPostalCode;
+            invoice.CustomerRegion = dto.CustomerRegion;
+            invoice.CustomerCountry = dto.CustomerCountry;
+
+            await unitOfWork.SalesInvoices.Update(invoice);
+
+            // Propagate the corrected fiscal data to the linked Customer so future
+            // invoices inherit the corrected values. UpdateCustomer runs the same
+            // fiscal validation introduced in CustomerService (Paso 2).
+            if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
+            {
+                var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
+                if (customer != null)
+                {
+                    customer.ComercialName = dto.CustomerComercialName;
+                    customer.TaxName = dto.CustomerTaxName;
+                    customer.VatNumber = dto.CustomerVatNumber;
+                    customer.AccountNumber = dto.CustomerAccountNumber;
+                    await customerService.UpdateCustomer(customer);
+                }
+            }
+
+            return new GenericResponse(true,
+                localizationService.GetLocalizedString("SalesInvoiceCustomerDataUpdated"));
         }
 
         private async Task UpdateRelatedDeliveryNote(Guid invoiceId, Status currentStatus, Status updatedStatus)
