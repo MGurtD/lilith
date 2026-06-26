@@ -9,6 +9,7 @@
     <Project Path="src\Application\Application.csproj" Type="Classic C#" />
     <Project Path="src\Api\Api.csproj" Type="Classic C#" />
     <Project Path="src\Verifactu\Verifactu.csproj" Type="Classic C#" />
+    <Project Path="tests\Application.Tests\Application.Tests.csproj" Type="Classic C#" />
     <Properties Name="Configuration">
         <Property Name="Debug|Any CPU" />
         <Property Name="Release|Any CPU" />
