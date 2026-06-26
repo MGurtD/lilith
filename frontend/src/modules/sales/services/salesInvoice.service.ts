@@ -6,6 +6,7 @@ import {
   CreateSalesHeaderRequest,
   DeliveryNote,
   SalesInvoice,
+  SalesInvoiceCustomerDataUpdate,
   SalesInvoiceDetail,
 } from "../types";
 
@@ -97,6 +98,17 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
     const endpoint = `${this.resource}/${request.id}`;
     const response = await this.apiClient.put(endpoint, request);
     return response.status === 200;
+  }
+
+  async UpdateCustomerData(
+    id: string,
+    dto: SalesInvoiceCustomerDataUpdate,
+  ): Promise<GenericResponse<SalesInvoice> | undefined> {
+    const endpoint = `${this.resource}/${id}/customer-data`;
+    const response = await this.apiClient.put(endpoint, dto);
+    if (response.status === 200) {
+      return response.data as GenericResponse<SalesInvoice>;
+    }
   }
 
   async UpdateStatuses(request: InvoiceUpdateStatues): Promise<boolean> {

@@ -254,6 +254,18 @@ export interface CreateRectificativeInvoiceRequest {
   quantity: number;
 }
 
+export interface SalesInvoiceCustomerDataUpdate {
+  customerComercialName: string;
+  customerTaxName: string;
+  customerVatNumber: string;
+  customerAccountNumber: string;
+  customerAddress: string;
+  customerCity: string;
+  customerPostalCode: string;
+  customerRegion: string;
+  customerCountry: string;
+}
+
 export interface SalesInvoice {
   id: string;
   parentSalesInvoiceId: string | null;
