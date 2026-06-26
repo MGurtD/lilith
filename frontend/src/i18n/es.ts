@@ -248,10 +248,23 @@ const es = {
           statusCode: "Estado",
           response: "Respuesta",
           qrCode: "QR",
+          actions: "Acciones",
         },
+      },
+      actions: {
+        viewDetail: "Ver detalle",
+        resend: "Reenviar",
+      },
+      detailDialog: {
+        title: "Detalle de la solicitud",
       },
       messages: {
         loadError: "Error cargando las solicitudes de integración",
+        resendConfirm: "¿Quieres reenviar la factura {number} a Verifactu?",
+        resendHeader: "Reenviar a Verifactu",
+        resendSuccess: "Factura reenviada",
+        resendSuccessDetail: "La factura se ha reenviado a Verifactu correctamente",
+        resendError: "No se ha podido reenviar la factura a Verifactu",
       },
     },
     responsabilities: {

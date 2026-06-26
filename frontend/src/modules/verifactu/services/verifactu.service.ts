@@ -86,4 +86,17 @@ export class VerifactuService extends BaseService<any> {
       return response.data as GenericResponse<any>;
     }
   }
+
+  async ResendToVerifactu(
+    invoiceId: string
+  ): Promise<GenericResponse<any> | undefined> {
+    const endpoint = `${this.resource}/${invoiceId}/ResendToVerifactu`;
+    const response = await this.apiClient.post(endpoint, null, {
+      timeout: this.TIMEOUT_MS,
+    });
+
+    if (response.status === 200) {
+      return response.data as GenericResponse<any>;
+    }
+  }
 }

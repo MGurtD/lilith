@@ -247,10 +247,23 @@ const en = {
           statusCode: "Status",
           response: "Response",
           qrCode: "QR",
+          actions: "Actions",
         },
+      },
+      actions: {
+        viewDetail: "View detail",
+        resend: "Resend",
+      },
+      detailDialog: {
+        title: "Request detail",
       },
       messages: {
         loadError: "Error loading integration requests",
+        resendConfirm: "Do you want to resend invoice {number} to Verifactu?",
+        resendHeader: "Resend to Verifactu",
+        resendSuccess: "Invoice resent",
+        resendSuccessDetail: "The invoice has been resent to Verifactu successfully",
+        resendError: "The invoice could not be resent to Verifactu",
       },
     },
     responsabilities: {

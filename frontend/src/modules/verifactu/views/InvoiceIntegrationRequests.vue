@@ -167,6 +167,40 @@
         </template>
       </Column>
 
+      <Column
+        :header="$t('verifactu.integrationRequests.table.columns.actions')"
+        :style="{ width: '12rem' }"
+      >
+        <template #body="slotProps">
+          <div class="flex items-center gap-2">
+            <Button
+              icon="pi pi-eye"
+              size="small"
+              text
+              rounded
+              :aria-label="
+                $t('verifactu.integrationRequests.actions.viewDetail')
+              "
+              :title="$t('verifactu.integrationRequests.actions.viewDetail')"
+              @click="openDetail(slotProps.data)"
+            />
+            <Button
+              v-if="!slotProps.data.success"
+              icon="pi pi-refresh"
+              size="small"
+              text
+              rounded
+              severity="warn"
+              :loading="resendingId === slotProps.data.invoiceId"
+              :disabled="resendingId === slotProps.data.invoiceId"
+              :aria-label="$t('verifactu.integrationRequests.actions.resend')"
+              :title="$t('verifactu.integrationRequests.actions.resend')"
+              @click="confirmResend(slotProps.data)"
+            />
+          </div>
+        </template>
+      </Column>
+
       <template #empty>
         <div class="text-center p-4">
           <i class="pi pi-inbox text-4xl text-gray-400 mb-3"></i>
@@ -176,6 +210,110 @@
         </div>
       </template>
     </DataTable>
+
+    <Dialog
+      v-model:visible="detailDialogVisible"
+      :modal="true"
+      :header="
+        $t('verifactu.integrationRequests.detailDialog.title')
+      "
+      :style="{ width: '60vw' }"
+      :maximizable="true"
+      :draggable="false"
+    >
+      <div v-if="selectedRequest" class="verifactu-detail">
+        <div class="verifactu-detail-grid">
+          <div>
+            <span class="verifactu-detail-label">{{
+              $t("verifactu.integrationRequests.table.columns.invoiceNumber")
+            }}</span>
+            <span class="verifactu-detail-value">{{
+              selectedRequest.invoiceNumber
+            }}</span>
+          </div>
+          <div>
+            <span class="verifactu-detail-label">{{
+              $t("verifactu.integrationRequests.table.columns.customer")
+            }}</span>
+            <span class="verifactu-detail-value">{{
+              selectedRequest.customerComercialName
+            }}</span>
+          </div>
+          <div>
+            <span class="verifactu-detail-label">{{
+              $t("verifactu.integrationRequests.table.columns.date")
+            }}</span>
+            <span class="verifactu-detail-value">{{
+              formatDate(selectedRequest.timestampResponse)
+            }}</span>
+          </div>
+          <div>
+            <span class="verifactu-detail-label">{{
+              $t("verifactu.integrationRequests.table.columns.success")
+            }}</span>
+            <Tag
+              :value="selectedRequest.success ? 'OK' : 'ERR'"
+              :severity="selectedRequest.success ? 'success' : 'danger'"
+            />
+          </div>
+        </div>
+
+        <div class="verifactu-detail-section">
+          <div class="verifactu-detail-header">
+            <span>{{
+              $t("verifactu.integrationRequests.table.columns.request")
+            }}</span>
+            <Button
+              icon="pi pi-copy"
+              size="small"
+              text
+              rounded
+              :aria-label="
+                $t(
+                  'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
+                )
+              "
+              @click="copyToClipboard(selectedRequest.request)"
+            />
+          </div>
+          <pre class="verifactu-detail-pre">{{
+            selectedRequest.request ?? ""
+          }}</pre>
+        </div>
+
+        <div class="verifactu-detail-section">
+          <div class="verifactu-detail-header">
+            <span>{{
+              $t("verifactu.integrationRequests.table.columns.response")
+            }}</span>
+            <Button
+              icon="pi pi-copy"
+              size="small"
+              text
+              rounded
+              :aria-label="
+                $t(
+                  'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
+                )
+              "
+              @click="copyToClipboard(selectedRequest.response)"
+            />
+          </div>
+          <pre class="verifactu-detail-pre">{{
+            selectedRequest.response ?? ""
+          }}</pre>
+        </div>
+      </div>
+      <template #footer>
+        <Button
+          :label="$t('common.close') || 'Tancar'"
+          icon="pi pi-times"
+          @click="detailDialogVisible = false"
+        />
+      </template>
+    </Dialog>
+
+    <ConfirmDialog />
   </div>
 </template>
 
@@ -186,6 +324,9 @@ import { useToast } from "primevue/usetoast";
 import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
 import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import ConfirmDialog from "primevue/confirmdialog";
+import { useConfirm } from "primevue/useconfirm";
 import TableFilter, {
   type FilterBodyWidth,
   type FilterConfig,
@@ -198,6 +339,7 @@ import { formatDate } from "../../../utils/functions";
 
 const { t } = useI18n();
 const toast = useToast();
+const confirm = useConfirm();
 const store = useStore();
 const verifactuStore = useVerifactuStore();
 
@@ -328,6 +470,71 @@ function copyToClipboard(text?: string) {
     // ignore if clipboard not available
   });
 }
+
+// Detail dialog state
+const detailDialogVisible = ref(false);
+const selectedRequest = ref<any | null>(null);
+
+const openDetail = (row: any) => {
+  selectedRequest.value = row;
+  detailDialogVisible.value = true;
+};
+
+// Resend state
+const resendingId = ref<string | null>(null);
+
+const performResend = async (invoiceId: string) => {
+  resendingId.value = invoiceId;
+  try {
+    const response = await verifactuStore.ResendToVerifactu(invoiceId);
+    if (response?.result) {
+      toast.add({
+        severity: "success",
+        summary: t("verifactu.integrationRequests.messages.resendSuccess"),
+        detail: t(
+          "verifactu.integrationRequests.messages.resendSuccessDetail",
+        ),
+        life: 5000,
+      });
+      await loadRequests();
+    } else {
+      const errorMessage =
+        response?.errors && response.errors.length > 0
+          ? response.errors.join(", ")
+          : t("verifactu.integrationRequests.messages.resendError");
+      toast.add({
+        severity: "error",
+        summary: t("common.error"),
+        detail: errorMessage,
+        life: 7000,
+      });
+    }
+  } catch (err: any) {
+    console.error("Error resending invoice to Verifactu:", err);
+    toast.add({
+      severity: "error",
+      summary: t("common.error"),
+      detail: err?.message || t("verifactu.integrationRequests.messages.resendError"),
+      life: 7000,
+    });
+  } finally {
+    resendingId.value = null;
+  }
+};
+
+const confirmResend = (row: any) => {
+  if (!row?.invoiceId) return;
+  confirm.require({
+    message: t("verifactu.integrationRequests.messages.resendConfirm", {
+      number: row.invoiceNumber,
+    }),
+    header: t("verifactu.integrationRequests.messages.resendHeader"),
+    icon: "pi pi-exclamation-triangle",
+    acceptLabel: t("common.accept") || "Acceptar",
+    rejectLabel: t("common.cancel") || "Cancel·lar",
+    accept: () => performResend(row.invoiceId),
+  });
+};
 </script>
 
 <style scoped>
@@ -337,5 +544,66 @@ function copyToClipboard(text?: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.verifactu-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.verifactu-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1rem;
+}
+
+.verifactu-detail-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.verifactu-detail-label {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color);
+}
+
+.verifactu-detail-value {
+  font-weight: 600;
+}
+
+.verifactu-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.verifactu-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.verifactu-detail-pre {
+  background: var(--p-surface-100, #f1f5f9);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-family: var(--p-font-mono, monospace);
+  font-size: 0.8rem;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .verifactu-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

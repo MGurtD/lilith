@@ -248,10 +248,23 @@ const ca = {
           statusCode: "Estat",
           response: "Resposta",
           qrCode: "QR",
+          actions: "Accions",
         },
+      },
+      actions: {
+        viewDetail: "Veure detall",
+        resend: "Tornar a enviar",
+      },
+      detailDialog: {
+        title: "Detall de la petició",
       },
       messages: {
         loadError: "Error carregant les peticions d'integració",
+        resendConfirm: "Vols tornar a enviar la factura {number} a Verifactu?",
+        resendHeader: "Tornar a enviar a Verifactu",
+        resendSuccess: "Factura enviada de nou",
+        resendSuccessDetail: "La factura s'ha tornat a enviar a Verifactu correctament",
+        resendError: "No s'ha pogut tornar a enviar la factura a Verifactu",
       },
     },
     responsabilities: {
