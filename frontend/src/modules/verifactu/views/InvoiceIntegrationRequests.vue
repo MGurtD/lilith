@@ -530,8 +530,8 @@ const confirmResend = (row: any) => {
     }),
     header: t("verifactu.integrationRequests.messages.resendHeader"),
     icon: "pi pi-exclamation-triangle",
-    acceptLabel: t("common.accept") || "Acceptar",
-    rejectLabel: t("common.cancel") || "Cancel·lar",
+    acceptLabel: t("common.accept"),
+    rejectLabel: t("common.cancel"),
     accept: () => performResend(row.invoiceId),
   });
 };

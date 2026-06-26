@@ -17,71 +17,70 @@
       <div class="customer-fiscal-card">
         <div class="customer-fiscal-header">
           <i class="pi pi-id-card"></i>
-          <span>Dades fiscals</span>
+          <span>{{ $t("salesInvoice.customerData.title") }}</span>
           <small class="customer-fiscal-hint">
-            Edita les dades fiscals del client per corregir errors de
-            integració amb Verifactu
+            {{ $t("salesInvoice.customerData.hint") }}
           </small>
         </div>
         <div class="customer-fiscal-grid">
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerComercialName"
-              label="Nom comercial"
+              :label="$t('salesInvoice.customerData.labels.comercialName')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerTaxName"
-              label="Nom fiscal"
+              :label="$t('salesInvoice.customerData.labels.taxName')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerVatNumber"
-              label="NIF/CIF"
+              :label="$t('salesInvoice.customerData.labels.vatNumber')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerAccountNumber"
-              label="Compte bancari"
+              :label="$t('salesInvoice.customerData.labels.accountNumber')"
             />
           </div>
           <div class="mt-2 customer-fiscal-full">
             <BaseInput
               v-model="customerFiscalData.customerAddress"
-              label="Adreça"
+              :label="$t('salesInvoice.customerData.labels.address')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerCity"
-              label="Ciutat"
+              :label="$t('salesInvoice.customerData.labels.city')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerPostalCode"
-              label="Codi postal"
+              :label="$t('salesInvoice.customerData.labels.postalCode')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerRegion"
-              label="Província"
+              :label="$t('salesInvoice.customerData.labels.region')"
             />
           </div>
           <div class="mt-2">
             <BaseInput
               v-model="customerFiscalData.customerCountry"
-              label="País"
+              :label="$t('salesInvoice.customerData.labels.country')"
             />
           </div>
         </div>
         <div class="customer-fiscal-actions">
           <Button
-            label="Desar dades fiscals"
+            :label="$t('salesInvoice.customerData.saveButton')"
             icon="pi pi-save"
             :size="'small'"
             :loading="savingCustomerData"
@@ -223,6 +222,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
@@ -279,6 +279,7 @@ const items = computed(() => {
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
@@ -404,11 +405,13 @@ const saveCustomerFiscalData = async (propagateToAll = false) => {
           ?.propagatedInvoiceCount ?? 0;
       const detail =
         propagatedCount > 0
-          ? `Dades fiscals del client actualitzades i propagades a ${propagatedCount} factura(es) més del mateix client`
-          : "Dades fiscals del client actualitzades correctament";
+          ? t("salesInvoice.customerData.messages.successPropagated", {
+              count: propagatedCount,
+            })
+          : t("salesInvoice.customerData.messages.successSingle");
       toast.add({
         severity: "success",
-        summary: "Dades fiscals",
+        summary: t("salesInvoice.customerData.title"),
         detail,
         life: 5000,
       });
@@ -417,10 +420,10 @@ const saveCustomerFiscalData = async (propagateToAll = false) => {
       const errorMessage =
         response?.errors && response.errors.length > 0
           ? response.errors.join(", ")
-          : "No s'han pogut desar les dades fiscals";
+          : t("salesInvoice.customerData.messages.error");
       toast.add({
         severity: "error",
-        summary: "Dades fiscals",
+        summary: t("salesInvoice.customerData.title"),
         detail: errorMessage,
         life: 7000,
       });
@@ -446,11 +449,13 @@ const saveCustomerFiscalDataWithPropagationCheck = async () => {
   }
 
   confirm.require({
-    header: "Propagar dades fiscals",
-    message: `S'actualitzaran les dades fiscals en ${pendingCount} factura(es) més pendents o amb error d'aquest client. Vols continuar?`,
+    header: t("salesInvoice.customerData.messages.propagationHeader"),
+    message: t("salesInvoice.customerData.messages.propagationMessage", {
+      count: pendingCount,
+    }),
     icon: "pi pi-exclamation-triangle",
-    acceptLabel: "Sí, propagar",
-    rejectLabel: "Cancel·lar",
+    acceptLabel: t("salesInvoice.customerData.messages.acceptLabel"),
+    rejectLabel: t("salesInvoice.customerData.messages.rejectLabel"),
     acceptClass: "p-button-warning",
     accept: async () => {
       await saveCustomerFiscalData(true);
