@@ -421,6 +421,15 @@ namespace Application.Services.Sales
             // Propagate the corrected fiscal data to the linked Customer so future
             // invoices inherit the corrected values. UpdateCustomer is intentionally
             // non-blocking on fiscal validation — see CustomerService.UpdateCustomer.
+            //
+            // NOTE (issue #69 follow-up): address fields (Address, City, PostalCode,
+            // Region, Country) are intentionally NOT propagated from the invoice
+            // header to the Customer entity. The Customer master address is modelled
+            // as a CustomerAddress collection (1-to-many) selected via MainAddress()
+            // and is the single source of truth for the customer master record —
+            // edited through the dedicated Customer / Address endpoints, not from
+            // the invoice screen. Propagation here is therefore one-way and limited
+            // to fiscal fields (ComercialName, TaxName, VatNumber, AccountNumber).
             if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
             {
                 var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
