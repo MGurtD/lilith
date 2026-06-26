@@ -142,7 +142,10 @@ public class VerifactuIntegrationService(IUnitOfWork unitOfWork,
 
     public async Task<IEnumerable<SalesInvoice>> GetInvoicesToIntegrateWithVerifactu(DateTime? toDate, Guid? initialStatusId)
     {
-        return await unitOfWork.SalesInvoices.GetPendingToIntegrate(toDate, initialStatusId);
+        var errorStatus = await unitOfWork.Lifecycles
+            .GetStatusByName(Lifecycles.Verifactu, Statuses.Error);
+        return await unitOfWork.SalesInvoices.GetPendingToIntegrate(
+            toDate, initialStatusId, errorStatus?.Id);
     }
 
     public async Task<IEnumerable<SalesInvoiceVerifactuRequest>> GetInvoiceRequests(Guid invoiceId)
