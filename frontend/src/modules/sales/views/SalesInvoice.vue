@@ -13,6 +13,85 @@
   <main v-if="invoice">
     <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
 
+    <section v-if="canEditCustomerData" class="customer-fiscal-section mt-3">
+      <div class="customer-fiscal-card">
+        <div class="customer-fiscal-header">
+          <i class="pi pi-id-card"></i>
+          <span>Dades fiscals</span>
+          <small class="customer-fiscal-hint">
+            Edita les dades fiscals del client per corregir errors de
+            integració amb Verifactu
+          </small>
+        </div>
+        <div class="customer-fiscal-grid">
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerComercialName"
+              label="Nom comercial"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerTaxName"
+              label="Nom fiscal"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerVatNumber"
+              label="NIF/CIF"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerAccountNumber"
+              label="Compte bancari"
+            />
+          </div>
+          <div class="mt-2 customer-fiscal-full">
+            <BaseInput
+              v-model="customerFiscalData.customerAddress"
+              label="Adreça"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerCity"
+              label="Ciutat"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerPostalCode"
+              label="Codi postal"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerRegion"
+              label="Província"
+            />
+          </div>
+          <div class="mt-2">
+            <BaseInput
+              v-model="customerFiscalData.customerCountry"
+              label="País"
+            />
+          </div>
+        </div>
+        <div class="customer-fiscal-actions">
+          <Button
+            label="Desar dades fiscals"
+            icon="pi pi-save"
+            :size="'small'"
+            :loading="savingCustomerData"
+            :disabled="savingCustomerData"
+            @click="saveCustomerFiscalData"
+          />
+        </div>
+      </div>
+    </section>
+
     <section class="invoice-totals-section mt-3">
       <div class="invoice-totals-grid">
         <article class="total-card">
@@ -142,7 +221,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useStore } from "../../../store";
@@ -162,6 +241,7 @@ import {
 import {
   CreateRectificativeInvoiceRequest,
   DeliveryNote,
+  SalesInvoiceCustomerDataUpdate,
   SalesInvoiceDetail,
 } from "../types";
 import { DialogOptions } from "../../../types/component";
@@ -257,6 +337,90 @@ const isEditable = computed(() => {
     invoice.value !== undefined && invoice.value.parentSalesInvoiceId === null
   );
 });
+
+const integrationStatusName = computed(() => {
+  if (!invoice.value?.integrationStatusId) return "";
+  return invoiceStore.getVerifactuStatusById(
+    invoice.value.integrationStatusId,
+  );
+});
+
+const canEditCustomerData = computed(() => {
+  if (!invoice.value) return false;
+  const status = integrationStatusName.value;
+  return status === "Pendent" || status === "Error";
+});
+
+const customerFiscalData = reactive<SalesInvoiceCustomerDataUpdate>({
+  customerComercialName: "",
+  customerTaxName: "",
+  customerVatNumber: "",
+  customerAccountNumber: "",
+  customerAddress: "",
+  customerCity: "",
+  customerPostalCode: "",
+  customerRegion: "",
+  customerCountry: "",
+});
+
+const savingCustomerData = ref(false);
+
+function syncCustomerFiscalDataFromInvoice() {
+  if (!invoice.value) return;
+  customerFiscalData.customerComercialName =
+    invoice.value.customerComercialName ?? "";
+  customerFiscalData.customerTaxName = invoice.value.customerTaxName ?? "";
+  customerFiscalData.customerVatNumber =
+    invoice.value.customerVatNumber ?? "";
+  customerFiscalData.customerAccountNumber =
+    invoice.value.customerAccountNumber ?? "";
+  customerFiscalData.customerAddress = invoice.value.customerAddress ?? "";
+  customerFiscalData.customerCity = invoice.value.customerCity ?? "";
+  customerFiscalData.customerPostalCode =
+    invoice.value.customerPostalCode ?? "";
+  customerFiscalData.customerRegion = invoice.value.customerRegion ?? "";
+  customerFiscalData.customerCountry = invoice.value.customerCountry ?? "";
+}
+
+watch(
+  () => invoice.value?.id,
+  () => syncCustomerFiscalDataFromInvoice(),
+  { immediate: true },
+);
+
+const saveCustomerFiscalData = async () => {
+  if (!invoice.value) return;
+  savingCustomerData.value = true;
+  try {
+    const response = await invoiceStore.UpdateCustomerData(
+      invoice.value.id,
+      { ...customerFiscalData },
+    );
+    if (response?.result) {
+      toast.add({
+        severity: "success",
+        summary: "Dades fiscals",
+        detail:
+          "Dades fiscals del client actualitzades correctament",
+        life: 5000,
+      });
+      syncCustomerFiscalDataFromInvoice();
+    } else {
+      const errorMessage =
+        response?.errors && response.errors.length > 0
+          ? response.errors.join(", ")
+          : "No s'han pogut desar les dades fiscals";
+      toast.add({
+        severity: "error",
+        summary: "Dades fiscals",
+        detail: errorMessage,
+        life: 7000,
+      });
+    }
+  } finally {
+    savingCustomerData.value = false;
+  }
+};
 
 const getVerifactuStatusClass = () => {
   if (!invoice.value?.integrationStatusId) return "";
@@ -530,6 +694,80 @@ const sendToVerifactu = async () => {
 
 .status-pending {
   color: #6c757d;
+}
+
+.customer-fiscal-section {
+  padding-right: 0.75rem;
+}
+
+.customer-fiscal-card {
+  border: 1px solid var(--p-content-border-color);
+  border-left: 4px solid var(--p-primary-500, #6366f1);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background: var(--p-content-background, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.customer-fiscal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+  color: var(--p-text-color);
+}
+
+.customer-fiscal-header i {
+  color: var(--p-primary-color, #6366f1);
+  font-size: 1.1rem;
+}
+
+.customer-fiscal-header span {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.customer-fiscal-hint {
+  margin-left: auto;
+  color: var(--p-text-muted-color);
+  font-size: 0.8rem;
+}
+
+.customer-fiscal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem 0.85rem;
+}
+
+.customer-fiscal-full {
+  grid-column: span 4;
+}
+
+.customer-fiscal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 1100px) {
+  .customer-fiscal-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .customer-fiscal-full {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .customer-fiscal-grid {
+    grid-template-columns: 1fr;
+  }
+  .customer-fiscal-full {
+    grid-column: span 1;
+  }
+  .customer-fiscal-section {
+    padding-right: 0;
+  }
 }
 
 @media (max-width: 1200px) {
