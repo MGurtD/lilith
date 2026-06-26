@@ -18,7 +18,7 @@ namespace Api.Controllers.Sales
             if (response.Result)
             {
                 var location = Url.Action(nameof(GetById), new { id = request.Id }) ?? $"/{request.Id}";
-                return Created(location, response.Content);
+                return Created(location, response);
             }
             else
             {
@@ -51,7 +51,7 @@ namespace Api.Controllers.Sales
 
             var response = await service.UpdateCustomer(request);
             if (response.Result)
-                return Ok(response.Content);
+                return Ok(response);
             else
                 return NotFound(response);
         }

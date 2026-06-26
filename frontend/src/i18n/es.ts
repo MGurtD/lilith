@@ -29,6 +29,8 @@ const es = {
     save: "Guardar",
     saved: "Guardado correctamente",
     assign: "Asignar",
+    accept: "Aceptar",
+    cancel: "Cancelar",
   },
   analytics: {
     cashflow: {
@@ -291,6 +293,35 @@ const es = {
       },
       liability:
         "Esta declaración se emite a los efectos previstos en la normativa tributaria vigente, asumiendo [RAZÓN SOCIAL] la responsabilidad derivada del correcto funcionamiento del software en relación con los requisitos declarados.",
+    },
+  },
+  salesInvoice: {
+    customerData: {
+      title: "Datos fiscales",
+      hint: "Edita los datos fiscales del cliente para corregir errores de integración con Verifactu",
+      labels: {
+        comercialName: "Nombre comercial",
+        taxName: "Razón social",
+        vatNumber: "NIF/CIF",
+        accountNumber: "Cuenta bancaria",
+        address: "Dirección",
+        city: "Ciudad",
+        postalCode: "Código postal",
+        region: "Provincia",
+        country: "País",
+      },
+      saveButton: "Guardar datos fiscales",
+      messages: {
+        successSingle: "Datos fiscales del cliente actualizados correctamente",
+        successPropagated:
+          "Datos fiscales del cliente actualizados y propagados a {count} factura(s) más del mismo cliente",
+        error: "No se han podido guardar los datos fiscales",
+        propagationHeader: "Propagar datos fiscales",
+        propagationMessage:
+          "Se actualizarán los datos fiscales en {count} factura(s) más pendientes o con error de este cliente. ¿Deseas continuar?",
+        acceptLabel: "Sí, propagar",
+        rejectLabel: "Cancelar",
+      },
     },
   },
   forms: {

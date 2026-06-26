@@ -24,6 +24,7 @@
     "SalesInvoiceCustomerDataPropagationPrompt": "Se actualizarán los datos fiscales en {0} factura(s) más pendientes o con error de este cliente. ¿Deseas continuar?",
     "SalesInvoiceCustomerDataNotEditable": "No se pueden modificar los datos del cliente: la factura ya ha sido integrada correctamente con Verifactu",
     "SalesInvoiceCustomerDataInvalidStatus": "No se pueden modificar los datos del cliente en el estado actual de integración con Verifactu",
+    "SalesInvoiceCustomerDataUpdateFailed": "No se han podido guardar los datos fiscales del cliente. Por favor, inténtelo de nuevo",
     "SupplierNotFound": "El proveedor no existe",
     "SupplierAlreadyExists": "Proveedor {0} existente",
     "ExerciseNotFound": "El ejercicio no existe",

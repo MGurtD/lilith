@@ -356,7 +356,13 @@ namespace Application.Services.Sales
             invoice.CustomerRegion = dto.CustomerRegion;
             invoice.CustomerCountry = dto.CustomerCountry;
 
-            await unitOfWork.SalesInvoices.Update(invoice);
+            // Issue #69 follow-up: queue the main invoice together with the sibling
+            // invoices in a single EF Core change-tracker batch, then commit exactly
+            // once at the end. A single SaveChangesAsync is wrapped in an implicit
+            // transaction by the EF Core provider, so the main invoice and every
+            // sibling either all persist or none do — no more half-applied state
+            // if CompleteAsync throws halfway.
+            unitOfWork.SalesInvoices.UpdateWithoutSave(invoice);
 
             // Issue #69 follow-up: when requested by the user, propagate the same
             // fiscal data to every other SalesInvoice of the same Customer that is
@@ -386,19 +392,44 @@ namespace Application.Services.Sales
                     unitOfWork.SalesInvoices.UpdateWithoutSave(sibling);
                     propagatedCount++;
                 }
+            }
 
-                if (propagatedCount > 0)
-                {
-                    await unitOfWork.CompleteAsync();
-                    logger.LogInformation(
-                        "Propagated customer fiscal data to {Count} sibling invoices of customer {CustomerId}",
-                        propagatedCount, invoice.CustomerId);
-                }
+            // Commit main invoice + all queued siblings in a single SaveChanges
+            // (implicit transaction). If the commit fails we surface a failed
+            // GenericResponse to the admin instead of silently leaving the main
+            // invoice persisted while the siblings are not.
+            try
+            {
+                await unitOfWork.CompleteAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Failed to commit customer fiscal data update for invoice {InvoiceId} (propagatedCount={PropagatedCount})",
+                    invoice.Id, propagatedCount);
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataUpdateFailed"));
+            }
+
+            if (propagatedCount > 0)
+            {
+                logger.LogInformation(
+                    "Propagated customer fiscal data to {Count} sibling invoices of customer {CustomerId}",
+                    propagatedCount, invoice.CustomerId);
             }
 
             // Propagate the corrected fiscal data to the linked Customer so future
             // invoices inherit the corrected values. UpdateCustomer is intentionally
             // non-blocking on fiscal validation — see CustomerService.UpdateCustomer.
+            //
+            // NOTE (issue #69 follow-up): address fields (Address, City, PostalCode,
+            // Region, Country) are intentionally NOT propagated from the invoice
+            // header to the Customer entity. The Customer master address is modelled
+            // as a CustomerAddress collection (1-to-many) selected via MainAddress()
+            // and is the single source of truth for the customer master record —
+            // edited through the dedicated Customer / Address endpoints, not from
+            // the invoice screen. Propagation here is therefore one-way and limited
+            // to fiscal fields (ComercialName, TaxName, VatNumber, AccountNumber).
             if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
             {
                 var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
