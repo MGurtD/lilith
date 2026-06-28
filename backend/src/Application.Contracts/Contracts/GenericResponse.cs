@@ -5,7 +5,6 @@ namespace Application.Contracts
         public bool Result { get; }
         public IList<string> Errors { get; }
         public object? Content { get; set; }
-        public IList<string> Warnings { get; set; } = new List<string>();
 
         public GenericResponse(bool result, object? content = null)
         {

@@ -46,12 +46,11 @@ public class CustomerService(
     }
 
     /// <summary>
-    /// Updates a Customer without blocking on fiscal-data validation issues.
-    /// Fiscal warnings are returned in <see cref="GenericResponse.Warnings"/> so the
-    /// caller can surface them but still proceed — required for the Verifactu resend
-    /// workflow (issue #69 follow-up): admins must be able to save a Customer even
-    /// if its CIF or fiscal address is wrong, fix the data later from the invoice
-    /// view, and re-trigger the Verifactu request.
+    /// Updates a Customer, blocking on fiscal-data validation issues.
+    /// If the customer's CIF/NIF is malformed or its main fiscal address is
+    /// incomplete, the call returns a failed <see cref="GenericResponse"/> and
+    /// does not persist — same behaviour as <see cref="CreateCustomer"/>.
+    /// Issue #69 follow-up.
     /// </summary>
     public async Task<GenericResponse> UpdateCustomer(Customer customer)
     {
@@ -62,26 +61,11 @@ public class CustomerService(
                 localizationService.GetLocalizedString("EntityNotFound", customer.Id));
         }
 
+        var fiscalValidation = ValidateCustomerFiscalData(customer);
+        if (fiscalValidation != null) return fiscalValidation;
+
         await unitOfWork.Customers.Update(customer);
-
-        var warningEntries = CollectCustomerFiscalWarnings(customer);
-        if (warningEntries.Count == 0)
-        {
-            return new GenericResponse(true, customer);
-        }
-
-        var warnings = warningEntries
-            .Select(w => w.LocalizedMessage)
-            .ToList();
-
-        logger.LogWarning(
-            "Customer {CustomerId} updated with {WarningCount} fiscal warning(s): {Warnings}",
-            customer.Id, warnings.Count, string.Join(" | ", warnings));
-
-        return new GenericResponse(true, customer)
-        {
-            Warnings = warnings,
-        };
+        return new GenericResponse(true, customer);
     }
 
     public async Task<GenericResponse> RemoveCustomer(Guid id)
@@ -210,72 +194,35 @@ public class CustomerService(
 
     private GenericResponse? ValidateCustomerFiscalData(Customer customer)
     {
-        var warnings = CollectCustomerFiscalWarnings(customer);
-        if (warnings.Count == 0) return null;
-
-        // CreateCustomer is a hard-fail path: we do not want to persist a brand-new
-        // customer whose fiscal data is malformed. Map the warnings to the most
-        // relevant single message for the UI. Dispatch on the typed kind instead of
-        // substring-matching the localized message (issue #69 follow-up).
-        var first = warnings[0];
-        if (first.Kind == CustomerFiscalWarningKind.CifInvalid)
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("CustomerCifInvalid"));
-        }
-        return new GenericResponse(false,
-            localizationService.GetLocalizedString("CustomerFiscalAddressInvalid"));
-    }
-
-    /// <summary>
-    /// Builds a non-blocking list of typed fiscal warnings for the given Customer.
-    /// Each entry pairs a strongly-typed <see cref="CustomerFiscalWarningKind"/>
-    /// with its localized message, so callers can dispatch on the kind instead of
-    /// inspecting the translated string. Used by
-    /// <see cref="UpdateCustomer"/> so the operation can succeed while still
-    /// surfacing problems to the user (issue #69 follow-up).
-    /// </summary>
-    private List<(CustomerFiscalWarningKind Kind, string LocalizedMessage)>
-        CollectCustomerFiscalWarnings(Customer customer)
-    {
-        var warnings = new List<(CustomerFiscalWarningKind, string)>();
-
         if (!customer.IsValidForSales())
         {
-            warnings.Add((CustomerFiscalWarningKind.Invalid,
-                localizationService.GetLocalizedString("CustomerInvalid")));
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerInvalid"));
         }
 
         if (!SpanishFiscalIdValidator.IsValidSpanishFiscalId(customer.VatNumber))
         {
-            warnings.Add((CustomerFiscalWarningKind.CifInvalid,
-                localizationService.GetLocalizedString("CustomerCifInvalid")));
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerCifInvalid"));
         }
 
         var mainAddress = customer.MainAddress();
         if (mainAddress == null)
         {
-            warnings.Add((CustomerFiscalWarningKind.NoAddresses,
-                localizationService.GetLocalizedString("CustomerNoAddresses")));
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerNoAddresses"));
         }
-        else if (string.IsNullOrWhiteSpace(mainAddress.Country)
+
+        if (string.IsNullOrWhiteSpace(mainAddress.Country)
             || string.IsNullOrWhiteSpace(mainAddress.PostalCode)
             || string.IsNullOrWhiteSpace(mainAddress.City)
             || string.IsNullOrWhiteSpace(mainAddress.Address))
         {
-            warnings.Add((CustomerFiscalWarningKind.FiscalAddressInvalid,
-                localizationService.GetLocalizedString("CustomerFiscalAddressInvalid")));
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerFiscalAddressInvalid"));
         }
 
-        return warnings;
-    }
-
-    private enum CustomerFiscalWarningKind
-    {
-        Invalid,
-        CifInvalid,
-        NoAddresses,
-        FiscalAddressInvalid,
+        return null;
     }
 
     private async Task UpdateCoordinatesAndDistanceAsync(CustomerAddress address)

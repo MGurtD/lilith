@@ -1,5 +1,6 @@
 
 using Application.Contracts;
+using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.Production;
 using Domain.Entities.Sales;
@@ -314,6 +315,16 @@ namespace Application.Services.Sales
 
         public async Task<GenericResponse> UpdateCustomerDataAsync(Guid id, SalesInvoiceCustomerDataUpdateDto dto)
         {
+            // Validate CIF BEFORE any persistence. UpdateCustomer is now blocking on
+            // invalid CIF (issue #69 follow-up), so this guards the invoice + sibling
+            // batch from being committed with a malformed CustomerVatNumber that the
+            // subsequent Customer-master propagation would reject.
+            if (!SpanishFiscalIdValidator.IsValidSpanishFiscalId(dto.CustomerVatNumber))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("CustomerCifInvalid"));
+            }
+
             var invoice = await unitOfWork.SalesInvoices.Get(id);
             if (invoice == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("SalesInvoiceNotFound", id));
@@ -419,8 +430,9 @@ namespace Application.Services.Sales
             }
 
             // Propagate the corrected fiscal data to the linked Customer so future
-            // invoices inherit the corrected values. UpdateCustomer is intentionally
-            // non-blocking on fiscal validation — see CustomerService.UpdateCustomer.
+            // invoices inherit the corrected values. The CIF has already been
+            // validated at the top of this method, so UpdateCustomer will accept
+            // the propagated customer (issue #69 follow-up).
             //
             // NOTE (issue #69 follow-up): address fields (Address, City, PostalCode,
             // Region, Country) are intentionally NOT propagated from the invoice

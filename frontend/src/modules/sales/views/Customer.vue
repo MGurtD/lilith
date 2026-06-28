@@ -123,24 +123,31 @@ onMounted(async () => {
 const toast = useToast();
 const submitForm = async () => {
   const data = customer.value as Customer;
-  let result = false;
-  let message = "";
+  let result;
+  let successMessage = "";
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await customerStore.createCustomer(data);
-    message = "Client creat correctament";
+    successMessage = "Client creat correctament";
   } else {
     result = await customerStore.updateCustomer(data.id, data);
-    message = "Client actualizat correctament";
+    successMessage = "Client actualizat correctament";
   }
 
-  if (result) {
+  if (result.result) {
     toast.add({
       severity: "success",
-      summary: message,
+      summary: successMessage,
       life: 5000,
     });
     await loadView();
+  } else {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: result.errors?.[0] ?? "No s'ha pogut desar el client",
+      life: 6000,
+    });
   }
 };
 
