@@ -56,7 +56,10 @@
         :header="$t('verifactu.invoiceIntegration.table.columns.number')"
       >
         <template #body="slotProps">
-          <span class="font-semibold">{{ slotProps.data.invoiceNumber }}</span>
+          <LinkSalesInvoice
+            :id="slotProps.data.id"
+            :invoiceNumber="slotProps.data.invoiceNumber"
+          />
         </template>
       </Column>
 
@@ -242,6 +245,7 @@ import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { formatDate, formatCurrency } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
+import LinkSalesInvoice from "../../sales/components/LinkSalesInvoice.vue";
 
 const { t } = useI18n();
 const toast = useToast();
