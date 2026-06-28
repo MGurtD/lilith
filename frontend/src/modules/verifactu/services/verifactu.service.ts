@@ -69,9 +69,12 @@ export class VerifactuService extends BaseService<any> {
       timeout: this.TIMEOUT_MS,
     });
 
-    if (response.status === 200) {
-      return response.data as GenericResponse<any>;
-    }
+    // Return the GenericResponse body regardless of 2xx/4xx so the caller can
+    // surface AEAT rejection errors (result:false + errors[] from the backend).
+    // The apiClient treats 200-404 as resolve, so a 400 from the backend
+    // (e.g. AEAT status=Incorrecto) lands here with the body intact — we must
+    // not drop it on the floor (issue #69 follow-up).
+    return response.data as GenericResponse<any>;
   }
 
   async RemoveFromVerifactu(
@@ -82,9 +85,7 @@ export class VerifactuService extends BaseService<any> {
       timeout: this.TIMEOUT_MS,
     });
 
-    if (response.status === 200) {
-      return response.data as GenericResponse<any>;
-    }
+    return response.data as GenericResponse<any>;
   }
 
   async ResendToVerifactu(
