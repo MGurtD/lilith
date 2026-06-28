@@ -107,9 +107,11 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
   ): Promise<GenericResponse<SalesInvoice> | undefined> {
     const endpoint = `${this.resource}/${id}/customer-data`;
     const response = await this.apiClient.put(endpoint, dto);
-    if (response.status === 200) {
-      return response.data as GenericResponse<SalesInvoice>;
-    }
+    // Return the GenericResponse body for both 2xx and 4xx so the caller can
+    // inspect `errors[]`. The apiClient treats 200-404 as resolve, so a 400
+    // from the backend (e.g. CIF/NIF invàlid) lands here with the body intact —
+    // we must not drop it on the floor (issue #69 follow-up).
+    return response.data as GenericResponse<SalesInvoice>;
   }
 
   /**
