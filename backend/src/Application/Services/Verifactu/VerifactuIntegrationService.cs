@@ -38,6 +38,25 @@ public class VerifactuIntegrationService(IUnitOfWork unitOfWork,
         return await ProcessVerifactuResponse(invoice!, response, true);
     }
 
+    /// <summary>
+    /// Re-sends an invoice to Verifactu after an integration error.
+    /// Reuses the same registration flow as <see cref="SendInvoiceToVerifactu"/>;
+    /// rejected when the invoice was already integrated successfully.
+    /// </summary>
+    public async Task<GenericResponse> ResendInvoiceToVerifactu(Guid id)
+    {
+        var validationResult = await ValidateInvoiceExistsForVerifactu(id);
+        if (!validationResult.Result) return validationResult;
+
+        if (await HasInvoiceBeenIntegrated(id))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("VerifactuInvoiceAlreadyIntegrated"));
+        }
+
+        return await SendInvoiceToVerifactu(id);
+    }
+
     public async Task<GenericResponse> RemoveInvoiceFromVerifactu(Guid id)
     {
         var validationResult = await ValidateInvoiceExistsForVerifactu(id);
@@ -125,7 +144,7 @@ public class VerifactuIntegrationService(IUnitOfWork unitOfWork,
             QrCodeUrl = response.QrCodeUrl,
             QrCodeBase64 = qrCodeService.GeneratePngBase64(response.QrCodeUrl)
         };
-        
+
         await CreateInvoiceRequest(verifactuRequest);
 
         // Update invoice integration status only for SendInvoiceToVerifactu
@@ -137,12 +156,32 @@ public class VerifactuIntegrationService(IUnitOfWork unitOfWork,
             await unitOfWork.SalesInvoices.Update(invoice);
         }
 
-        return new GenericResponse(true, verifactuRequest);
+        // Issue #69 follow-up: the top-level Result must reflect the AEAT outcome,
+        // not just "we persisted the request". The previous implementation always
+        // returned result: true, which made the admin UI show every integration as
+        // OK even when AEAT rejected the invoice with status=Incorrecto and a
+        // CodigoErrorRegistro/DescripcionErrorRegistro pair.
+        if (response.Success)
+        {
+            return new GenericResponse(true, verifactuRequest);
+        }
+
+        var errorMessage = !string.IsNullOrWhiteSpace(response.ErrorMessage)
+            ? $"{response.StatusRegister}: {response.ErrorMessage}"
+            : $"Verifactu: {response.StatusRegister}";
+
+        return new GenericResponse(false, errorMessage)
+        {
+            Content = verifactuRequest,
+        };
     }
 
     public async Task<IEnumerable<SalesInvoice>> GetInvoicesToIntegrateWithVerifactu(DateTime? toDate, Guid? initialStatusId)
     {
-        return await unitOfWork.SalesInvoices.GetPendingToIntegrate(toDate, initialStatusId);
+        var errorStatus = await unitOfWork.Lifecycles
+            .GetStatusByName(Lifecycles.Verifactu, Statuses.Error);
+        return await unitOfWork.SalesInvoices.GetPendingToIntegrate(
+            toDate, initialStatusId, errorStatus?.Id);
     }
 
     public async Task<IEnumerable<SalesInvoiceVerifactuRequest>> GetInvoiceRequests(Guid invoiceId)

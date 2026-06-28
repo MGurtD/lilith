@@ -7,6 +7,8 @@ import {
   CreateSalesHeaderRequest,
   DeliveryNote,
   CreateRectificativeInvoiceRequest,
+  SalesInvoiceCustomerDataUpdate,
+  SalesInvoiceCustomerDataPropagationResponse,
 } from "../types";
 import { GenericResponse } from "../../../types";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
@@ -125,6 +127,24 @@ export const useSalesInvoiceStore = defineStore({
         invoice,
       );
       return updated;
+    },
+    async UpdateCustomerData(
+      id: string,
+      dto: SalesInvoiceCustomerDataUpdate,
+    ): Promise<GenericResponse<SalesInvoice> | undefined> {
+      const response = await SalesService.SalesInvoice.UpdateCustomerData(
+        id,
+        dto,
+      );
+      if (response?.result) {
+        await this.GetById(id);
+      }
+      return response;
+    },
+    async GetCustomerDataPropagation(
+      id: string,
+    ): Promise<SalesInvoiceCustomerDataPropagationResponse | undefined> {
+      return await SalesService.SalesInvoice.GetCustomerDataPropagation(id);
     },
     async UpdateInvoicesStatuses(
       invoiceImport: InvoiceUpdateStatues,

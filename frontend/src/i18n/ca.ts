@@ -24,11 +24,15 @@ const ca = {
     description: "Descripció",
     total: "Total",
     close: "Tancar",
+    showDetails: "Mostrar detalls",
+    hideDetails: "Amagar detalls",
     exportCsv: "Exporta CSV",
     confirm: "Confirmar",
     save: "Guardar",
     saved: "Guardat correctament",
     assign: "Assignar",
+    accept: "Acceptar",
+    cancel: "Cancel·lar",
   },
   analytics: {
     cashflow: {
@@ -248,10 +252,23 @@ const ca = {
           statusCode: "Estat",
           response: "Resposta",
           qrCode: "QR",
+          actions: "Accions",
         },
+      },
+      actions: {
+        viewDetail: "Veure detall",
+        resend: "Tornar a enviar",
+      },
+      detailDialog: {
+        title: "Detall de la petició",
       },
       messages: {
         loadError: "Error carregant les peticions d'integració",
+        resendConfirm: "Vols tornar a enviar la factura {number} a Verifactu?",
+        resendHeader: "Tornar a enviar a Verifactu",
+        resendSuccess: "Factura enviada de nou",
+        resendSuccessDetail: "La factura s'ha tornat a enviar a Verifactu correctament",
+        resendError: "No s'ha pogut tornar a enviar la factura a Verifactu",
       },
     },
     responsabilities: {
@@ -277,6 +294,35 @@ const ca = {
       },
       liability:
         "Aquesta declaració s’emet als efectes previstos en la normativa tributària vigent, assumint [RAÓ SOCIAL] la responsabilitat derivada del correcte funcionament del programari en relació amb els requisits declarats.",
+    },
+  },
+  salesInvoice: {
+    customerData: {
+      title: "Dades fiscals",
+      hint: "Edita les dades fiscals del client per corregir errors d'integració amb Verifactu",
+      labels: {
+        comercialName: "Nom comercial",
+        taxName: "Raó social",
+        vatNumber: "NIF/CIF",
+        accountNumber: "Compte bancari",
+        address: "Adreça",
+        city: "Ciutat",
+        postalCode: "Codi postal",
+        region: "Província",
+        country: "País",
+      },
+      saveButton: "Desar dades fiscals",
+      messages: {
+        successSingle: "Dades fiscals del client actualitzades correctament",
+        successPropagated:
+          "Dades fiscals del client actualitzades i propagades a {count} factura(es) més del mateix client",
+        error: "No s'han pogut desar les dades fiscals",
+        propagationHeader: "Propagar dades fiscals",
+        propagationMessage:
+          "S'actualitzaran les dades fiscals en {count} factura(es) més pendents o amb error d'aquest client. Vols continuar?",
+        acceptLabel: "Sí, propagar",
+        rejectLabel: "Cancel·lar",
+      },
     },
   },
   forms: {

@@ -6,6 +6,8 @@ import {
   CreateSalesHeaderRequest,
   DeliveryNote,
   SalesInvoice,
+  SalesInvoiceCustomerDataPropagationResponse,
+  SalesInvoiceCustomerDataUpdate,
   SalesInvoiceDetail,
 } from "../types";
 
@@ -97,6 +99,34 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
     const endpoint = `${this.resource}/${request.id}`;
     const response = await this.apiClient.put(endpoint, request);
     return response.status === 200;
+  }
+
+  async UpdateCustomerData(
+    id: string,
+    dto: SalesInvoiceCustomerDataUpdate,
+  ): Promise<GenericResponse<SalesInvoice> | undefined> {
+    const endpoint = `${this.resource}/${id}/customer-data`;
+    const response = await this.apiClient.put(endpoint, dto);
+    // Return the GenericResponse body for both 2xx and 4xx so the caller can
+    // inspect `errors[]`. The apiClient treats 200-404 as resolve, so a 400
+    // from the backend (e.g. CIF/NIF invàlid) lands here with the body intact —
+    // we must not drop it on the floor (issue #69 follow-up).
+    return response.data as GenericResponse<SalesInvoice>;
+  }
+
+  /**
+   * Returns the list of sibling invoices (same customer, status Pendent|Error)
+   * that would be updated if the user confirms propagation. Used by the
+   * frontend to render the confirmation dialog (issue #69 follow-up).
+   */
+  async GetCustomerDataPropagation(
+    id: string,
+  ): Promise<SalesInvoiceCustomerDataPropagationResponse | undefined> {
+    const endpoint = `${this.resource}/${id}/customer-data/propagation`;
+    const response = await this.apiClient.get(endpoint);
+    if (response.status === 200) {
+      return response.data as SalesInvoiceCustomerDataPropagationResponse;
+    }
   }
 
   async UpdateStatuses(request: InvoiceUpdateStatues): Promise<boolean> {
