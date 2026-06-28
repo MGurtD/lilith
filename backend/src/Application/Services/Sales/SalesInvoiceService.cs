@@ -21,7 +21,6 @@ namespace Application.Services.Sales
         IDueDateService dueDateService,
         IDeliveryNoteService deliveryNoteService,
         IExerciseService exerciseService,
-        ICustomerService customerService,
         ILocalizationService localizationService,
         ILogger<SalesInvoiceService> logger) : ISalesInvoiceService
     {
@@ -405,10 +404,41 @@ namespace Application.Services.Sales
                 }
             }
 
-            // Commit main invoice + all queued siblings in a single SaveChanges
-            // (implicit transaction). If the commit fails we surface a failed
-            // GenericResponse to the admin instead of silently leaving the main
-            // invoice persisted while the siblings are not.
+            // Issue #69 follow-up: propagate the corrected fiscal data to the
+            // linked Customer master record so future invoices inherit the
+            // corrected values. Only fiscal fields are propagated — the
+            // Customer master address (CustomerAddress collection) is the single
+            // source of truth for the customer master record and is edited
+            // through the dedicated Customer / Address endpoints, not from the
+            // invoice screen. CIF was already validated at the top of this
+            // method, and we deliberately do NOT run CustomerService's full
+            // fiscal validation (which would also block on incomplete fiscal
+            // address, a field we don't propagate from here).
+            //
+            // The customer is fetched with Get() and then queued with
+            // UpdateWithoutSave() so it joins the single SaveChanges below
+            // atomically with the invoice + siblings. We do NOT route this
+            // through customerService.UpdateCustomer because that helper does
+            // its own Get(), which would clash with the already-tracked
+            // instance and throw "another instance with the same key value is
+            // already being tracked" (issue #69 follow-up bug fix).
+            if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
+            {
+                var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
+                if (customer != null)
+                {
+                    customer.ComercialName = dto.CustomerComercialName;
+                    customer.TaxName = dto.CustomerTaxName;
+                    customer.VatNumber = dto.CustomerVatNumber;
+                    customer.AccountNumber = dto.CustomerAccountNumber;
+                    unitOfWork.Customers.UpdateWithoutSave(customer);
+                }
+            }
+
+            // Commit main invoice + all queued siblings + the customer master
+            // record in a single SaveChanges (implicit transaction). If the
+            // commit fails we surface a failed GenericResponse to the admin
+            // instead of leaving any of those three entities half-applied.
             try
             {
                 await unitOfWork.CompleteAsync();
@@ -427,32 +457,6 @@ namespace Application.Services.Sales
                 logger.LogInformation(
                     "Propagated customer fiscal data to {Count} sibling invoices of customer {CustomerId}",
                     propagatedCount, invoice.CustomerId);
-            }
-
-            // Propagate the corrected fiscal data to the linked Customer so future
-            // invoices inherit the corrected values. The CIF has already been
-            // validated at the top of this method, so UpdateCustomer will accept
-            // the propagated customer (issue #69 follow-up).
-            //
-            // NOTE (issue #69 follow-up): address fields (Address, City, PostalCode,
-            // Region, Country) are intentionally NOT propagated from the invoice
-            // header to the Customer entity. The Customer master address is modelled
-            // as a CustomerAddress collection (1-to-many) selected via MainAddress()
-            // and is the single source of truth for the customer master record —
-            // edited through the dedicated Customer / Address endpoints, not from
-            // the invoice screen. Propagation here is therefore one-way and limited
-            // to fiscal fields (ComercialName, TaxName, VatNumber, AccountNumber).
-            if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
-            {
-                var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
-                if (customer != null)
-                {
-                    customer.ComercialName = dto.CustomerComercialName;
-                    customer.TaxName = dto.CustomerTaxName;
-                    customer.VatNumber = dto.CustomerVatNumber;
-                    customer.AccountNumber = dto.CustomerAccountNumber;
-                    await customerService.UpdateCustomer(customer);
-                }
             }
 
             var message = propagatedCount > 0
