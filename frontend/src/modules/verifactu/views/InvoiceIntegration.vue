@@ -194,8 +194,8 @@
               <Button
                 :label="
                   expandedResponses.has(r.id)
-                    ? $t('common.hideDetails') || 'Amagar detalls'
-                    : $t('common.showDetails') || 'Mostrar detalls'
+                    ? $t('common.hideDetails')
+                    : $t('common.showDetails')
                 "
                 :icon="
                   expandedResponses.has(r.id)

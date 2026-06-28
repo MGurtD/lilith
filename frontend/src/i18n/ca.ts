@@ -24,6 +24,8 @@ const ca = {
     description: "Descripció",
     total: "Total",
     close: "Tancar",
+    showDetails: "Mostrar detalls",
+    hideDetails: "Amagar detalls",
     exportCsv: "Exporta CSV",
     confirm: "Confirmar",
     save: "Guardar",

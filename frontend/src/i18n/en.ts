@@ -24,6 +24,8 @@ const en = {
     description: "Description",
     total: "Total",
     close: "Close",
+    showDetails: "Show details",
+    hideDetails: "Hide details",
     exportCsv: "Export CSV",
     confirm: "Confirm",
     save: "Save",
