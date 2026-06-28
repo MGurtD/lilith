@@ -81,7 +81,7 @@ public class VerifactuController(
 
         var response = await service.SendInvoiceToVerifactu(id);
         if (response.Result) return Ok(response);
-        else return BadRequest(response.Errors);
+        else return BadRequest(response);
     }
 
     [HttpPost("{id:guid}/ResendToVerifactu")]
@@ -109,7 +109,7 @@ public class VerifactuController(
 
         var response = await service.RemoveInvoiceFromVerifactu(id);
         if (response.Result) return Ok(response);
-        else return BadRequest(response.Errors);
+        else return BadRequest(response);
     }
 
 }
