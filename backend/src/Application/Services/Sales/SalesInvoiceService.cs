@@ -372,6 +372,22 @@ namespace Application.Services.Sales
             // transaction by the EF Core provider, so the main invoice and every
             // sibling either all persist or none do — no more half-applied state
             // if CompleteAsync throws halfway.
+            //
+            // We must clear navigation properties and collections BEFORE the
+            // Update call. SalesInvoiceRepository.Get uses AsNoTracking() with
+            // Include(s => s.Customer) (and Site, SalesInvoiceDetails, …), so the
+            // detached invoice has those nav props populated. dbSet.Update walks
+            // the graph and would otherwise start tracking every reachable entity
+            // — including the Customer — and a subsequent Customers.Update would
+            // collide on "another instance with the same key value is already
+            // being tracked". Same defensive cleanup as SalesOrderService.Update.
+            invoice.Customer = null;
+            invoice.Site = null;
+            invoice.ParentSalesInvoice = null;
+            invoice.SalesInvoiceDetails.Clear();
+            invoice.SalesInvoiceImports.Clear();
+            invoice.SalesInvoiceDueDates.Clear();
+            invoice.VerifactuRequests.Clear();
             unitOfWork.SalesInvoices.UpdateWithoutSave(invoice);
 
             // Issue #69 follow-up: when requested by the user, propagate the same
@@ -399,6 +415,16 @@ namespace Application.Services.Sales
                     sibling.CustomerPostalCode = dto.CustomerPostalCode;
                     sibling.CustomerRegion = dto.CustomerRegion;
                     sibling.CustomerCountry = dto.CustomerCountry;
+
+                    // Sibling invoices come back AsNoTracking; their nav props
+                    // are not populated, but collections may be initialised to
+                    // empty lists. Clearing keeps the graph walk in Update
+                    // predictable.
+                    sibling.SalesInvoiceDetails.Clear();
+                    sibling.SalesInvoiceImports.Clear();
+                    sibling.SalesInvoiceDueDates.Clear();
+                    sibling.VerifactuRequests.Clear();
+
                     unitOfWork.SalesInvoices.UpdateWithoutSave(sibling);
                     propagatedCount++;
                 }
@@ -415,13 +441,11 @@ namespace Application.Services.Sales
             // fiscal validation (which would also block on incomplete fiscal
             // address, a field we don't propagate from here).
             //
-            // The customer is fetched with Get() and then queued with
-            // UpdateWithoutSave() so it joins the single SaveChanges below
-            // atomically with the invoice + siblings. We do NOT route this
-            // through customerService.UpdateCustomer because that helper does
-            // its own Get(), which would clash with the already-tracked
-            // instance and throw "another instance with the same key value is
-            // already being tracked" (issue #69 follow-up bug fix).
+            // Repository<Customer>.Get returns the entity tracked (FindAsync).
+            // We clear Address/Contacts/SalesInvoices/Budgets collections before
+            // Update so the graph walk in Update does not pull in any related
+            // entities that the change-tracker might already be holding onto
+            // from the invoice-side Includes above.
             if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
             {
                 var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
@@ -431,6 +455,10 @@ namespace Application.Services.Sales
                     customer.TaxName = dto.CustomerTaxName;
                     customer.VatNumber = dto.CustomerVatNumber;
                     customer.AccountNumber = dto.CustomerAccountNumber;
+
+                    customer.Address.Clear();
+                    customer.Contacts.Clear();
+
                     unitOfWork.Customers.UpdateWithoutSave(customer);
                 }
             }
