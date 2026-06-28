@@ -1,18 +1,17 @@
 <template>
+  <div class="button-panel">
+    <div class="flex align-items-end justify-content-end">
+      <SplitButton
+        label="Guardar"
+        @click="updateInvoice"
+        :model="items"
+        :size="'small'"
+      />
+    </div>
+  </div>
+
   <main v-if="invoice">
-    <header class="invoice-header mt-3 mr-3">
-      <div class="invoice-header-fields">
-        <FormSalesInvoice :invoice="invoice" />
-      </div>
-      <div class="invoice-header-actions">
-        <SplitButton
-          label="Guardar"
-          @click="updateInvoice"
-          :model="items"
-          :size="'small'"
-        />
-      </div>
-    </header>
+    <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
 
     <section class="invoice-totals-section mt-3">
       <div class="invoice-totals-grid">
@@ -181,7 +180,7 @@
                   />
                 </div>
                 <div class="mt-2">
-                  <BaseInput
+                  <DropdownCountry
                     v-model="customerFiscalData.customerCountry"
                     :label="$t('salesInvoice.customerData.labels.country')"
                   />
@@ -276,6 +275,7 @@ import FormSalesInvoiceDetail from "../components/FormSalesInvoiceDetail.vue";
 import FormRectificativeInvoice from "../components/FormRectificativeInvoice.vue";
 import SelectorDeliveryNotes from "../components/SelectorDeliveryNotes.vue";
 import Services from "../services";
+import DropdownCountry from "../../shared/components/DropdownCountry.vue";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -678,20 +678,11 @@ const sendToVerifactu = async () => {
 </script>
 
 <style scoped>
-.invoice-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.invoice-header-fields {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.invoice-header-actions {
-  flex: 0 0 auto;
-  padding-top: 1.5rem;
+.button-panel {
+  position: absolute;
+  top: 0;
+  right: 2rem;
+  z-index: 1000;
 }
 
 .invoice-totals-section {
@@ -866,15 +857,6 @@ const sendToVerifactu = async () => {
 
   .invoice-totals-section {
     padding-right: 0;
-  }
-
-  .invoice-header {
-    flex-direction: column;
-  }
-
-  .invoice-header-actions {
-    padding-top: 0;
-    align-self: flex-end;
   }
 }
 </style>
