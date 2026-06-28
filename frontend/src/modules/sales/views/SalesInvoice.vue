@@ -14,6 +14,67 @@
       </div>
     </header>
 
+    <section class="invoice-totals-section mt-3">
+      <div class="invoice-totals-grid">
+        <article class="total-card">
+          <div class="total-card-icon">
+            <i class="pi pi-wallet" />
+          </div>
+          <div class="total-card-content">
+            <span class="total-card-label">Base imposable</span>
+            <span class="total-card-value">{{
+              formatCurrency(invoice.baseAmount)
+            }}</span>
+          </div>
+        </article>
+
+        <article class="total-card">
+          <div class="total-card-icon">
+            <i class="pi pi-percentage" />
+          </div>
+          <div class="total-card-content">
+            <span class="total-card-label">Impostos</span>
+            <span class="total-card-value">{{
+              formatCurrency(invoice.taxAmount)
+            }}</span>
+          </div>
+        </article>
+
+        <article class="total-card total-card-total">
+          <div class="total-card-icon">
+            <i class="pi pi-calculator" />
+          </div>
+          <div class="total-card-content">
+            <span class="total-card-label">Total factura</span>
+            <span class="total-card-value">{{
+              formatCurrency(invoice.netAmount)
+            }}</span>
+          </div>
+        </article>
+
+        <article
+          v-if="invoice.integrationStatusId !== null"
+          class="total-card"
+        >
+          <div class="total-card-icon">
+            <i class="pi pi-verified" />
+          </div>
+          <div class="total-card-content">
+            <span class="total-card-label">Verifactu</span>
+            <span
+              class="total-card-value"
+              :class="getVerifactuStatusClass()"
+              >{{
+                invoiceStore.getVerifactuStatusById(
+                  invoice.integrationStatusId,
+                )
+              }}</span
+            >
+          </div>
+        </article>
+      </div>
+    </section>
+
     <Tabs v-model:value="activeTab" class="mt-3">
       <TabList>
         <Tab value="0">
@@ -27,67 +88,6 @@
       </TabList>
       <TabPanels>
         <TabPanel value="0">
-          <section class="invoice-totals-section mt-3">
-            <div class="invoice-totals-grid">
-              <article class="total-card">
-                <div class="total-card-icon">
-                  <i class="pi pi-wallet" />
-                </div>
-                <div class="total-card-content">
-                  <span class="total-card-label">Base imposable</span>
-                  <span class="total-card-value">{{
-                    formatCurrency(invoice.baseAmount)
-                  }}</span>
-                </div>
-              </article>
-
-              <article class="total-card">
-                <div class="total-card-icon">
-                  <i class="pi pi-percentage" />
-                </div>
-                <div class="total-card-content">
-                  <span class="total-card-label">Impostos</span>
-                  <span class="total-card-value">{{
-                    formatCurrency(invoice.taxAmount)
-                  }}</span>
-                </div>
-              </article>
-
-              <article class="total-card total-card-total">
-                <div class="total-card-icon">
-                  <i class="pi pi-calculator" />
-                </div>
-                <div class="total-card-content">
-                  <span class="total-card-label">Total factura</span>
-                  <span class="total-card-value">{{
-                    formatCurrency(invoice.netAmount)
-                  }}</span>
-                </div>
-              </article>
-
-              <article
-                v-if="invoice.integrationStatusId !== null"
-                class="total-card"
-              >
-                <div class="total-card-icon">
-                  <i class="pi pi-verified" />
-                </div>
-                <div class="total-card-content">
-                  <span class="total-card-label">Verifactu</span>
-                  <span
-                    class="total-card-value"
-                    :class="getVerifactuStatusClass()"
-                    >{{
-                      invoiceStore.getVerifactuStatusById(
-                        invoice.integrationStatusId,
-                      )
-                    }}</span
-                  >
-                </div>
-              </article>
-            </div>
-          </section>
-
           <TableInvoiceDetails
             class="mt-3"
             :canDelete="isEditable"
