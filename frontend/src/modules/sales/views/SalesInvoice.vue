@@ -1,182 +1,207 @@
 <template>
-  <div class="button-panel">
-    <div class="flex align-items-end justify-content-end">
-      <SplitButton
-        label="Guardar"
-        @click="updateInvoice"
-        :model="items"
-        :size="'small'"
-      />
-    </div>
-  </div>
-
   <main v-if="invoice">
-    <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
-
-    <section v-if="canEditCustomerData" class="customer-fiscal-section mt-3">
-      <div class="customer-fiscal-card">
-        <div class="customer-fiscal-header">
-          <i class="pi pi-id-card"></i>
-          <span>{{ $t("salesInvoice.customerData.title") }}</span>
-          <small class="customer-fiscal-hint">
-            {{ $t("salesInvoice.customerData.hint") }}
-          </small>
-        </div>
-        <div class="customer-fiscal-grid">
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerComercialName"
-              :label="$t('salesInvoice.customerData.labels.comercialName')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerTaxName"
-              :label="$t('salesInvoice.customerData.labels.taxName')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerVatNumber"
-              :label="$t('salesInvoice.customerData.labels.vatNumber')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerAccountNumber"
-              :label="$t('salesInvoice.customerData.labels.accountNumber')"
-            />
-          </div>
-          <div class="mt-2 customer-fiscal-full">
-            <BaseInput
-              v-model="customerFiscalData.customerAddress"
-              :label="$t('salesInvoice.customerData.labels.address')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerCity"
-              :label="$t('salesInvoice.customerData.labels.city')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerPostalCode"
-              :label="$t('salesInvoice.customerData.labels.postalCode')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerRegion"
-              :label="$t('salesInvoice.customerData.labels.region')"
-            />
-          </div>
-          <div class="mt-2">
-            <BaseInput
-              v-model="customerFiscalData.customerCountry"
-              :label="$t('salesInvoice.customerData.labels.country')"
-            />
-          </div>
-        </div>
-        <div class="customer-fiscal-actions">
-          <Button
-            :label="$t('salesInvoice.customerData.saveButton')"
-            icon="pi pi-save"
-            :size="'small'"
-            :loading="savingCustomerData"
-            :disabled="savingCustomerData"
-            @click="saveCustomerFiscalDataWithPropagationCheck"
-          />
-        </div>
+    <header class="invoice-header mt-3 mr-3">
+      <div class="invoice-header-fields">
+        <FormSalesInvoice :invoice="invoice" />
       </div>
-    </section>
-
-    <section class="invoice-totals-section mt-3">
-      <div class="invoice-totals-grid">
-        <article class="total-card">
-          <div class="total-card-icon">
-            <i class="pi pi-wallet" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Base imposable</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.baseAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article class="total-card">
-          <div class="total-card-icon">
-            <i class="pi pi-percentage" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Impostos</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.taxAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article class="total-card total-card-total">
-          <div class="total-card-icon">
-            <i class="pi pi-calculator" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Total factura</span>
-            <span class="total-card-value">{{
-              formatCurrency(invoice.netAmount)
-            }}</span>
-          </div>
-        </article>
-
-        <article
-          v-if="invoice.integrationStatusId !== null"
-          class="total-card"
-        >
-          <div class="total-card-icon">
-            <i class="pi pi-verified" />
-          </div>
-          <div class="total-card-content">
-            <span class="total-card-label">Verifactu</span>
-            <span class="total-card-value" :class="getVerifactuStatusClass()">{{
-              invoiceStore.getVerifactuStatusById(invoice.integrationStatusId)
-            }}</span>
-          </div>
-        </article>
+      <div class="invoice-header-actions">
+        <SplitButton
+          label="Guardar"
+          @click="updateInvoice"
+          :model="items"
+          :size="'small'"
+        />
       </div>
-    </section>
+    </header>
 
-    <TableInvoiceDetails
-      class="mt-3"
-      :canDelete="isEditable"
-      :details="invoice.salesInvoiceDetails"
-      :deliveryNotes="deliveryNoteStore.deliveryNotes"
-      @deleteDeliveryNote="deleteDeliveryNote"
-      @delete="deleteInvoiceDetail"
-    >
-      <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <span class="text-900 font-bold">Detall de la factura</span>
-          <div>
-            <Button
-              :size="'small'"
-              label="Afegir albarà"
-              @click="openDeliveryNoteSelector"
-              :disabled="!isEditable"
-            />
-            &nbsp;&nbsp;
-            <Button
-              :size="'small'"
-              label="Afegir linia lliure"
-              @click="openAddDetail"
-              :disabled="!isEditable"
-            />
-          </div>
-        </div>
-      </template>
-    </TableInvoiceDetails>
+    <Tabs v-model:value="activeTab" class="mt-3">
+      <TabList>
+        <Tab value="0">
+          <i :class="PrimeIcons.LIST" class="mr-2"></i>
+          <span>Detalls de la factura</span>
+        </Tab>
+        <Tab v-if="canEditCustomerData" value="1">
+          <i :class="PrimeIcons.ID_CARD" class="mr-2"></i>
+          <span>Dades fiscals</span>
+        </Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="0">
+          <section class="invoice-totals-section mt-3">
+            <div class="invoice-totals-grid">
+              <article class="total-card">
+                <div class="total-card-icon">
+                  <i class="pi pi-wallet" />
+                </div>
+                <div class="total-card-content">
+                  <span class="total-card-label">Base imposable</span>
+                  <span class="total-card-value">{{
+                    formatCurrency(invoice.baseAmount)
+                  }}</span>
+                </div>
+              </article>
+
+              <article class="total-card">
+                <div class="total-card-icon">
+                  <i class="pi pi-percentage" />
+                </div>
+                <div class="total-card-content">
+                  <span class="total-card-label">Impostos</span>
+                  <span class="total-card-value">{{
+                    formatCurrency(invoice.taxAmount)
+                  }}</span>
+                </div>
+              </article>
+
+              <article class="total-card total-card-total">
+                <div class="total-card-icon">
+                  <i class="pi pi-calculator" />
+                </div>
+                <div class="total-card-content">
+                  <span class="total-card-label">Total factura</span>
+                  <span class="total-card-value">{{
+                    formatCurrency(invoice.netAmount)
+                  }}</span>
+                </div>
+              </article>
+
+              <article
+                v-if="invoice.integrationStatusId !== null"
+                class="total-card"
+              >
+                <div class="total-card-icon">
+                  <i class="pi pi-verified" />
+                </div>
+                <div class="total-card-content">
+                  <span class="total-card-label">Verifactu</span>
+                  <span
+                    class="total-card-value"
+                    :class="getVerifactuStatusClass()"
+                    >{{
+                      invoiceStore.getVerifactuStatusById(
+                        invoice.integrationStatusId,
+                      )
+                    }}</span
+                  >
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <TableInvoiceDetails
+            class="mt-3"
+            :canDelete="isEditable"
+            :details="invoice.salesInvoiceDetails"
+            :deliveryNotes="deliveryNoteStore.deliveryNotes"
+            @deleteDeliveryNote="deleteDeliveryNote"
+            @delete="deleteInvoiceDetail"
+          >
+            <template #header>
+              <div
+                class="flex flex-wrap align-items-center justify-content-between gap-2"
+              >
+                <span class="text-900 font-bold">Detall de la factura</span>
+                <div>
+                  <Button
+                    :size="'small'"
+                    label="Afegir albarà"
+                    @click="openDeliveryNoteSelector"
+                    :disabled="!isEditable"
+                  />
+                  &nbsp;&nbsp;
+                  <Button
+                    :size="'small'"
+                    label="Afegir linia lliure"
+                    @click="openAddDetail"
+                    :disabled="!isEditable"
+                  />
+                </div>
+              </div>
+            </template>
+          </TableInvoiceDetails>
+        </TabPanel>
+
+        <TabPanel v-if="canEditCustomerData" value="1">
+          <section class="customer-fiscal-section mt-3">
+            <div class="customer-fiscal-card">
+              <div class="customer-fiscal-header">
+                <i class="pi pi-id-card"></i>
+                <span>{{ $t("salesInvoice.customerData.title") }}</span>
+                <small class="customer-fiscal-hint">
+                  {{ $t("salesInvoice.customerData.hint") }}
+                </small>
+              </div>
+              <div class="customer-fiscal-grid">
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerComercialName"
+                    :label="$t('salesInvoice.customerData.labels.comercialName')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerTaxName"
+                    :label="$t('salesInvoice.customerData.labels.taxName')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerVatNumber"
+                    :label="$t('salesInvoice.customerData.labels.vatNumber')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerAccountNumber"
+                    :label="$t('salesInvoice.customerData.labels.accountNumber')"
+                  />
+                </div>
+                <div class="mt-2 customer-fiscal-full">
+                  <BaseInput
+                    v-model="customerFiscalData.customerAddress"
+                    :label="$t('salesInvoice.customerData.labels.address')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerCity"
+                    :label="$t('salesInvoice.customerData.labels.city')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerPostalCode"
+                    :label="$t('salesInvoice.customerData.labels.postalCode')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerRegion"
+                    :label="$t('salesInvoice.customerData.labels.region')"
+                  />
+                </div>
+                <div class="mt-2">
+                  <BaseInput
+                    v-model="customerFiscalData.customerCountry"
+                    :label="$t('salesInvoice.customerData.labels.country')"
+                  />
+                </div>
+              </div>
+              <div class="customer-fiscal-actions">
+                <Button
+                  :label="$t('salesInvoice.customerData.saveButton')"
+                  icon="pi pi-save"
+                  :size="'small'"
+                  :loading="savingCustomerData"
+                  :disabled="savingCustomerData"
+                  @click="saveCustomerFiscalDataWithPropagationCheck"
+                />
+              </div>
+            </div>
+          </section>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </main>
 
   <Dialog
@@ -307,6 +332,7 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 const invoiceId = ref("");
+const activeTab = ref("0");
 
 onMounted(async () => {
   invoiceId.value = route.params.id as string;
@@ -652,11 +678,20 @@ const sendToVerifactu = async () => {
 </script>
 
 <style scoped>
-.button-panel {
-  position: absolute;
-  top: 0;
-  right: 2rem;
-  z-index: 1000;
+.invoice-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.invoice-header-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.invoice-header-actions {
+  flex: 0 0 auto;
+  padding-top: 1.5rem;
 }
 
 .invoice-totals-section {
@@ -831,6 +866,15 @@ const sendToVerifactu = async () => {
 
   .invoice-totals-section {
     padding-right: 0;
+  }
+
+  .invoice-header {
+    flex-direction: column;
+  }
+
+  .invoice-header-actions {
+    padding-top: 0;
+    align-self: flex-end;
   }
 }
 </style>
