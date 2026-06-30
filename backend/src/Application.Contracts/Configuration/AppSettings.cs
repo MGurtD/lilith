@@ -10,6 +10,7 @@ public class AppSettings
     public GeoapifySettings? Geoapify { get; set; }
     public GitHubSettings? GitHub { get; set; }
     public OpenTelemetrySettings? OpenTelemetry { get; set; }
+    public IngestionSettings? Ingestion { get; set; }
     public void Validate()
     {
         ConnectionStrings.Validate();
@@ -25,6 +26,8 @@ public class AppSettings
             Geoapify?.Validate();
         if (GitHub != null)
             GitHub?.Validate();
+        if (Ingestion != null)
+            Ingestion?.Validate();
     }
 }
 
