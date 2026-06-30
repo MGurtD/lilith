@@ -334,6 +334,13 @@ const getTaxAmountFromImports = (): number => {
 defineExpose({
   submitForm,
   calcAmounts,
+  // Bypasses the hasBeenMounted 500ms gate so importers can recompute header
+  // totals immediately after pre-filling purchaseInvoiceImports without
+  // racing the mount timer.
+  calcAmountsNow(): Promise<void> {
+    hasBeenMounted = true;
+    return calcAmounts();
+  },
 });
 </script>
 <style scoped>
