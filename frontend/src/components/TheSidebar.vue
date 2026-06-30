@@ -133,4 +133,9 @@ function toggleCollapse() {
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
+
+.support-btn:hover {
+  background-color: var(--p-blue-700) !important;
+  color: var(--p-surface-0) !important;
+}
 </style>
