@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
 import PurchaseService from "../services";
 import {
+  IngestPurchaseInvoiceResponse,
   PurchaseInvoice,
   PurchaseInvoiceImport,
   PurchaseInvoiceUpdateStatues,
   PurchaseInvoiceDueDate,
 } from "../types";
+import { getNewUuid } from "@/utils/functions";
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -40,6 +42,41 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceDueDates: [],
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
+    },
+    // Prefills a draft PurchaseInvoice from an LlamaParse ingestion result.
+    // Seeds a fresh id, then mutates the header + populates purchaseInvoiceImports
+    // from payload.taxBreakdown (taxId is already resolved server-side).
+    // SupplierId is left empty — operator picks manually OR frontend auto-matches
+    // by VatNumber against purchaseMasterData.masterData.suppliers.
+    setFromIngestion(payload: IngestPurchaseInvoiceResponse) {
+      const id = getNewUuid();
+      this.setNewPurchaseInvoice(id);
+      if (!this.purchaseInvoice) return undefined;
+
+      this.purchaseInvoice.supplierNumber = payload.invoiceNumber ?? "--";
+      if (payload.issueDate) {
+        this.purchaseInvoice.purchaseInvoiceDate =
+          new Date(payload.issueDate) as any;
+      }
+      this.purchaseInvoice.transportAmount = payload.transportAmount ?? 0;
+      this.purchaseInvoice.extraTaxPercentatge =
+        payload.extraTaxPercentatge ?? 0;
+      this.purchaseInvoice.discountPercentage =
+        payload.discountPercentage ?? 0;
+
+      this.purchaseInvoice.purchaseInvoiceImports = (payload.taxBreakdown ?? []).map(
+        (row) =>
+          ({
+            id: getNewUuid(),
+            taxId: row.taxId,
+            baseAmount: row.baseAmount,
+            taxAmount: row.taxAmount,
+            netAmount: row.baseAmount + row.taxAmount,
+            purchaseInvoiceId: id,
+          } as PurchaseInvoiceImport),
+      );
+
+      return this.purchaseInvoice;
     },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =
