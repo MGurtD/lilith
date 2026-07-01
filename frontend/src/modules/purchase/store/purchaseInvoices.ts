@@ -8,6 +8,23 @@ import {
   PurchaseInvoiceDueDate,
 } from "../types";
 import { getNewUuid } from "@/utils/functions";
+import { useSuppliersStore } from "./suppliers";
+
+// Normalize a VatNumber for fuzzy equality when auto-resolving SupplierId:
+// - Uppercase
+// - Drop spaces and dashes
+// - Strip "ES" country prefix
+// - Strip leading "B" (NIF/CIF marker in supplier codes like "B09680521")
+// Returns an empty string for null/undefined/empty input.
+function normalizeVatNumber(input: string | null | undefined): string {
+  if (!input) return "";
+  return input
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .replace(/^ES/, "")
+    .replace(/^B/, "");
+}
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -46,8 +63,9 @@ export const usePurchaseInvoiceStore = defineStore({
     // Prefills a draft PurchaseInvoice from an LlamaParse ingestion result.
     // Seeds a fresh id, then mutates the header + populates purchaseInvoiceImports
     // from payload.taxBreakdown (taxId is already resolved server-side).
-    // SupplierId is left empty — operator picks manually OR frontend auto-matches
-    // by VatNumber against purchaseMasterData.masterData.suppliers.
+    // SupplierId is auto-resolved by normalized VatNumber match against the
+    // useSuppliersStore in-memory list. If no match, leaves supplierId empty
+    // so the operator can pick manually.
     setFromIngestion(payload: IngestPurchaseInvoiceResponse) {
       const id = getNewUuid();
       this.setNewPurchaseInvoice(id);
@@ -75,6 +93,24 @@ export const usePurchaseInvoiceStore = defineStore({
             purchaseInvoiceId: id,
           } as PurchaseInvoiceImport),
       );
+
+      // Auto-resolve SupplierId by normalized VatNumber match.
+      // NOTE: Supplier.VatNumber is NOT unique in the DB (only ComercialName
+      // is unique — see SupplierBuilder.cs:76-77), so multiple suppliers may
+      // match the same normalized VatNumber. To keep the resolver stable
+      // across page reloads, we sort matches by id and pick the first.
+      // If no match, supplierId stays empty and the operator picks manually.
+      const normalized = normalizeVatNumber(payload.supplierVatNumber);
+      if (normalized) {
+        const supplierStore = useSuppliersStore();
+        const suppliers = supplierStore.suppliers ?? [];
+        const matches = suppliers
+          .filter((s) => normalizeVatNumber(s.vatNumber) === normalized)
+          .sort((a, b) => a.id.localeCompare(b.id));
+        if (matches.length > 0) {
+          this.purchaseInvoice.supplierId = matches[0].id;
+        }
+      }
 
       return this.purchaseInvoice;
     },

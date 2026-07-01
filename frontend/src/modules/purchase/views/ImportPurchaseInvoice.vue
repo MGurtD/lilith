@@ -103,6 +103,7 @@ import {
   usePurchaseInvoiceStore,
 } from "../store/purchaseInvoices";
 import { usePurchaseMasterDataStore } from "../store/purchase";
+import { useSuppliersStore } from "../store/suppliers";
 import PurchaseService from "../services";
 import FormPurchaseInvoice from "../components/FormPurchaseInvoice.vue";
 import { useStore } from "@/store";
@@ -113,6 +114,7 @@ const toast = useToast();
 const appStore = useStore();
 const store = usePurchaseInvoiceStore();
 const masterData = usePurchaseMasterDataStore();
+const supplierStore = useSuppliersStore();
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const formRef = ref<InstanceType<typeof FormPurchaseInvoice> | null>(null);
@@ -138,6 +140,9 @@ onMounted(async () => {
   // Seed a fresh draft so the form has something to bind to before upload.
   store.setNewPurchaseInvoice(getNewUuid());
   await masterData.fetchMasterData();
+  // Preload the entity-specific supplier store so setFromIngestion can
+  // auto-resolve SupplierId by VatNumber at upload time.
+  await supplierStore.fetchSuppliers();
 });
 
 const onFileSelected = (event: Event) => {
@@ -165,23 +170,10 @@ const onUpload = async () => {
       return;
     }
 
-    // Prefill the store from the provider response. SupplierId is left empty
-    // so the operator can pick it manually after reviewing the form.
+    // Prefill the store from the provider response. setFromIngestion also
+    // auto-resolves SupplierId by VatNumber against useSuppliersStore. If
+    // no match, supplierId is left empty so the operator can pick manually.
     store.setFromIngestion(payload);
-
-    // Auto-match supplier by VatNumber against the in-memory master data.
-    if (payload.supplierVatNumber && store.purchaseInvoice) {
-      const match = masterData.masterData.suppliers?.find(
-        (s) =>
-          s.vatNumber &&
-          payload.supplierVatNumber &&
-          s.vatNumber.replace(/\s/g, "").toLowerCase() ===
-            payload.supplierVatNumber.replace(/\s/g, "").toLowerCase(),
-      );
-      if (match) {
-        store.purchaseInvoice.supplierId = match.id;
-      }
-    }
 
     // Force header totals to recompute immediately, bypassing the 500ms gate.
     formRef.value?.calcAmountsNow();
