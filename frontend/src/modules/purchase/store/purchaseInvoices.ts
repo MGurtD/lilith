@@ -8,6 +8,7 @@ import {
   PurchaseInvoiceDueDate,
 } from "../types";
 import { getNewUuid } from "@/utils/functions";
+import { globalToast } from "@/utils/global-toast";
 import { useSuppliersStore } from "./suppliers";
 
 // Normalize a VatNumber for fuzzy equality when auto-resolving SupplierId:
@@ -25,6 +26,13 @@ function normalizeVatNumber(input: string | null | undefined): string {
     .replace(/^ES/, "")
     .replace(/^B/, "");
 }
+
+// Toast shown when the auto-resolver finds 2+ suppliers sharing a normalized
+// VatNumber. Operator must pick manually because Supplier.VatNumber is NOT
+// uniquely constrained in the DB (only ComercialName is — see
+// SupplierBuilder.cs:76-77). Catalan message per frontend AGENTS.md.
+const AMBIGUOUS_SUPPLIER_TOAST = (vatNumber: string): string =>
+  `S'han trobat múltiples proveïdors amb el mateix NIF/CIF (${vatNumber}). Selecciona'l manualment.`;
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -97,18 +105,25 @@ export const usePurchaseInvoiceStore = defineStore({
       // Auto-resolve SupplierId by normalized VatNumber match.
       // NOTE: Supplier.VatNumber is NOT unique in the DB (only ComercialName
       // is unique — see SupplierBuilder.cs:76-77), so multiple suppliers may
-      // match the same normalized VatNumber. To keep the resolver stable
-      // across page reloads, we sort matches by id and pick the first.
-      // If no match, supplierId stays empty and the operator picks manually.
+      // match the same normalized VatNumber.
+      //   1 match  → set supplierId automatically.
+      //   2+ match → leave supplierId empty, warn operator via globalToast
+      //              so they pick manually (auto-picking is non-deterministic
+      //              because VatNumber is not unique).
+      //   0 match  → silent, supplierId stays empty; operator picks manually.
       const normalized = normalizeVatNumber(payload.supplierVatNumber);
       if (normalized) {
         const supplierStore = useSuppliersStore();
         const suppliers = supplierStore.suppliers ?? [];
-        const matches = suppliers
-          .filter((s) => normalizeVatNumber(s.vatNumber) === normalized)
-          .sort((a, b) => a.id.localeCompare(b.id));
-        if (matches.length > 0) {
+        const matches = suppliers.filter(
+          (s) => normalizeVatNumber(s.vatNumber) === normalized,
+        );
+        if (matches.length === 1) {
           this.purchaseInvoice.supplierId = matches[0].id;
+        } else if (matches.length > 1) {
+          globalToast.warn(
+            AMBIGUOUS_SUPPLIER_TOAST(payload.supplierVatNumber ?? ""),
+          );
         }
       }
 
