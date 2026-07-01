@@ -12,78 +12,88 @@
       <h2 class="import-title">Importar factura (PDF)</h2>
     </div>
 
-    <Card class="import-card">
-      <template #content>
-        <div class="import-step">
-          <label class="block text-900 mb-2 font-medium">
-            1. Selecciona el fitxer PDF de la factura
-          </label>
-          <input
-            ref="fileInput"
-            type="file"
-            accept="application/pdf"
-            class="import-file-input"
-            :disabled="isUploading"
-            @change="onFileSelected"
-          />
-          <small v-if="selectedFile" class="import-file-name">
-            {{ selectedFile.name }} ({{ formatBytes(selectedFile.size) }})
-          </small>
-        </div>
+    <!-- Slim upload banner — collapses to a thin status row when there's a result -->
+    <div class="ingest-banner" :class="{ 'ingest-banner--has-result': result }">
+      <!-- Initial state: no file selected -->
+      <div v-if="!selectedFile && !isUploading" class="ingest-banner__initial">
+        <i class="pi pi-file-pdf"></i>
+        <span>Selecciona o arrossega un PDF</span>
+        <FileUpload
+          mode="basic"
+          :auto="true"
+          accept="application/pdf"
+          :chooseLabel="'Selecciona PDF'"
+          :showCancelButton="false"
+          :showUploadButton="false"
+          :customUpload="true"
+          @uploader="onUploader"
+          @select="onFileSelected"
+        />
+      </div>
 
-        <div class="import-step">
-          <Button
-            label="Processar PDF"
-            icon="pi pi-cloud-upload"
-            :loading="isUploading"
-            :disabled="!selectedFile || isUploading"
-            @click="onUpload"
-          />
-        </div>
+      <!-- Uploading state: progress bar -->
+      <div v-else-if="isUploading" class="ingest-banner__uploading">
+        <i class="pi pi-spin pi-cloud-upload"></i>
+        <span class="ingest-banner__filename">{{ selectedFile?.name }}</span>
+        <span class="ingest-banner__size">{{ formatBytes(selectedFile?.size ?? 0) }}</span>
+        <ProgressBar
+          mode="indeterminate"
+          style="flex: 1; height: 6px; max-width: 240px"
+        />
+      </div>
 
-        <Message
-          v-if="errorMessage"
-          severity="error"
-          class="import-message"
-          :closable="false"
-        >
-          {{ errorMessage }}
-        </Message>
-      </template>
-    </Card>
+      <!-- Completed state: change file link -->
+      <div v-else-if="result" class="ingest-banner__completed">
+        <i class="pi pi-check-circle" style="color: var(--p-green-500)"></i>
+        <span class="ingest-banner__filename">{{ selectedFile?.name }}</span>
+        <span class="ingest-banner__size">{{ formatBytes(selectedFile?.size ?? 0) }}</span>
+        <Button
+          icon="pi pi-refresh"
+          label="Canviar PDF"
+          severity="secondary"
+          text
+          size="small"
+          @click="onReset"
+        />
+      </div>
 
-    <Card v-if="result" class="import-card">
-      <template #content>
-        <div class="import-step">
-          <label class="block text-900 mb-2 font-medium">
-            2. Revisa les dades i accepta la creació
-          </label>
-          <FormPurchaseInvoice
-            ref="formRef"
-            :purchaseInvoice="store.purchaseInvoice!"
-            @submit="onAccept"
-            @cancel="onCancel"
-          />
-        </div>
+      <!-- Error state -->
+      <Message
+        v-if="errorMessage"
+        severity="error"
+        class="ingest-banner__error"
+        :closable="true"
+        @close="errorMessage = null"
+      >
+        {{ errorMessage }}
+      </Message>
+    </div>
 
-        <div class="import-actions">
-          <Button
-            label="Acceptar i crear"
-            icon="pi pi-check"
-            :loading="isSaving"
-            :disabled="isSaving"
-            @click="onAcceptClick"
-          />
-          <Button
-            label="Cancel·lar"
-            icon="pi pi-times"
-            severity="secondary"
-            :disabled="isSaving"
-            @click="onCancel"
-          />
-        </div>
-      </template>
-    </Card>
+    <!-- Review form (unchanged shape, but no wrapping Card) -->
+    <div v-if="result" class="ingest-review">
+      <FormPurchaseInvoice
+        ref="formRef"
+        :purchaseInvoice="store.purchaseInvoice!"
+        @submit="onAccept"
+        @cancel="onCancel"
+      />
+      <div class="ingest-actions">
+        <Button
+          label="Acceptar i crear"
+          icon="pi pi-check"
+          :loading="isSaving"
+          :disabled="isSaving"
+          @click="onAcceptClick"
+        />
+        <Button
+          label="Cancel·lar"
+          icon="pi pi-times"
+          severity="secondary"
+          :disabled="isSaving"
+          @click="onCancel"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -116,7 +126,6 @@ const store = usePurchaseInvoiceStore();
 const masterData = usePurchaseMasterDataStore();
 const supplierStore = useSuppliersStore();
 
-const fileInput = ref<HTMLInputElement | null>(null);
 const formRef = ref<InstanceType<typeof FormPurchaseInvoice> | null>(null);
 
 const selectedFile = ref<File | null>(null);
@@ -145,24 +154,36 @@ onMounted(async () => {
   await supplierStore.fetchSuppliers();
 });
 
-const onFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0] ?? null;
-  selectedFile.value = file;
+const onFileSelected = (event: { originalEvent?: Event; files: File[] | File | unknown }) => {
+  // PrimeVue v4 fires @select before the upload is attempted; we use it
+  // only to display the chosen filename in the banner during upload.
+  const files = Array.isArray(event.files)
+    ? event.files
+    : event.files
+      ? [event.files as File]
+      : [];
+  selectedFile.value = (files[0] as File) ?? null;
   errorMessage.value = null;
   result.value = false;
 };
 
-const onUpload = async () => {
-  if (!selectedFile.value) return;
+const onUploader = async (event: { files: File[] | File }) => {
+  // PrimeVue v4 fires @uploader when auto=true and a file is selected.
+  // The payload is { files: File | File[] }; normalize to File[].
+  const files = Array.isArray(event.files)
+    ? event.files
+    : event.files
+      ? [event.files]
+      : [];
+  const file = files[0];
+  if (!file) return;
 
+  selectedFile.value = file;
   isUploading.value = true;
   errorMessage.value = null;
 
   try {
-    const payload = await PurchaseService.PurchaseInvoiceIngestion.ingest(
-      selectedFile.value,
-    );
+    const payload = await PurchaseService.PurchaseInvoiceIngestion.ingest(file);
 
     if (!payload) {
       errorMessage.value =
@@ -185,9 +206,25 @@ const onUpload = async () => {
       detail: "Revisa els camps i prem 'Acceptar i crear'.",
       life: 4000,
     });
+  } catch (err) {
+    // Surface network/parse errors without losing the selectedFile so the
+    // operator can see which file failed and retry by picking another.
+    const detail =
+      err instanceof Error ? err.message : "Error desconegut durant la ingesta.";
+    errorMessage.value = `Error processant el PDF: ${detail}`;
+    result.value = false;
   } finally {
     isUploading.value = false;
   }
+};
+
+const onReset = () => {
+  selectedFile.value = null;
+  result.value = false;
+  errorMessage.value = null;
+  // Reset the form to a fresh draft so the operator can re-upload a new PDF
+  // and review a clean set of fields.
+  store.setNewPurchaseInvoice(getNewUuid());
 };
 
 const onAcceptClick = () => {
@@ -246,34 +283,61 @@ const onCancel = () => {
   font-weight: 600;
 }
 
-.import-card {
-  width: 100%;
-}
-
-.import-step {
+.ingest-banner {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--p-surface-200, var(--surface-200));
+  border-radius: 0.5rem;
+  background: var(--p-surface-50, var(--surface-50));
 }
 
-.import-file-input {
-  font-size: 0.9rem;
+.ingest-banner--has-result {
+  padding: 0.5rem 1rem;
+  background: var(--p-green-50, var(--green-50, #ecfdf5));
+  border-color: var(--p-green-200, var(--green-200, #a7f3d0));
 }
 
-.import-file-name {
+.ingest-banner__initial,
+.ingest-banner__uploading,
+.ingest-banner__completed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ingest-banner__initial i,
+.ingest-banner__uploading i,
+.ingest-banner__completed i {
+  font-size: 1.1rem;
+}
+
+.ingest-banner__filename {
+  font-weight: 500;
+  flex: 0 1 auto;
+}
+
+.ingest-banner__size {
   color: var(--p-text-muted-color);
   font-size: 0.85rem;
+  flex: 0 0 auto;
 }
 
-.import-message {
+.ingest-banner__error {
+  margin-top: 0.25rem;
+}
+
+.ingest-review {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-top: 0.5rem;
 }
 
-.import-actions {
+.ingest-actions {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
-  margin-top: 1rem;
 }
 </style>
