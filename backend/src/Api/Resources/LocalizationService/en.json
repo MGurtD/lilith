@@ -242,7 +242,7 @@
     "ProviderNotConfigured": "Ingestion provider is not configured",
     "ProviderConfigError": "Ingestion provider configuration is invalid (schema or project)",
     "UnknownTaxRate": "Unknown tax rate: {0}",
-    "SurchargeNotSupportedInScope": "This invoice includes a surcharge, not supported in this version",
+    "SurchargeNotSupportedInScope": "This invoice includes equivalence surcharge (RE) or retention tax (IRPF), which cannot be imported automatically yet. To continue, manually edit the tax lines and amount in the form.",
     "VerifactuNoRequestsFound": "No requests found for the specified invoice ID.",
     "VerifactuInvalidMonth": "Month must be between 1 and 12.",
     "VerifactuInvalidYear": "Year must be between 2024 and {0}.",

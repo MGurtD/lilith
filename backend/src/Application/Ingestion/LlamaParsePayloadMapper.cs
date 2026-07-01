@@ -46,8 +46,16 @@ public class LlamaParsePayloadMapper
             response.Confidence.Lines = data.Confidence.Lines;
         }
 
-        // Surcharge check fires first — short-circuit the whole response.
-        if (data.TaxBreakdown.Any(r => r.SurchargeRate.HasValue))
+        // Surcharge / RE / IRPF detection.
+        // Fires if any tax row has a non-zero surcharge_rate or surcharge_amount,
+        // OR if the header totals indicate a non-zero extra tax (IRPF retention).
+        // Both are conceptually "out-of-scope retention" patterns that this MVP does not persist.
+        var hasRecargo = data.TaxBreakdown.Any(r =>
+            (r.SurchargeRate.HasValue && r.SurchargeRate.Value > 0) ||
+            (r.SurchargeAmount.HasValue && r.SurchargeAmount.Value > 0));
+        var hasIrpf = (data.Totals?.ExtraTaxPercentage ?? 0) > 0;
+
+        if (hasRecargo || hasIrpf)
         {
             throw new IngestionException(
                 IngestionFailureKind.SurchargeUnsupported,

@@ -84,6 +84,10 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
 
         // Step 3: poll until terminal status, then map result
         var extraction = await PollExtractJobAsync(jobId, ct);
+        _logger.LogInformation(
+            "LlamaParse extract_result for {FileName}: {RawPayload}",
+            fileName,
+            System.Text.Json.JsonSerializer.Serialize(extraction.ExtractResult));
         return _mapper.Map(extraction.ExtractResult);
     }
 
