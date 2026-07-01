@@ -6,6 +6,7 @@ public enum IngestionFailureKind
     ProviderUnparseable,
     ProviderUnavailable,
     ProviderNotConfigured,
+    ProviderConfigError,
     UnknownTaxRate,
     SurchargeUnsupported,
 }

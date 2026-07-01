@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Application.Contracts;
@@ -10,12 +11,27 @@ namespace Application.Ingestion;
 
 /// <summary>
 /// LlamaParse implementation of IInvoiceIngestionService.
-/// Uses AddHttpClient&lt;TInterface, TService&gt;() — the HttpClient is built by the factory
+/// Aligned with the current LlamaCloud SaaS API (developers.llamaindex.ai/llamaparse/extract/api):
+///   1. Upload PDF → POST /api/v1/beta/files (multipart, purpose=extract) → { id }
+///   2. Create extract job → POST /api/v2/extract?project_id={PROJECT_ID}
+///        body: { file_input, configuration: { tier, version, extraction_target, data_schema,
+///                                            confidence_scores, cite_sources, system_prompt } }
+///        → { id, status }
+///   3. Poll → GET /api/v2/extract/{jobId}?project_id=...&expand=extract_metadata
+///        until status ∈ { COMPLETED, FAILED, CANCELLED }
+///   4. Map → LlamaParsePayloadMapper.Map(extraction.ExtractResult)
+/// Uses AddHttpClient&lt;TInterface, TService&gt;() — HttpClient built by the factory
 /// so BaseAddress and Timeout are configurable from Ingestion__* env-vars.
-/// POC-1 decision: structured path via /api/parsing/upload + /api/extraction/run.
 /// </summary>
 public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
 {
+    private const int PollIntervalSeconds = 2;
+
+    private static readonly HashSet<string> TerminalStatuses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "COMPLETED", "FAILED", "CANCELLED"
+    };
+
     private readonly HttpClient _httpClient;
     private readonly IngestionSettings? _settings;
     private readonly IUnitOfWork _unitOfWork;
@@ -52,14 +68,23 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
                 _localizationService.GetLocalizedString("ProviderNotConfigured"));
         }
 
+        if (string.IsNullOrWhiteSpace(_settings.ProjectId))
+        {
+            _logger.LogWarning("Ingestion:ProjectId not configured — returning ProviderNotConfigured.");
+            throw new IngestionException(
+                IngestionFailureKind.ProviderNotConfigured,
+                _localizationService.GetLocalizedString("ProviderNotConfigured"));
+        }
+
         // Step 1: upload the PDF to get a file_id
         var fileId = await UploadPdfAsync(pdfStream, fileName, ct);
 
-        // Step 2: run structured extraction with an invoice schema
-        var extraction = await RunExtractionAsync(fileId, ct);
+        // Step 2: create extract job → returns job id + initial status
+        var jobId = await CreateExtractJobAsync(fileId, ct);
 
-        // Step 3: map to application DTO + resolve Tax rows
-        return _mapper.Map(extraction.Data);
+        // Step 3: poll until terminal status, then map result
+        var extraction = await PollExtractJobAsync(jobId, ct);
+        return _mapper.Map(extraction.ExtractResult);
     }
 
     private async Task<string> UploadPdfAsync(
@@ -71,8 +96,9 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
         var streamContent = new StreamContent(pdfStream);
         streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
         form.Add(streamContent, "file", fileName);
+        form.Add(new StringContent("extract"), "purpose");
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/parsing/upload")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/beta/files")
         {
             Content = form,
         };
@@ -80,12 +106,12 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
             "Bearer", _settings!.ApiKey);
 
         using var response = await _httpClient.SendAsync(request, ct);
-        await EnsureSuccessAsync(response, ct);
+        await EnsureSuccessAsync(response, "upload", ct);
 
         var upload = await response.Content.ReadFromJsonAsync<LlamaParseUploadResponse>(cancellationToken: ct);
         if (upload == null || string.IsNullOrWhiteSpace(upload.Id))
         {
-            _logger.LogError("LlamaParse /api/parsing/upload returned no file_id.");
+            _logger.LogError("LlamaParse /api/v1/beta/files returned no file id.");
             throw new IngestionException(
                 IngestionFailureKind.ProviderUnparseable,
                 _localizationService.GetLocalizedString("ProviderUnparseable"));
@@ -93,26 +119,23 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
         return upload.Id;
     }
 
-    private async Task<LlamaParseExtractionResponse> RunExtractionAsync(
-        string fileId,
-        CancellationToken ct)
+    private async Task<string> CreateExtractJobAsync(string fileId, CancellationToken ct)
     {
-        // JSON schema describing supplier-invoice fields. LlamaParse uses this
-        // to drive field extraction; the response is then validated against it.
-        var schema = new Dictionary<string, object>
+        // JSON schema describing supplier-invoice fields. The model returns data that matches this.
+        var dataSchema = new Dictionary<string, object>
         {
             ["type"] = "object",
             ["properties"] = new Dictionary<string, object>
             {
-                ["invoice_number"] = new { type = "string" },
-                ["issue_date"] = new { type = "string", format = "date" },
+                ["invoice_number"] = new { type = "string", description = "Invoice number or code printed on the document" },
+                ["issue_date"] = new { type = "string", format = "date", description = "Issue date (YYYY-MM-DD)" },
                 ["supplier"] = new
                 {
                     type = "object",
                     properties = new Dictionary<string, object>
                     {
-                        ["vat_number"] = new { type = "string" },
-                        ["name"] = new { type = "string" },
+                        ["vat_number"] = new { type = "string", description = "Supplier VAT / tax identification number" },
+                        ["name"] = new { type = "string", description = "Supplier legal or trade name" },
                     },
                 },
                 ["totals"] = new
@@ -120,10 +143,10 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
                     type = "object",
                     properties = new Dictionary<string, object>
                     {
-                        ["base_amount"] = new { type = "number" },
-                        ["transport_amount"] = new { type = "number" },
-                        ["discount_percentage"] = new { type = "number" },
-                        ["extra_tax_percentage"] = new { type = "number" },
+                        ["base_amount"] = new { type = "number", description = "Net taxable base amount" },
+                        ["transport_amount"] = new { type = "number", description = "Transport / shipping charges" },
+                        ["discount_percentage"] = new { type = "number", description = "Early-payment or commercial discount (%)" },
+                        ["extra_tax_percentage"] = new { type = "number", description = "Extra tax percentage, if any" },
                     },
                 },
                 ["tax_breakdown"] = new
@@ -149,36 +172,121 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
                     properties = new Dictionary<string, object>
                     {
                         ["headers"] = new { type = "object" },
-                        ["lines"] = new { type = "array" },
+                        ["lines"] = new
+                        {
+                            type = "array",
+                            items = new { type = "number" },
+                        },
                     },
                 },
             },
         };
 
-        var body = new { file_id = fileId, schema };
+        var body = new
+        {
+            file_input = fileId,
+            configuration = new
+            {
+                tier = _settings!.Tier,
+                version = _settings.Version,
+                extraction_target = "per_doc",
+                data_schema = dataSchema,
+                confidence_scores = _settings.ConfidenceScores,
+                cite_sources = false,
+            },
+        };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/extraction/run")
+        var url = $"/api/v2/extract?project_id={Uri.EscapeDataString(_settings.ProjectId)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = JsonContent.Create(body),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue(
-            "Bearer", _settings!.ApiKey);
+            "Bearer", _settings.ApiKey);
 
         using var response = await _httpClient.SendAsync(request, ct);
-        await EnsureSuccessAsync(response, ct);
+        await EnsureSuccessAsync(response, "create_extract", ct);
 
-        var extraction = await response.Content.ReadFromJsonAsync<LlamaParseExtractionResponse>(cancellationToken: ct);
-        if (extraction == null)
+        var created = await response.Content.ReadFromJsonAsync<LlamaParseExtractionResponse>(cancellationToken: ct);
+        if (created == null || string.IsNullOrWhiteSpace(created.Id))
         {
-            _logger.LogError("LlamaParse /api/extraction/run returned an empty body.");
+            _logger.LogError("LlamaParse /api/v2/extract returned no job id.");
             throw new IngestionException(
                 IngestionFailureKind.ProviderUnparseable,
                 _localizationService.GetLocalizedString("ProviderUnparseable"));
         }
-        return extraction;
+        return created.Id;
     }
 
-    private async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
+    private async Task<LlamaParseExtractionResponse> PollExtractJobAsync(
+        string jobId,
+        CancellationToken ct)
+    {
+        // Reserve 5 seconds of the configured budget for the upload + create + final mapping round-trip.
+        var pollingBudgetSeconds = Math.Max(5, _settings!.TimeoutSeconds - 5);
+        var deadline = Stopwatch.StartNew();
+
+        var url = $"/api/v2/extract/{Uri.EscapeDataString(jobId)}" +
+                  $"?project_id={Uri.EscapeDataString(_settings.ProjectId)}" +
+                  "&expand=extract_metadata";
+
+        var iteration = 0;
+        while (true)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (deadline.Elapsed.TotalSeconds > pollingBudgetSeconds)
+            {
+                _logger.LogError("LlamaParse polling exceeded {Seconds}s budget.", pollingBudgetSeconds);
+                throw new IngestionException(
+                    IngestionFailureKind.ProviderUnavailable,
+                    _localizationService.GetLocalizedString("ProviderUnavailable"));
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer", _settings.ApiKey);
+
+            using var response = await _httpClient.SendAsync(request, ct);
+            await EnsureSuccessAsync(response, "poll_extract", ct);
+
+            var current = await response.Content
+                .ReadFromJsonAsync<LlamaParseExtractionResponse>(cancellationToken: ct);
+
+            if (current == null || string.IsNullOrWhiteSpace(current.Status))
+            {
+                _logger.LogError("LlamaParse /api/v2/extract/{{jobId}} returned empty body.");
+                throw new IngestionException(
+                    IngestionFailureKind.ProviderUnparseable,
+                    _localizationService.GetLocalizedString("ProviderUnparseable"));
+            }
+
+            iteration++;
+            _logger.LogInformation(
+                "LlamaParse poll iteration {Iter} → status={Status} (elapsed={Elapsed:F1}s)",
+                iteration, current.Status, deadline.Elapsed.TotalSeconds);
+
+            if (TerminalStatuses.Contains(current.Status))
+            {
+                if (!string.Equals(current.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogError("LlamaParse extract job finished with status {Status}.", current.Status);
+                    throw new IngestionException(
+                        IngestionFailureKind.ProviderUnparseable,
+                        _localizationService.GetLocalizedString("ProviderUnparseable"));
+                }
+                return current;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(PollIntervalSeconds), ct);
+        }
+    }
+
+    private async Task EnsureSuccessAsync(
+        HttpResponseMessage response,
+        string step,
+        CancellationToken ct)
     {
         if (response.IsSuccessStatusCode)
             return;
@@ -188,7 +296,7 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
 
         if (status == 401 || status == 403)
         {
-            _logger.LogError("LlamaParse auth failed. Status: {Status}", status);
+            _logger.LogError("LlamaParse auth failed at step {Step}. Status: {Status}", step, status);
             throw new IngestionException(
                 IngestionFailureKind.ProviderAuthFailed,
                 _localizationService.GetLocalizedString("ProviderAuthFailed"));
@@ -196,13 +304,21 @@ public class LlamaParseInvoiceIngestionService : IInvoiceIngestionService
 
         if (status == 422)
         {
-            _logger.LogError("LlamaParse returned 422 unparseable. Body: {Body}", body);
-            throw new IngestionException(
-                IngestionFailureKind.ProviderUnparseable,
-                _localizationService.GetLocalizedString("ProviderUnparseable"));
+            // 422 from /files          → document unparseable (existing mapping).
+            // 422 from /extract (job)  → invalid schema / config / project_id (new ProviderConfigError).
+            var kind = string.Equals(step, "create_extract", StringComparison.OrdinalIgnoreCase)
+                ? IngestionFailureKind.ProviderConfigError
+                : IngestionFailureKind.ProviderUnparseable;
+            var message = kind == IngestionFailureKind.ProviderConfigError
+                ? _localizationService.GetLocalizedString("ProviderConfigError")
+                : _localizationService.GetLocalizedString("ProviderUnparseable");
+            _logger.LogError(
+                "LlamaParse returned 422 at step {Step}. Body: {Body}", step, body);
+            throw new IngestionException(kind, message);
         }
 
-        _logger.LogError("LlamaParse unavailable. Status: {Status}, Body: {Body}", status, body);
+        _logger.LogError(
+            "LlamaParse unavailable at step {Step}. Status: {Status}, Body: {Body}", step, status, body);
         throw new IngestionException(
             IngestionFailureKind.ProviderUnavailable,
             _localizationService.GetLocalizedString("ProviderUnavailable"));

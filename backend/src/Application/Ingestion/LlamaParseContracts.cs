@@ -4,8 +4,10 @@ namespace Application.Ingestion;
 
 // Internal DTOs that mirror LlamaParse's structured extraction response shape.
 // Not exposed via Application.Contracts — only the Application/Ingestion project sees these.
-// POC-1 documented the chosen path: /api/parsing/upload + /api/extraction/run with an
-// invoice JSON schema. Real provider shapes will be validated in a follow-up POC.
+// Aligned with the current LlamaCloud SaaS API (developers.llamaindex.ai/llamaparse/extract/api):
+//   - POST /api/v1/beta/files        → { id }
+//   - POST /api/v2/extract?project_id → { id, status }
+//   - GET  /api/v2/extract/{jobId}    → { id, status, extract_result, extract_metadata? }
 
 internal class LlamaParseUploadResponse
 {
@@ -15,8 +17,44 @@ internal class LlamaParseUploadResponse
 
 internal class LlamaParseExtractionResponse
 {
-    [JsonPropertyName("data")]
-    public LlamaParseExtractionData? Data { get; set; }
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("extract_result")]
+    public LlamaParseExtractionData? ExtractResult { get; set; }
+
+    [JsonPropertyName("extract_metadata")]
+    public LlamaParseExtractMetadata? ExtractMetadata { get; set; }
+}
+
+internal class LlamaParseExtractMetadata
+{
+    // Real LlamaCloud shape (verified in POC batch 7, 2026-06-30): confidence scores live under
+    //   field_metadata.document_metadata.<field>.{parsing,extraction,confidence}
+    // and the wrapper also carries parse_job_id / parse_tier.
+    // The flat confidence_scores dict from the #498 study does NOT exist in the v2 response —
+    // it deserializes to null (System.Text.Json ignores missing fields). Kept as an optional
+    // property for forward-compat with future API versions that may expose it.
+    [JsonPropertyName("field_metadata")]
+    public LlamaParseFieldMetadata? FieldMetadata { get; set; }
+
+    [JsonPropertyName("parse_job_id")]
+    public string? ParseJobId { get; set; }
+
+    [JsonPropertyName("parse_tier")]
+    public string? ParseTier { get; set; }
+
+    [JsonPropertyName("confidence_scores")]
+    public Dictionary<string, decimal>? ConfidenceScores { get; set; }
+}
+
+internal class LlamaParseFieldMetadata
+{
+    [JsonPropertyName("document_metadata")]
+    public System.Text.Json.JsonElement? DocumentMetadata { get; set; }
 }
 
 internal class LlamaParseExtractionData

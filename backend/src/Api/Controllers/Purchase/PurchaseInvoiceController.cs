@@ -132,8 +132,11 @@ namespace Api.Controllers.Purchase
         // POST /api/PurchaseInvoice/Ingest
         // Ingests a supplier invoice PDF via LlamaParse and returns a pre-fill draft.
         // Operator-facing env-vars (no appsettings entry exists):
-        //   Ingestion__ApiKey, Ingestion__BaseUrl (default https://api.cloud.llamaindex.ai),
-        //   Ingestion__DefaultModel (default llama-parse), Ingestion__TimeoutSeconds (default 90).
+        //   Ingestion__ApiKey, Ingestion__ProjectId (required for v2/extract),
+        //   Ingestion__BaseUrl (default https://api.cloud.llamaindex.ai),
+        //   Ingestion__Tier (default agentic), Ingestion__Version (default 2026-03-31),
+        //   Ingestion__ConfidenceScores (default true),
+        //   Ingestion__TimeoutSeconds (default 90, leaves a 5s buffer for non-polling work).
         [HttpPost("Ingest")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB per spec §valid PDF
@@ -174,6 +177,12 @@ namespace Api.Controllers.Purchase
             catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.SurchargeUnsupported)
             {
                 return UnprocessableEntity(
+                    new GenericResponse(false, ex.Message));
+            }
+            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.ProviderConfigError)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
                     new GenericResponse(false, ex.Message));
             }
             catch (IngestionException ex)

@@ -240,6 +240,7 @@
     "ProviderUnparseable": "El proveedor no ha podido extraer los datos de la factura",
     "ProviderUnavailable": "El proveedor de ingesta no está disponible temporalmente",
     "ProviderNotConfigured": "El proveedor de ingesta no está configurado",
+    "ProviderConfigError": "La configuración del proveedor de ingesta no es válida (esquema o proyecto)",
     "UnknownTaxRate": "Tipo de impuesto desconocido: {0}",
     "SurchargeNotSupportedInScope": "Esta factura incluye recargo, no soportado en esta versión",
     "VerifactuNoRequestsFound": "No se encontraron solicitudes para el ID de factura especificado.",

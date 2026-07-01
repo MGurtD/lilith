@@ -240,6 +240,7 @@
     "ProviderUnparseable": "Provider could not extract invoice data",
     "ProviderUnavailable": "Ingestion provider is temporarily unavailable",
     "ProviderNotConfigured": "Ingestion provider is not configured",
+    "ProviderConfigError": "Ingestion provider configuration is invalid (schema or project)",
     "UnknownTaxRate": "Unknown tax rate: {0}",
     "SurchargeNotSupportedInScope": "This invoice includes a surcharge, not supported in this version",
     "VerifactuNoRequestsFound": "No requests found for the specified invoice ID.",

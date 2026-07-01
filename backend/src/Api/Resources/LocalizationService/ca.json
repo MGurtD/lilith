@@ -240,6 +240,7 @@
     "ProviderUnparseable": "El proveïdor no ha pogut extreure les dades de la factura",
     "ProviderUnavailable": "El proveïdor d'ingesta no està disponible temporalment",
     "ProviderNotConfigured": "El proveïdor d'ingesta no està configurat",
+    "ProviderConfigError": "La configuració del proveïdor d'ingesta és invàlida (esquema o projecte)",
     "UnknownTaxRate": "Tipus d'impost desconegut: {0}",
     "SurchargeNotSupportedInScope": "Aquesta factura inclou recàrrec, que no està suportat en aquesta versió",
     "VerifactuNoRequestsFound": "No s'han trobat peticions per l'ID de factura especificat.",
