@@ -18,13 +18,14 @@
           <label class="block text-900 mb-2 font-medium">
             1. Selecciona el fitxer PDF de la factura
           </label>
-          <input
-            ref="fileInput"
-            type="file"
+          <FileUpload
+            mode="basic"
+            :auto="false"
             accept="application/pdf"
-            class="import-file-input"
+            :chooseLabel="'Selecciona el PDF'"
             :disabled="isUploading"
-            @change="onFileSelected"
+            :customUpload="true"
+            @select="onFileSelected"
           />
           <small v-if="selectedFile" class="import-file-name">
             {{ selectedFile.name }} ({{ formatBytes(selectedFile.size) }})
@@ -116,7 +117,6 @@ const store = usePurchaseInvoiceStore();
 const masterData = usePurchaseMasterDataStore();
 const supplierStore = useSuppliersStore();
 
-const fileInput = ref<HTMLInputElement | null>(null);
 const formRef = ref<InstanceType<typeof FormPurchaseInvoice> | null>(null);
 
 const selectedFile = ref<File | null>(null);
@@ -145,10 +145,8 @@ onMounted(async () => {
   await supplierStore.fetchSuppliers();
 });
 
-const onFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0] ?? null;
-  selectedFile.value = file;
+const onFileSelected = (event: { files: File[] }) => {
+  selectedFile.value = event.files?.[0] ?? null;
   errorMessage.value = null;
   result.value = false;
 };
