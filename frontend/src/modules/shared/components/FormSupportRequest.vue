@@ -25,7 +25,129 @@
             @keydown.enter="markdownHelp?.toggle($event)"
           ></i>
         </label>
+
+        <div
+          class="md-toolbar"
+          role="toolbar"
+          aria-label="Eines de format Markdown"
+        >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--bold"
+            aria-label="Negreta"
+            v-tooltip.bottom="'Negreta'"
+            @click="applyMarkdown('bold')"
+            >B</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--italic"
+            aria-label="Cursiva"
+            v-tooltip.bottom="'Cursiva'"
+            @click="applyMarkdown('italic')"
+            >I</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--strike"
+            aria-label="Ratllat"
+            v-tooltip.bottom="'Ratllat'"
+            @click="applyMarkdown('strike')"
+            >S</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            aria-label="Títol"
+            v-tooltip.bottom="'Títol'"
+            @click="applyMarkdown('heading')"
+            >H</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            aria-label="Cita"
+            v-tooltip.bottom="'Cita'"
+            @click="applyMarkdown('quote')"
+            >&#10078;</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-list"
+            aria-label="Llista de punts"
+            v-tooltip.bottom="'Llista de punts'"
+            @click="applyMarkdown('ulist')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            aria-label="Llista numerada"
+            v-tooltip.bottom="'Llista numerada'"
+            @click="applyMarkdown('olist')"
+            >1.</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-link"
+            aria-label="Enllaç"
+            v-tooltip.bottom="'Enllaç'"
+            @click="applyMarkdown('link')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-code"
+            aria-label="Codi en línia"
+            v-tooltip.bottom="'Codi en línia'"
+            @click="applyMarkdown('code')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--codeblock"
+            aria-label="Bloc de codi"
+            v-tooltip.bottom="'Bloc de codi'"
+            @click="applyMarkdown('codeblock')"
+            >&#96;&#96;&#96;</Button
+          >
+        </div>
+
         <Textarea
+          ref="descripcioRef"
           id="descripcio"
           v-model="model.descripcio"
           rows="6"
@@ -124,9 +246,10 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { nextTick, reactive, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import type Popover from "primevue/popover";
+import type Textarea from "primevue/textarea";
 import * as Yup from "yup";
 import BaseInput from "../../../components/BaseInput.vue";
 import MarkdownRenderer from "../../../components/help/MarkdownRenderer.vue";
@@ -141,11 +264,113 @@ const store = useSupportStore();
 const toast = useToast();
 
 const markdownHelp = ref<InstanceType<typeof Popover> | null>(null);
+const descripcioRef = ref<InstanceType<typeof Textarea> | null>(null);
 
 const model = reactive({
   resum: "",
   descripcio: "",
 });
+
+type MarkdownAction =
+  | "bold"
+  | "italic"
+  | "strike"
+  | "heading"
+  | "quote"
+  | "ulist"
+  | "olist"
+  | "link"
+  | "code"
+  | "codeblock";
+
+const getTextareaEl = (): HTMLTextAreaElement | null => {
+  const inst = descripcioRef.value as unknown as { $el?: HTMLTextAreaElement } | null;
+  return inst?.$el ?? null;
+};
+
+const applyMarkdown = async (action: MarkdownAction) => {
+  const textarea = getTextareaEl();
+  if (!textarea) return;
+
+  const value = model.descripcio;
+  const start = textarea.selectionStart ?? value.length;
+  const end = textarea.selectionEnd ?? value.length;
+  const selected = value.slice(start, end);
+
+  let newText = value;
+  let selStart = start;
+  let selEnd = end;
+
+  const wrap = (prefix: string, suffix: string, placeholder: string) => {
+    const inner = selected || placeholder;
+    const insert = `${prefix}${inner}${suffix}`;
+    newText = value.slice(0, start) + insert + value.slice(end);
+    selStart = start + prefix.length;
+    selEnd = selStart + inner.length;
+  };
+
+  const linePrefix = (prefix: string) => {
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const nextBreak = value.indexOf("\n", end);
+    const lineEnd = nextBreak === -1 ? value.length : nextBreak;
+    const block = value.slice(lineStart, lineEnd);
+    const transformed = block
+      .split("\n")
+      .map((line, i) => (prefix === "1. " ? `${i + 1}. ${line}` : `${prefix}${line}`))
+      .join("\n");
+    newText = value.slice(0, lineStart) + transformed + value.slice(lineEnd);
+    selStart = lineStart;
+    selEnd = lineStart + transformed.length;
+  };
+
+  switch (action) {
+    case "bold":
+      wrap("**", "**", "negreta");
+      break;
+    case "italic":
+      wrap("*", "*", "cursiva");
+      break;
+    case "strike":
+      wrap("~~", "~~", "ratllat");
+      break;
+    case "code":
+      wrap("`", "`", "codi");
+      break;
+    case "heading":
+      linePrefix("## ");
+      break;
+    case "quote":
+      linePrefix("> ");
+      break;
+    case "ulist":
+      linePrefix("- ");
+      break;
+    case "olist":
+      linePrefix("1. ");
+      break;
+    case "link": {
+      const inner = selected || "text";
+      const insert = `[${inner}](url)`;
+      newText = value.slice(0, start) + insert + value.slice(end);
+      selStart = start + 1 + inner.length + 2;
+      selEnd = selStart + 3;
+      break;
+    }
+    case "codeblock": {
+      const inner = selected || "codi";
+      const insert = "```\n" + inner + "\n```";
+      newText = value.slice(0, start) + insert + value.slice(end);
+      selStart = start + 4;
+      selEnd = selStart + inner.length;
+      break;
+    }
+  }
+
+  model.descripcio = newText;
+  await nextTick();
+  textarea.focus();
+  textarea.setSelectionRange(selStart, selEnd);
+};
 
 const schema = Yup.object().shape({
   resum: Yup.string()
@@ -205,6 +430,50 @@ const submitForm = async () => {
   border: 1px solid var(--p-surface-300);
   border-radius: var(--p-content-border-radius, 6px);
   background: var(--p-surface-50);
+}
+
+.md-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--p-surface-300);
+  border-radius: var(--p-content-border-radius, 6px);
+  background: var(--p-surface-50);
+}
+
+.md-toolbar__sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 0.15rem 0.25rem;
+  background: var(--p-surface-300);
+}
+
+.md-toolbar :deep(.md-tool) {
+  min-width: 2rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.md-tool--bold {
+  font-weight: 700;
+}
+
+.md-tool--italic {
+  font-style: italic;
+}
+
+.md-tool--strike {
+  text-decoration: line-through;
+}
+
+.md-tool--codeblock {
+  font-size: 0.7rem !important;
+  letter-spacing: -1px;
 }
 
 .md-help-icon {
