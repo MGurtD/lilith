@@ -146,9 +146,10 @@ namespace Api.Controllers.Purchase
         [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status502BadGateway)]
         [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> Ingest(
-            [FromForm] IFormFile pdfFile,
+            [FromForm(Name = "pdfFile")] IFormFileCollection pdfFiles,
             CancellationToken ct)
         {
+            var pdfFile = pdfFiles.FirstOrDefault();
             if (pdfFile is null || pdfFile.Length == 0
                 || !string.Equals(pdfFile.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
             {
