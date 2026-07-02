@@ -27,9 +27,11 @@ namespace Api.Controllers.Production
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
-            var entities = await service.GetAll();
+            var entities = (startDate.HasValue || endDate.HasValue)
+                ? await service.GetByUpdatedOnFilter(startDate, endDate)
+                : await service.GetAll();
             return Ok(entities);
         }
 

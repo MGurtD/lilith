@@ -14,6 +14,8 @@ export const useTaxesStore = defineStore({
       this.tax = {
         id: id,
         name: "",
+        percentatge: 0,
+        isReverseCharge: false,
         disabled: false,
       } as Tax;
     },

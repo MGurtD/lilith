@@ -7,8 +7,10 @@ using Application.Services.Verifactu;
 using Application.Services.Warehouse;
 using Application.Services.Transport;
 using Application.Services.Geolocalization;
+using Application.Services.GitHub;
 using Application.Contracts;
 using Application.Contracts.Services.Geolocalization;
+using Application.Contracts.Services.GitHub;
 using Infrastructure.Persistance;
 
 namespace Api.Setup;
@@ -57,6 +59,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserFilterService, UserFilterService>();
+        services.AddScoped<IUserTableViewService, UserTableViewService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ICustomerTypeService, CustomerTypeService>();
         services.AddScoped<IIncomeService, IncomeService>();
@@ -66,6 +69,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IPurchaseRateService, PurchaseRateService>();
         services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
         services.AddHttpClient<IGeoapifyService, GeoapifyService>();
+        services.AddHttpClient<IGitHubProxyService, GitHubProxyService>();
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();

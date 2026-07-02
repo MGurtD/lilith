@@ -6,7 +6,7 @@ namespace Application.Contracts
     {
         [Required]
         public Guid Id { get; set; }
-        [Required]
+        public bool CreateCorrectionInvoice { get; set; } = false;
         public decimal Quantity { get; set; }
     }
 }

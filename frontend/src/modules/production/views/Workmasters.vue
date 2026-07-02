@@ -11,49 +11,57 @@
     :rows="20"
   >
     <template #header>
-      <div class="filter-toolbar">
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Client</label>
-          <DropdownCustomers
-            label=""
-            v-model="filter.customerId"
-          ></DropdownCustomers>
-        </div>
-        <div class="filter-toolbar__field">
-          <label class="filter-label">Referència</label>
-          <DropdownReference
-            label=""
-            v-model="filter.referenceId"
-            :customer-id="filter.customerId"
-            :fullName="true"
-          ></DropdownReference>
-        </div>
-        <div class="filter-toolbar__field filter-toolbar__field--date">
-          <label class="filter-label">Data creació</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            :showIcon="true"
-            class="w-full"
-            placeholder="Selecciona periode"
-          />
-        </div>
-        <div class="filter-toolbar__actions">
-          <Button
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :show-filter-action="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @clear="cleanFilter"
+        @create="createButtonClick"
+      >
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Client</label
+            >
+            <DropdownCustomers label="" v-model="filter.customerId" />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Referència</label
+            >
+            <DropdownReference
+              label=""
+              v-model="filter.referenceId"
+              :customer-id="filter.customerId"
+              :fullName="true"
+            />
+          </div>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Última actual.</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              :showIcon="true"
+              class="w-full"
+              placeholder="Selecciona periode"
+              size="small"
+            />
+          </div>
+        </template>
+      </TableFilter>
     </template>
     <Column
       field="reference.code"
@@ -74,9 +82,9 @@
         }}
       </template>
     </Column>
-    <Column field="createdOn" header="Data creació" sortable style="width: 10%">
+    <Column field="updatedOn" header="Actualitzada" sortable style="width: 10%">
       <template #body="slotProps">
-        {{ formatDate(slotProps.data.createdOn) }}
+        {{ formatDate(slotProps.data.updatedOn) }}
       </template>
     </Column>
     <Column header="Mode" style="width: 12.5%">
@@ -250,6 +258,8 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import { useRouter } from "vue-router";
@@ -279,6 +289,8 @@ const confirm = useConfirm();
 const workmasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
 const customersStore = useCustomersStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const filter = ref({
   referenceId: undefined,
@@ -315,14 +327,14 @@ const filteredData = computed(() => {
     const startDate = filter.value.dates[0];
     if (startDate) {
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn!) >= startDate,
+        (w) => new Date(w.updatedOn!) >= startDate,
       );
     }
     if (filter.value.dates.length > 1 && filter.value.dates[1]) {
       const endDate = new Date(filter.value.dates[1]);
       endDate.setHours(23, 59, 59, 999);
       filteredWorkmasters = filteredWorkmasters.filter(
-        (w) => new Date(w.createdOn!) <= endDate,
+        (w) => new Date(w.updatedOn!) <= endDate,
       );
     }
   }
@@ -508,17 +520,3 @@ const deleteButton = (event: any, workmaster: WorkMaster) => {
   });
 };
 </script>
-
-<style scoped>
-.filter-toolbar {
-  align-items: flex-start;
-}
-
-.filter-toolbar__actions {
-  align-self: flex-end;
-}
-
-.filter-toolbar__field--date {
-  min-width: 15rem;
-}
-</style>

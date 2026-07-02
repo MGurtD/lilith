@@ -7,25 +7,37 @@
       responsiveLayout="scroll"
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-1"
+        <TableFilter
+          :config="[]"
+          :body-width="filterBodyWidth"
+          v-model="filters"
+          :show-title="false"
+          :show-action-labels="false"
+          :show-filter-action="false"
+          :show-create="false"
+          embedded
+          @clear="clearFilters"
         >
-          <div class="flex gap-2">
-            <label class="form-label pr-1 auto-width-label">{{
-              $t("verifactu.invoiceIntegration.filters.toDate")
-            }}</label>
-            <DatePicker
-              v-model="filters.limitDate"
-              dateFormat="dd/mm/yy"
-              :placeholder="
-                $t('verifactu.invoiceIntegration.filters.selectToDate')
-              "
-              showIcon
-              class="date-input"
-              @date-select="onLimitDateSelect"
-            />
-          </div>
-          <div class="datatable-buttons">
+          <template #prepend>
+            <div
+              class="table-filter-prepend-field table-filter-prepend-field--md"
+            >
+              <label class="filter-label table-filter-prepend-label">{{
+                $t("verifactu.invoiceIntegration.filters.toDate")
+              }}</label>
+              <DatePicker
+                v-model="filters.limitDate"
+                dateFormat="dd/mm/yy"
+                :placeholder="
+                  $t('verifactu.invoiceIntegration.filters.selectToDate')
+                "
+                showIcon
+                class="w-full"
+                size="small"
+              />
+            </div>
+          </template>
+          <template #append>
             <Button
               :label="
                 $t('verifactu.invoiceIntegration.actions.integrateSelected')
@@ -35,17 +47,19 @@
               @click="integrateVisibleInvoices"
               :disabled="!invoices.length || integrating"
               :loading="integrating"
-              class="filter-button"
             />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
       <Column
         field="invoiceNumber"
         :header="$t('verifactu.invoiceIntegration.table.columns.number')"
       >
         <template #body="slotProps">
-          <span class="font-semibold">{{ slotProps.data.invoiceNumber }}</span>
+          <LinkSalesInvoice
+            :id="slotProps.data.id"
+            :invoiceNumber="slotProps.data.invoiceNumber"
+          />
         </template>
       </Column>
 
@@ -145,17 +159,62 @@
           <div
             v-for="r in batchResults"
             :key="r.id"
-            class="result-row flex align-items-center justify-content-between py-2 px-2 border-round surface-border border-1 mb-2"
+            class="result-row py-2 px-3 border-round border-1 mb-2"
+            :class="r.status === 'success' ? 'result-row--ok' : 'result-row--error'"
           >
-            <div class="flex align-items-center gap-2">
-              <i
-                v-if="r.status === 'success'"
-                class="pi pi-check text-green-500"
-              ></i>
-              <i v-else class="pi pi-times text-red-500"></i>
-              <span class="font-semibold">{{ r.invoiceNumber }}</span>
+            <div class="flex align-items-center justify-content-between gap-2">
+              <div class="flex align-items-center gap-2 min-w-0">
+                <i
+                  v-if="r.status === 'success'"
+                  class="pi pi-check-circle text-green-600"
+                  style="font-size: 1.1rem"
+                ></i>
+                <i
+                  v-else
+                  class="pi pi-times-circle text-red-600"
+                  style="font-size: 1.1rem"
+                ></i>
+                <span class="font-semibold">{{ r.invoiceNumber }}</span>
+                <Tag
+                  v-if="r.status === 'error' && r.statusRegister"
+                  :value="r.statusRegister"
+                  severity="danger"
+                  class="ml-1"
+                />
+              </div>
+              <small
+                v-if="r.message"
+                class="text-color-secondary text-right ml-2"
+                style="max-width: 60%"
+              >
+                {{ r.message }}
+              </small>
             </div>
-            <small class="text-color-secondary">{{ r.message || "" }}</small>
+            <div
+              v-if="r.status === 'error' && r.responseXml"
+              class="mt-2"
+            >
+              <Button
+                :label="
+                  expandedResponses.has(r.id)
+                    ? $t('common.hideDetails')
+                    : $t('common.showDetails')
+                "
+                :icon="
+                  expandedResponses.has(r.id)
+                    ? 'pi pi-chevron-up'
+                    : 'pi pi-chevron-down'
+                "
+                text
+                size="small"
+                severity="secondary"
+                @click="toggleResponseDetails(r.id)"
+              />
+              <pre
+                v-if="expandedResponses.has(r.id)"
+                class="response-xml mt-2 p-2 border-round border-1 surface-border text-xs"
+              >{{ r.responseXml }}</pre>
+            </div>
           </div>
         </div>
 
@@ -178,10 +237,15 @@ import { storeToRefs } from "pinia";
 import DatePicker from "primevue/datepicker";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
+import Tag from "primevue/tag";
+import TableFilter, {
+  type FilterBodyWidth,
+} from "../../../components/tables/TableFilter.vue";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { formatDate, formatCurrency } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
+import LinkSalesInvoice from "../../sales/components/LinkSalesInvoice.vue";
 
 const { t } = useI18n();
 const toast = useToast();
@@ -207,8 +271,21 @@ const batchResults = ref<
     invoiceNumber: string;
     status: "success" | "error";
     message?: string;
+    statusRegister?: string;
+    responseXml?: string;
   }>
 >([]);
+const expandedResponses = ref<Set<number | string>>(new Set());
+
+const toggleResponseDetails = (id: number | string) => {
+  const next = new Set(expandedResponses.value);
+  if (next.has(id)) {
+    next.delete(id);
+  } else {
+    next.add(id);
+  }
+  expandedResponses.value = next;
+};
 const progress = ref<{
   total: number;
   current: number;
@@ -235,6 +312,10 @@ const errorCount = computed(
 const filters = ref({
   limitDate: new Date(), // Date limit
 });
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "25%",
+  tablet: "33%",
+};
 
 // Computed for date validation
 // no extra min/max constraints for single date filter
@@ -253,10 +334,8 @@ const naturalCompare = (a: string, b: string) =>
 // No range validation needed; single date
 const validateDate = () => !!filters.value.limitDate;
 
-const onLimitDateSelect = () => {
-  if (validateDate()) {
-    loadInvoices();
-  }
+const clearFilters = () => {
+  filters.value.limitDate = new Date();
 };
 
 const loadInvoices = async () => {
@@ -303,21 +382,31 @@ const integrateVisibleInvoices = async () => {
 
       try {
         const response = await verifactuStore.SendToVerifactu(inv.id);
-        if (response?.result) {
+        const content = (response as any)?.content ?? {};
+        const integrationSucceeded =
+          response?.result === true && content?.success !== false;
+
+        if (integrationSucceeded) {
           batchResults.value.push({
             id: inv.id,
             invoiceNumber: String(inv.invoiceNumber ?? ""),
             status: "success",
+            statusRegister: content?.status,
           });
 
           progress.value.current += 1;
         } else {
-          const errMsg = response?.errors?.join(", ") || "Integration failed";
+          const errMsg =
+            response?.errors?.[0] ??
+            content?.errorMessage ??
+            "Integration failed";
           batchResults.value.push({
             id: inv.id,
             invoiceNumber: String(inv.invoiceNumber ?? ""),
             status: "error",
             message: errMsg,
+            statusRegister: content?.status,
+            responseXml: content?.response,
           });
           // Stop on first error to preserve chain integrity
           break;
@@ -371,19 +460,27 @@ watch(
 </script>
 
 <style scoped>
-.auto-width-label {
-  display: inline-flex;
-  width: auto;
-  white-space: nowrap;
-  align-items: center;
+.result-row {
+  transition: background-color 0.15s ease;
 }
 
-.date-input {
-  width: 100%;
+.result-row--ok {
+  background-color: var(--p-green-50, #ecfdf5);
+  border-color: var(--p-green-200, #a7f3d0);
 }
 
-.filter-button {
-  height: 2.5rem;
-  white-space: nowrap;
+.result-row--error {
+  background-color: var(--p-red-50, #fef2f2);
+  border-color: var(--p-red-300, #fca5a5);
+}
+
+.response-xml {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 18rem;
+  overflow: auto;
+  background: var(--p-surface-50, #f8fafc);
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 </style>

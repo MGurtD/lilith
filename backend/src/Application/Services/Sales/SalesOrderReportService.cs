@@ -28,7 +28,7 @@ namespace Application.Services.Sales
                 Order = new SalesOrderHeaderReportDto
                 {
                     Number = order.Number,
-                    Date = order.Date,
+                    Date = order.ExpectedDate ?? order.Date,
                     CustomerNumber = order.CustomerNumber
                 },
                 OrderDetails = [.. order.SalesOrderDetails

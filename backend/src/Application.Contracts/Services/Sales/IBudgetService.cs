@@ -25,5 +25,6 @@ namespace Application.Contracts
         Task<GenericResponse> DistributeTransportCosts(Guid budgetId);
         Task<GenericResponse> DistributeAllCosts(Guid budgetId);
         Task<GenericResponse> UpdateExternalService(BudgetExternalServices externalService);
+        Task<GenericResponse> Clone(Guid id, Guid newId);
     }
 }

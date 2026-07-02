@@ -10,6 +10,9 @@ const Lifecycles = () => import("./views/Lifecycles.vue");
 const Lifecycle = () => import("./views/Lifecycle.vue");
 const ReferenceTypes = () => import("./views/ReferenceTypes.vue");
 const ReferenceType = () => import("./views/ReferenceType.vue");
+const ReferenceManagementList = () =>
+  import("./views/ReferenceManagementList.vue");
+const ReferenceManagement = () => import("./views/ReferenceManagement.vue");
 
 export default [
   {
@@ -65,5 +68,16 @@ export default [
     path: "/referencetype/:id",
     name: "ReferenceType",
     component: ReferenceType,
+  },
+  {
+    path: "/reference-management",
+    name: "ReferenceManagementList",
+    component: ReferenceManagementList,
+  },
+  {
+    path: "/reference-management/:id",
+    name: "ReferenceManagement",
+    component: ReferenceManagement,
+    props: true,
   },
 ] as Array<RouteRecordRaw>;

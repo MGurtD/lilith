@@ -2,6 +2,18 @@
   <form v-if="rectificativeInvoice">
     <section>
       <div class="mt-2">
+        <div class="flex align-items-center gap-2">
+          <Checkbox
+            v-model="rectificativeInvoice.createCorrectionInvoice"
+            :binary="true"
+            inputId="createCorrectionInvoice"
+          />
+          <label for="createCorrectionInvoice"
+            >Crear factura amb import corregit</label
+          >
+        </div>
+      </div>
+      <div v-if="rectificativeInvoice.createCorrectionInvoice" class="mt-3">
         <BaseInput
           label="Import a facturar sense IVA"
           v-model="rectificativeInvoice.quantity"
@@ -45,47 +57,47 @@ const emit = defineEmits<{
 
 const toast = useToast();
 
-const schema = Yup.object().shape({
+const correctionSchema = Yup.object().shape({
   quantity: Yup.number()
     .min(1, "La quantitat ha de ser superior a 1")
-    .required("La quanitat és obligatoria"),
+    .required("La quantitat és obligatòria"),
 });
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.rectificativeInvoice);
-};
-
 const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    if (props.rectificativeInvoice.quantity > props.maximumQuantity) {
+  if (props.rectificativeInvoice.createCorrectionInvoice) {
+    const formValidation = new FormValidation(correctionSchema);
+    validation.value = formValidation.validate(props.rectificativeInvoice);
+
+    if (!validation.value.result) {
+      let errors = "";
+      Object.entries(validation.value.errors).forEach((e) => {
+        errors += `${e[1].map((e) => e)}.   `;
+      });
       toast.add({
         severity: "warn",
         summary: "Formulari invàlid",
-        detail:
-          "La quanitat introduïda no pot ser superior a la quantitat de la factura",
+        detail: errors,
         life: 5000,
       });
       return;
     }
 
-    emit("submit", props.rectificativeInvoice);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
+    if (props.rectificativeInvoice.quantity > props.maximumQuantity) {
+      toast.add({
+        severity: "warn",
+        summary: "Formulari invàlid",
+        detail:
+          "La quantitat introduïda no pot ser superior a la quantitat de la factura",
+        life: 5000,
+      });
+      return;
+    }
   }
+
+  emit("submit", props.rectificativeInvoice);
 };
 </script>

@@ -1,3 +1,6 @@
+# CodeGraph (local semantic index)
+.codegraph/
+
 # Build outputs
 **/bin/
 **/obj/
@@ -6,6 +9,7 @@ backend/obj/
 frontend/dist/
 frontend/dist-test/
 frontend/node_modules/
+frontend/.pnpm-store/
 frontend/.vite/
 
 # IDE

@@ -20,14 +20,19 @@ const en = {
     number: "Number",
     type: "Type",
     detail: "Detail",
+    period: "Period",
     description: "Description",
     total: "Total",
     close: "Close",
+    showDetails: "Show details",
+    hideDetails: "Hide details",
     exportCsv: "Export CSV",
     confirm: "Confirm",
     save: "Save",
     saved: "Saved successfully",
     assign: "Assign",
+    accept: "Accept",
+    cancel: "Cancel",
   },
   analytics: {
     cashflow: {
@@ -246,10 +251,23 @@ const en = {
           statusCode: "Status",
           response: "Response",
           qrCode: "QR",
+          actions: "Actions",
         },
+      },
+      actions: {
+        viewDetail: "View detail",
+        resend: "Resend",
+      },
+      detailDialog: {
+        title: "Request detail",
       },
       messages: {
         loadError: "Error loading integration requests",
+        resendConfirm: "Do you want to resend invoice {number} to Verifactu?",
+        resendHeader: "Resend to Verifactu",
+        resendSuccess: "Invoice resent",
+        resendSuccessDetail: "The invoice has been resent to Verifactu successfully",
+        resendError: "The invoice could not be resent to Verifactu",
       },
     },
     responsabilities: {
@@ -276,6 +294,35 @@ const en = {
       },
       liability:
         "This declaration is issued for the purposes provided for in current tax regulations, with [COMPANY NAME] assuming the responsibility derived from the correct functioning of the software in relation to the declared requirements.",
+    },
+  },
+  salesInvoice: {
+    customerData: {
+      title: "Fiscal data",
+      hint: "Edit the customer fiscal data to fix Verifactu integration errors",
+      labels: {
+        comercialName: "Commercial name",
+        taxName: "Tax name",
+        vatNumber: "VAT number",
+        accountNumber: "Bank account",
+        address: "Address",
+        city: "City",
+        postalCode: "Postal code",
+        region: "Region",
+        country: "Country",
+      },
+      saveButton: "Save fiscal data",
+      messages: {
+        successSingle: "Customer fiscal data updated successfully",
+        successPropagated:
+          "Customer fiscal data updated and propagated to {count} more invoice(s) of the same customer",
+        error: "The fiscal data could not be saved",
+        propagationHeader: "Propagate fiscal data",
+        propagationMessage:
+          "Fiscal data will be updated on {count} more pending or errored invoice(s) of this customer. Do you want to continue?",
+        acceptLabel: "Yes, propagate",
+        rejectLabel: "Cancel",
+      },
     },
   },
   forms: {

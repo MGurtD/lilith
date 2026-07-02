@@ -103,5 +103,14 @@ export const useVerifactuStore = defineStore({
       );
       return response;
     },
+
+    async ResendToVerifactu(
+      invoiceId: string
+    ): Promise<GenericResponse<any> | undefined> {
+      const response = await VerifactuService.Verifactu.ResendToVerifactu(
+        invoiceId
+      );
+      return response;
+    },
   },
 });

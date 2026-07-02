@@ -1,0 +1,13 @@
+# Development Dockerfile for .NET 10 Backend
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+
+WORKDIR /src
+
+# Install EF Core CLI for migrations
+RUN dotnet tool install --global dotnet-ef --version 10.0.5
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+EXPOSE 5000
+
+# No COPY here - we use bind mount for hot reload
+# The command is defined in docker-compose.yml

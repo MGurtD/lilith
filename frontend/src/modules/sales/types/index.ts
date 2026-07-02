@@ -250,7 +250,32 @@ export interface CreateSalesHeaderRequest {
 
 export interface CreateRectificativeInvoiceRequest {
   id: string;
+  createCorrectionInvoice: boolean;
   quantity: number;
+}
+
+export interface SalesInvoiceCustomerDataUpdate {
+  customerComercialName: string;
+  customerTaxName: string;
+  customerVatNumber: string;
+  customerAccountNumber: string;
+  customerAddress: string;
+  customerCity: string;
+  customerPostalCode: string;
+  customerRegion: string;
+  customerCountry: string;
+  /**
+   * When true, the corrected fiscal data is also applied to every other
+   * SalesInvoice of the same Customer that is still pending or errored on
+   * Verifactu (issue #69 follow-up). Sent only after the user confirms the
+   * propagation dialog.
+   */
+  propagateToAll?: boolean;
+}
+
+export interface SalesInvoiceCustomerDataPropagationResponse {
+  pendingInvoicesCount: number;
+  pendingInvoiceIds: string[];
 }
 
 export interface SalesInvoice {

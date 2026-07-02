@@ -15,7 +15,7 @@ namespace Application.Contracts
         {
             get
             {
-                return $"{YearPaymentDate}-{MonthPaymentDate}";
+                return $"{YearPaymentDate}-{MonthPaymentDate:00}";
             }
         }
 

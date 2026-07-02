@@ -82,7 +82,7 @@ const calcAmounts = () => {
 
   if (tax && isNumber(props.invoiceImport.baseAmount)) {
     const baseAmount = props.invoiceImport.baseAmount;
-    const taxAmount = (baseAmount / 100) * tax.percentatge;
+    const taxAmount = tax.isReverseCharge ? 0 : (baseAmount / 100) * tax.percentatge;
     const netAmount = baseAmount + taxAmount;
 
     props.invoiceImport.baseAmount = baseAmount;

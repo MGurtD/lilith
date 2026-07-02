@@ -1,6 +1,8 @@
 {
   "culture": "en",
   "texts": {
+    "GitHubNotConfigured": "GitHub integration is not configured",
+    "GitHubDraftIssueError": "Could not create the draft issue on GitHub",
     "EntityNotFound": "Entity with ID {0} not found",
     "EntityAlreadyExists": "Entity already exists",
     "EntityDisabled": "Entity with ID {0} is disabled",
@@ -15,6 +17,14 @@
     "CustomerInvalid": "Customer is not valid for creating an invoice. Check tax name, account number and VAT number",
     "CustomerNoAddresses": "Customer has no addresses registered. Please create an address.",
     "CustomerAlreadyExists": "Customer {0} already exists",
+    "CustomerCifInvalid": "Invalid CIF/NIF",
+    "CustomerFiscalAddressInvalid": "The main fiscal address of the customer is incomplete. Country, postal code, city and address are required",
+    "SalesInvoiceCustomerDataUpdated": "Customer fiscal data of the invoice updated successfully",
+    "SalesInvoiceCustomerDataPropagated": "Customer fiscal data updated on the current invoice and on {0} more invoice(s) of the same customer",
+    "SalesInvoiceCustomerDataPropagationPrompt": "Customer fiscal data will be updated on {0} more pending or errored invoice(s) of this customer. Do you want to continue?",
+    "SalesInvoiceCustomerDataNotEditable": "Customer data cannot be modified: the invoice has already been integrated successfully with Verifactu",
+    "SalesInvoiceCustomerDataInvalidStatus": "Customer data cannot be modified in the current Verifactu integration status",
+    "SalesInvoiceCustomerDataUpdateFailed": "Customer fiscal data could not be saved. Please try again",
     "SupplierNotFound": "Supplier not found",
     "SupplierAlreadyExists": "Supplier {0} already exists",
     "ExerciseNotFound": "Exercise not found",
@@ -258,6 +268,17 @@
     "ErrorResponse.Conflict": "Conflict with the current state of the resource",
     "ApiKey.InvalidFormat": "Invalid API key format",
     "ApiKey.NotFoundOrDisabled": "API key not found or disabled",
-    "ApiKey.Expired": "API key has expired"
+    "ApiKey.Expired": "API key has expired",
+    "TaxInUse": "Cannot delete the tax because it is in use by references or invoices",
+    "SalesOrderNotFound": "Sales order not found",
+    "SalesOrderAlreadyInThisNote": "The order is already added to this delivery note",
+    "SalesOrderAlreadyAssigned": "The order is already assigned to another delivery note",
+    "TableViewNameExists": "A view with this name already exists for this page",
+    "TableViewCreated": "View created successfully",
+    "TableViewUpdated": "View updated successfully",
+    "TableViewDeleted": "View deleted successfully",
+    "TableViewNotFound": "View not found",
+    "CannotDeleteDefaultView": "Cannot delete the default view",
+    "DefaultViewSet": "Default view set"
   }
 }

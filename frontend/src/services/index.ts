@@ -5,6 +5,7 @@ import { ReportService } from "./report.service";
 import { RoleService } from "./role.service";
 import { UserService } from "./user.service";
 import { UserFilterService } from "./userfilter.service";
+import { UserTableViewService } from "./usertableview.service";
 
 export default {
   ApiKey: new ApiKeyService(),
@@ -12,6 +13,7 @@ export default {
   File: new FileService(),
   User: new UserService(),
   UserFilter: new UserFilterService(),
+  UserTableView: new UserTableViewService(),
   Role: new RoleService(),
   Reports: new ReportService(),
 };

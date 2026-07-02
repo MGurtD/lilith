@@ -1,6 +1,8 @@
 {
   "culture": "es",
   "texts": {
+    "GitHubNotConfigured": "La integración con GitHub no está configurada",
+    "GitHubDraftIssueError": "No se ha podido crear la incidencia borrador en GitHub",
     "EntityNotFound": "La entidad con ID {0} no existe",
     "EntityAlreadyExists": "La entidad ya existe",
     "EntityDisabled": "La entidad con ID {0} está deshabilitada",
@@ -15,6 +17,14 @@
     "CustomerInvalid": "El cliente no es válido para crear una factura. Revise el nombre fiscal, el número de cuenta y el NIF",
     "CustomerNoAddresses": "El cliente no tiene direcciones dadas de alta. Por favor, cree una dirección.",
     "CustomerAlreadyExists": "Cliente {0} existente",
+    "CustomerCifInvalid": "CIF/NIF inválido",
+    "CustomerFiscalAddressInvalid": "La dirección fiscal principal del cliente está incompleta. Es necesario completar país, código postal, ciudad y dirección",
+    "SalesInvoiceCustomerDataUpdated": "Datos fiscales del cliente de la factura actualizados correctamente",
+    "SalesInvoiceCustomerDataPropagated": "Datos fiscales actualizados en la factura actual y en {0} factura(s) más del mismo cliente",
+    "SalesInvoiceCustomerDataPropagationPrompt": "Se actualizarán los datos fiscales en {0} factura(s) más pendientes o con error de este cliente. ¿Deseas continuar?",
+    "SalesInvoiceCustomerDataNotEditable": "No se pueden modificar los datos del cliente: la factura ya ha sido integrada correctamente con Verifactu",
+    "SalesInvoiceCustomerDataInvalidStatus": "No se pueden modificar los datos del cliente en el estado actual de integración con Verifactu",
+    "SalesInvoiceCustomerDataUpdateFailed": "No se han podido guardar los datos fiscales del cliente. Por favor, inténtelo de nuevo",
     "SupplierNotFound": "El proveedor no existe",
     "SupplierAlreadyExists": "Proveedor {0} existente",
     "ExerciseNotFound": "El ejercicio no existe",
@@ -258,6 +268,17 @@
     "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso",
     "ApiKey.InvalidFormat": "Formato de clave API inválido",
     "ApiKey.NotFoundOrDisabled": "Clave API no válida o desactivada",
-    "ApiKey.Expired": "Clave API caducada"
+    "ApiKey.Expired": "Clave API caducada",
+    "TaxInUse": "No se puede eliminar el impuesto porque está en uso en referencias o facturas",
+    "SalesOrderNotFound": "No se ha encontrado la orden de venta",
+    "SalesOrderAlreadyInThisNote": "La orden ya está añadida a este albarán",
+    "SalesOrderAlreadyAssigned": "La orden ya está asignada a otro albarán",
+    "TableViewNameExists": "Ya existe una vista con este nombre para esta página",
+    "TableViewCreated": "Vista creada correctamente",
+    "TableViewUpdated": "Vista actualizada correctamente",
+    "TableViewDeleted": "Vista eliminada correctamente",
+    "TableViewNotFound": "Vista no encontrada",
+    "CannotDeleteDefaultView": "No se puede eliminar la vista por defecto",
+    "DefaultViewSet": "Vista por defecto establecida"
   }
 }

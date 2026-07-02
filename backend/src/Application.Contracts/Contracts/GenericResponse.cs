@@ -4,7 +4,7 @@ namespace Application.Contracts
     {
         public bool Result { get; }
         public IList<string> Errors { get; }
-        public object? Content { get; }
+        public object? Content { get; set; }
 
         public GenericResponse(bool result, object? content = null)
         {

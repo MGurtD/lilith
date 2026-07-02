@@ -136,6 +136,7 @@ export interface WorkMaster {
   mode: number;
   disabled: boolean;
   createdOn?: Date;
+  updatedOn?: Date;
   phases: Array<WorkMasterPhase>;
 }
 
@@ -261,6 +262,28 @@ export interface PhaseTimeMetrics {
   actualMachineTimeMinutes: number;
   actualOperatorTimeMinutes: number;
   calculatedAt: string;
+}
+
+export interface WorkOrderDashboardItem {
+  id: string;
+  code: string;
+  referenceCode: string;
+  referenceDescription: string;
+  plannedQuantity: number;
+  plannedDate: string;
+  startTime: string | null;
+  phaseProgressPercentage: number;
+  timeProgressPercentage: number;
+  theoreticalTimeMinutes: number;
+  actualTimeMinutes: number;
+  orderPrice: number;
+  theoreticalCost: number;
+  accumulatedMaterialCost: number;
+  accumulatedMachineCost: number;
+  accumulatedOperatorCost: number;
+  accumulatedExternalCost: number;
+  accumulatedTotalCost: number;
+  margin: number;
 }
 
 export interface WorkOrderPhaseBillOfMaterials {

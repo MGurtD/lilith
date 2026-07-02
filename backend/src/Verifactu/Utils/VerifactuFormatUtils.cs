@@ -48,6 +48,7 @@ public static class VerifactuFormatUtils
     /// <returns>Decimal formateado</returns>
     public static string FormatDecimal(decimal value)
     {
+        if (Math.Round(value, 2) == 0m) return "0.00";
         return value.ToString("F2", CultureInfo.InvariantCulture);
     }
 

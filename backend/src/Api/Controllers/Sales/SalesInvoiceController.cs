@@ -89,6 +89,34 @@ namespace Api.Controllers.Sales
             else return BadRequest(response.Errors);
         }
 
+        [HttpPut("{id:guid}/customer-data")]
+        [SwaggerOperation("SalesInvoiceUpdateCustomerData")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateCustomerData(Guid id, [FromBody] SalesInvoiceCustomerDataUpdateDto dto)
+        {
+            // dto.PropagateToAll arrives in the body (set by the frontend after the
+            // user confirms the propagation dialog). See issue #69 follow-up.
+            var response = await service.UpdateCustomerDataAsync(id, dto);
+
+            if (response.Result) return Ok(response);
+            else return BadRequest(response);
+        }
+
+        /// <summary>
+        /// Returns the list of sibling invoices (same customer, status Pendent|Error)
+        /// that would be updated if the user confirms propagation of the corrected
+        /// fiscal data. Frontend uses this to render the confirmation dialog.
+        /// </summary>
+        [HttpGet("{id:guid}/customer-data/propagation")]
+        [SwaggerOperation("SalesInvoiceGetCustomerDataPropagation")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCustomerDataPropagation(Guid id)
+        {
+            var response = await service.GetPendingPropagationInvoicesAsync(id);
+            return Ok(response);
+        }
+
         [HttpPost]
         [Route("UpdateStatuses")]
         [ProducesResponseType(StatusCodes.Status200OK)]

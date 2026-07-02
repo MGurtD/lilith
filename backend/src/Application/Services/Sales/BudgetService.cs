@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Domain.Entities.Sales;
 using Microsoft.Extensions.Logging;
+// ReSharper disable All
 
 
 namespace Application.Services.Sales
@@ -8,7 +9,6 @@ namespace Application.Services.Sales
     public class BudgetService(
         IUnitOfWork unitOfWork,
         IExerciseService exerciseService,
-        IMetricsService metricsService,
         ILocalizationService localizationService,
         ILogger<BudgetService> logger) : IBudgetService
     {
@@ -134,6 +134,11 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                if (workmaster?.Reference is null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterReferenceNotFound", detail.WorkMasterId));
+                }
+                
                 // Recollir mètriques
                 /*var metrics = await metricsService.GetWorkmasterMetrics(workmaster, detail.Quantity);
                 
@@ -142,9 +147,7 @@ namespace Application.Services.Sales
                 {
                     detail.DetailWeight = productionMetrics.TotalWeight;
                 }*/
-
-
-
+                
                 var referenceTypeId = workmaster.Reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
                 if (referenceTypeId != null)
@@ -173,6 +176,7 @@ namespace Application.Services.Sales
             await unitOfWork.Budgets.Details.Add(detail);
             return new GenericResponse(true, detail);
         }
+        
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
             // Recuperar el detall antic per obtenir la quantitat anterior
@@ -183,7 +187,12 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
-                var referenceTypeId = workmaster.Reference.ReferenceTypeId;
+                if (workmaster?.Reference is null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterReferenceNotFound", detail.WorkMasterId));
+                }
+                var reference = workmaster.Reference;
+                var referenceTypeId = reference.ReferenceTypeId;
                 var netWeight = decimal.Zero;
                 if (referenceTypeId != null)
                 {
@@ -259,6 +268,10 @@ namespace Application.Services.Sales
             if (detail.WorkMasterId != null)
             {
                 var workmaster = await unitOfWork.WorkMasters.Get(detail.WorkMasterId.Value);
+                if (workmaster == null)
+                {
+                    return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterNotFound", detail.WorkMasterId.Value));
+                }
 
                 // Restar pes del total del pressupost
                 var budget = await unitOfWork.Budgets.Get(detail.BudgetId);
@@ -456,7 +469,7 @@ namespace Application.Services.Sales
                         };
 
                         logger.LogInformation("Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", activeRate.Id, calculationType, calculationTypeName);
-                        logger.LogInformation("Detall Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", rateDetail.Id, calculationType, calculationTypeName);
+                        logger.LogInformation("Detall Tarifa trobada: {RateId}. Tipus de càlcul: {Type} ({TypeName})", rateDetail?.Id ?? Guid.Empty, calculationType, calculationTypeName);
 
                         // 0 = Volum, 1 = Pes, 2 = Unitats (default)
                         decimal totalMagnitude = calculationType switch
@@ -553,6 +566,146 @@ namespace Application.Services.Sales
             }
         }
 
+        public async Task<GenericResponse> Clone(Guid id, Guid newId)
+        {
+            var source = await unitOfWork.Budgets.Get(id);
+            if (source == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("BudgetNotFound", id));
+
+            var counterObj = await exerciseService.GetNextCounter(source.ExerciseId, "budget");
+            if (!counterObj.Result || counterObj.Content == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterError"));
+
+            var lifecycle = unitOfWork.Lifecycles.Find(l => l.Name == StatusConstants.Lifecycles.Budget).FirstOrDefault();
+            if (lifecycle == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNotFound", StatusConstants.Lifecycles.Budget));
+            if (!lifecycle.InitialStatusId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("LifecycleNoInitialStatus", StatusConstants.Lifecycles.Budget));
+
+            var newBudget = new Budget
+            {
+                Id = newId,
+                Number = counterObj.Content.ToString()!,
+                Date = DateTime.Now,
+                ExerciseId = source.ExerciseId,
+                CustomerId = source.CustomerId,
+                DeliveryDays = source.DeliveryDays,
+                UserNotes = source.UserNotes,
+                TotalWeight = source.TotalWeight,
+                TransportCost = source.TransportCost,
+                StatusId = lifecycle.InitialStatusId,
+            };
+
+            await unitOfWork.Budgets.AddWithoutSave(newBudget);
+
+            // Mapa oldDetailId -> newDetailId per mantenir les FKs dels ExternalServiceDetails
+            var detailIdMap = new Dictionary<Guid, Guid>();
+
+            if (source.Details != null)
+            {
+                foreach (var detail in source.Details)
+                {
+                    var newDetailId = Guid.NewGuid();
+                    detailIdMap[detail.Id] = newDetailId;
+
+                    var newDetail = new BudgetDetail
+                    {
+                        Id = newDetailId,
+                        BudgetId = newId,
+                        ReferenceId = detail.ReferenceId,
+                        WorkMasterId = detail.WorkMasterId,
+                        Description = detail.Description,
+                        Quantity = detail.Quantity,
+                        Profit = detail.Profit,
+                        ProductionProfit = detail.ProductionProfit,
+                        MaterialProfit = detail.MaterialProfit,
+                        ExternalProfit = detail.ExternalProfit,
+                        Discount = detail.Discount,
+                        UnitCost = detail.UnitCost,
+                        ProductionCost = detail.ProductionCost,
+                        MaterialCost = detail.MaterialCost,
+                        TransportCost = detail.TransportCost,
+                        ServiceCost = detail.ServiceCost,
+                        TotalCost = detail.TotalCost,
+                        UnitPrice = detail.UnitPrice,
+                        Amount = detail.Amount,
+                        DetailWeight = detail.DetailWeight,
+                        UserNotes = detail.UserNotes,
+                    };
+                    await unitOfWork.Budgets.Details.AddWithoutSave(newDetail);
+                }
+            }
+
+            if (source.Transports != null)
+            {
+                foreach (var transport in source.Transports)
+                {
+                    var newTransport = new BudgetTransport
+                    {
+                        Id = Guid.NewGuid(),
+                        BudgetId = newId,
+                        TransportRateDetailId = transport.TransportRateDetailId,
+                        LogisticSupplierId = transport.LogisticSupplierId,
+                        DestinationSupplierId = transport.DestinationSupplierId,
+                        Weight = transport.Weight,
+                        Volume = transport.Volume,
+                        Distance = transport.Distance,
+                        Price = transport.Price,
+                        Description = transport.Description,
+                        Destination = transport.Destination,
+                    };
+                    await unitOfWork.Budgets.Transports.AddWithoutSave(newTransport);
+                }
+            }
+
+            if (source.ExternalServices != null)
+            {
+                foreach (var extService in source.ExternalServices)
+                {
+                    var newExtServiceId = Guid.NewGuid();
+                    var newExtService = new BudgetExternalServices
+                    {
+                        Id = newExtServiceId,
+                        BudgetId = newId,
+                        ReferenceId = extService.ReferenceId,
+                        Description = extService.Description,
+                        Weight = extService.Weight,
+                        Volume = extService.Volume,
+                        Quantity = extService.Quantity,
+                        SupplierId = extService.SupplierId,
+                        UnitPrice = extService.UnitPrice,
+                        TotalPrice = extService.TotalPrice,
+                    };
+                    await unitOfWork.Budgets.ExternalServices.AddWithoutSave(newExtService);
+
+                    if (extService.Details != null)
+                    {
+                        foreach (var esd in extService.Details)
+                        {
+                            if (!detailIdMap.TryGetValue(esd.BudgetDetailId, out var newBudgetDetailId))
+                                continue;
+
+                            var newEsd = new BudgetExternalServiceDetail
+                            {
+                                Id = Guid.NewGuid(),
+                                BudgetExternalServiceId = newExtServiceId,
+                                BudgetDetailId = newBudgetDetailId,
+                                Quantity = esd.Quantity,
+                                Weight = esd.Weight,
+                                Volume = esd.Volume,
+                            };
+                            await unitOfWork.Budgets.ExternalServiceDetails.AddWithoutSave(newEsd);
+                        }
+                    }
+                }
+            }
+
+            // Un sol SaveChanges transaccional per a tota l'operació
+            await unitOfWork.CompleteAsync();
+
+            return new GenericResponse(true, newBudget);
+        }
+
         public async Task<GenericResponse> UpdateExternalService(BudgetExternalServices externalService)
         {
             var exists = await unitOfWork.Budgets.ExternalServices.Get(externalService.Id);
@@ -646,7 +799,7 @@ namespace Application.Services.Sales
 
         /// <summary>
         /// Per cada fase ExternalWork del workmaster, resta la contribució de la línia eliminada.
-        /// Si la quantitat resultant és <= 0, elimina el registre.
+        /// Si la quantitat resultant és menor o igual a 0, elimina el registre.
         /// </summary>
         private async Task RemoveExternalServicesFromWorkmaster(Domain.Entities.Production.WorkMaster workmaster, BudgetDetail detail)
         {

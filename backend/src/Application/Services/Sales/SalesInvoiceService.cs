@@ -1,8 +1,10 @@
 
 using Application.Contracts;
+using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.Production;
 using Domain.Entities.Sales;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Sales
 {
@@ -19,7 +21,8 @@ namespace Application.Services.Sales
         IDueDateService dueDateService,
         IDeliveryNoteService deliveryNoteService,
         IExerciseService exerciseService,
-        ILocalizationService localizationService) : ISalesInvoiceService
+        ILocalizationService localizationService,
+        ILogger<SalesInvoiceService> logger) : ISalesInvoiceService
     {
         private readonly string LifecycleName = StatusConstants.Lifecycles.SalesInvoice;
 
@@ -124,6 +127,7 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, localizationService.GetLocalizedString("InvoiceRectifyNoDetails"));
 
             var negativeNumber = await GetNextInvoiceCounter(Guid.Parse(originalInvoice.ExerciseId!.Value.ToString()));
+            var verifactuInitialStatusId = await unitOfWork.Lifecycles.GetInitialStatusByName(StatusConstants.Lifecycles.Verifactu);
 
             var orderId = Guid.NewGuid();
             var negativeInvoice = new SalesInvoice()
@@ -137,9 +141,10 @@ namespace Application.Services.Sales
                 SiteId = originalInvoice.SiteId,
                 ExerciseId = originalInvoice.ExerciseId,
                 StatusId = originalInvoice.StatusId,
+                IntegrationStatusId = verifactuInitialStatusId,
                 Name = originalInvoice.Name,
                 Address = originalInvoice.Address,
-                BaseAmount = originalInvoice.BaseAmount,
+                BaseAmount = originalInvoice.BaseAmount * -1,
                 City = originalInvoice.City,
                 PostalCode = originalInvoice.PostalCode,
                 Country = originalInvoice.Country,
@@ -192,7 +197,12 @@ namespace Application.Services.Sales
             };
             await unitOfWork.SalesInvoices.Add(negativeInvoice);
 
-            // Crear la factura rectificativa
+            if (!dto.CreateCorrectionInvoice)
+            {
+                return new GenericResponse(true, negativeInvoice);
+            }
+
+            // Crear la factura rectificativa amb l'import corregit
             var import = originalInvoice.SalesInvoiceImports.FirstOrDefault();
             var tax = await unitOfWork.Taxes.Get(import!.TaxId);
             if (tax == null)
@@ -210,6 +220,7 @@ namespace Application.Services.Sales
                 SiteId = originalInvoice.SiteId,
                 ExerciseId = originalInvoice.ExerciseId,
                 StatusId = originalInvoice.StatusId,
+                IntegrationStatusId = verifactuInitialStatusId,
                 Name = originalInvoice.Name,
                 Address = originalInvoice.Address,
                 BaseAmount = originalInvoice.BaseAmount,
@@ -299,6 +310,230 @@ namespace Application.Services.Sales
             await UpdateRelatedDeliveryNote(invoice.Id, currentStatus!, updatedStatus!);
 
             return new GenericResponse(true, invoice);
+        }
+
+        public async Task<GenericResponse> UpdateCustomerDataAsync(Guid id, SalesInvoiceCustomerDataUpdateDto dto)
+        {
+            // Validate CIF BEFORE any persistence. UpdateCustomer is now blocking on
+            // invalid CIF (issue #69 follow-up), so this guards the invoice + sibling
+            // batch from being committed with a malformed CustomerVatNumber that the
+            // subsequent Customer-master propagation would reject.
+            if (!SpanishFiscalIdValidator.IsValidSpanishFiscalId(dto.CustomerVatNumber))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("CustomerCifInvalid"));
+            }
+
+            var invoice = await unitOfWork.SalesInvoices.Get(id);
+            if (invoice == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesInvoiceNotFound", id));
+
+            // Hard-block if any VerifactuRequest for this invoice has Success=true —
+            // once accepted by AEAT, fiscal data is sealed.
+            var verifactuRequests = await unitOfWork.VerifactuRequests
+                .FindAsync(r => r.SalesInvoiceId == id);
+            if (verifactuRequests.Any(r => r.Success))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataNotEditable"));
+            }
+
+            // Allow edits while IntegrationStatusId ∈ { Pendent, Error }.
+            var pendingStatusId = await unitOfWork.Lifecycles
+                .GetInitialStatusByName(StatusConstants.Lifecycles.Verifactu);
+            var errorStatus = await unitOfWork.Lifecycles
+                .GetStatusByName(StatusConstants.Lifecycles.Verifactu, StatusConstants.Statuses.Error);
+
+            var allowedStatusIds = new List<Guid?>();
+            if (pendingStatusId.HasValue) allowedStatusIds.Add(pendingStatusId);
+            if (errorStatus != null) allowedStatusIds.Add(errorStatus.Id);
+
+            if (invoice.IntegrationStatusId == null
+                || !allowedStatusIds.Contains(invoice.IntegrationStatusId))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataInvalidStatus"));
+            }
+
+            // Always copy the 9 customer fields onto this invoice header.
+            invoice.CustomerComercialName = dto.CustomerComercialName;
+            invoice.CustomerTaxName = dto.CustomerTaxName;
+            invoice.CustomerVatNumber = dto.CustomerVatNumber;
+            invoice.CustomerAccountNumber = dto.CustomerAccountNumber;
+            invoice.CustomerAddress = dto.CustomerAddress;
+            invoice.CustomerCity = dto.CustomerCity;
+            invoice.CustomerPostalCode = dto.CustomerPostalCode;
+            invoice.CustomerRegion = dto.CustomerRegion;
+            invoice.CustomerCountry = dto.CustomerCountry;
+
+            // Issue #69 follow-up: queue the main invoice together with the sibling
+            // invoices in a single EF Core change-tracker batch, then commit exactly
+            // once at the end. A single SaveChangesAsync is wrapped in an implicit
+            // transaction by the EF Core provider, so the main invoice and every
+            // sibling either all persist or none do — no more half-applied state
+            // if CompleteAsync throws halfway.
+            //
+            // We must clear navigation properties and collections BEFORE the
+            // Update call. SalesInvoiceRepository.Get uses AsNoTracking() with
+            // Include(s => s.Customer) (and Site, SalesInvoiceDetails, …), so the
+            // detached invoice has those nav props populated. dbSet.Update walks
+            // the graph and would otherwise start tracking every reachable entity
+            // — including the Customer — and a subsequent Customers.Update would
+            // collide on "another instance with the same key value is already
+            // being tracked". Same defensive cleanup as SalesOrderService.Update.
+            invoice.Customer = null;
+            invoice.Site = null;
+            invoice.ParentSalesInvoice = null;
+            invoice.SalesInvoiceDetails.Clear();
+            invoice.SalesInvoiceImports.Clear();
+            invoice.SalesInvoiceDueDates.Clear();
+            invoice.VerifactuRequests.Clear();
+            unitOfWork.SalesInvoices.UpdateWithoutSave(invoice);
+
+            // Issue #69 follow-up: when requested by the user, propagate the same
+            // fiscal data to every other SalesInvoice of the same Customer that is
+            // still pending/errored on Verifactu. We never touch invoices that have
+            // already been successfully integrated with AEAT.
+            var propagatedCount = 0;
+            if (dto.PropagateToAll && invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
+            {
+                var siblingInvoices = (await unitOfWork.SalesInvoices
+                    .FindAsync(s => s.CustomerId == invoice.CustomerId
+                        && s.Id != invoice.Id
+                        && s.IntegrationStatusId != null
+                        && allowedStatusIds.Contains(s.IntegrationStatusId)))
+                    .ToList();
+
+                foreach (var sibling in siblingInvoices)
+                {
+                    sibling.CustomerComercialName = dto.CustomerComercialName;
+                    sibling.CustomerTaxName = dto.CustomerTaxName;
+                    sibling.CustomerVatNumber = dto.CustomerVatNumber;
+                    sibling.CustomerAccountNumber = dto.CustomerAccountNumber;
+                    sibling.CustomerAddress = dto.CustomerAddress;
+                    sibling.CustomerCity = dto.CustomerCity;
+                    sibling.CustomerPostalCode = dto.CustomerPostalCode;
+                    sibling.CustomerRegion = dto.CustomerRegion;
+                    sibling.CustomerCountry = dto.CustomerCountry;
+
+                    // Sibling invoices come back AsNoTracking; their nav props
+                    // are not populated, but collections may be initialised to
+                    // empty lists. Clearing keeps the graph walk in Update
+                    // predictable.
+                    sibling.SalesInvoiceDetails.Clear();
+                    sibling.SalesInvoiceImports.Clear();
+                    sibling.SalesInvoiceDueDates.Clear();
+                    sibling.VerifactuRequests.Clear();
+
+                    unitOfWork.SalesInvoices.UpdateWithoutSave(sibling);
+                    propagatedCount++;
+                }
+            }
+
+            // Issue #69 follow-up: propagate the corrected fiscal data to the
+            // linked Customer master record so future invoices inherit the
+            // corrected values. Only fiscal fields are propagated — the
+            // Customer master address (CustomerAddress collection) is the single
+            // source of truth for the customer master record and is edited
+            // through the dedicated Customer / Address endpoints, not from the
+            // invoice screen. CIF was already validated at the top of this
+            // method, and we deliberately do NOT run CustomerService's full
+            // fiscal validation (which would also block on incomplete fiscal
+            // address, a field we don't propagate from here).
+            //
+            // Repository<Customer>.Get returns the entity tracked (FindAsync).
+            // We clear Address/Contacts/SalesInvoices/Budgets collections before
+            // Update so the graph walk in Update does not pull in any related
+            // entities that the change-tracker might already be holding onto
+            // from the invoice-side Includes above.
+            if (invoice.CustomerId.HasValue && invoice.CustomerId != Guid.Empty)
+            {
+                var customer = await unitOfWork.Customers.Get(invoice.CustomerId.Value);
+                if (customer != null)
+                {
+                    customer.ComercialName = dto.CustomerComercialName;
+                    customer.TaxName = dto.CustomerTaxName;
+                    customer.VatNumber = dto.CustomerVatNumber;
+                    customer.AccountNumber = dto.CustomerAccountNumber;
+
+                    customer.Address.Clear();
+                    customer.Contacts.Clear();
+
+                    unitOfWork.Customers.UpdateWithoutSave(customer);
+                }
+            }
+
+            // Commit main invoice + all queued siblings + the customer master
+            // record in a single SaveChanges (implicit transaction). If the
+            // commit fails we surface a failed GenericResponse to the admin
+            // instead of leaving any of those three entities half-applied.
+            try
+            {
+                await unitOfWork.CompleteAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Failed to commit customer fiscal data update for invoice {InvoiceId} (propagatedCount={PropagatedCount})",
+                    invoice.Id, propagatedCount);
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SalesInvoiceCustomerDataUpdateFailed"));
+            }
+
+            if (propagatedCount > 0)
+            {
+                logger.LogInformation(
+                    "Propagated customer fiscal data to {Count} sibling invoices of customer {CustomerId}",
+                    propagatedCount, invoice.CustomerId);
+            }
+
+            var message = propagatedCount > 0
+                ? localizationService.GetLocalizedString(
+                    "SalesInvoiceCustomerDataPropagated", propagatedCount)
+                : localizationService.GetLocalizedString("SalesInvoiceCustomerDataUpdated");
+
+            return new GenericResponse(true, message)
+            {
+                Content = new
+                {
+                    propagatedInvoiceCount = propagatedCount,
+                },
+            };
+        }
+
+        /// <summary>
+        /// Returns the list of sibling SalesInvoices (same customer, same status
+        /// set: Pendent | Error) that would be updated if the user confirms
+        /// propagation. Used by the frontend to render the confirmation dialog.
+        /// </summary>
+        public async Task<SalesInvoiceCustomerDataUpdatePropagationResponse> GetPendingPropagationInvoicesAsync(Guid invoiceId)
+        {
+            var invoice = await unitOfWork.SalesInvoices.Get(invoiceId);
+            if (invoice == null || !invoice.CustomerId.HasValue || invoice.CustomerId == Guid.Empty)
+                return new SalesInvoiceCustomerDataUpdatePropagationResponse();
+
+            var pendingStatusId = await unitOfWork.Lifecycles
+                .GetInitialStatusByName(StatusConstants.Lifecycles.Verifactu);
+            var errorStatus = await unitOfWork.Lifecycles
+                .GetStatusByName(StatusConstants.Lifecycles.Verifactu, StatusConstants.Statuses.Error);
+
+            var allowedStatusIds = new List<Guid?>();
+            if (pendingStatusId.HasValue) allowedStatusIds.Add(pendingStatusId);
+            if (errorStatus != null) allowedStatusIds.Add(errorStatus.Id);
+
+            var siblings = (await unitOfWork.SalesInvoices
+                .FindAsync(s => s.CustomerId == invoice.CustomerId
+                    && s.Id != invoice.Id
+                    && s.IntegrationStatusId != null
+                    && allowedStatusIds.Contains(s.IntegrationStatusId)))
+                .Select(s => s.Id)
+                .ToList();
+
+            return new SalesInvoiceCustomerDataUpdatePropagationResponse
+            {
+                PendingInvoicesCount = siblings.Count,
+                PendingInvoiceIds = siblings,
+            };
         }
 
         private async Task UpdateRelatedDeliveryNote(Guid invoiceId, Status currentStatus, Status updatedStatus)

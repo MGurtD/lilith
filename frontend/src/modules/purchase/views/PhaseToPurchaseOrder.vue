@@ -11,46 +11,43 @@
     :rows="20"
     dataKey="id"
     ><template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        :config="[]"
+        v-model="filter"
+        :show-title="false"
+        :show-action-labels="false"
+        :body-width="filterBodyWidth"
+        embedded
+        @filter="fetchWorkOrderPhases"
+        @clear="cleanFilter"
       >
-        <span class="text-900 font-bold">Seleccionar fases</span>
-        <div class="datatable-filter-3">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="sharedStore.exercises"
-              @range-selected="fetchWorkOrderPhases"
+        <template #prepend>
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
+            <label class="filter-label table-filter-prepend-label"
+              >Període</label
+            >
+            <DatePicker
+              v-model="filter.dates"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              placeholder="Selecciona període"
+              showIcon
+              class="w-full"
+              size="small"
             />
           </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="fetchWorkOrderPhases"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
+        </template>
+        <template #append>
           <Button
             :size="'small'"
             label="Crear comandes"
             rounded
             @click="sendData"
           />
-        </div>
-      </div>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <div></div>
-      </div>
+        </template>
+      </TableFilter>
     </template>
     <!--    <Column selectionMode="multiple" headerStyle="width: 1rem"></Column>-->
     <Column field="workOrder.code" header="Ordre de fabricació"></Column>
@@ -96,7 +93,8 @@ import { WorkOrderPhase } from "../../production/types";
 import { useOrderStore } from "../store/order";
 import { useUserFilterStore } from "../../../store/userfilter";
 import { formatDateForQueryParameter } from "../../../utils/functions";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const store = useStore();
@@ -107,6 +105,12 @@ const referenceStore = useReferenceStore();
 const sharedStore = useSharedDataStore();
 const orderStore = useOrderStore();
 const userFilterStore = useUserFilterStore();
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "33%", tablet: "50%" };
+
+const filter = ref({
+  dates: undefined as Array<Date> | undefined,
+});
 
 const selectedPhases = ref<WorkOrderPhase[]>([]);
 const suppliersByReference = ref<{ [key: string]: Supplier[] }>({});
@@ -125,11 +129,13 @@ const mostrarToastInfo = (summary: string, detail: string) => {
 };
 
 const obtenirDates = () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
     return [startTime, endTime];
   }
   return ["", ""];
@@ -166,7 +172,11 @@ const updatePhase = (phaseId: string, selectedSupplierId: string) => {
 };
 
 const fetchWorkOrderPhases = async () => {
-  if (!store.exercisePicker.dates) {
+  if (
+    !filter.value.dates ||
+    filter.value.dates.length < 2 ||
+    !filter.value.dates[1]
+  ) {
     mostrarToastInfo("Filtre Invàlid", "Seleccioni un perióde");
     return;
   }
@@ -224,11 +234,7 @@ const onSupplierDropdownShow = (phase: WorkOrderPhase) => {
 };
 
 onUnmounted(() => {
-  const savedFilter = {
-    exercisePicker: store.exercisePicker,
-  };
-
-  userFilterStore.addFilter("ExternalPhasesToPurhcaseOrders", "", savedFilter);
+  userFilterStore.addFilter("ExternalPhasesToPurhcaseOrders", "", filter.value);
 });
 
 const getUserFilter = () => {
@@ -237,33 +243,25 @@ const getUserFilter = () => {
     "",
   );
   if (userFilter) {
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
   }
 };
 
 const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = sharedStore.exercises?.find((e) => e.name === year);
-
-  if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
-    ];
-  }
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
 };
 
 const cleanFilter = () => {
   setCurrentYear();
-
-  //filterPhases();
 };
 
 const getName = (id: string) => {

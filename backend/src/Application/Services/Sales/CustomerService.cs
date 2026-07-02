@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Application.Contracts.Services.Geolocalization;
 using Application.Services;
+using Application.Utils;
 using Domain.Entities;
 using Domain.Entities.Sales;
 using Microsoft.Extensions.Logging;
@@ -37,10 +38,20 @@ public class CustomerService(
                 localizationService.GetLocalizedString("CustomerAlreadyExists"));
         }
 
+        var fiscalValidation = ValidateCustomerFiscalData(customer);
+        if (fiscalValidation != null) return fiscalValidation;
+
         await unitOfWork.Customers.Add(customer);
         return new GenericResponse(true, customer);
     }
 
+    /// <summary>
+    /// Updates a Customer, blocking on fiscal-data validation issues.
+    /// If the customer's CIF/NIF is malformed or its main fiscal address is
+    /// incomplete, the call returns a failed <see cref="GenericResponse"/> and
+    /// does not persist — same behaviour as <see cref="CreateCustomer"/>.
+    /// Issue #69 follow-up.
+    /// </summary>
     public async Task<GenericResponse> UpdateCustomer(Customer customer)
     {
         var exists = await unitOfWork.Customers.Get(customer.Id);
@@ -49,6 +60,9 @@ public class CustomerService(
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("EntityNotFound", customer.Id));
         }
+
+        var fiscalValidation = ValidateCustomerFiscalData(customer);
+        if (fiscalValidation != null) return fiscalValidation;
 
         await unitOfWork.Customers.Update(customer);
         return new GenericResponse(true, customer);
@@ -176,6 +190,39 @@ public class CustomerService(
 
         await unitOfWork.Customers.RemoveAddress(address);
         return new GenericResponse(true, address);
+    }
+
+    private GenericResponse? ValidateCustomerFiscalData(Customer customer)
+    {
+        if (!customer.IsValidForSales())
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerInvalid"));
+        }
+
+        if (!SpanishFiscalIdValidator.IsValidSpanishFiscalId(customer.VatNumber))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerCifInvalid"));
+        }
+
+        var mainAddress = customer.MainAddress();
+        if (mainAddress == null)
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerNoAddresses"));
+        }
+
+        if (string.IsNullOrWhiteSpace(mainAddress.Country)
+            || string.IsNullOrWhiteSpace(mainAddress.PostalCode)
+            || string.IsNullOrWhiteSpace(mainAddress.City)
+            || string.IsNullOrWhiteSpace(mainAddress.Address))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerFiscalAddressInvalid"));
+        }
+
+        return null;
     }
 
     private async Task UpdateCoordinatesAndDistanceAsync(CustomerAddress address)

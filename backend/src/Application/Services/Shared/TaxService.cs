@@ -51,6 +51,13 @@ public class TaxService(IUnitOfWork unitOfWork, ILocalizationService localizatio
             return new GenericResponse(false, message);
         }
 
+        var isInUse = unitOfWork.References.Find(r => r.TaxId.HasValue && r.TaxId.Value == id).Any();
+        if (isInUse)
+        {
+            var message = localizationService.GetLocalizedString("TaxInUse");
+            return new GenericResponse(false, message);
+        }
+
         await unitOfWork.Taxes.Remove(entity);
         return new GenericResponse(true, entity);
     }

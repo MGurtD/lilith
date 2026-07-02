@@ -1,6 +1,8 @@
 {
   "culture": "ca",
   "texts": {
+    "GitHubNotConfigured": "La integració amb GitHub no està configurada",
+    "GitHubDraftIssueError": "No s'ha pogut crear la incidència esborrany a GitHub",
     "EntityNotFound": "L'entitat amb ID {0} no existeix",
     "EntityAlreadyExists": "L'entitat ja existeix",
     "EntityDisabled": "L'entitat amb ID {0} està deshabilitada",
@@ -15,6 +17,14 @@
     "CustomerInvalid": "El client no és vàlid per a crear una factura. Revisa el nom fiscal, el número de compte i el NIF",
     "CustomerNoAddresses": "El client no té direccions donades d'alta. Si us plau, crei una direcció.",
     "CustomerAlreadyExists": "Client {0} existent",
+    "CustomerCifInvalid": "CIF/NIF invàlid",
+    "CustomerFiscalAddressInvalid": "La direcció fiscal principal del client és incompleta. Cal omplir país, codi postal, ciutat i adreça",
+    "SalesInvoiceCustomerDataUpdated": "Dades fiscals del client de la factura actualitzades correctament",
+    "SalesInvoiceCustomerDataPropagated": "Dades fiscals actualitzades a la factura actual i a {0} factura(es) més del mateix client",
+    "SalesInvoiceCustomerDataPropagationPrompt": "S'actualitzaran les dades fiscals en {0} factura(es) més pendents o amb error d'aquest client. Vols continuar?",
+    "SalesInvoiceCustomerDataNotEditable": "No es poden modificar les dades del client: la factura ja ha estat integrada correctament amb Verifactu",
+    "SalesInvoiceCustomerDataInvalidStatus": "No es poden modificar les dades del client en l'estat actual d'integració amb Verifactu",
+    "SalesInvoiceCustomerDataUpdateFailed": "No s'han pogut desar les dades fiscals del client. Si us plau, torni-ho a provar",
     "SupplierNotFound": "El proveïdor no existeix",
     "SupplierAlreadyExists": "Proveïdor {0} existent",
     "ExerciseNotFound": "L'exercici no existeix",
@@ -258,6 +268,17 @@
     "ErrorResponse.Conflict": "Conflicte amb l'estat actual del recurs",
     "ApiKey.InvalidFormat": "Format de clau API invàlid",
     "ApiKey.NotFoundOrDisabled": "Clau API no vàlida o desactivada",
-    "ApiKey.Expired": "Clau API caducada"
+    "ApiKey.Expired": "Clau API caducada",
+    "TaxInUse": "No es pot eliminar l'impost perquè està en ús a referències o factures",
+    "SalesOrderNotFound": "No s'ha trobat la comanda de venda",
+    "SalesOrderAlreadyInThisNote": "La comanda ja està afegida a aquest albarà",
+    "SalesOrderAlreadyAssigned": "La comanda ja està assignada a un altre albarà",
+    "TableViewNameExists": "Ja existeix una vista amb aquest nom per aquesta pàgina",
+    "TableViewCreated": "Vista creada correctament",
+    "TableViewUpdated": "Vista actualitzada correctament",
+    "TableViewDeleted": "Vista eliminada correctament",
+    "TableViewNotFound": "Vista no trobada",
+    "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
+    "DefaultViewSet": "Vista per defecte establerta"
   }
 }

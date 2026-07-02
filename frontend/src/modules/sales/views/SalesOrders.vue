@@ -1,114 +1,62 @@
 <template>
-  <DataTable
-    :value="salesOrderStore.salesOrders"
+  <Table
+    :columns="columns"
+    :items="salesOrderStore.salesOrders ?? []"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    preset="crud-list"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
     sort-mode="single"
     :sort-order="1"
-    scrollable
-    scrollHeight="flex"
-    paginator
-    :rows="20"
+    showDeleteColumn
+    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
+    @filter="filterSalesOrder"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteSalesInvoice"
     @row-click="editRow"
   >
-    <template #header>
+    <template #prepend>
       <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <div class="datatable-filter-3">
-          <div class="filter-field">
-            <ExerciseDatePicker
-              :exercises="sharedStore.exercises"
-              @range-selected="filterSalesOrder"
-            />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900">Client</label>
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div class="filter-field">
-            <label class="block text-900">Estat</label>
-            <DropdownLifecycle
-              label=""
-              name="SalesOrder"
-              v-model="filter.statusId"
-            />
-          </div>
-        </div>
-        <div class="datatable-buttons">
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER"
-            rounded
-            raised
-            @click="filterSalesOrder"
-          />
-          <Button
-            class="datatable-button mr-2"
-            :icon="PrimeIcons.FILTER_SLASH"
-            rounded
-            raised
-            @click="cleanFilter"
-          />
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
+        <label class="filter-label table-filter-prepend-label"
+          >Període</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Selecciona període"
+          showIcon
+          class="w-full"
+          size="small"
+        />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >Client</label
+        >
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label">Estat</label>
+        <DropdownLifecycle
+          label=""
+          name="SalesOrder"
+          v-model="filter.statusId"
+        />
       </div>
     </template>
-    <Column field="number" header="Número" sortable style="width: 10%"></Column>
-    <Column field="date" header="Data" style="width: 10%" sortable>
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column
-      field="expectedDate"
-      header="Data Entrega"
-      style="width: 10%"
-      sortable
-    >
-      <template #body="slotProps">
-        {{
-          slotProps.data.expectedDate
-            ? formatDate(slotProps.data.expectedDate)
-            : ""
-        }}
-      </template>
-    </Column>
-    <Column
-      field="customerComercialName"
-      header="Client"
-      style="width: 30%"
-    ></Column>
-    <Column
-      field="customerNumber"
-      header="Comanda client"
-      style="width: 15%"
-    ></Column>
-    <Column header="Estat" style="width: 20%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            slotProps.data.statusId ===
-            lifecycleStore.lifecycle?.initialStatusId
-          "
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteSalesInvoice($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -124,28 +72,27 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
 import { useSalesOrderStore } from "../store/order";
-import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../store/customers";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
-import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
-import { useSharedDataStore } from "../../shared/store/masterData";
+import { CreateSalesHeaderRequest } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useUserFilterStore } from "../../../store/userfilter";
 
@@ -155,13 +102,29 @@ const confirm = useConfirm();
 
 const store = useStore();
 const userFilterStore = useUserFilterStore();
-const sharedStore = useSharedDataStore();
 const salesOrderStore = useSalesOrderStore();
-const referenceStore = useReferenceStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
 
+const columns = ref<Column[]>([
+  { field: "number", header: "Número", sortable: true, style: "width: 10%" },
+  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "expectedDate", header: "Data Entrega", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "customerComercialName", header: "Client", style: "width: 30%" },
+  { field: "customerNumber", header: "Comanda client", style: "width: 15%" },
+  {
+    field: "statusId",
+    header: "Estat",
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 20%",
+  },
+]);
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
+
 const filter = ref({
+  dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
   statusId: undefined as string | undefined,
 });
@@ -173,11 +136,17 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
+const setCurrentYear = () => {
+  const now = new Date();
+  filter.value.dates = [
+    new Date(now.getFullYear(), 0, 1),
+    new Date(now.getFullYear(), 11, 31),
+  ];
+};
+
 onMounted(async () => {
   lifecycleStore.fetchOneByName("SalesOrder");
-  referenceStore.fetchReferences();
   customerStore.fetchCustomers();
-  await sharedStore.fetchMasterData();
 
   setCurrentYear();
   getUserFilter();
@@ -189,14 +158,7 @@ onMounted(async () => {
   });
 });
 onUnmounted(() => {
-  const savedFilter = {
-    statusId: filter.value.statusId,
-    customerId: filter.value.customerId,
-    exercisePicker: store.exercisePicker,
-  };
-
-  userFilterStore.addFilter("SalesOrders", "", savedFilter);
-
+  userFilterStore.addFilter("SalesOrders", "", filter.value);
   salesOrderStore.salesOrders = undefined;
 });
 
@@ -205,26 +167,12 @@ const getUserFilter = () => {
   if (userFilter) {
     filter.value.statusId = userFilter.statusId;
     filter.value.customerId = userFilter.customerId;
-    if (userFilter.exercisePicker) {
-      store.exercisePicker.exercise = userFilter.exercisePicker.exercise;
-      store.exercisePicker.dates = [
-        new Date(userFilter.exercisePicker.dates[0]),
-        new Date(userFilter.exercisePicker.dates[1]),
+    if (userFilter.dates) {
+      filter.value.dates = [
+        new Date(userFilter.dates[0]),
+        new Date(userFilter.dates[1]),
       ];
     }
-  }
-};
-
-const setCurrentYear = () => {
-  const year = new Date().getFullYear().toString();
-  const currentExercise = sharedStore.exercises?.find((e) => e.name === year);
-
-  if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
-    ];
   }
 };
 
@@ -232,7 +180,6 @@ const cleanFilter = () => {
   filter.value.customerId = undefined;
   filter.value.statusId = undefined;
   setCurrentYear();
-
   filterSalesOrder();
 };
 
@@ -252,11 +199,13 @@ const createButtonClick = () => {
 };
 
 const filterSalesOrder = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     await salesOrderStore.GetFiltered(
       startTime,
@@ -274,19 +223,15 @@ const filterSalesOrder = async () => {
   }
 };
 
-const getStatusNameById = (id: string) => {
-  const status = lifecycleStore.lifecycle?.statuses?.find((s) => s.id === id);
-  if (status) return status.name;
-  else return "";
-};
-
 const createOrder = async () => {
   const response = await salesOrderStore.Create(createRequest.value);
   if (!response?.result) {
     toast.add({
       severity: "warn",
       summary: "Error al crear la comanda",
-      detail: response?.errors?.[0] ?? "Error desconegut, contacte amb l'administrador.",
+      detail:
+        response?.errors?.[0] ??
+        "Error desconegut, contacte amb l'administrador.",
       life: 10000,
     });
     return;
@@ -296,16 +241,10 @@ const createOrder = async () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/salesorder/${row.data.id}` });
-  }
+  router.push({ path: `/salesorder/${row.data.id}` });
 };
 
-const deleteSalesInvoice = (event: any, order: SalesOrderHeader) => {
+const deleteSalesInvoice = (order: any) => {
   confirm.require({
     message: `Està segur que vol eliminar la comanda?`,
     icon: "pi pi-question-circle",

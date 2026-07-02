@@ -1,0 +1,7 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Lilith Run" type="CompoundRunConfigurationType">
+    <toRun name="Api" type="LaunchSettings" />
+    <toRun name="Frontend Dev Server" type="ShConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

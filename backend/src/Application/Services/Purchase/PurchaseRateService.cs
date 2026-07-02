@@ -13,6 +13,11 @@ public class PurchaseRateService(
         return rates.OrderBy(r => r.ValidFrom);
     }
 
+    public async Task<IEnumerable<PurchaseRate>> GetPurchaseRatesByReferenceId(Guid referenceId)
+    {
+        return await unitOfWork.PurchaseRates.GetByReferenceId(referenceId);
+    }
+
     public async Task<PurchaseRate?> GetPurchaseRateById(Guid id)
     {
         return await unitOfWork.PurchaseRates.Get(id);

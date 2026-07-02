@@ -16,6 +16,7 @@ namespace Infrastructure.Persistance.Repositories.Sales
             return await dbSet
                         .Include(s => s.Customer)
                         .Include(s => s.Site)
+                        .Include(s => s.ParentSalesInvoice)
                         .Include(s => s.SalesInvoiceDetails)
                             .ThenInclude(d => d.DeliveryNoteDetail)
                         .Include(s => s.SalesInvoiceImports)
@@ -44,16 +45,26 @@ namespace Infrastructure.Persistance.Repositories.Sales
             return imports;
         }
 
-        public async Task<IEnumerable<SalesInvoice>> GetPendingToIntegrate(DateTime? toDate, Guid? initialStatusId)
+        public async Task<IEnumerable<SalesInvoice>> GetPendingToIntegrate(
+            DateTime? toDate,
+            Guid? initialStatusId,
+            Guid? errorStatusId)
         {
             var query = dbSet
                         .AsNoTracking()
                         .Include(e => e.SalesInvoiceDueDates)
                         .Where(e => e.IntegrationStatusId != null);
 
-            if (initialStatusId.HasValue)
+            // Match either the initial Verifactu status ("Pendent") or the "Error" status,
+            // so invoices that previously failed integration are listed for retry.
+            var allowedStatusIds = new List<Guid>();
+            if (initialStatusId.HasValue) allowedStatusIds.Add(initialStatusId.Value);
+            if (errorStatusId.HasValue) allowedStatusIds.Add(errorStatusId.Value);
+
+            if (allowedStatusIds.Count > 0)
             {
-                query = query.Where(e => e.IntegrationStatusId == initialStatusId);
+                query = query.Where(e => e.IntegrationStatusId != null
+                                         && allowedStatusIds.Contains(e.IntegrationStatusId!.Value));
             }
 
             if (toDate.HasValue)

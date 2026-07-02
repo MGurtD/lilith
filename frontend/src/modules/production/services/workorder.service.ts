@@ -11,12 +11,20 @@ import {
   ValidatePreviousPhaseQuantityRequest,
   PhaseTimeMetrics,
   CreatePhaseFromTemplateDto,
+  WorkOrderDashboardItem,
 } from "../types";
 import BaseService from "../../../api/base.service";
 import { NextPhaseInfo } from "../../plant/types";
 import { GenericResponse } from "../../../types";
 
 export class WorkOrderService extends BaseService<WorkOrder> {
+  async GetDashboardData(): Promise<Array<WorkOrderDashboardItem> | undefined> {
+    const response = await this.apiClient.get(`${this.resource}/Dashboard`);
+    if (response.status === 200) {
+      return response.data as Array<WorkOrderDashboardItem>;
+    }
+  }
+
   async GetReportDataById(id: string) {
     const endpoint = `${this.resource}/Report/${id}`;
     const response = await this.apiClient.get(endpoint);

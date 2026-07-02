@@ -18,7 +18,7 @@ namespace Api.Controllers.Sales
             if (response.Result)
             {
                 var location = Url.Action(nameof(GetById), new { id = request.Id }) ?? $"/{request.Id}";
-                return Created(location, response.Content);
+                return Created(location, response);
             }
             else
             {
@@ -51,9 +51,12 @@ namespace Api.Controllers.Sales
 
             var response = await service.UpdateCustomer(request);
             if (response.Result)
-                return Ok(response.Content);
-            else
-                return NotFound(response);
+                return Ok(response);
+            // Return 400 so the GenericResponse body (with the localized error
+            // message) is surfaced to the admin. 404 was previously returned for
+            // all failures and hid fiscal-validation errors behind a generic
+            // "resource not found" toast.
+            return BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

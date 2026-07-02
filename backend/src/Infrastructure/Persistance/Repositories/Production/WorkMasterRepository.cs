@@ -40,5 +40,18 @@ namespace Infrastructure.Persistance.Repositories.Production
                         .AsNoTracking()
                         .FirstOrDefaultAsync(e => e.Id == id);
         }
+
+        public async Task<IEnumerable<WorkMaster>> GetByUpdatedOnFilter(DateTime? startDate, DateTime? endDate)
+        {
+            var query = dbSet.Include(d => d.Reference).AsNoTracking();
+
+            if (startDate.HasValue)
+                query = query.Where(w => w.UpdatedOn >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(w => w.UpdatedOn <= endDate.Value);
+
+            return await query.ToListAsync();
+        }
     }
 }

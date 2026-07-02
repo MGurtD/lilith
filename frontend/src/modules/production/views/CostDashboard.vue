@@ -1,32 +1,31 @@
 <template>
-  <div class="dashboard-filter">
-    <div class="dashboard-filter-field">
-      <ExerciseDatePicker
-        :exercises="exercicesStore.exercises"
-        @range-selected="filterDashboard"
-      />
-    </div>
-    <div class="dashboard-filter-field">
-      <label class="block text-900 font-semibold">Concepte:</label>
-      <Select
-        id="consolidatedBy"
-        v-model="filter.consolidatedBy"
-        :options="optionValues"
-        placeholder="Selecciona..."
-        optionValue="id"
-        optionLabel="value"
-        class="w-full min-w-[250px]"
-        @change="filterDashboard"
-      >
-      </Select>
-    </div>
-    <Button
-      :icon="PrimeIcons.FILTER_SLASH"
-      @click="clearFilter"
-      severity="secondary"
-      outlined
-      label="Netejar"
-    />
+  <div class="mb-3">
+    <TableFilter
+      :config="filterConfig"
+      v-model="filter"
+      :show-title="false"
+      :show-filter-action="false"
+      :show-create="false"
+      :show-action-labels="false"
+      :body-width="filterBodyWidth"
+      embedded
+      @clear="clearFilter"
+    >
+      <template #prepend>
+        <div class="table-filter-prepend-field table-filter-prepend-field--lg">
+          <label class="filter-label table-filter-prepend-label">Període</label>
+          <DatePicker
+            v-model="filter.dates"
+            selectionMode="range"
+            dateFormat="dd/mm/yy"
+            placeholder="Selecciona període"
+            showIcon
+            size="small"
+            class="w-full"
+          />
+        </div>
+      </template>
+    </TableFilter>
   </div>
   <Tabs value="0" class="dashboard-tabs">
     <TabList>
@@ -37,7 +36,9 @@
       <TabPanel value="0">
         <div class="dashboard-container">
           <Chart
-            v-if="chartData && chartData.datasets && chartData.datasets.length > 0"
+            v-if="
+              chartData && chartData.datasets && chartData.datasets.length > 0
+            "
             type="bar"
             :data="chartData"
             :options="chartOptions"
@@ -45,7 +46,10 @@
           />
           <div v-else class="empty-state">
             <i :class="PrimeIcons.CHART_BAR" class="empty-icon"></i>
-            <p class="empty-message">Selecciona un interval de dates i un concepte per visualitzar les dades</p>
+            <p class="empty-message">
+              Selecciona un interval de dates i un concepte per visualitzar les
+              dades
+            </p>
           </div>
         </div>
       </TabPanel>
@@ -57,14 +61,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useStore } from "../../../store";
 import { useProductionCostDashboardStore } from "../store/productioncostdashboard";
 import { formatDateForQueryParameter } from "../../../utils/functions";
-import { useExerciseStore } from "../../shared/store/exercise";
 import { usePlantModelStore } from "../store/plantmodel";
 import { PrimeIcons } from "@primevue/core/api";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
+import TableFilter, {
+  type FilterBodyWidth,
+  type FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import TableProductionCosts from "../components/TableProductionCosts.vue";
 import { ProductionCostDashboardGrouped } from "../types";
 import ProductionCostDashboardService from "../services/productioncostdashboard.service";
@@ -72,20 +78,58 @@ import ProductionCostDashboardService from "../services/productioncostdashboard.
 const store = useStore();
 const productionCostStore = useProductionCostDashboardStore();
 const plantModelStore = usePlantModelStore();
-const exercicesStore = useExerciseStore();
 const productionCostDashboardService = new ProductionCostDashboardService(
   "/ProductionCost",
 );
 
+const today = new Date();
+const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, 1);
 const filter = ref({
-  dates: undefined as Array<Date> | undefined,
+  dates: [sixMonthsAgo, today] as Array<Date> | undefined,
   consolidatedBy: undefined as string | undefined,
 });
 
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "consolidatedBy",
+    label: "Concepte",
+    type: "select",
+    options: optionValues.map((option) => ({
+      label: option.value,
+      value: option.id,
+    })),
+    placeholder: "Selecciona...",
+    size: "xl",
+  },
+]);
+
+const filterBodyWidth: FilterBodyWidth = {
+  desktop: "50%",
+  tablet: "75%",
+};
+
 const clearFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = undefined;
   filter.value.consolidatedBy = "";
 };
+
+watch(
+  () => filter.value.dates,
+  (dates) => {
+    if (dates && dates.length === 2 && dates[1]) {
+      filterDashboard();
+    }
+  },
+  { deep: true },
+);
+
+watch(
+  () => filter.value.consolidatedBy,
+  (newValue, oldValue) => {
+    if (newValue === oldValue) return;
+    filterDashboard();
+  },
+);
 
 type Options = {
   id: string;
@@ -108,18 +152,16 @@ onMounted(async () => {
   await plantModelStore.fetchOperators();
   await plantModelStore.fetchWorkcenterTypes();
   await plantModelStore.fetchWorkcenters();
-  await exercicesStore.fetchActive();
-
-  if (!store.exercisePicker.exercise) store.setCurrentYear();
-  //filterDashboard();
 });
 
 const filterDashboard = async () => {
-  if (store.exercisePicker.dates) {
-    const startTime = formatDateForQueryParameter(
-      store.exercisePicker.dates[0],
-    );
-    const endTime = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
+    const startTime = formatDateForQueryParameter(filter.value.dates[0]);
+    const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 
     var dataResponse: Array<ProductionCostDashboardGrouped> | undefined;
     if (filter.value.consolidatedBy == "operator") {
@@ -171,7 +213,7 @@ const setChartData = () => {
     "Novembre",
     "Desembre",
   ];
-  
+
   interface GroupedData {
     [key: string]: { [key: string]: number };
   }
@@ -184,29 +226,29 @@ const setChartData = () => {
 
   const groupedByMonth: GroupedData = {};
   const uniqueEntities = new Set<string>();
-  
+
   // Build grouped data and collect unique entities from actual data
   productionCostStore.productionCostDashboardGrouped!.forEach((item) => {
     const monthYear = `${monthNames[item.month - 1]} ${item.year}`;
     if (!groupedByMonth[monthYear]) {
       groupedByMonth[monthYear] = {};
     }
-    
+
     let entityKey = "";
     if (filter.value.consolidatedBy == "operator") {
       entityKey = item.operatorName;
-      groupedByMonth[monthYear][entityKey] = 
+      groupedByMonth[monthYear][entityKey] =
         (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
     } else if (filter.value.consolidatedBy == "workcentertype") {
       entityKey = item.workcenterTypeName;
-      groupedByMonth[monthYear][entityKey] = 
+      groupedByMonth[monthYear][entityKey] =
         (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
     } else if (filter.value.consolidatedBy == "workcenter") {
       entityKey = item.workcenterName;
-      groupedByMonth[monthYear][entityKey] = 
+      groupedByMonth[monthYear][entityKey] =
         (groupedByMonth[monthYear][entityKey] || 0) + item.totalCost;
     }
-    
+
     if (entityKey) {
       uniqueEntities.add(entityKey);
     }
@@ -218,7 +260,7 @@ const setChartData = () => {
     const [monthB, yearB] = b.split(" ");
     const monthIndexA = monthNames.indexOf(monthA);
     const monthIndexB = monthNames.indexOf(monthB);
-    
+
     if (yearA !== yearB) {
       return parseInt(yearA) - parseInt(yearB);
     }
@@ -279,10 +321,13 @@ const setChartOptions = () => {
             tooltipItems.forEach(function (tooltipItem: any) {
               sum += tooltipItem.parsed.y;
             });
-            return "Total: " + new Intl.NumberFormat("ca-ES", {
-              style: "currency",
-              currency: "EUR",
-            }).format(sum);
+            return (
+              "Total: " +
+              new Intl.NumberFormat("ca-ES", {
+                style: "currency",
+                currency: "EUR",
+              }).format(sum)
+            );
           },
         },
       },
@@ -386,29 +431,18 @@ const colors = [
 <style scoped>
 .dashboard-filter {
   display: flex;
-  flex-direction: row;
   justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  background: var(--p-surface-50);
-  border-radius: 8px;
-  border: 1px solid var(--p-surface-200);
-}
-
-.dashboard-filter-field {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
   gap: 0.75rem;
-  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
-.dashboard-filter-field label {
-  white-space: nowrap;
-  font-weight: 600;
+.dashboard-filter-left {
+  display: flex;
+  flex: 1 1 100%;
+  min-width: 22rem;
+  align-self: center;
 }
 
 .dashboard-tabs {
@@ -453,18 +487,10 @@ const colors = [
   .dashboard-filter {
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
-    padding: 1rem;
   }
 
-  .dashboard-filter-field {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .dashboard-filter-field label {
-    font-size: 0.875rem;
+  .dashboard-filter-left {
+    min-width: 100%;
   }
 
   .dashboard-container {

@@ -55,6 +55,16 @@ export class DeliveryNoteService extends BaseService<DeliveryNote> {
     }
   }
 
+  async GetByReferenceId(
+    referenceId: string
+  ): Promise<Array<DeliveryNote> | undefined> {
+    const endpoint = `${this.resource}/ByReferenceId/${referenceId}`;
+    const response = await apiClient.get(endpoint);
+    if (response.status === 200) {
+      return response.data as Array<DeliveryNote>;
+    }
+  }
+
   async GetToInvoice(
     customerId: string
   ): Promise<Array<DeliveryNote> | undefined> {

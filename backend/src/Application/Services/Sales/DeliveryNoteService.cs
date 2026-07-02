@@ -78,6 +78,11 @@ namespace Application.Services.Sales
             return deliveryNotes;
         }
 
+        public async Task<IEnumerable<DeliveryNote>> GetByReferenceId(Guid referenceId)
+        {
+            return await unitOfWork.DeliveryNotes.GetByReferenceId(referenceId);
+        }
+
         public async Task<GenericResponse> Create(CreateHeaderRequest createRequest)
         {
             var response = await ValidateCreateInvoiceRequest(createRequest);
@@ -259,6 +264,18 @@ namespace Application.Services.Sales
 
         public async Task<GenericResponse> AddOrder(Guid deliveryNoteId, SalesOrderHeader order)
         {
+            // Guard d'idempotència: llegir l'estat real de la comanda a la BD
+            // per evitar duplicats quan dues pestanyes envien la mateixa comanda simultàniament
+            var currentOrder = unitOfWork.SalesOrderHeaders.Find(o => o.Id == order.Id).FirstOrDefault();
+            if (currentOrder == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderNotFound"));
+
+            if (currentOrder.DeliveryNoteId.HasValue && currentOrder.DeliveryNoteId.Value == deliveryNoteId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderAlreadyInThisNote"));
+
+            if (currentOrder.DeliveryNoteId.HasValue && currentOrder.DeliveryNoteId.Value != deliveryNoteId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderAlreadyAssigned"));
+
             // Crear lines de l'albarà segons les línies de la comanda
             var deliveryNoteDetails = new List<DeliveryNoteDetail>();
             foreach (var salesDetail in order.SalesOrderDetails)
@@ -329,8 +346,3 @@ namespace Application.Services.Sales
         }
     }
 }
-
-
-
-
-

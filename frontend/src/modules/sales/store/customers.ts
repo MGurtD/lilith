@@ -9,6 +9,7 @@ import {
   CustomerService,
   CustomerTypeService,
 } from "../services/customer.service";
+import type { GenericResponse } from "../../../types";
 
 const service = new CustomerService("/Customer");
 const typeService = new CustomerTypeService("/CustomerType");
@@ -26,6 +27,9 @@ export const useCustomersStore = defineStore({
       const customer = state.customers?.find((customer) => customer.id === id);
       if (customer) return customer.comercialName;
       return "";
+    },
+    getCustomerTypeNameById: (state) => (id: string) => {
+      return state.customerTypes?.find((t) => t.id === id)?.name ?? "";
     },
   },
   actions: {
@@ -48,14 +52,19 @@ export const useCustomersStore = defineStore({
     async fetchCustomer(id: string) {
       this.customer = await service.getById(id);
     },
-    async createCustomer(customer: Customer) {
-      const result = await service.create(customer);
-      if (result) await this.fetchCustomers();
+    async createCustomer(
+      customer: Customer,
+    ): Promise<GenericResponse<Customer>> {
+      const result = await service.createCustomer(customer);
+      if (result.result) await this.fetchCustomers();
       return result;
     },
-    async updateCustomer(id: string, customer: Customer) {
-      const result = await service.update(id, customer);
-      if (result) await this.fetchCustomers();
+    async updateCustomer(
+      id: string,
+      customer: Customer,
+    ): Promise<GenericResponse<Customer>> {
+      const result = await service.updateCustomer(id, customer);
+      if (result.result) await this.fetchCustomers();
       return result;
     },
     async deleteCustomer(id: string) {

@@ -32,6 +32,7 @@ const ProductionParts = () => import("./views/ProductionParts.vue");
 const Shifts = () => import("./views/Shifts.vue");
 
 const CostDashboard = () => import("./views/CostDashboard.vue");
+const ProductionDashboard = () => import("./views/ProductionDashboard.vue");
 
 const PhaseTemplates = () => import("./views/PhaseTemplates.vue");
 const PhaseTemplate = () => import("./views/PhaseTemplate.vue");
@@ -175,6 +176,11 @@ export default [
     path: "/productioncost",
     name: "productioncost",
     component: CostDashboard,
+  },
+  {
+    path: "/production-dashboard",
+    name: "productiondashboard",
+    component: ProductionDashboard,
   },
   {
     path: "/workcentershift",

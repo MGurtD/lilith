@@ -21,6 +21,12 @@ namespace Application.Services.Production
             return workMasters.OrderBy(w => w.ReferenceId);
         }
 
+        public async Task<IEnumerable<WorkMaster>> GetByUpdatedOnFilter(DateTime? startDate, DateTime? endDate)
+        {
+            var workMasters = await unitOfWork.WorkMasters.GetByUpdatedOnFilter(startDate, endDate);
+            return workMasters.OrderBy(w => w.ReferenceId);
+        }
+
         public async Task<IEnumerable<WorkMaster>> GetByReferenceId(Guid referenceId)
         {
             var workMasters = unitOfWork.WorkMasters.Find(w => w.ReferenceId == referenceId && w.Disabled == false);
