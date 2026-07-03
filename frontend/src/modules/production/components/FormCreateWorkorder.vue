@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { CreateWorkOrderDto, WorkMaster } from "../types";
 import * as Yup from "yup";
 import {
@@ -70,12 +70,6 @@ const emit = defineEmits<{
 const workMasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
 const toast = useToast();
-
-onMounted(() => {
-  if (!workMasterStore.workmasters) {
-    workMasterStore.fetchAllActives();
-  }
-});
 
 const formatWorkMasterLabel = (workMaster: WorkMaster) => {
   const referenceName = referenceStore.getShortNameById(workMaster.referenceId);

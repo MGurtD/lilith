@@ -65,6 +65,11 @@ export const useWorkMasterStore = defineStore("workmaster", {
       this.workmasters =
         await Services.WorkMaster.getByReferenceId(referenceId);
     },
+    async fetchActiveWorkmastersByReference(referenceId: string): Promise<WorkMaster[]> {
+      if (!referenceId) return [];
+      const all = await Services.WorkMaster.getByReferenceId(referenceId);
+      return (all ?? []).filter((w) => !w.disabled);
+    },
     async create(model: WorkMaster) {
       const result = await Services.WorkMaster.create(model);
       if (result) await this.fetchOne(model.id);

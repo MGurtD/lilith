@@ -667,3 +667,10 @@ export interface WorkcenterLocation {
   locationId: string;
   location?: import("../../warehouse/types").Location;
 }
+
+/** Payload emitted by DropdownWorkmasters when activeByReference options are ready.
+ *  Consumers must validate referenceId to discard stale events. */
+export interface WorkmastersOptionsLoadedPayload {
+  referenceId: string;
+  options: WorkMaster[];
+}

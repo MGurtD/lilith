@@ -160,6 +160,36 @@ const totalTime = computed(() => {
   }, 0);
 });
 
+// NOTE: createUniqueKey and calculateWeightedProfit must be declared here,
+// BEFORE the watchEffect below. watchEffect runs its callback synchronously
+// during setup when the sync (no-await) branch executes (workMasterId is
+// null), so calling a `const` function declared later in the file would hit
+// the temporal dead zone (ReferenceError: Cannot access '...' before
+// initialization). onMounted/watch callbacks are deferred, so they are safe
+// regardless of declaration order, but watchEffect is not.
+const createUniqueKey = (phase: ProcessedPhase) => {
+  return `${phase.code}-${phase.order}-${phase.workcenterTypeId}`;
+};
+
+const calculateWeightedProfit = () => {
+  let totalTime = 0;
+  let weightedSum = 0;
+
+  processedPhases.value.forEach((phase) => {
+    const key = createUniqueKey(phase);
+    const profit = stepProfitPercentages[key];
+    const time = tableEstimatedTimes[key] ?? phase.estimatedTime;
+
+    totalTime += time;
+    weightedSum += time * profit;
+  });
+
+  profitAverage.value =
+    !isNaN(totalTime) && totalTime > 0 && !isNaN(weightedSum)
+      ? Number((weightedSum / totalTime).toFixed(2))
+      : 0;
+};
+
 onMounted(async () => {
   await plantModelStore.fetchWorkcenterTypes();
   await plantModelStore.fetchMachineStatuses();
@@ -188,10 +218,6 @@ watchEffect(async () => {
   }
   calculateWeightedProfit();
 });
-
-const createUniqueKey = (phase: ProcessedPhase) => {
-  return `${phase.code}-${phase.order}-${phase.workcenterTypeId}`;
-};
 
 const getWorkcenterType = (workcenterTypeId: string | undefined) => {
   const workcenterType = workcenterTypes.value?.find(
@@ -224,24 +250,5 @@ const updateProfitPercentage = (phase: ProcessedPhase, value: number) => {
       value
     );
   }
-};
-
-const calculateWeightedProfit = () => {
-  let totalTime = 0;
-  let weightedSum = 0;
-
-  processedPhases.value.forEach((phase) => {
-    const key = createUniqueKey(phase);
-    const profit = stepProfitPercentages[key];
-    const time = tableEstimatedTimes[key] ?? phase.estimatedTime;
-
-    totalTime += time;
-    weightedSum += time * profit;
-  });
-
-  profitAverage.value =
-    !isNaN(totalTime) && totalTime > 0 && !isNaN(weightedSum)
-      ? Number((weightedSum / totalTime).toFixed(2))
-      : 0;
 };
 </script>

@@ -198,7 +198,6 @@ import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import Services from "../services";
 
-import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useBudgetStore } from "../store/budget";
 import TableBudgetDetails from "../components/TableBudgetDetails.vue";
 import FormBudget from "../components/FormBudget.vue";
@@ -225,7 +224,6 @@ const plantModelStore = usePlantModelStore();
 const exerciseStore = useExerciseStore();
 const lifeCycleStore = useLifecyclesStore();
 const referenceStore = useReferenceStore();
-const workMasterStore = useWorkMasterStore();
 const taxesStore = useTaxesStore();
 const salesOrderStore = useSalesOrderStore();
 const supplierStore = useSuppliersStore();
@@ -366,7 +364,6 @@ const loadView = async () => {
 
   await referenceStore.fetchReferences();
   referenceStore.module = "sales";
-  workMasterStore.fetchAllActives();
   lifeCycleStore.fetchOneByName("Budget");
   plantModelStore.fetchSites();
   exerciseStore.fetchAll();

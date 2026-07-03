@@ -175,7 +175,6 @@ import {
 import { useStore } from "../../../store";
 import {
   createBlobAndDownloadFile,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
 import { useToast } from "primevue/usetoast";
@@ -195,7 +194,6 @@ import { useDeliveryNoteStore } from "../store/deliveryNote";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import services from "../services";
 import { useWorkOrderStore } from "../../production/store/workorder";
-import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useBudgetStore } from "../store/budget";
 import TableSalesOrderTransports from "../components/TableSalesOrderTransports.vue";
 import FormSalesOrderTransport from "../components/FormSalesOrderTransport.vue";
@@ -219,7 +217,6 @@ const exerciseStore = useExerciseStore();
 const lifeCycleStore = useLifecyclesStore();
 const referenceStore = useReferenceStore();
 const deliveryNoteStore = useDeliveryNoteStore();
-const workMasterStore = useWorkMasterStore();
 const workOrderStore = useWorkOrderStore();
 const taxesStore = useTaxesStore();
 const budgetStore = useBudgetStore();
@@ -374,20 +371,10 @@ const loadView = async (salesOrderId: string) => {
   taxesStore.fetchAll();
   workOrderStore.fetchBySalesOrder(salesOrderId);
 
-  if (!workMasterStore.workmasters) {
-    workMasterStore.fetchAllActives();
-  }
-
   let pageTitle = "Comanda";
   if (salesOrder.value) {
     formMode.value = FormActionMode.EDIT;
     pageTitle = `Comanda ${salesOrder.value.number}`;
-
-    // Parse date on the form
-    salesOrder.value.date = formatDate(salesOrder.value.date);
-    if (salesOrder.value.expectedDate) {
-      salesOrder.value.expectedDate = formatDate(salesOrder.value.expectedDate);
-    }
 
     // Get the related DeliveryNote info
     if (salesOrder.value.deliveryNoteId) {
