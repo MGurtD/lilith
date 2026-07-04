@@ -2,7 +2,7 @@
   <i
     v-if="value === true"
     class="pi"
-    :class="[showColor ? 'pi-circle-fill true-icon' : 'pi-circle']"
+    :class="[showColor ? 'pi-circle-fill true-icon' : 'pi-circle-fill']"
   />
   <i
     v-else-if="value === false"
