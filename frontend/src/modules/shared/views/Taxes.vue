@@ -47,8 +47,8 @@
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
 import { PrimeIcons } from "@primevue/core/api";
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -57,19 +57,40 @@ import { useTaxesStore } from "../store/tax";
 import { Tax } from "../types";
 
 const router = useRouter();
+const route = useRoute();
 const store = useStore();
 const taxStore = useTaxesStore();
 const confirm = useConfirm();
 const toast = useToast();
 
-onMounted(async () => {
-  await taxStore.fetchAll();
-
+const refreshMenu = () => {
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
     title: "Gestió d'impostos",
   });
+};
+
+onMounted(async () => {
+  await taxStore.fetchAll();
+  refreshMenu();
 });
+
+// Re-fetch quan es torna a la ruta /taxes des d'una sub-ruta (ex: /tax/:id).
+// El RouterView no manté la vista muntada (no hi ha KeepAlive), però Vue
+// reutilitza la instància del component quan només canvien els params, de
+// manera que onMounted no es torna a executar. Sense aquest watch, els canvis
+// fets al formulari (ex: marcar inversió subjecte passiu) no es reflecteixen
+// al llistat fins a recarregar la pàgina.
+watch(
+  () => route.fullPath,
+  async (newPath, oldPath) => {
+    const cameBackToList =
+      newPath === "/taxes" && oldPath?.startsWith("/tax/") === true;
+    if (cameBackToList) {
+      await taxStore.fetchAll();
+    }
+  },
+);
 
 const createButtonClick = () => {
   router.push({ path: `/tax/${uuidv4()}` });
