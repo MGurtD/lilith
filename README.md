@@ -1,265 +1,101 @@
-# Lilith ERP - Manufacturing Management system
+# Lilith ERP
 
-Monorepo for the Lilith ERP system, a comprehensive manufacturing management solution covering Sales, Purchase, Production, and Warehouse operations.
+A manufacturing ERP for small and mid-sized manufacturers in Catalonia and Spain, covering Sales, Purchase, Production, and Warehouse operations end to end.
 
-## 📁 Repository Structure
+**Monorepo**: .NET 10 backend + Vue 3 frontend, deployed via Docker Compose.
 
-```
-crisp-engine/
-├── backend/              # .NET 10 Web API (Clean Architecture)
-├── frontend/             # Vue 3 + TypeScript SPA
-├── .github/workflows/    # CI/CD pipelines
-├── docker-compose.yml    # Full stack orchestration
-├── .env.example         # Environment variables template
-└── AGENTS.md            # AI coding agent guidelines
-```
+## Who is this for
 
-## 🚀 Quick Start
+| You are... | Start here |
+|------------|------------|
+| New engineer on the project | [Quick start](#quick-start) below, then [backend](backend/README.md) or [frontend](frontend/README.md) |
+| Backend developer | [backend/README.md](backend/README.md) |
+| Frontend developer | [frontend/README.md](frontend/README.md) |
+| AI coding agent | [AGENTS.md](AGENTS.md) |
+| Looking for architecture | [backend/docs/architecture-layers.md](backend/docs/architecture-layers.md) |
+| Tracking known gaps | [backend/docs/architectural-debt-assessment.md](backend/docs/architectural-debt-assessment.md) |
 
-### Prerequisites
+## Quick start
 
-- **.NET 10 SDK** - [Download](https://dotnet.microsoft.com/download/dotnet/10.0)
-- **Node.js 18+** with **pnpm v10+** - [Install pnpm](https://pnpm.io/installation)
-- **PostgreSQL 16+** - [Download](https://www.postgresql.org/download/)
-- **Docker & Docker Compose** (optional, for containerized deployment)
-
-### Backend Setup
+Prerequisites: **.NET 10 SDK**, **Node.js 18+**, **pnpm v10+**, **PostgreSQL 16+**, Docker (optional).
 
 ```bash
-cd backend
-dotnet restore
-dotnet ef database update --project src/Infrastructure/
-dotnet run --project src/Api/
-```
+git clone <repo-url> lilith
+cd lilith
 
-Backend runs on: `https://localhost:5001`  
-Swagger UI: `https://localhost:5001/swagger`
-
-**Hot reload during development:**
-
-```bash
-dotnet watch run --project src/Api/
-```
-
-### Frontend Setup
-
-```bash
-cd frontend
-pnpm install
-pnpm run dev
-```
-
-Frontend runs on: `http://localhost:8100`
-
-**Production build:**
-
-```bash
-pnpm run typecheck    # Type checking
-pnpm run build        # Build to dist/
-```
-
-### Docker Compose (Full Stack)
-
-```bash
-# Copy environment template
+# Option A — full stack via Docker
 cp .env.example .env
+docker compose up -d
 
-# Edit .env with your configuration
-# Then start all services
-docker-compose up -d
+# Option B — local dev (two terminals)
+cd backend && dotnet ef database update --project src/Infrastructure/ && dotnet run --project src/Api/
+cd frontend && pnpm install && pnpm run dev
 ```
 
-Services:
+| Service | URL |
+|---------|-----|
+| Backend API + Swagger | https://localhost:5001/swagger |
+| Frontend dev server | http://localhost:8100 |
+| Backend (Docker) | http://localhost:5000 |
+| Frontend (Docker) | http://localhost:8080 |
+| PostgreSQL | localhost:5432 |
 
-- **Backend API**: `http://localhost:5000`
-- **Frontend**: `http://localhost:8080`
-- **PostgreSQL**: `localhost:5432`
+## Stack at a glance
 
-## 🏗️ Architecture
+| Layer | Tech |
+|-------|------|
+| Backend | .NET 10, EF Core 10, PostgreSQL 16, Clean Architecture (6 projects) |
+| Frontend | Vue 3 Composition API, TypeScript 5, Pinia, PrimeVue 4, Vite |
+| Auth | JWT bearer |
+| Localization | Catalan (primary), Spanish, English |
+| CI/CD | GitHub Actions (path-based: `backend/**`, `frontend/**`) |
+| Deploy | Docker Compose + Nginx static SPA |
 
-### Backend (.NET 10)
-
-**Clean Architecture** with 6 layers following the Dependency Rule:
-
-```
-API (Composition Root)
-  ↓
-Application + Infrastructure
-  ↓
-Application.Contracts
-  ↓
-Domain (Pure Core)
-```
-
-**Key patterns:**
-
-- **Primary constructors** for dependency injection
-- **Repository pattern** with `IUnitOfWork`
-- **Service layer** for all business logic
-- **GenericResponse** for operation results
-- **ILocalizationService** for multilingual support (ca/es/en)
-
-**Tech stack:**
-
-- ASP.NET Core 10 Web API
-- Entity Framework Core 10
-- PostgreSQL 16
-- FluentValidation
-- AutoMapper
-
-### Frontend (Vue 3)
-
-**Domain-driven modules** with centralized state management:
+## Repository layout
 
 ```
-Component → Pinia Store → Service Layer → API
+.
+├── backend/           # .NET 10 Web API → backend/README.md
+│   └── docs/          # Architecture deep-dives
+├── frontend/          # Vue 3 SPA → frontend/README.md
+├── .github/workflows/ # CI/CD per app
+├── docker-compose.yml # Full stack
+├── AGENTS.md          # AI coding agent guidelines
+└── .env.example
 ```
 
-**Key patterns:**
+## Conventions in one line
 
-- **Composition API** with `<script setup>` (never Options API)
-- **BaseService<T>** for inherited CRUD operations
-- **Pinia stores** for state + service orchestration
-- **Path aliases** with `@/` imports
-- **Lazy-loaded routes** for code splitting
+- **IDs**: client-generated UUIDs (`Guid.NewGuid()` / `getNewUuid()`). No autoincrement.
+- **Deletes**: soft via `Disabled` field. Never physical delete.
+- **Audit**: `CreatedOn` / `UpdatedOn` auto-managed on every entity.
+- **Errors**: backend returns `GenericResponse` with localized messages; frontend shows toast in Catalan.
+- **Status names**: stored in Catalan, referenced via `StatusConstants` — never hardcoded.
+- **Commits**: conventional (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
 
-**Tech stack:**
+## Domain coverage
 
-- Vue 3 (Composition API)
-- TypeScript 5
-- Pinia (state management)
-- Ionic Framework (UI components)
-- Axios (HTTP client)
-- Vite (build tool)
+| Area | Entities |
+|------|----------|
+| Sales | Customer, Budget, SalesOrder, DeliveryNote, SalesInvoice |
+| Purchase | Supplier, PurchaseOrder, Receipt, PurchaseInvoice |
+| Production | WorkMaster, WorkOrder, ProductionPart, Workcenter |
+| Warehouse | Stock, Location, StockMovement, Reference |
+| Tax | Verifactu (Spanish AEAT invoice registry) |
 
-## 🌍 Localization
+## Known gaps
 
-**Primary language**: Catalan (ca)  
-**Supported languages**: Spanish (es), English (en)
+- ⚠️ **No automated tests** in either app. Track via [architectural-debt-assessment](backend/docs/architectural-debt-assessment.md).
+- ⚠️ **No authorization framework** yet (auth works, authz is open).
+- On Windows: Git may warn about LF/CRLF — harmless, ignore.
 
-- All database lifecycle/status names are in Catalan
-- Backend uses `ILocalizationService` for error messages
-- Frontend UI is in Catalan
-- Culture detection priority: query param → JWT claim → Accept-Language → default (ca)
+## Contributing
 
-## 📊 Database
+1. Branch from `dev`: `git checkout -b feature/my-feature`.
+2. Touch only `backend/` or `frontend/` — CI runs the affected pipeline.
+3. Use conventional commits.
+4. Open PR → review → merge to `dev` → promote to `main`.
 
-**PostgreSQL 16** with Entity Framework Core migrations
+## License
 
-**Key conventions:**
-
-- **UUID primary keys** (client-generated via `Guid.NewGuid()` / `getNewUuid()`)
-- **Soft deletes** via `Disabled` field (never physical deletion)
-- **Audit timestamps**: `CreatedOn`, `UpdatedOn` (auto-managed)
-
-**Migrations:**
-
-```bash
-cd backend
-
-# Create migration
-dotnet ef migrations add MigrationName --project src/Infrastructure/
-
-# Apply migrations
-dotnet ef database update --project src/Infrastructure/
-
-# Rollback migration
-dotnet ef database update PreviousMigrationName --project src/Infrastructure/
-```
-
-## 🧪 Testing
-
-⚠️ **Critical architectural debt**: No automated tests are currently configured for either backend or frontend.
-
-**Planned testing stack:**
-
-- Backend: xUnit + FluentAssertions
-- Frontend: Vitest + Vue Test Utils
-
-## 🔄 CI/CD
-
-GitHub Actions workflows with path-based triggers:
-
-- **`.github/workflows/backend-ci.yml`** - Triggers on `backend/**` changes
-- **`.github/workflows/frontend-ci.yml`** - Triggers on `frontend/**` changes
-
-**Workflows:**
-
-1. Build and test (on push/PR)
-2. Deploy to production (on push to `main`/`master`)
-3. Docker image build and push
-
-## 🛠️ Development
-
-### Code Style
-
-**Backend (C#):**
-
-- Primary constructors for DI
-- Always async/await for I/O
-- Always inject ILocalizationService
-- Use StatusConstants (never hardcode status strings)
-- Always return GenericResponse for write operations
-- Nullable reference types enabled
-
-**Frontend (TypeScript):**
-
-- Always use Composition API with `<script setup>`
-- PascalCase for component files
-- Always use `@/` path alias
-- Lazy-load routes
-- Normalize dates before API calls with `convertDateTimeToJSON()`
-- All UI text in Catalan
-
-### VS Code Workspace
-
-Open the workspace file for optimal multi-root setup:
-
-```bash
-code lilith.code-workspace
-```
-
-This provides:
-
-- Separate settings for backend and frontend
-- Proper TypeScript/C# tooling
-- Recommended extensions
-
-## 📚 Documentation
-
-- **`AGENTS.md`** - Guidelines for AI coding agents
-- **`backend/docs/`** - Backend architecture deep-dives
-  - `architecture-layers.md`
-  - `architectural-patterns.md`
-  - `domain-model.md`
-  - `developer-guide.md`
-  - `localization.md`
-  - `request-flow.md`
-- **`frontend/AGENTS.md`** - Frontend development guide
-- **`.opencode/skills/`** - Task-specific OpenCode skills
-
-## 🐛 Known Issues
-
-1. **No automated tests**: Critical debt - test infrastructure needs implementation
-
-2. **Line endings**: Git may warn about LF/CRLF conversions on Windows
-
-## 🤝 Contributing
-
-This is a monorepo managed with standard Git workflows:
-
-1. Create feature branch: `git checkout -b feature/my-feature`
-2. Make changes in `backend/` or `frontend/`
-3. Commit with conventional commits format: `feat:`, `fix:`, `chore:`, etc.
-4. Push and create pull request
-5. CI/CD will automatically test/build affected parts
-
-## 📄 License
-
-[Your license here]
-
-## 🔗 Links
-
-- **Backend API Docs**: https://localhost:5001/swagger
-- **Frontend Dev Server**: http://localhost:8100
-- **Production**: [Your production URL]
+Internal project — all rights reserved.
