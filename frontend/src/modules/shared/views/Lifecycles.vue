@@ -37,7 +37,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -79,7 +79,7 @@ const getInitialStatusName = (lifecycle: Lifecycle) =>
   getStatusNameById(lifecycle, lifecycle.initialStatusId);
 
 const createButtonClick = () => {
-  router.push({ path: `/${resource}/${uuidv4()}` });
+  router.push({ path: `/${resource}/${getNewUuid()}` });
 };
 
 const edit = (row: DataTableRowClickEvent) => {

@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
@@ -158,7 +158,7 @@ const getWorkcenterTypeNameById = (id: string) => {
 
 // Actions
 const createButtonClick = () => {
-  router.push({ path: `/workcenter/${uuidv4()}` });
+  router.push({ path: `/workcenter/${getNewUuid()}` });
 };
 const editRow = (row: DataTableRowClickEvent) => {
   if (

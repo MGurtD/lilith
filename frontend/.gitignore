@@ -27,3 +27,7 @@ package-lock.json
 .env*
 !.env.example
 docker-compose.yml
+
+# Test artifacts (Playwright smoke tests)
+smoke*.png
+smoke*.json

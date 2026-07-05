@@ -36,7 +36,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -61,7 +61,7 @@ onMounted(async () => {
   });
 });
 const createButtonClick = () => {
-  router.push({ path: `/purchaseinvoiceserie/${uuidv4()}` });
+  router.push({ path: `/purchaseinvoiceserie/${getNewUuid()}` });
 };
 
 const editPurchaseInvoiceSerie = (row: DataTableRowClickEvent) => {

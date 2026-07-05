@@ -6,7 +6,7 @@ import { useApiKeysStore } from "@/store/apiKeys";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../utils/functions";
 import FormApiKey from "@/components/forms/FormApiKey.vue";
 import type { CreateApiKeyResponse } from "@/types";
 
@@ -33,7 +33,7 @@ const showKeyDialog = ref(false);
 const copied = ref(false);
 
 const openCreateDialog = () => {
-  newKeyId.value = uuidv4();
+  newKeyId.value = getNewUuid();
   formInitialData.value = { id: newKeyId.value, name: "" };
   showCreateDialog.value = true;
 };

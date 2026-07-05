@@ -66,7 +66,6 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
 import BaseInput from "../../../components/BaseInput.vue";
 import TableFilter, {
   type FilterBodyWidth,
@@ -129,7 +128,7 @@ const refreshData = async () => {
   inventoryStore.inventories = [];
   stockStore.stocks?.forEach((stock) => {
     let invent = {
-      id: uuidv4(),
+      id: getNewUuid(),
       stockId: stock.id,
       movementType: "bal",
       locationId: stock.locationId,

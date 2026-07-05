@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { AuthenticationResponse, User } from "../types";
 import { MenuItem, SidebarConfig } from "../types/component";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { UserService } from "../services/user.service";
 import { PrimeIcons } from "@primevue/core/api";
 import { getMenusByRole } from "./raw.menus"; // fallback
@@ -204,7 +204,18 @@ export const useStore = defineStore("applicationStore", {
       this.authorization = response;
       localStorage.setItem(localStorageAuthKey, JSON.stringify(response));
 
-      const jwtDecoded = jwtDecode(this.authorization.token) as JwtDecoded;
+      // jwt-decode v4 throws InvalidTokenError on malformed tokens (v3 returned null)
+      let jwtDecoded: JwtDecoded;
+      try {
+        jwtDecoded = jwtDecode<JwtDecoded>(this.authorization.token);
+      } catch {
+        // Malformed token — clear auth and let the router redirect to /login
+        this.authorization = undefined;
+        this.role = "";
+        this.user = undefined;
+        localStorage.removeItem(localStorageAuthKey);
+        return;
+      }
       // Decode role from JWT
       this.role = jwtDecoded.role;
       // Apply locale from JWT if present

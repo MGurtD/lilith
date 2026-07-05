@@ -135,10 +135,9 @@ import { useReferenceStore } from "../../shared/store/reference";
 import { useTaxesStore } from "../../shared/store/tax";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { Reference, ReferenceCategoryEnum } from "../../shared/types";
-import { getNewUuid } from "../../../utils/functions";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
-import { formatCurrency } from "../../../utils/functions";
+import { formatCurrency, getNewUuid } from "../../../utils/functions";
 
 const route = useRoute();
 const router = useRouter();

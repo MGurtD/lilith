@@ -129,18 +129,13 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import {
-  formatDate,
-  formatDateForQueryParameter,
-  formatCurrency,
-} from "../../../utils/functions";
+import { formatDate, formatDateForQueryParameter, formatCurrency, getNewUuid } from "../../../utils/functions";
 import { Expense } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -271,7 +266,7 @@ const clearFilter = async () => {
 };
 
 const createButtonClick = () => {
-  router.push({ path: `/expense/${uuidv4()}` });
+  router.push({ path: `/expense/${getNewUuid()}` });
 };
 
 const editExpense = (row: DataTableRowClickEvent) => {
