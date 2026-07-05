@@ -42,14 +42,14 @@
   "devDependencies": {
     "@types/lodash": "^4.17.24",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^24.9.2",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@types/node": "^26.1.0",
+    "@vitejs/plugin-vue": "^6.0.7",
     "prettier": "^3.9.4",
     "sass": "^1.101.0",
     "typescript": "^5.5.4",
-    "vite": "^6.3.0",
+    "vite": "^8.1.3",
     "vite-plugin-pwa": "^1.2.0",
-    "vue-tsc": "^2.2.10",
+    "vue-tsc": "^3.3.6",
     "workbox-window": "^7.4.0"
   }
 }
