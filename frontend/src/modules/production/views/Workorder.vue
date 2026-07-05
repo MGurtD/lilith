@@ -308,7 +308,15 @@ const editWorkOrderPhase = (phase: WorkOrderPhase) => {
   router.push({ path: `/workorder/${id.value}/phase/${phase.id}` });
 };
 const deleteWorkOrderPhase = async (phase: WorkOrderPhase) => {
-  await workorderStore.deletePhase(phase.id);
+  const result = await workorderStore.deletePhase(phase.id);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Fase eliminada",
+      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      life: 5000,
+    });
+  }
 };
 
 const productionPartRequest = ref({} as ProductionPart);

@@ -192,7 +192,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, phase: WorkMasterPhase) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la fase?`,
+    message: `Està segur que vol eliminar la fase ${phase.code} - ${phase.description}?`,
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
