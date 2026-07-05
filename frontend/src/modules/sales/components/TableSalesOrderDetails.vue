@@ -27,8 +27,11 @@
     <Column field="description" header="Descripció" style="width: 25%" />
     <Column field="workOrderId" header="Ordre fabr." style="width: 8%">
       <template #body="slotProps">
+        <div v-if="!isWorkOrdersLoaded">
+          <Button size="small" icon="pi pi-spin pi-spinner" disabled />
+        </div>
         <div
-          v-if="workOrderStore.getWorkOrderCodeById(slotProps.data.workOrderId)"
+          v-else-if="workOrderStore.getWorkOrderCodeById(slotProps.data.workOrderId)"
         >
           <Button
             size="small"
@@ -42,7 +45,8 @@
         </div>
         <div v-else>
           <Button
-            :disabled="salesOrder.deliveryNoteId !== null"
+            :disabled="isOpeningWorkOrderDialog || salesOrder.deliveryNoteId !== null"
+            :loading="isOpeningWorkOrderDialog"
             size="small"
             :icon="PrimeIcons.PLUS_CIRCLE"
             value="Generar OF"
@@ -125,7 +129,7 @@
 </template>
 <script setup lang="ts">
 import LinkReference from "../../shared/components/LinkReference.vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import FormCreateWorkorder from "../../production/components/FormCreateWorkorder.vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -144,7 +148,6 @@ import { useConfirm } from "primevue/useconfirm";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useWorkOrderStore } from "../../production/store/workorder";
 import {
-  convertDDMMYYYYToDate,
   formatCurrency,
 } from "../../../utils/functions";
 import { Lifecycle } from "../../shared/types";
@@ -167,6 +170,8 @@ const confirm = useConfirm();
 const workMasterStore = useWorkMasterStore();
 const workOrderStore = useWorkOrderStore();
 
+const isOpeningWorkOrderDialog = ref(false);
+
 const totalAmount = computed(() => {
   if (props.salesOrderDetails) {
     return props.salesOrderDetails.reduce(
@@ -177,9 +182,14 @@ const totalAmount = computed(() => {
   return 0;
 });
 
-onMounted(async () => {
-  workOrderStore.fetchBySalesOrder(props.salesOrder.id);
-});
+// Distinguishes "workorders not fetched yet" from "no matching workorder for
+// this detail" — without this, both states render the same "Generar OF"
+// button, allowing a duplicate work order to be created before the parent's
+// fetch resolves.
+const isWorkOrdersLoaded = computed(() => props.workorders !== undefined);
+
+// workOrderStore.fetchBySalesOrder is triggered by the parent SalesOrder.vue (fire-and-forget,
+// not awaited there either); this table relies on Pinia reactivity to pick up the result, not on ordering.
 
 var selectedDetail = undefined as SalesOrderDetail | undefined;
 const dialogOptions = ref({
@@ -228,25 +238,28 @@ const getUnitRealCost = (detail: SalesOrderDetail) => {
   return cost / detail.quantity;
 };
 
-const onWorkOrderCreateClick = (salesOrderDetail: SalesOrderDetail) => {
-  // Get workmasters of the selected reference
-  referenceActiveWorkMasters.value = workMasterStore.getByReferenceId(
-    salesOrderDetail.referenceId
-  );
-  // Clear form data
-  createWorkOrderDto.value.workMasterId = salesOrderDetail.workMasterId || "";
-  if (createWorkOrderDto.value.workMasterId === "") {
-    createWorkOrderDto.value.workMasterId =
-      referenceActiveWorkMasters.value[0].id;
-  }
-  createWorkOrderDto.value.plannedQuantity = salesOrderDetail.quantity;
-  createWorkOrderDto.value.plannedDate = props.salesOrder.expectedDate
-    ? convertDDMMYYYYToDate(props.salesOrder.expectedDate)
-    : "";
-  createWorkOrderDto.value.comment = "";
-  selectedDetail = salesOrderDetail;
+const onWorkOrderCreateClick = async (salesOrderDetail: SalesOrderDetail) => {
+  isOpeningWorkOrderDialog.value = true;
+  try {
+    // Fetch only active workmasters for this reference (stateless, no Pinia cache)
+    referenceActiveWorkMasters.value = await workMasterStore.fetchActiveWorkmastersByReference(salesOrderDetail.referenceId);
+    // Set workMasterId: prefer the one already saved on the detail, then first active,
+    // or leave empty so FormCreateWorkorder's Yup validation blocks submit with a toast.
+    createWorkOrderDto.value.workMasterId = salesOrderDetail.workMasterId || "";
+    if (createWorkOrderDto.value.workMasterId === "" && referenceActiveWorkMasters.value.length > 0) {
+      createWorkOrderDto.value.workMasterId = referenceActiveWorkMasters.value[0].id;
+    }
+    createWorkOrderDto.value.plannedQuantity = salesOrderDetail.quantity;
+    createWorkOrderDto.value.plannedDate = props.salesOrder.expectedDate
+      ? new Date(props.salesOrder.expectedDate)
+      : "";
+    createWorkOrderDto.value.comment = "";
+    selectedDetail = salesOrderDetail;
 
-  dialogOptions.value.visible = true;
+    dialogOptions.value.visible = true;
+  } finally {
+    isOpeningWorkOrderDialog.value = false;
+  }
 };
 
 type StatusColor =

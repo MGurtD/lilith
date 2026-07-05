@@ -31,7 +31,9 @@
                 label="Ruta de fabricació"
                 v-model="detail.workMasterId"
                 :referenceId="detail.referenceId"
+                :activeByReference="true"
                 @update:modelValue="getWorkmasterCost(false)"
+                @optionsLoaded="onWorkmasterOptionsLoaded"
               ></DropdownWorkmasters>
             </div>
           </section>
@@ -256,6 +258,7 @@ import { ProductionCosts } from "../../production/types";
 import _ from "lodash";
 import DropdownWorkmasters from "../../production/components/DropdownWorkmasters.vue";
 import TableWorkmasterProfit from "./TableWorkmasterProfit.vue";
+import type { WorkmastersOptionsLoadedPayload } from "../../production/types";
 
 const workmasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
@@ -316,6 +319,43 @@ onMounted(async () => {
 
 const referencePrice = ref(0);
 
+/**
+ * Set to true only when the user intentionally changes the reference via
+ * DropdownReference. Cleared as soon as DropdownWorkmasters reports its
+ * fresh options, so rapid changes never apply a stale result.
+ */
+const shouldAutoSelectWorkmasterAfterReferenceChange = ref(false);
+
+const onWorkmasterOptionsLoaded = async (
+  payload: WorkmastersOptionsLoadedPayload,
+) => {
+  // Only react when an intentional user reference-change armed the flag.
+  if (!shouldAutoSelectWorkmasterAfterReferenceChange.value) return;
+
+  // Discard events that belong to a previous (stale) reference fetch.
+  if (payload.referenceId !== detail.value.referenceId) return;
+
+  shouldAutoSelectWorkmasterAfterReferenceChange.value = false;
+
+  // Only auto-select when the choice is unambiguous (exactly one active
+  // workmaster). With 2+ active options, picking one silently would be a
+  // pricing decision (production/material/service costs differ per route),
+  // not just a UX default — require the user to choose explicitly.
+  //
+  // getWorkmasterCost(false) is called unconditionally below: with a single
+  // option it fetches and applies that workmaster's costs; with 0 or 2+
+  // options workMasterId is null, so its own else-branch resets
+  // transportCost/serviceCost/productionCost/materialCost/totalCost to 0 —
+  // otherwise those fields would keep stale values from the previous
+  // reference/workmaster and could be saved as-is.
+  if (payload.options.length === 1) {
+    detail.value.workMasterId = payload.options[0].id;
+  } else {
+    detail.value.workMasterId = null;
+  }
+  await getWorkmasterCost(false);
+};
+
 const getReferenceInfo = () => {
   const reference = referenceStore.references!.find(
     (r) => r.id === detail.value.referenceId,
@@ -336,6 +376,10 @@ const getReferenceInfo = () => {
     detail.value.totalCost = 0;
     detail.value.amount = 0;
   }
+  // Signal that the next optionsLoaded event should auto-select the first workmaster.
+  // This flag is set AFTER the user intentionally picks a new reference.
+  // It is NOT set during onMounted or when loading an existing detail.
+  shouldAutoSelectWorkmasterAfterReferenceChange.value = true;
 };
 
 const workmasterCosts = ref<ProductionCosts>({
