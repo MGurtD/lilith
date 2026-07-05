@@ -110,7 +110,15 @@ const editWorkMasterPhase = (phase: WorkMasterPhase) => {
   router.push({ path: `/workmaster/${id.value}/phase/${phase.id}` });
 };
 const deleteWorkMasterPhase = async (phase: WorkMasterPhase) => {
-  await workmasterStore.deletePhase(phase.id);
+  const result = await workmasterStore.deletePhase(phase.id);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: "Fase eliminada",
+      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      life: 5000,
+    });
+  }
 };
 </script>
 <style scoped>
