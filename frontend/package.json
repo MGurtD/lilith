@@ -12,7 +12,9 @@
     "build:versioned": "VITE_APP_VERSION=%npm_package_version% pnpm run build",
     "build-development": "pnpm run typecheck && vite build --mode development --outDir dist-test",
     "build-preprod": "pnpm run typecheck && vite build --mode preprod --outDir dist-preprod",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:e2e": "node scripts/smoke-e2e.mjs"
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
@@ -44,6 +46,7 @@
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^26.1.0",
     "@vitejs/plugin-vue": "^6.0.7",
+    "playwright": "^1.61.1",
     "prettier": "^3.9.4",
     "sass": "^1.101.0",
     "typescript": "^5.5.4",
