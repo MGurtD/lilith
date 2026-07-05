@@ -36,7 +36,8 @@ export class FileService {
     );
     if (response.status === 200) {
       const contentType =
-        response.headers["content-type"] || "application/octet-stream";
+        (response.headers["content-type"] as string) ||
+        "application/octet-stream";
       return {
         blob: response.data,
         contentType: contentType,

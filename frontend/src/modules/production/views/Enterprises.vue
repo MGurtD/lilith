@@ -43,7 +43,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
@@ -71,7 +71,7 @@ onMounted(async () => {
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/enterprise/${uuidv4()}` });
+  router.push({ path: `/enterprise/${getNewUuid()}` });
 };
 
 const editEnterprise = (row: DataTableRowClickEvent) => {

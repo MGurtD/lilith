@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { v4 as uuidv4 } from "uuid";
 
 Date.prototype.toJSON = function () {
   const hoursDiff = this.getHours() - this.getTimezoneOffset() / 60;
@@ -177,8 +176,8 @@ export const createBlobAndDownloadFile = (
   setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
-export const getNewUuid = () => {
-  return uuidv4();
+export const getNewUuid = (): string => {
+  return crypto.randomUUID();
 };
 
 export const extractTime = (isoString: string | null): string => {

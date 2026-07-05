@@ -100,11 +100,10 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import { useSuppliersStore } from "../store/suppliers";
 import FormSupplierReference from "./FormSupplierReference.vue";
 import { SupplierReference } from "../types";
-import { formatCurrency } from "../../../utils/functions";
+import { formatCurrency, getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -137,7 +136,7 @@ const dialogVisible = ref(false);
 
 const createButtonClick = () => {
   selectedReference.value = {
-    id: uuidv4(),
+    id: getNewUuid(),
     disabled: false,
     supplierId: props.supplierId ? props.supplierId : "",
     referenceId: props.referenceId ? props.referenceId : "",

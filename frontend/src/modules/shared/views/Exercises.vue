@@ -39,7 +39,6 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -47,7 +46,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { storeToRefs } from "pinia";
 import { useStore } from "../../../store";
 import { useExerciseStore } from "../store/exercise";
-import { formatDate } from "../../../utils/functions";
+import { formatDate, getNewUuid } from "../../../utils/functions";
 
 const router = useRouter();
 const store = useStore();
@@ -64,7 +63,7 @@ onMounted(async () => {
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/exercise/${uuidv4()}` });
+  router.push({ path: `/exercise/${getNewUuid()}` });
 };
 
 const editExercise = (row: DataTableRowClickEvent) => {

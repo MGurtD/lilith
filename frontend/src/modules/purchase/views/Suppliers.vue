@@ -85,7 +85,7 @@
   </Tabs>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -122,9 +122,9 @@ const getSupplierTypeName = (id: string) => {
 
 const createButtonClick = () => {
   if (selectedTabIndex.value === "0") {
-    router.push({ path: `/suppliers/${uuidv4()}` });
+    router.push({ path: `/suppliers/${getNewUuid()}` });
   } else {
-    router.push({ path: `/supplier-types/${uuidv4()}` });
+    router.push({ path: `/supplier-types/${getNewUuid()}` });
   }
 };
 

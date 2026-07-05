@@ -51,7 +51,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { useSuppliersStore } from "../store/suppliers";
 import SupplierContactForm from "./FormSupplierContact.vue";
 import { SupplierContact } from "../types";
@@ -82,7 +82,7 @@ const selectedContact = ref(undefined as SupplierContact | undefined);
 const createButtonClick = () => {
   selectedContact.value = {
     supplierId: supplier.value?.id,
-    id: uuidv4(),
+    id: getNewUuid(),
     firstName: "",
     lastName: "",
     email: "",

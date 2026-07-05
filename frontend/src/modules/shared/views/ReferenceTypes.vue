@@ -51,7 +51,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { onMounted } from "vue";
@@ -78,7 +78,7 @@ onMounted(async () => {
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/referencetype/${uuidv4()}` });
+  router.push({ path: `/referencetype/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
