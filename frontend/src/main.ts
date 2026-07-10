@@ -11,10 +11,12 @@ import "primeicons/primeicons.css";
 import "primeflex/primeflex.css";
 
 // PrimeVue v4 theme configuration
-import { definePreset } from "@primeuix/themes";
 import Lara from "@primeuix/themes/lara";
 
 import PrimeVue from "primevue/config";
+import { useBrandingStore } from "@/store/branding";
+import { applyBrandingPreset } from "@/config/branding-presets";
+import { getActiveEnterpriseId } from "@/composables/useActiveEnterprise";
 import Tooltip from "primevue/tooltip";
 import ToastService from "primevue/toastservice";
 import Toast from "primevue/toast";
@@ -63,29 +65,11 @@ import TabPanel from "primevue/tabpanel";
 import ProgressBar from "primevue/progressbar";
 import { globalToast } from "@/utils/global-toast";
 
-// Lara Blue preset (matches lara-light-blue from v3)
-const LaraBlue = definePreset(Lara, {
-  semantic: {
-    primary: {
-      50: "{blue.50}",
-      100: "{blue.100}",
-      200: "{blue.200}",
-      300: "{blue.300}",
-      400: "{blue.400}",
-      500: "{blue.500}",
-      600: "{blue.600}",
-      700: "{blue.700}",
-      800: "{blue.800}",
-      900: "{blue.900}",
-      950: "{blue.950}",
-    },
-  },
-});
-
+// Base preset as fallback — will be overridden by branding at boot
 app.use(PrimeVue, {
   locale: catalan,
   theme: {
-    preset: LaraBlue,
+    preset: Lara,
     options: {
       darkModeSelector: false,
       cssLayer: false,
@@ -143,3 +127,23 @@ app
   .component("ProgressBar", ProgressBar);
 
 app.mount("#app");
+
+// Load branding before mount is impossible (Pinia is needed), so we mount
+// with the base Lara preset and then apply the dynamic preset as soon as
+// branding data is resolved. This avoids a hard flash because PrimeVue v4
+// re-applies theme tokens when `theme:change` is emitted (the
+// `applyBrandingPreset` helper triggers that via `usePreset` /
+// `updatePrimaryPalette`).
+(async () => {
+  try {
+    const enterpriseId = await getActiveEnterpriseId();
+    if (enterpriseId) {
+      const brandingStore = useBrandingStore();
+      await brandingStore.load(enterpriseId);
+      applyBrandingPreset(brandingStore.branding);
+    }
+  } catch (err) {
+    // Branding is non-critical — fall back to Lara + "Lilith" defaults.
+    console.warn("[Branding] No s'ha pogut carregar el branding:", err);
+  }
+})();
