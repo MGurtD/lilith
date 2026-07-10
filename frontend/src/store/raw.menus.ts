@@ -37,6 +37,11 @@ export const applicationMenus = [
         title: "Cicles de vida",
         href: "/lifecycle",
       },
+      {
+        icon: PrimeIcons.PALETTE,
+        title: "Branding",
+        href: "/branding",
+      },
     ],
   },
   {

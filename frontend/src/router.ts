@@ -18,6 +18,7 @@ const MenuItem = () => import("./views/MenuItem.vue");
 const Profiles = () => import("./views/Profiles.vue");
 const Profile = () => import("./views/Profile.vue");
 const ApiKeys = () => import("./views/ApiKeys.vue");
+const BrandingSettings = () => import("./views/BrandingSettings.vue");
 
 const router = createRouter({
   history: createWebHistory(),
@@ -34,6 +35,12 @@ const router = createRouter({
     { path: "/profiles", name: "Profiles", component: Profiles, meta: { roles: ["Admin"] } },
     { path: "/profile/:id", name: "Profile", component: Profile, meta: { roles: ["Admin"] } },
     { path: "/apikeys", name: "ApiKeys", component: ApiKeys },
+    {
+      path: "/branding",
+      name: "BrandingSettings",
+      component: BrandingSettings,
+      meta: { roles: ["Admin"] },
+    },
     ...SharedRoutes,
     ...SalesRoutes,
     ...PurchaseRoutes,
