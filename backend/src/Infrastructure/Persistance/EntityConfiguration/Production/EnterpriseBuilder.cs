@@ -14,12 +14,39 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                 .Property(b => b.Name)
                 .IsRequired()
                 .HasColumnType("varchar")
-                .HasMaxLength(10);
+                .HasMaxLength(60);
             builder
                 .Property(b => b.Description)
                 .IsRequired()
                 .HasColumnType("varchar")
                 .HasMaxLength(250);
+
+            // Branding (optional)
+            builder
+                .Property(b => b.Theme)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(50);
+            builder
+                .Property(b => b.PrimaryColor)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(9);
+            builder
+                .Property(b => b.LogoMain)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(500);
+            builder
+                .Property(b => b.LogoSidebar)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(500);
+            builder
+                .Property(b => b.TitleSidebar)
+                .IsRequired(false)
+                .HasColumnType("varchar")
+                .HasMaxLength(60);
 
             // Default site (optional)
             builder
