@@ -9,17 +9,23 @@
     <template #header>
       <div class="brand" @click="() => router.push({ path: '/' })">
         <img
-          v-if="branding.logoPath"
-          :src="branding.logoPath"
-          :alt="branding.logoAlt || companyName"
+          v-if="brandingStore.hasLogoSidebar"
+          :src="brandingStore.branding.logoSidebar ?? ''"
+          :alt="brandingStore.companyName"
           class="brand-logo"
           draggable="false"
         />
         <span
           v-if="!store.sidebar.collapsed"
           class="brand-name"
-          :title="companyName"
-          >{{ companyName }}</span
+          :title="brandingStore.companyName"
+          >{{ brandingStore.companyName }}</span
+        >
+        <span
+          v-else
+          class="brand-name brand-name--short"
+          :title="brandingStore.companyName"
+          >{{ brandingStore.companyShortName }}</span
         >
       </div>
     </template>
@@ -49,20 +55,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { SidebarMenu } from "vue-sidebar-menu";
 import "vue-sidebar-menu/dist/vue-sidebar-menu.css";
 import { useStore } from "../store";
-import { branding, getCompanyName } from "../config/branding";
+import { useBrandingStore } from "@/store/branding";
 import { useRouter } from "vue-router";
 import FormSupportRequest from "../modules/shared/components/FormSupportRequest.vue";
 
 const router = useRouter();
 const store = useStore();
+const brandingStore = useBrandingStore();
 const showSupportDialog = ref(false);
-
-// Derive dynamic company name depending on collapsed state
-const companyName = computed(() => getCompanyName(store.sidebar.collapsed));
 
 function toggleCollapse() {
   store.sidebar.collapsed = !store.sidebar.collapsed;
@@ -113,6 +117,10 @@ function toggleCollapse() {
 
 .brand-name {
   line-height: 1;
+}
+
+.brand-name--short {
+  font-size: 1.6rem;
 }
 
 .sidebar-footer {

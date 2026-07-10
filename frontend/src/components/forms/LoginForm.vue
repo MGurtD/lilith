@@ -6,7 +6,9 @@ import InputGroup from "primevue/inputgroup";
 import InputGroupAddon from "primevue/inputgroupaddon";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
+import { useBrandingStore } from "@/store/branding";
 
+const brandingStore = useBrandingStore();
 const emits = defineEmits(["login", "registerClick"]);
 
 const userLogin = ref({
@@ -39,8 +41,12 @@ const registerClick = () => {
 <template>
   <div class="login-card surface-card p-6 shadow-8 border-round-xl w-full">
     <div class="text-center mb-6">
-      <div class="logo-container mb-4">
-        <img src="../../assets/images/logo.jpg" alt="Logo" class="logo-image" />
+      <div v-if="brandingStore.hasLogoMain" class="logo-container mb-4">
+        <img
+          :src="brandingStore.branding.logoMain ?? ''"
+          :alt="brandingStore.companyName"
+          class="logo-image"
+        />
       </div>
       <h1 class="text-3xl font-bold text-900 mb-2">
         {{ $t("login.welcome") || "Benvingut" }}

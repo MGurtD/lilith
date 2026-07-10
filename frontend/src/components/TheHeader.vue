@@ -1,5 +1,12 @@
 <template>
   <div class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
+    <img
+      v-if="brandingStore.hasLogoMain"
+      :src="brandingStore.branding.logoMain ?? ''"
+      :alt="brandingStore.companyName"
+      class="title-bar__brand-logo"
+      draggable="false"
+    />
     <div class="title-bar__page">
       <i
         v-if="store.currentMenuItem.backButtonVisible"
@@ -120,11 +127,13 @@ import { useRouter } from "vue-router";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
+import { useBrandingStore } from "@/store/branding";
 
 const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 const plantOperatorStore = usePlantOperatorStore();
 
 const store = useStore();
+const brandingStore = useBrandingStore();
 const op = ref();
 const showOverlayPanel = (event: Event) => {
   op.value.toggle(event);
@@ -187,6 +196,17 @@ const goBack = () => router.back();
 
 .title-bar__back:hover {
   color: #fff;
+}
+
+.title-bar__brand-logo {
+  height: 32px;
+  max-height: 32px;
+  width: auto;
+  max-width: 180px;
+  object-fit: contain;
+  margin-left: 1rem;
+  align-self: center;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 .title-bar__user {
