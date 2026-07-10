@@ -43,6 +43,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IPurchaseOrderReportService, PurchaseOrderReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
         services.AddScoped<IEnterpriseService, EnterpriseService>();
+        services.AddScoped<IBrandingService, BrandingService>();
         services.AddScoped<IWorkOrderService, WorkOrderService>();
         services.AddScoped<IWorkOrderReportService, WorkOrderReportService>();
         services.AddScoped<IMetricsService, MetricsService>();
