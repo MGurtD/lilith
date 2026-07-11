@@ -13,6 +13,7 @@ const PurchaseInvoicesByDates = () =>
   import("./views/PurchaseInvoicesByDates.vue");
 const PurchaseInvoices = () => import("./views/PurchaseInvoices.vue");
 const PurchaseInvoice = () => import("./views/PurchaseInvoice.vue");
+const ImportPurchaseInvoice = () => import("./views/ImportPurchaseInvoice.vue");
 
 const ExpenseType = () => import("./views/ExpenseType.vue");
 const ExpenseTypes = () => import("./views/ExpenseTypes.vue");
@@ -116,6 +117,12 @@ export default [
     component: PurchaseInvoices,
     props: true,
     meta: { helpKey: "purchase/purchaseinvoice/list" },
+  },
+  {
+    path: "/purchaseinvoice/import",
+    name: "PurchaseInvoiceImport",
+    component: ImportPurchaseInvoice,
+    meta: { helpKey: "purchase/purchaseinvoice/import" },
   },
   {
     path: "/purchaseinvoices-by-period",

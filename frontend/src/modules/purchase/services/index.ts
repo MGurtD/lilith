@@ -4,12 +4,14 @@ import {
   PurchaseInvoiceSerieService,
   PurchaseInvoiceService,
 } from "./invoice.service";
+import { PurchaseInvoiceIngestionService } from "./invoice-ingestion.service";
 import { ReceiptService } from "./receipt.service";
 import { SupplierService } from "./suppliers.service";
 
 export default {
   PurchaseInvoice: new PurchaseInvoiceService("/PurchaseInvoice"),
   PurchaseInvoiceSerie: new PurchaseInvoiceSerieService("/InvoiceSerie"),
+  PurchaseInvoiceIngestion: new PurchaseInvoiceIngestionService(),
   Supplier: new SupplierService("/Supplier"),
   SupplierType: new SupplierService("/SupplierType"),
   Expense: new ExpenseService("Expense"),

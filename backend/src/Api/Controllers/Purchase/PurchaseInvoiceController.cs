@@ -1,4 +1,6 @@
 ﻿using Application.Contracts;
+using Application.Contracts.Ingestion;
+using Application.Ingestion;
 using Domain.Entities.Purchase;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -7,7 +9,12 @@ namespace Api.Controllers.Purchase
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PurchaseInvoiceController(IPaymentMethodService paymentMethodService, IPurchaseInvoiceService service, IDueDateService dueDateService, ILocalizationService localizationService) : ControllerBase
+    public class PurchaseInvoiceController(
+        IPaymentMethodService paymentMethodService,
+        IPurchaseInvoiceService service,
+        IDueDateService dueDateService,
+        ILocalizationService localizationService,
+        IInvoiceIngestionService ingestionService) : ControllerBase
     {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -120,6 +127,71 @@ namespace Api.Controllers.Purchase
 
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);
+        }
+
+        // POST /api/PurchaseInvoice/Ingest
+        // Ingests a supplier invoice PDF via LlamaParse and returns a pre-fill draft.
+        // Operator-facing env-vars (no appsettings entry exists):
+        //   Ingestion__ApiKey, Ingestion__ProjectId (required for v2/extract),
+        //   Ingestion__BaseUrl (default https://api.cloud.llamaindex.ai),
+        //   Ingestion__Tier (default agentic), Ingestion__Version (default 2026-03-31),
+        //   Ingestion__ConfidenceScores (default true),
+        //   Ingestion__TimeoutSeconds (default 90, leaves a 5s buffer for non-polling work).
+        [HttpPost("Ingest")]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB per spec §valid PDF
+        [ProducesResponseType(typeof(IngestPurchaseInvoiceResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status422UnprocessableEntity)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> Ingest(
+            [FromForm(Name = "pdfFile")] IFormFileCollection pdfFiles,
+            CancellationToken ct)
+        {
+            var pdfFile = pdfFiles.FirstOrDefault();
+            if (pdfFile is null || pdfFile.Length == 0
+                || !string.Equals(pdfFile.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new GenericResponse(
+                    false,
+                    localizationService.GetLocalizedString("InvalidFileType")));
+            }
+
+            await using var stream = pdfFile.OpenReadStream();
+            try
+            {
+                var result = await ingestionService.IngestAsync(stream, pdfFile.FileName, ct);
+                return Ok(result);
+            }
+            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.ProviderNotConfigured)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    new GenericResponse(false, ex.Message));
+            }
+            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.UnknownTaxRate)
+            {
+                return UnprocessableEntity(
+                    new GenericResponse(false, ex.Message, ex.OffendingRates));
+            }
+            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.SurchargeUnsupported)
+            {
+                return UnprocessableEntity(
+                    new GenericResponse(false, ex.Message));
+            }
+            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.ProviderConfigError)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    new GenericResponse(false, ex.Message));
+            }
+            catch (IngestionException ex)
+            {
+                return StatusCode(
+                    StatusCodes.Status502BadGateway,
+                    new GenericResponse(false, ex.Message));
+            }
         }
 
         #region Imports

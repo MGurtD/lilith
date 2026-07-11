@@ -1,11 +1,38 @@
 import { defineStore } from "pinia";
 import PurchaseService from "../services";
 import {
+  IngestPurchaseInvoiceResponse,
   PurchaseInvoice,
   PurchaseInvoiceImport,
   PurchaseInvoiceUpdateStatues,
   PurchaseInvoiceDueDate,
 } from "../types";
+import { getNewUuid } from "@/utils/functions";
+import { globalToast } from "@/utils/global-toast";
+import { useSuppliersStore } from "./suppliers";
+
+// Normalize a VatNumber for fuzzy equality when auto-resolving SupplierId:
+// - Uppercase
+// - Drop spaces and dashes
+// - Strip "ES" country prefix
+// - Strip leading "B" (NIF/CIF marker in supplier codes like "B09680521")
+// Returns an empty string for null/undefined/empty input.
+function normalizeVatNumber(input: string | null | undefined): string {
+  if (!input) return "";
+  return input
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .replace(/^ES/, "")
+    .replace(/^B/, "");
+}
+
+// Toast shown when the auto-resolver finds 2+ suppliers sharing a normalized
+// VatNumber. Operator must pick manually because Supplier.VatNumber is NOT
+// uniquely constrained in the DB (only ComercialName is — see
+// SupplierBuilder.cs:76-77). Catalan message per frontend AGENTS.md.
+const AMBIGUOUS_SUPPLIER_TOAST = (vatNumber: string): string =>
+  `S'han trobat múltiples proveïdors amb el mateix NIF/CIF (${vatNumber}). Selecciona'l manualment.`;
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -40,6 +67,67 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceDueDates: [],
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
+    },
+    // Prefills a draft PurchaseInvoice from an LlamaParse ingestion result.
+    // Seeds a fresh id, then mutates the header + populates purchaseInvoiceImports
+    // from payload.taxBreakdown (taxId is already resolved server-side).
+    // SupplierId is auto-resolved by normalized VatNumber match against the
+    // useSuppliersStore in-memory list. If no match, leaves supplierId empty
+    // so the operator can pick manually.
+    setFromIngestion(payload: IngestPurchaseInvoiceResponse) {
+      const id = getNewUuid();
+      this.setNewPurchaseInvoice(id);
+      if (!this.purchaseInvoice) return undefined;
+
+      this.purchaseInvoice.supplierNumber = payload.invoiceNumber ?? "--";
+      if (payload.issueDate) {
+        this.purchaseInvoice.purchaseInvoiceDate =
+          new Date(payload.issueDate) as any;
+      }
+      this.purchaseInvoice.transportAmount = payload.transportAmount ?? 0;
+      this.purchaseInvoice.extraTaxPercentatge =
+        payload.extraTaxPercentatge ?? 0;
+      this.purchaseInvoice.discountPercentage =
+        payload.discountPercentage ?? 0;
+
+      this.purchaseInvoice.purchaseInvoiceImports = (payload.taxBreakdown ?? []).map(
+        (row) =>
+          ({
+            id: getNewUuid(),
+            taxId: row.taxId,
+            baseAmount: row.baseAmount,
+            taxAmount: row.taxAmount,
+            netAmount: row.baseAmount + row.taxAmount,
+            purchaseInvoiceId: id,
+          } as PurchaseInvoiceImport),
+      );
+
+      // Auto-resolve SupplierId by normalized VatNumber match.
+      // NOTE: Supplier.VatNumber is NOT unique in the DB (only ComercialName
+      // is unique — see SupplierBuilder.cs:76-77), so multiple suppliers may
+      // match the same normalized VatNumber.
+      //   1 match  → set supplierId automatically.
+      //   2+ match → leave supplierId empty, warn operator via globalToast
+      //              so they pick manually (auto-picking is non-deterministic
+      //              because VatNumber is not unique).
+      //   0 match  → silent, supplierId stays empty; operator picks manually.
+      const normalized = normalizeVatNumber(payload.supplierVatNumber);
+      if (normalized) {
+        const supplierStore = useSuppliersStore();
+        const suppliers = supplierStore.suppliers ?? [];
+        const matches = suppliers.filter(
+          (s) => normalizeVatNumber(s.vatNumber) === normalized,
+        );
+        if (matches.length === 1) {
+          this.purchaseInvoice.supplierId = matches[0].id;
+        } else if (matches.length > 1) {
+          globalToast.warn(
+            AMBIGUOUS_SUPPLIER_TOAST(payload.supplierVatNumber ?? ""),
+          );
+        }
+      }
+
+      return this.purchaseInvoice;
     },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =

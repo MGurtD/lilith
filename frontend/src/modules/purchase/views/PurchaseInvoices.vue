@@ -97,6 +97,16 @@
             />
           </div>
         </template>
+        <template #append>
+          <Button
+            label="Importar factura (PDF)"
+            icon="pi pi-file-pdf"
+            class="p-button-sm"
+            severity="secondary"
+            outlined
+            @click="$router.push({ name: 'PurchaseInvoiceImport' })"
+          />
+        </template>
       </TableFilter>
     </template>
     <Column

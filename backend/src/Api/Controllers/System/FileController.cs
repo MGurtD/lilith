@@ -65,8 +65,16 @@ namespace Api.Controllers
 
         [Route("Upload")]
         [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file, [FromForm] string entity, [FromForm] string id)
+        public async Task<IActionResult> Upload(
+            [FromForm(Name = "file")] IFormFileCollection files,
+            [FromForm] string entity,
+            [FromForm] string id)
         {
+            var file = files.FirstOrDefault();
+            if (file is null)
+            {
+                return BadRequest(new[] { "No file uploaded" });
+            }
             var response = await fileService.UploadFile(file, entity, Guid.Parse(id));
             return response.Result ? Ok(response.Content) : BadRequest(response.Errors);
         }
