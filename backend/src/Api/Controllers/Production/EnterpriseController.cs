@@ -1,4 +1,6 @@
 ﻿using Application.Contracts;
+using Application.Contracts.Dtos;
+using Application.Contracts.Services.Production;
 using Domain.Entities.Production;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,7 +8,7 @@ namespace Api.Controllers.Production
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class EnterpriseController(IEnterpriseService service) : ControllerBase
+    public class EnterpriseController(IEnterpriseService service, IBrandingService brandingService) : ControllerBase
     {
         [HttpPost]
         public async Task<IActionResult> Create(Enterprise request)
@@ -59,6 +61,16 @@ namespace Api.Controllers.Production
                 return Ok(response.Content);
             else
                 return NotFound(response);
+        }
+
+        [HttpPut("{id:guid}/branding")]
+        public async Task<IActionResult> UpdateBranding(Guid id, BrandingDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState.ValidationState);
+
+            var response = await brandingService.UpdateBrandingAsync(id, request);
+            return response.Result ? Ok(response.Content) : BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

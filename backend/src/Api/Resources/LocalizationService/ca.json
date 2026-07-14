@@ -279,6 +279,8 @@
     "TableViewDeleted": "Vista eliminada correctament",
     "TableViewNotFound": "Vista no trobada",
     "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
-    "DefaultViewSet": "Vista per defecte establerta"
+    "DefaultViewSet": "Vista per defecte establerta",
+    "BrandingInvalidPrimaryColor": "El color primari del branding no és vàlid",
+    "BrandingInvalidLogoUrl": "La URL del logotip del branding no és vàlida"
   }
 }

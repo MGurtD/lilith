@@ -9,5 +9,6 @@ namespace Application.Contracts.Services.Production
     public interface IBrandingService
     {
         Task<BrandingDto?> GetBrandingAsync(Guid enterpriseId);
+        Task<GenericResponse> UpdateBrandingAsync(Guid enterpriseId, BrandingDto dto);
     }
 }

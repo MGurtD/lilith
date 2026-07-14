@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { BrandingService } from "@/services/branding.service";
 import type { Branding } from "@/types/branding";
+import { applyBrandingPreset } from "@/config/branding-presets";
 
 const FALLBACK_BRANDING: Branding = {
   theme: null,
@@ -17,6 +18,7 @@ export const useBrandingStore = defineStore("branding", {
     branding: { ...FALLBACK_BRANDING } as Branding,
     loaded: false,
     loading: false,
+    activeEnterpriseId: undefined as string | undefined,
   }),
   getters: {
     companyName: (state) =>
@@ -36,6 +38,7 @@ export const useBrandingStore = defineStore("branding", {
       if (this.loading) return;
       this.loading = true;
       try {
+        this.activeEnterpriseId = enterpriseId;
         const branding = await brandingService.GetByEnterpriseId(
           enterpriseId,
         );
@@ -47,9 +50,28 @@ export const useBrandingStore = defineStore("branding", {
         this.loading = false;
       }
     },
+    async update(payload: Branding): Promise<boolean> {
+      const enterpriseId = this.activeEnterpriseId;
+      if (!enterpriseId) {
+        return false;
+      }
+      const updated = await brandingService.UpdateBranding(
+        enterpriseId,
+        payload,
+      );
+      if (!updated) {
+        return false;
+      }
+      // Update reactive state first so subscribers see consistent branding,
+      // then apply side effects (CSS variables, PrimeVue preset, etc.).
+      this.branding = updated;
+      applyBrandingPreset(updated);
+      return true;
+    },
     reset() {
       this.branding = { ...FALLBACK_BRANDING };
       this.loaded = false;
+      this.activeEnterpriseId = undefined;
     },
   },
-});
+})

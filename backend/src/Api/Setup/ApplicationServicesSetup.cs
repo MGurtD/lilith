@@ -11,6 +11,7 @@ using Application.Services.GitHub;
 using Application.Contracts;
 using Application.Contracts.Services.Geolocalization;
 using Application.Contracts.Services.GitHub;
+using Application.Contracts.Services.Production;
 using Infrastructure.Persistance;
 
 namespace Api.Setup;

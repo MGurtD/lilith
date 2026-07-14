@@ -3,7 +3,6 @@ import { computed, onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import Message from "primevue/message";
 import { useBrandingStore } from "@/store/branding";
-import { applyBrandingPreset } from "@/config/branding-presets";
 import type { Branding } from "@/types/branding";
 import apiClient from "@/api/api.client";
 import FormBranding from "@/components/forms/FormBranding.vue";
@@ -102,14 +101,21 @@ async function submit() {
     );
     if (response.status === 200 || response.status === 204) {
       enterprise.value = payload;
-      brandingStore.branding = { ...draft.value };
-      applyBrandingPreset(draft.value);
-      toast.add({
-        severity: "success",
-        summary: "Branding desat",
-        detail: "Els canvis s'han aplicat immediatament.",
-        life: 4000,
-      });
+      const ok = await brandingStore.update(draft.value);
+      if (ok) {
+        toast.add({
+          severity: "success",
+          summary: "Branding desat",
+          detail: "Els canvis s'han aplicat immediatament.",
+          life: 4000,
+        });
+      } else {
+        toast.add({
+          severity: "error",
+          summary: "No s'ha pogut desar el branding",
+          life: 5000,
+        });
+      }
     } else {
       toast.add({
         severity: "error",
