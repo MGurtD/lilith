@@ -87,35 +87,29 @@ async function submit() {
   }
   saving.value = true;
   try {
-    const payload: Enterprise = {
-      ...enterprise.value,
-      theme: draft.value.theme,
-      primaryColor: draft.value.primaryColor,
-      logoMain: draft.value.logoMain,
-      logoSidebar: draft.value.logoSidebar,
-      titleSidebar: draft.value.titleSidebar,
-    };
-    const response = await apiClient.put(
-      `/Enterprise/${enterprise.value.id}`,
-      payload,
-    );
-    if (response.status === 200 || response.status === 204) {
-      enterprise.value = payload;
-      const ok = await brandingStore.update(draft.value);
-      if (ok) {
-        toast.add({
-          severity: "success",
-          summary: "Branding desat",
-          detail: "Els canvis s'han aplicat immediatament.",
-          life: 4000,
-        });
-      } else {
-        toast.add({
-          severity: "error",
-          summary: "No s'ha pogut desar el branding",
-          life: 5000,
-        });
-      }
+    // Single, validated write through the dedicated branding endpoint.
+    // The previous implementation did a generic PUT /Enterprise/{id} before
+    // the branding PUT, which persisted unvalidated values on the first
+    // call. Now we go straight through the store action so the BrandingValidator
+    // runs on save.
+    const ok = await brandingStore.update(enterprise.value.id, draft.value);
+    if (ok) {
+      // Reflect the saved values back in the local enterprise ref so the form
+      // stays in sync after a successful save.
+      enterprise.value = {
+        ...enterprise.value,
+        theme: draft.value.theme,
+        primaryColor: draft.value.primaryColor,
+        logoMain: draft.value.logoMain,
+        logoSidebar: draft.value.logoSidebar,
+        titleSidebar: draft.value.titleSidebar,
+      };
+      toast.add({
+        severity: "success",
+        summary: "Branding desat",
+        detail: "Els canvis s'han aplicat immediatament.",
+        life: 4000,
+      });
     } else {
       toast.add({
         severity: "error",

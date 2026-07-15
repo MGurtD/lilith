@@ -50,11 +50,14 @@ export const useBrandingStore = defineStore("branding", {
         this.loading = false;
       }
     },
-    async update(payload: Branding): Promise<boolean> {
-      const enterpriseId = this.activeEnterpriseId;
-      if (!enterpriseId) {
-        return false;
-      }
+    async update(
+      enterpriseId: string,
+      payload: Branding,
+    ): Promise<boolean> {
+      // The enterpriseId is passed explicitly by the caller so the action
+      // targets the enterprise the user is editing in the view, not whatever
+      // value happens to be in activeEnterpriseId (which may be stale or
+      // coming from a different boot-time resolution).
       const updated = await brandingService.UpdateBranding(
         enterpriseId,
         payload,
@@ -65,6 +68,7 @@ export const useBrandingStore = defineStore("branding", {
       // Update reactive state first so subscribers see consistent branding,
       // then apply side effects (CSS variables, PrimeVue preset, etc.).
       this.branding = updated;
+      this.activeEnterpriseId = enterpriseId;
       applyBrandingPreset(updated);
       return true;
     },
