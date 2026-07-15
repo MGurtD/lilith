@@ -281,6 +281,9 @@
     "CannotDeleteDefaultView": "Cannot delete the default view",
     "DefaultViewSet": "Default view set",
     "BrandingInvalidPrimaryColor": "The branding primary color is invalid",
-    "BrandingInvalidLogoUrl": "The branding logo URL is invalid"
+    "BrandingInvalidLogoUrl": "The branding logo URL is invalid",
+    "BrandingThemeTooLong": "The branding theme exceeds the maximum length of {0} characters",
+    "BrandingTitleTooLong": "The sidebar title exceeds the maximum length of {0} characters",
+    "BrandingLogoUrlTooLong": "The logo URL exceeds the maximum length of {0} characters",
   }
 }

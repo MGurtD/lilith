@@ -22,8 +22,13 @@ async function fromApiFirstActive(): Promise<string | null> {
     const response = await apiClient.get("/Enterprise");
     if (response.status !== 200) return null;
     const list = response.data as Array<EnterpriseSummary>;
+    // Only consider non-disabled Enterprises. When every Enterprise in the
+    // list is disabled (or the list is empty) we return null so the caller
+    // keeps the Lara + "Lilith" defaults rather than booting with a disabled
+    // tenant — the previous fallback to list[0] silently selected a disabled
+    // enterprise.
     const first = list.find((e) => !e.disabled);
-    return first?.id ?? list[0]?.id ?? null;
+    return first?.id ?? null;
   } catch {
     return null;
   }

@@ -70,7 +70,15 @@ namespace Api.Controllers.Production
                 return BadRequest(ModelState.ValidationState);
 
             var response = await brandingService.UpdateBrandingAsync(id, request);
-            return response.Result ? Ok(response.Content) : BadRequest(response);
+            if (response.Result)
+                return Ok(response.Content);
+            // Distinguish "enterprise not found" (HTTP 404) from validation
+            // failures (HTTP 400). The service returns the localized
+            // "EntityNotFound" message which contains "not found" in all three
+            // supported locales — same convention used by LifecycleController.
+            if (response.Errors.Any(e => e.Contains("not found")))
+                return NotFound(response);
+            return BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

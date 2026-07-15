@@ -281,6 +281,9 @@
     "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
     "DefaultViewSet": "Vista per defecte establerta",
     "BrandingInvalidPrimaryColor": "El color primari del branding no és vàlid",
-    "BrandingInvalidLogoUrl": "La URL del logotip del branding no és vàlida"
+    "BrandingInvalidLogoUrl": "La URL del logotip del branding no és vàlida",
+    "BrandingThemeTooLong": "El tema del branding supera la longitud màxima de {0} caràcters",
+    "BrandingTitleTooLong": "El títol del sidebar supera la longitud màxima de {0} caràcters",
+    "BrandingLogoUrlTooLong": "La URL del logotip supera la longitud màxima de {0} caràcters",
   }
 }

@@ -6,10 +6,12 @@ using Application.Utils;
 namespace Application.Services.Production
 {
     /// <summary>
-    /// Reads branding fields from an Enterprise and projects them into a BrandingDto.
-    /// Does not perform validation — invalid values stored on disk are returned as-is
-    /// so the frontend can show them; the controller layer is responsible for any
-    /// gatekeeping (currently it just 404s on missing enterprise).
+    /// Reads and writes branding fields on an Enterprise.
+    /// Reads are unvalidated (the frontend may need to display whatever is on disk);
+    /// writes run through <see cref="BrandingValidator"/> and return a non-success
+    /// <see cref="GenericResponse"/> with a localized message when validation fails
+    /// or the enterprise does not exist (the message will contain "not found" so
+    /// controllers can map it to HTTP 404 — see LifecycleController convention).
     /// </summary>
     public class BrandingService(IUnitOfWork unitOfWork, ILocalizationService localizationService) : IBrandingService
     {
@@ -38,6 +40,35 @@ namespace Application.Services.Production
             {
                 return new GenericResponse(false,
                     localizationService.GetLocalizedString("EntityNotFound", enterpriseId));
+            }
+
+            // Length enforcement mirrors the EF column widths configured in
+            // EnterpriseBuilder. Without this, oversized input would reach EF and
+            // fail with a database exception instead of a controlled validation
+            // response.
+            if (dto.Theme is { Length: > BrandingValidator.MaxLengthTheme })
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("BrandingThemeTooLong",
+                        BrandingValidator.MaxLengthTheme));
+            }
+            if (dto.TitleSidebar is { Length: > BrandingValidator.MaxLengthTitleSidebar })
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("BrandingTitleTooLong",
+                        BrandingValidator.MaxLengthTitleSidebar));
+            }
+            if (dto.LogoMain is { Length: > BrandingValidator.MaxLengthLogoUrl })
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("BrandingLogoUrlTooLong",
+                        BrandingValidator.MaxLengthLogoUrl));
+            }
+            if (dto.LogoSidebar is { Length: > BrandingValidator.MaxLengthLogoUrl })
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("BrandingLogoUrlTooLong",
+                        BrandingValidator.MaxLengthLogoUrl));
             }
 
             if (!BrandingValidator.IsValidPrimaryColor(dto.PrimaryColor))

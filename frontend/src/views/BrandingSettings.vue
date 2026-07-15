@@ -62,7 +62,11 @@ async function loadActiveEnterprise() {
     const response = await apiClient.get("/Enterprise");
     if (response.status === 200) {
       const list = response.data as Array<Enterprise>;
-      const first = list.find((e) => !e.disabled) ?? list[0];
+      // Only pick from non-disabled Enterprises. If every Enterprise in the
+      // list is disabled (or the list is empty), surface the empty state
+      // instead of silently picking a disabled one — that previously let
+      // admins edit (and persist to) a tenant that should be read-only.
+      const first = list.find((e) => !e.disabled);
       enterprise.value = first;
       syncDraftFromEnterprise();
     }
