@@ -1,0 +1,10 @@
+{
+  "baseUrl": "http://127.0.0.1:4173/",
+  "title": "Temges",
+  "finalUrl": "http://127.0.0.1:4173/",
+  "bodyTextLen": 130,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "networkErrors": [],
+  "externalErrors": []
+}

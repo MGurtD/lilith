@@ -58,4 +58,23 @@ export class UserTableViewService {
     );
     return response.status === 200;
   }
+
+  /**
+   * Idempotent get-or-create for the per-user, per-page default view.
+   * Backend returns 200 with the view whether it was newly created or
+   * already existed. Safe to call concurrently — the backend service
+   * uses Find then Add, and the frontend store dedupes in-flight calls.
+   */
+  public async EnsureDefault(
+    userId: string,
+    page: string
+  ): Promise<UserTableView | undefined> {
+    let response = await this.apiClient.post(
+      `${this.resource}/ensure-default`,
+      { userId, page }
+    );
+    if (response.status === 200) {
+      return response.data as UserTableView;
+    }
+  }
 }

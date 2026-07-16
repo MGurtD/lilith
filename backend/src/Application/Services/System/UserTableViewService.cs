@@ -116,5 +116,49 @@ namespace Application.Services.System
             await unitOfWork.UserTableViews.Update(existing);
             return new GenericResponse(true, existing);
         }
+
+        public async Task<GenericResponse> EnsureDefault(EnsureDefaultRequest request)
+        {
+            // Look for an existing default view for this (userId, page) scope.
+            var existingDefault = unitOfWork.UserTableViews
+                .Find(v => v.UserId == request.UserId &&
+                           v.Page == request.Page &&
+                           v.IsDefault)
+                .FirstOrDefault();
+
+            if (existingDefault != null)
+            {
+                // Idempotent: return the existing default without modifications.
+                return new GenericResponse(true, existingDefault);
+            }
+
+            // No default exists — create one. First, defensively unset any
+            // rows with IsDefault=true in this scope (data drift safety net).
+            var staleDefaults = unitOfWork.UserTableViews.Find(v =>
+                v.UserId == request.UserId &&
+                v.Page == request.Page &&
+                v.IsDefault);
+
+            foreach (var view in staleDefaults)
+            {
+                view.IsDefault = false;
+                await unitOfWork.UserTableViews.Update(view);
+            }
+
+            // Create the new default view. Client supplies the Id so the
+            // response is consistent with the rest of the codebase pattern.
+            var newDefault = new UserTableView
+            {
+                Id = Guid.NewGuid(),
+                UserId = request.UserId,
+                Page = request.Page,
+                Name = "Per defecte",
+                IsDefault = true,
+                ViewConfig = "{\"columns\":[]}",
+            };
+
+            await unitOfWork.UserTableViews.Add(newDefault);
+            return new GenericResponse(true, newDefault);
+        }
     }
 }

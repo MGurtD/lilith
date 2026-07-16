@@ -51,7 +51,6 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import { useSuppliersStore } from "../store/suppliers";
 import SupplierContactForm from "./FormSupplierContact.vue";
 import { SupplierContact } from "../types";
@@ -60,6 +59,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
+import { getNewUuid } from "@/utils/functions";
 
 const confirm = useConfirm();
 const supplierStore = useSuppliersStore();
@@ -82,7 +82,7 @@ const selectedContact = ref(undefined as SupplierContact | undefined);
 const createButtonClick = () => {
   selectedContact.value = {
     supplierId: supplier.value?.id,
-    id: uuidv4(),
+    id: getNewUuid(),
     firstName: "",
     lastName: "",
     email: "",
