@@ -3,6 +3,8 @@
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
+    :filter-labels="filterLabels"
+    :filter-value-resolvers="filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -70,6 +72,25 @@ const filterConfig: FilterConfig[] = [
   },
 ];
 
+// User-friendly labels for prepend-slot filters (not declared in
+// filterConfig because they're rendered via the #prepend slot above).
+// Used by the table-view-config dialog to show "Client" instead of
+// "customerId" and "Data creació" instead of "dates".
+const filterLabels: Record<string, string> = {
+  customerId: "Client",
+  dates: "Data creació",
+};
+
+// Resolver for prepend-slot filters whose value is a foreign key (UUID).
+// TableFilter cannot know the customer list (DropdownCustomers loads its
+// own options lazily), so we resolve the display name on demand.
+const filterValueResolvers: Record<string, (value: unknown) => string> = {
+  customerId: (value) => {
+    if (!value || typeof value !== "string") return "";
+    return customerStore.getCustomerNameById(value) || value;
+  },
+};
+
 const columns = ref<Column[]>([
   { field: "code", header: "Codi", style: "width: 10%" },
   { field: "description", header: "Descripció", style: "width: 30%" },
@@ -95,10 +116,12 @@ const filter = ref({
 });
 
 const cleanFilter = () => {
-  filter.value.code = "";
-  filter.value.customerId = "";
-  filter.value.description = "";
-  filter.value.dates = undefined;
+  filter.value = {
+    code: "",
+    description: "",
+    customerId: "",
+    dates: undefined,
+  };
 };
 
 const props = defineProps<{

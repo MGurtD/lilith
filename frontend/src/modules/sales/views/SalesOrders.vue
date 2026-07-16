@@ -5,11 +5,11 @@
     :filter-config="[]"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
+    page="SalesOrders"
     preset="crud-list"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
-    sort-mode="single"
     :sort-order="1"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"

@@ -23,7 +23,6 @@
           tableStyle="min-width: 100%"
           sort-field="comercialName"
           :sort-order="1"
-          :scroll-height="customersScrollHeight"
           showDeleteColumn
           :canDelete="() => true"
           @clear="cleanCustomerFilter"
@@ -42,7 +41,6 @@
           preset="crud-list"
           page="CustomerTypes"
           tableStyle="min-width: 100%"
-          :scroll-height="typesScrollHeight"
           showDeleteColumn
           :canDelete="() => true"
           @create="createCustomerType"
@@ -74,9 +72,6 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const customerStore = useCustomersStore();
-
-const customersScrollHeight = "flex";
-const typesScrollHeight = "flex";
 
 const customerFilterBodyWidth: FilterBodyWidth = {
   desktop: "33%",

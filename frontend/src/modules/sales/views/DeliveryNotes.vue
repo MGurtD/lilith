@@ -10,7 +10,6 @@
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="number"
-    sort-mode="single"
     :sort-order="1"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
