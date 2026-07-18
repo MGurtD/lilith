@@ -41,6 +41,7 @@ const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
   (e: "apply-config", columns: Column[], viewId: string): void;
   (e: "update:filterValues", value: any): void;
+  (e: "filter"): void;
   (e: "update:sortConfig", value: SortConfig | null): void;
 }>();
 
@@ -290,37 +291,67 @@ const selectedView = computed(() => {
 // Whether there are any saved views in the database
 const hasSavedViews = computed(() => views.value.length > 0);
 
-// When selected view changes, apply its configuration immediately
+// Apply a stored view locally: columns + filters + sort, plus emit the
+// authoritative apply-config event so Table.vue updates its active view.
+// Centralized here so save / select / delete all share the same path.
+//
+// `clearMissingFilters` distinguishes explicit user-initiated view
+// changes (selector dropdown) from implicit system re-assignments
+// (saveAsNewView, deleteView fallback). Only the explicit path should
+// clear live filters when the destination view has no persisted state
+// — otherwise programmatic fallbacks wipe filters the user just set and
+// `buildViewConfig` then writes them out as empty.
+function applyViewLocally(viewId: string, clearMissingFilters = false) {
+  const view = views.value.find((v) => v.id === viewId);
+  if (!view) return;
+
+  localColumns.value = viewStore.applyView(view, props.columns);
+  emit("apply-config", localColumns.value, viewId);
+
+  const filterValues = viewStore.applyFilterConfig(view);
+  if (filterValues) {
+    emit("update:filterValues", filterValues);
+    emit("filter");
+  } else if (clearMissingFilters && viewId !== props.activeViewId) {
+    // The user explicitly switched to a view that has no persisted
+    // filters — mirror that on the live state so the UI matches.
+    emit("update:filterValues", {});
+    emit("filter");
+  }
+
+  const sortConfig = viewStore.applySortConfig(view);
+  localSortField.value = sortConfig?.field ?? "";
+  localSortOrder.value = (sortConfig?.order ?? 1) as 1 | -1;
+  emit("update:sortConfig", sortConfig);
+}
+
+// Reset to the base columns (no view selected). Used when the active
+// view is removed and no replacement should be applied — restores the
+// table to its default look and clears live filters/sort.
+function resetToBaseColumns() {
+  localColumns.value = props.columns.map((col, index) => ({
+    ...col,
+    visible: col.visible !== false ? true : col.visible,
+    order: col.order ?? index,
+  }));
+  emit("apply-config", props.columns, "");
+  emit("update:filterValues", {});
+  emit("filter");
+  localSortField.value = "";
+  localSortOrder.value = 1;
+  emit("update:sortConfig", null);
+}
+
+// When the user picks a different view from the selector, apply it.
+// Only this path passes `clearMissingFilters = true`; programmatic
+// updates (saveAsNewView, deleteView fallback) bypass the watcher
+// and call `applyViewLocally(viewId, false)` directly to avoid
+// clobbering filters the user just configured.
 watch(selectedViewId, (newId) => {
   if (newId) {
-    const view = views.value.find((v) => v.id === newId);
-    if (view) {
-      // Apply the stored configuration to local columns
-      localColumns.value = viewStore.applyView(view, props.columns);
-      emit("apply-config", localColumns.value, newId);
-      // Apply filter configuration if present
-      const filterValues = viewStore.applyFilterConfig(view);
-      if (filterValues) {
-        emit("update:filterValues", filterValues);
-      }
-      // Apply sort configuration if present
-      const sortConfig = viewStore.applySortConfig(view);
-      localSortField.value = sortConfig?.field ?? "";
-      localSortOrder.value = (sortConfig?.order ?? 1) as 1 | -1;
-      emit("update:sortConfig", sortConfig);
-    }
+    applyViewLocally(newId, true);
   } else {
-    // Reset to base columns
-    localColumns.value = props.columns.map((col, index) => ({
-      ...col,
-      visible: col.visible !== false ? true : col.visible,
-      order: col.order ?? index,
-    }));
-    emit("apply-config", props.columns, "");
-    // Reset sort
-    localSortField.value = "";
-    localSortOrder.value = 1;
-    emit("update:sortConfig", null);
+    resetToBaseColumns();
   }
 });
 
@@ -444,10 +475,11 @@ async function saveAsNewView() {
     return;
   }
 
+  const savedName = newViewName.value.trim();
   const newView = viewStore.createNewView(
     userId,
     props.page,
-    newViewName.value.trim(),
+    savedName,
     localColumns.value,
     props.filterValues,
     localSortField.value
@@ -456,21 +488,24 @@ async function saveAsNewView() {
   );
 
   const created = await viewStore.create(newView);
-  if (created) {
-    toast.add({
-      severity: "success",
-      summary: "Vista creada",
-      detail: "La nova vista s'ha creat correctament",
-      life: 3000,
-    });
-    // Select the newly created view
-    const savedName = newViewName.value.trim();
-    const savedView = viewStore.views.find((v) => v.name === savedName);
-    if (savedView) {
-      selectedViewId.value = savedView.id;
-    }
-    newViewName.value = "";
+  if (!created) return;
+
+  // viewStore.create already refreshes the views list. The newly created
+  // view should now be present — apply it explicitly through the same path
+  // the selector uses, so Table.vue picks up the new active view on mount
+  // and F5 reads it as the single source of truth.
+  const savedView = viewStore.views.find((v) => v.name === savedName);
+  if (savedView) {
+    applyViewLocally(savedView.id);
   }
+
+  toast.add({
+    severity: "success",
+    summary: "Vista creada",
+    detail: "La nova vista s'ha creat correctament",
+    life: 3000,
+  });
+  newViewName.value = "";
 }
 
 // Delete current view
@@ -485,31 +520,51 @@ function deleteView() {
     return;
   }
 
+  const deletedViewId = selectedView.value.id;
+  const wasActiveInTable = deletedViewId === props.activeViewId;
+
   confirm.require({
     message: `Està segur que vol eliminar la vista "${selectedView.value.name}"?`,
     header: "Confirmació",
     icon: "pi pi-exclamation-triangle",
     accept: async () => {
-      const deleted = await viewStore.delete(selectedView.value!.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: "Vista eliminada",
-          life: 3000,
-        });
-        const nextView =
-          viewStore.views.find((view) => view.isDefault) ?? viewStore.views[0];
-        if (nextView) {
-          selectedViewId.value = nextView.id;
-        } else {
-          const userId = store.user?.id;
-          if (userId) {
-            await viewStore.ensureDefault(userId, props.page);
-            selectedViewId.value =
-              viewStore.views.find((view) => view.isDefault)?.id ??
-              viewStore.views[0]?.id ??
-              "";
+      const deleted = await viewStore.delete(deletedViewId);
+      if (!deleted) return;
+
+      toast.add({
+        severity: "success",
+        summary: "Vista eliminada",
+        life: 3000,
+      });
+
+      // If the deleted view was the one Table.vue was applying, fall
+      // back to the next default/remaining view. If none survives, the
+      // user explicitly removed their default — force a hard reset so
+      // the live filters/sort/columns in Table.vue clear immediately
+      // (the same state F5 would load on next mount).
+      const nextView =
+        viewStore.views.find((view) => view.isDefault) ?? viewStore.views[0];
+      if (nextView) {
+        selectedViewId.value = nextView.id;
+      } else {
+        const userId = store.user?.id;
+        if (userId) {
+          await viewStore.ensureDefault(userId, props.page);
+          const fallback =
+            viewStore.views.find((view) => view.isDefault) ??
+            viewStore.views[0] ??
+            null;
+          if (fallback) {
+            selectedViewId.value = fallback.id;
+          } else if (wasActiveInTable) {
+            // Truly empty: no views survived. Reset the live UI now
+            // so the user sees the same state they'd get on F5.
+            selectedViewId.value = "";
+            resetToBaseColumns();
           }
+        } else if (wasActiveInTable) {
+          selectedViewId.value = "";
+          resetToBaseColumns();
         }
       }
     },

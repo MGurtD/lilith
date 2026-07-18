@@ -238,20 +238,16 @@ function markStateDirty() {
 function onApplyViewConfig(columns: Column[], viewId: string) {
   appliedColumns.value = columns;
   activeViewId.value = viewId;
+  // Refresh the cached default flag from the (possibly updated) store
+  // snapshot. Falls back to false when the view isn't in the list yet
+  // (e.g. a brand-new view created in the same tick before
+  // `viewStore.create`'s internal fetchViews has resolved).
   const matched = viewStore.views.find((v) => v.id === viewId);
   activeIsDefault.value = matched?.isDefault ?? false;
   // Applying a saved view restores persisted state — it's NOT a user
   // mutation. Reset the dirty flag so the next row click doesn't
   // re-save the same config we just loaded.
   stateDirty.value = false;
-  // Apply filter config if present
-  if (matched) {
-    const filterValues = viewStore.applyFilterConfig(matched);
-    if (filterValues) {
-      emit("update:filterValues", filterValues);
-      emit("filter");
-    }
-  }
 }
 
 function onSortConfigUpdate(sortConfig: SortConfig | null) {
@@ -414,52 +410,16 @@ async function ensureDefaultAndLoad() {
 
   await provisionDefaultOnFirstVisit();
   await loadDefaultView();
-  restoreFiltersIfNeeded();
 }
 
+// The database is the single source of truth for table state. Any
+// stale localStorage snapshot from earlier iterations could shadow a
+// freshly-saved server view on remount, so we clear it on unmount.
 onUnmounted(() => {
-  if (props.page && activeViewId.value === "" && props.filterValues) {
-    const serialized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(props.filterValues)) {
-      if (value instanceof Date) {
-        serialized[key] = value.toISOString();
-      } else if (Array.isArray(value)) {
-        serialized[key] = value.map((v) => v instanceof Date ? v.toISOString() : v);
-      } else {
-        serialized[key] = value;
-      }
-    }
-    localStorage.setItem(`lilith-table-filters-${props.page}`, JSON.stringify(serialized));
+  if (props.page) {
+    localStorage.removeItem(`lilith-table-filters-${props.page}`);
   }
 });
-
-function restoreFiltersIfNeeded() {
-  if (props.page && activeViewId.value === "") {
-    const saved = localStorage.getItem(`lilith-table-filters-${props.page}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Convert date strings back to Date objects
-        const deserialized: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/)) {
-            deserialized[key] = new Date(value);
-          } else if (Array.isArray(value)) {
-            deserialized[key] = value.map((v) =>
-              typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}T/) ? new Date(v) : v
-            );
-          } else {
-            deserialized[key] = value;
-          }
-        }
-        emit("update:filterValues", deserialized);
-        emit("filter");
-      } catch {
-        // Invalid JSON, ignore
-      }
-    }
-  }
-}
 
 watch(() => props.columns, (newColumns) => {
   if (props.page && activeViewId.value) {
