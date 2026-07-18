@@ -289,6 +289,11 @@ const items = computed(() => {
       icon: PrimeIcons.FILE_WORD,
       command: () => printInvoice(),
     },
+    {
+      label: "Imprimir PDF",
+      icon: PrimeIcons.FILE_PDF,
+      command: () => printInvoicePdf(),
+    },
   ];
 
   if (!invoice.value?.parentSalesInvoiceId) {
@@ -527,20 +532,20 @@ const updateInvoice = async () => {
   }
 };
 
-// Report print
 const printInvoice = async () => {
+  if (!invoice.value) return;
+
   const invoiceReport = await Services.SalesInvoice.GetReportDataById(
-    invoice.value!.id
+    invoice.value.id,
   );
 
   if (invoiceReport) {
-    const fileName = `Factura_${invoice.value?.invoiceNumber}.docx`;
-
+    const fileName = `Factura_${invoice.value.invoiceNumber}.docx`;
     const reportService = new ReportService();
     const report = await reportService.Download(
       invoiceReport,
       REPORTS.Invoice,
-      fileName
+      fileName,
     );
 
     if (report) {
@@ -549,12 +554,28 @@ const printInvoice = async () => {
       toast.add({
         severity: "warn",
         summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        detail: "No s'ha pogut generar la factura",
       });
     }
   }
 };
 
+const printInvoicePdf = async () => {
+  if (!invoice.value) return;
+
+  try {
+    const report = await Services.SalesInvoice.DownloadPdf(invoice.value.id);
+    if (!report) throw new Error("No s'ha pogut generar el PDF");
+
+    createBlobAndDownloadFile(`Factura_${invoice.value.invoiceNumber}.pdf`, report);
+  } catch {
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No s'ha pogut generar el PDF de la factura",
+    });
+  }
+};
 // Invoice details
 const openDeliveryNoteSelector = async () => {
   if (invoice.value) {

@@ -95,6 +95,15 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
     }
   }
 
+  async DownloadPdf(id: string): Promise<Blob | undefined> {
+    const endpoint = `${this.resource}/Report/${id}/pdf`;
+    const response = await this.apiClient.get(endpoint, {
+      responseType: "blob",
+    });
+    if (response.status === 200) {
+      return response.data as Blob;
+    }
+  }
   async Update(request: SalesInvoice) {
     const endpoint = `${this.resource}/${request.id}`;
     const response = await this.apiClient.put(endpoint, request);
