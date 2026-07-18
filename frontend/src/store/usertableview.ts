@@ -10,7 +10,7 @@ import { hydrateFilter } from "../utils/filter-hydrate";
 // `${userId}:${page}` so concurrent calls (e.g. multiple <Table> instances
 // on the same page during dev hot-reload) share the same promise and
 // hit the backend only once. Cleared on resolve/reject.
-const ensureInFlight = new Map<string, Promise<UserTableView>>();
+const ensureInFlight = new Map<string, Promise<UserTableView | null>>();
 
 interface ColumnConfig {
   field: string;
@@ -89,9 +89,15 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
      * Idempotent get-or-create for the default view on `(userId, page)`.
      * Concurrent calls share the same in-flight promise. After settle,
      * refreshes the views list so the newly-created default is visible.
-     * Throws on backend error so callers can decide how to react.
+     *
+     * Returns `null` when the user has at least one view on this page but
+     * none is flagged as default — respect an explicit delete. The caller
+     * decides what to do (e.g. pick the first view, prompt the user).
      */
-    async ensureDefault(userId: string, page: string): Promise<UserTableView> {
+    async ensureDefault(
+      userId: string,
+      page: string
+    ): Promise<UserTableView | null> {
       const key = `${userId}:${page}`;
       const cached = ensureInFlight.get(key);
       if (cached) return cached;
@@ -101,12 +107,9 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
           userId,
           page
         );
-        if (!view) {
-          throw new Error(`EnsureDefault returned no view for ${key}`);
-        }
         // Refresh the views list so the store reflects backend state.
         await this.fetchViews(userId, page);
-        return view;
+        return view ?? null;
       })();
 
       ensureInFlight.set(key, promise);
@@ -161,8 +164,15 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       }
     ): Promise<boolean> {
       try {
-        const defaultView = await this.ensureDefault(userId, page);
-        if (!defaultView) return false;
+        await this.fetchViews(userId, page);
+        const defaultView = this.views.find(
+          (v) => v.userId === userId && v.page === page && v.isDefault
+        );
+        if (!defaultView) {
+          // No default exists and the user has chosen not to have one
+          // (deleted explicit). Skip persistence silently.
+          return false;
+        }
 
         // Parse existing viewConfig, preserving any sections we don't touch.
         let config: ViewConfig = { columns: [] };
@@ -237,8 +247,12 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
 
       // Create a map of base columns by field name for quick lookup
       const baseColumnsMap = new Map<string, Column>();
-      baseColumns.forEach((col) => {
-        baseColumnsMap.set(col.field, { ...col });
+      baseColumns.forEach((col, index) => {
+        baseColumnsMap.set(col.field, {
+          ...col,
+          visible: col.visible !== false,
+          order: col.order ?? index,
+        });
       });
 
       // Apply configuration to each column in config
@@ -314,7 +328,8 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       name: string,
       columns: Column[],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      filterValues?: any
+      filterValues?: any,
+      sort?: SortConfig
     ): UserTableView {
       // Build column config from current column state
       const columnConfig: ColumnConfig[] = columns
@@ -331,6 +346,9 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       };
       if (filterValues) {
         viewConfig.filters = filterValues;
+      }
+      if (sort) {
+        viewConfig.sort = sort;
       }
 
       return {

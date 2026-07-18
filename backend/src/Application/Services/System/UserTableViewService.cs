@@ -1,11 +1,14 @@
 using Application.Contracts;
 using Application.Services;
 using Domain.Entities.Auth;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services.System
 {
     public class UserTableViewService(IUnitOfWork unitOfWork, ILocalizationService localizationService) : IUserTableViewService
     {
+        private const string DefaultViewName = "Per defecte";
+
         public async Task<IEnumerable<UserTableView>> GetByUserAndPage(Guid userId, string page)
         {
             var views = unitOfWork.UserTableViews.Find(v => v.UserId == userId && v.Page == page);
@@ -119,7 +122,6 @@ namespace Application.Services.System
 
         public async Task<GenericResponse> EnsureDefault(EnsureDefaultRequest request)
         {
-            // Look for an existing default view for this (userId, page) scope.
             var existingDefault = unitOfWork.UserTableViews
                 .Find(v => v.UserId == request.UserId &&
                            v.Page == request.Page &&
@@ -127,38 +129,54 @@ namespace Application.Services.System
                 .FirstOrDefault();
 
             if (existingDefault != null)
-            {
-                // Idempotent: return the existing default without modifications.
                 return new GenericResponse(true, existingDefault);
-            }
 
-            // No default exists — create one. First, defensively unset any
-            // rows with IsDefault=true in this scope (data drift safety net).
-            var staleDefaults = unitOfWork.UserTableViews.Find(v =>
-                v.UserId == request.UserId &&
-                v.Page == request.Page &&
-                v.IsDefault);
+            var anyView = unitOfWork.UserTableViews
+                .Find(v => v.UserId == request.UserId &&
+                           v.Page == request.Page)
+                .Any();
 
-            foreach (var view in staleDefaults)
+            if (anyView)
             {
-                view.IsDefault = false;
-                await unitOfWork.UserTableViews.Update(view);
+                return new GenericResponse(true, (object?)null);
             }
 
-            // Create the new default view. Client supplies the Id so the
-            // response is consistent with the rest of the codebase pattern.
             var newDefault = new UserTableView
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId,
                 Page = request.Page,
-                Name = "Per defecte",
+                Name = DefaultViewName,
                 IsDefault = true,
                 ViewConfig = "{\"columns\":[]}",
             };
 
-            await unitOfWork.UserTableViews.Add(newDefault);
-            return new GenericResponse(true, newDefault);
+            try
+            {
+                await unitOfWork.UserTableViews.Add(newDefault);
+                return new GenericResponse(true, newDefault);
+            }
+            catch (DbUpdateException)
+            {
+                var persistedDefault = unitOfWork.UserTableViews
+                    .Find(v => v.UserId == request.UserId &&
+                               v.Page == request.Page &&
+                               v.IsDefault)
+                    .FirstOrDefault();
+
+                if (persistedDefault != null)
+                    return new GenericResponse(true, persistedDefault);
+
+                var any = unitOfWork.UserTableViews
+                    .Find(v => v.UserId == request.UserId &&
+                               v.Page == request.Page)
+                    .Any();
+
+                if (any)
+                    return new GenericResponse(true, (object?)null);
+
+                throw;
+            }
         }
     }
 }

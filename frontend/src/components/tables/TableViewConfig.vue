@@ -84,26 +84,19 @@ function cycleSortForColumn(field: string) {
 
 // --- Saved filters (read-only) ---
 
-// Source of truth is the database row: we read from the selected view's
-// `viewConfig.filters` (NOT from props.filterValues, which can be unsaved).
-// This guarantees the section reflects what is actually persisted, even if
-// the user is mid-edit and the local state diverges.
+// Source of truth is the table's live filterValues: the dialog mirrors the
+// filters currently applied to the table so applying or clearing filters
+// while the dialog is open immediately updates the section. The previous
+// implementation read from the persisted viewConfig, which lagged behind
+// any unsaved filter changes.
 //
 // `hydrateFilter` converts ISO date strings back into Date objects so
 // downstream formatters see native Dates (matches the apply/restore paths
 // in `usertableview.ts`).
 const savedFilters = computed<Record<string, unknown> | null>(() => {
-  if (!selectedView.value || !selectedView.value.viewConfig) return null;
-  try {
-    const config = JSON.parse(selectedView.value.viewConfig);
-    if (!config || typeof config !== "object" || !config.filters) return null;
-    if (typeof config.filters !== "object" || Array.isArray(config.filters)) {
-      return null;
-    }
-    return hydrateFilter(config.filters) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
+  const raw = props.filterValues;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return hydrateFilter(raw as Record<string, unknown>);
 });
 
 // Build a map of filter config by key for O(1) lookup
@@ -153,11 +146,15 @@ function resolveDisplayValue(key: string, field: FilterConfig | null, value: unk
 // Format a single date (Date object or ISO string) using the project's
 // standard formatDate. Falls back to the raw string if parsing fails.
 function formatDateValue(value: unknown): string {
-  if (value instanceof Date) return formatDate(value);
+  if (value === null || value === undefined || value === "") return "—";
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? "—" : formatDate(value);
+  }
   if (typeof value === "string" && value) {
     const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) return formatDate(parsed);
+    return Number.isNaN(parsed.getTime()) ? "—" : formatDate(parsed);
   }
+  if (typeof value === "object") return "—";
   return String(value ?? "");
 }
 
@@ -176,12 +173,17 @@ function formatFilterValue(field: FilterConfig | null, value: unknown): string {
 
   // Date range: array of two date-like entries, no matching field config
   // (PrimeVue range DatePicker is typically a prepend-slot filter).
-  if (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    (value[0] instanceof Date || typeof value[0] === "string") &&
-    (value[1] instanceof Date || typeof value[1] === "string")
-  ) {
+  // Treat empty or invalid endpoints as "no filter" (—) so an
+  // accidentally-initialised empty range doesn't render as "[{},{}]".
+  const isDateLike = (entry: unknown): boolean =>
+    entry instanceof Date ||
+    typeof entry === "string" ||
+    entry === null ||
+    entry === undefined ||
+    (typeof entry === "object" && entry !== null);
+
+  if (Array.isArray(value) && value.length === 2 &&
+      isDateLike(value[0]) && isDateLike(value[1])) {
     const start = formatDateValue(value[0]);
     const end = formatDateValue(value[1]);
     if (start === "—" || end === "—") return "—";
@@ -259,7 +261,14 @@ watch(
         await viewStore.fetchViews(userId, props.page);
       }
       // Set selected view after views are loaded so the watch can find it
-      selectedViewId.value = props.activeViewId ?? "";
+      const activeView = props.activeViewId
+        ? viewStore.views.find((view) => view.id === props.activeViewId)
+        : undefined;
+      const selectedView =
+        activeView ??
+        viewStore.views.find((view) => view.isDefault) ??
+        viewStore.views[0];
+      selectedViewId.value = selectedView?.id ?? "";
     }
   }
 );
@@ -440,7 +449,10 @@ async function saveAsNewView() {
     props.page,
     newViewName.value.trim(),
     localColumns.value,
-    props.filterValues
+    props.filterValues,
+    localSortField.value
+      ? { field: localSortField.value, order: localSortOrder.value }
+      : undefined,
   );
 
   const created = await viewStore.create(newView);
@@ -485,7 +497,20 @@ function deleteView() {
           summary: "Vista eliminada",
           life: 3000,
         });
-        selectedViewId.value = "";
+        const nextView =
+          viewStore.views.find((view) => view.isDefault) ?? viewStore.views[0];
+        if (nextView) {
+          selectedViewId.value = nextView.id;
+        } else {
+          const userId = store.user?.id;
+          if (userId) {
+            await viewStore.ensureDefault(userId, props.page);
+            selectedViewId.value =
+              viewStore.views.find((view) => view.isDefault)?.id ??
+              viewStore.views[0]?.id ??
+              "";
+          }
+        }
       }
     },
   });
@@ -656,7 +681,6 @@ function buildViewConfig(): string {
               :model-value="col.visible !== false"
               :binary="true"
               @update:model-value="toggleVisibility(index)"
-              :disabled="col.visible === undefined && col.visible !== false"
             />
             <span class="column-name">{{ col.header }}</span>
             <Checkbox

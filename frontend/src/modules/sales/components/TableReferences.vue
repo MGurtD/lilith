@@ -3,8 +3,8 @@
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
-    :filter-labels="filterLabels"
-    :filter-value-resolvers="filterValueResolvers"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -50,6 +50,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency } from "../../../utils/functions";
+import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const customerStore = useCustomersStore();
 
@@ -72,25 +73,6 @@ const filterConfig: FilterConfig[] = [
   },
 ];
 
-// User-friendly labels for prepend-slot filters (not declared in
-// filterConfig because they're rendered via the #prepend slot above).
-// Used by the table-view-config dialog to show "Client" instead of
-// "customerId" and "Data creació" instead of "dates".
-const filterLabels: Record<string, string> = {
-  customerId: "Client",
-  dates: "Data creació",
-};
-
-// Resolver for prepend-slot filters whose value is a foreign key (UUID).
-// TableFilter cannot know the customer list (DropdownCustomers loads its
-// own options lazily), so we resolve the display name on demand.
-const filterValueResolvers: Record<string, (value: unknown) => string> = {
-  customerId: (value) => {
-    if (!value || typeof value !== "string") return "";
-    return customerStore.getCustomerNameById(value) || value;
-  },
-};
-
 const columns = ref<Column[]>([
   { field: "code", header: "Codi", style: "width: 10%" },
   { field: "description", header: "Descripció", style: "width: 30%" },
@@ -107,6 +89,10 @@ const columns = ref<Column[]>([
   { field: "cost", header: "Cost", style: "width: 8%" },
   { field: "isService", header: "Servei", columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
+
+const filterMetadata = createSalesTableViewFilterMetadata(columns.value, {
+  dateLabel: "Data creació",
+});
 
 const filter = ref({
   code: "",

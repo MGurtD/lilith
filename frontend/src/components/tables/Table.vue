@@ -100,7 +100,7 @@ const resolvedDataTableProps = computed(() => {
   return { ...presetRest, ...explicit, ...attrs };
 });
 
-// Sort: consumer prop takes priority, then active view config.
+// Sort: active view config takes priority, then consumer prop.
 // Bound explicitly in template so PrimeVue detects each prop change independently.
 // Guarded against incomplete sort configs — PrimeVue's multiSortField accessor
 // crashes on `multiSortMeta[0].field` when sortField is undefined but sortOrder
@@ -110,21 +110,31 @@ const resolvedDataTableProps = computed(() => {
 // the single {field, order} sort config into a single-element multiSortMeta
 // array, and skip the sortField/sortOrder bindings to avoid feeding PrimeVue
 // an inconsistent state.
-const isMultipleSort = computed(() => attrs.sortMode === "multiple");
+const isMultipleSort = computed(
+  () => attrs.sortMode === "multiple" || attrs["sort-mode"] === "multiple",
+);
 const resolvedSortField = computed(() => {
   if (isMultipleSort.value) return undefined;
-  const field = props.sortField ?? activeSortConfig.value?.field;
+  const field = activeViewId.value
+    ? activeSortConfig.value?.field
+    : props.sortField ?? activeSortConfig.value?.field;
   return field ? field : undefined;
 });
 const resolvedSortOrder = computed(() => {
   if (isMultipleSort.value) return undefined;
   if (!resolvedSortField.value) return undefined;
-  return props.sortOrder ?? activeSortConfig.value?.order;
+  return activeViewId.value
+    ? activeSortConfig.value?.order
+    : props.sortOrder ?? activeSortConfig.value?.order;
 });
 const resolvedMultiSortMeta = computed(() => {
   if (!isMultipleSort.value) return undefined;
-  const field = props.sortField ?? activeSortConfig.value?.field;
-  const order = props.sortOrder ?? activeSortConfig.value?.order;
+  const field = activeViewId.value
+    ? activeSortConfig.value?.field
+    : props.sortField ?? activeSortConfig.value?.field;
+  const order = activeViewId.value
+    ? activeSortConfig.value?.order
+    : props.sortOrder ?? activeSortConfig.value?.order;
   if (!field || order === undefined) return undefined;
   return [{ field, order: order as 1 | -1 }];
 });
@@ -194,6 +204,7 @@ const viewStore = useUserTableViewStore();
 
 const appliedColumns = ref<Column[]>([...props.columns]);
 const activeViewId = ref<string>("");
+const activeIsDefault = ref(false);
 const viewConfigVisible = ref(false);
 const activeSortConfig = ref<SortConfig | null>(null);
 
@@ -227,14 +238,15 @@ function markStateDirty() {
 function onApplyViewConfig(columns: Column[], viewId: string) {
   appliedColumns.value = columns;
   activeViewId.value = viewId;
+  const matched = viewStore.views.find((v) => v.id === viewId);
+  activeIsDefault.value = matched?.isDefault ?? false;
   // Applying a saved view restores persisted state — it's NOT a user
   // mutation. Reset the dirty flag so the next row click doesn't
   // re-save the same config we just loaded.
   stateDirty.value = false;
   // Apply filter config if present
-  const view = viewStore.views.find((v) => v.id === viewId);
-  if (view) {
-    const filterValues = viewStore.applyFilterConfig(view);
+  if (matched) {
+    const filterValues = viewStore.applyFilterConfig(matched);
     if (filterValues) {
       emit("update:filterValues", filterValues);
       emit("filter");
@@ -263,14 +275,19 @@ function buildColumnsPayload(): Array<{ field: string; visible?: boolean; order?
 }
 
 // Row-click handler: forwards the event to the consumer (for navigation)
-// and, when state is dirty + a default view is active, kicks off a
-// fire-and-forget save of the full table state (columns + sort + filters)
-// to the default view. The save never blocks navigation; errors are
-// logged, not surfaced.
+// and, when state is dirty + the active view is the default view, kicks
+// off a fire-and-forget save of the full table state (columns + sort +
+// filters) to that default view. The save never blocks navigation;
+// errors are logged, not surfaced.
+//
+// Auto-save is gated on `activeIsDefault` rather than `activeViewId !== ""`
+// because the user may have selected a non-default view: in that case
+// the row click should not overwrite state onto a view that isn't theirs.
 function onRowClick(event: DataTableRowClickEvent) {
   emit("row-click", event);
   if (
     stateDirty.value &&
+    activeIsDefault.value &&
     activeViewId.value !== "" &&
     store.user?.id &&
     props.page
@@ -316,25 +333,49 @@ async function loadDefaultView() {
   stateDirty.value = false;
 
   await viewStore.fetchViews(userId, props.page);
-  const defaultView = viewStore.getDefaultView(userId, props.page);
+
+  const userViews = viewStore.views.filter(
+    (v) => v.userId === userId && v.page === props.page
+  );
+
+  const defaultView =
+    userViews.find((v) => v.isDefault) ?? userViews[0] ?? null;
+
   if (defaultView) {
     appliedColumns.value = viewStore.applyView(defaultView, props.columns);
     activeViewId.value = defaultView.id;
-    // Apply filter config if present
+    activeIsDefault.value = defaultView.isDefault;
     const filterValues = viewStore.applyFilterConfig(defaultView);
     if (filterValues) {
       emit("update:filterValues", filterValues);
       emit("filter");
     }
-    // Apply sort config if present
     const sortConfig = viewStore.applySortConfig(defaultView);
     activeSortConfig.value = sortConfig;
     emit("update:sortConfig", sortConfig);
   } else {
     appliedColumns.value = [...props.columns];
     activeViewId.value = "";
+    activeIsDefault.value = false;
     activeSortConfig.value = null;
     emit("update:sortConfig", null);
+  }
+}
+
+// Provision a default only when there are no saved views for the user on this
+// page. Existing views are loaded by `ensureDefaultAndLoad` afterwards.
+async function provisionDefaultOnFirstVisit() {
+  if (!props.page) return;
+  const userId = store.user?.id;
+  if (!userId) return;
+
+  if (viewStore.views.some((v) => v.userId === userId && v.page === props.page))
+    return;
+
+  try {
+    await viewStore.ensureDefault(userId, props.page);
+  } catch (err) {
+    console.warn("[Table] ensureDefault failed", err);
   }
 }
 
@@ -363,19 +404,15 @@ onMounted(async () => {
 });
 
 // Orchestrates the autoprovision + load + restore sequence on mount.
-// ensureDefault runs first so a default view ALWAYS exists before
-// loadDefaultView queries for it — this is the autoprovision invariant.
+// Provisioning is conservative: the default view is auto-created only
+// when the user has NO views on this page. If they explicitly deleted
+// the default view, the first remaining view is loaded instead.
 async function ensureDefaultAndLoad() {
   if (!props.page) return;
   const userId = store.user?.id;
   if (!userId) return;
 
-  try {
-    await viewStore.ensureDefault(userId, props.page);
-  } catch (err) {
-    console.warn("[Table] ensureDefault failed", err);
-    // Non-fatal: proceed to loadDefaultView which will fall back to no default
-  }
+  await provisionDefaultOnFirstVisit();
   await loadDefaultView();
   restoreFiltersIfNeeded();
 }

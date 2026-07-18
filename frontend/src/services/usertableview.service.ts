@@ -60,21 +60,24 @@ export class UserTableViewService {
   }
 
   /**
-   * Idempotent get-or-create for the per-user, per-page default view.
-   * Backend returns 200 with the view whether it was newly created or
-   * already existed. Safe to call concurrently — the backend service
-   * uses Find then Add, and the frontend store dedupes in-flight calls.
+   * Returns the default view for (userId, page) if one exists. Otherwise:
+   *   - creates a "Per defecte" view if the user has NO views on that page.
+   *   - returns null when other views exist but none are flagged default
+   *     (user explicitly deleted the default — respect their choice).
+   *
+   * Safe to call concurrently; the backend dedupes via the unique key
+   * UK_UserTableView_UserId_Page_Name.
    */
   public async EnsureDefault(
     userId: string,
     page: string
-  ): Promise<UserTableView | undefined> {
+  ): Promise<UserTableView | null | undefined> {
     let response = await this.apiClient.post(
       `${this.resource}/ensure-default`,
       { userId, page }
     );
     if (response.status === 200) {
-      return response.data as UserTableView;
+      return (response.data ?? null) as UserTableView | null;
     }
   }
 }

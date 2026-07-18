@@ -10,46 +10,42 @@
         <span>Tipus de client</span>
       </Tab>
     </TabList>
-    <TabPanels>
-      <TabPanel value="0">
-        <Table
-          :columns="customerColumns"
-          :items="filteredData"
-          :filter-config="customerFilterConfig"
-          v-model:filter-values="customerFilter"
-          :filter-body-width="customerFilterBodyWidth"
-          preset="crud-list"
-          page="Customers"
-          tableStyle="min-width: 100%"
-          sort-field="comercialName"
-          :sort-order="1"
-          showDeleteColumn
-          :canDelete="() => true"
-          @clear="cleanCustomerFilter"
-          @create="createCustomer"
-          @delete="deleteCustomer"
-          @row-click="editCustomer"
-        />
-      </TabPanel>
-      <TabPanel value="1">
-        <Table
-          :columns="customerTypeColumns"
-          :items="customerStore.customerTypes ?? []"
-          :filter-config="[]"
-          v-model:filter-values="emptyFilter"
-          :filter-body-width="typesFilterBodyWidth"
-          preset="crud-list"
-          page="CustomerTypes"
-          tableStyle="min-width: 100%"
-          showDeleteColumn
-          :canDelete="() => true"
-          @create="createCustomerType"
-          @delete="deleteCustomerType"
-          @row-click="editCustomerType"
-        />
-      </TabPanel>
-    </TabPanels>
   </Tabs>
+  <Table
+    v-if="activeTable === 'customers'"
+    :columns="customerColumns"
+    :items="filteredData"
+    :filter-config="customerFilterConfig"
+    v-model:filter-values="customerFilter"
+    :filter-body-width="customerFilterBodyWidth"
+    preset="crud-list"
+    page="Customers"
+    tableStyle="min-width: 100%"
+    sort-field="comercialName"
+    :sort-order="1"
+    showDeleteColumn
+    :canDelete="() => true"
+    @clear="cleanCustomerFilter"
+    @create="createCustomer"
+    @delete="deleteCustomer"
+    @row-click="editCustomer"
+  />
+  <Table
+    v-else
+    :columns="customerTypeColumns"
+    :items="customerStore.customerTypes ?? []"
+    :filter-config="[]"
+    v-model:filter-values="emptyFilter"
+    :filter-body-width="typesFilterBodyWidth"
+    preset="crud-list"
+    page="CustomerTypes"
+    tableStyle="min-width: 100%"
+    showDeleteColumn
+    :canDelete="() => true"
+    @create="createCustomerType"
+    @delete="deleteCustomerType"
+    @row-click="editCustomerType"
+  />
 </template>
 <script setup lang="ts">
 import { v4 as uuidv4 } from "uuid";
@@ -67,6 +63,9 @@ import type { Column } from "../../../components/tables/types";
 import { ColumnType } from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 const selectedTabIndex = ref("0");
+const activeTable = computed(() =>
+  selectedTabIndex.value === "0" ? "customers" : "customerTypes",
+);
 const toast = useToast();
 const confirm = useConfirm();
 const router = useRouter();

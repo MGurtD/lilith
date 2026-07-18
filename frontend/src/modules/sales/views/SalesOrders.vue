@@ -3,6 +3,8 @@
     :columns="columns"
     :items="salesOrderStore.salesOrders ?? []"
     :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="SalesOrders"
@@ -95,6 +97,7 @@ import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useUserFilterStore } from "../../../store/userfilter";
+import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const router = useRouter();
 const toast = useToast();
@@ -120,6 +123,10 @@ const columns = ref<Column[]>([
     style: "width: 20%",
   },
 ]);
+
+const filterMetadata = createSalesTableViewFilterMetadata(columns.value, {
+  customerResolver: customerStore.getCustomerNameById,
+});
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
