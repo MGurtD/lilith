@@ -12,8 +12,6 @@
     sort-mode="multiple"
     :selection-mode="'multiple'"
     v-model:selection="selectedInvoices"
-    scrollable
-    scrollHeight="flex"
     @clear="clearFilter"
     @filter="filterInvoices"
   >

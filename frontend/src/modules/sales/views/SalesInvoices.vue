@@ -3,6 +3,8 @@
     :columns="columns"
     :items="invoiceStore.invoices ?? []"
     :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -77,6 +79,7 @@ import {
 import { CreateSalesHeaderRequest, SalesInvoice } from "../types";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
+import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -106,9 +109,11 @@ const columns = ref<Column[]>([
     resolver: lifecycleStore.getStatusNameById,
     style: "width: 15%",
   },
-  { field: "dueDate", header: "Venciment", style: "width: 15%" },
+  { field: "dueDate", header: "Venciment", style: "width: 15%", sortable: true },
   { field: "netAmount", header: "Import", columnType: ColumnType.Currency, style: "width: 20%" },
 ]);
+
+const filterMetadata = createSalesTableViewFilterMetadata(columns.value);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

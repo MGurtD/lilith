@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:4173",
+  "title": "Temges",
+  "finalUrl": "http://127.0.0.1:4173/login?redirect=/",
+  "bodyTextLen": 88,
+  "formCount": 1,
+  "inputCount": 2,
+  "consoleErrors": [],
+  "pageErrors": [],
+  "networkErrors": [],
+  "externalErrors": []
+}

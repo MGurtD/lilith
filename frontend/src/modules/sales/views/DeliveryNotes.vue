@@ -3,6 +3,8 @@
     :columns="columns"
     :items="deliveryNoteStore.deliveryNotes ?? []"
     :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -10,7 +12,6 @@
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="number"
-    sort-mode="single"
     :sort-order="1"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
@@ -76,6 +77,7 @@ import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
+import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const router = useRouter();
 const toast = useToast();
@@ -90,7 +92,7 @@ const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 const columns = ref<Column[]>([
   { field: "number", header: "Número", sortable: true, style: "width: 15%" },
   { field: "createdOn", header: "Data Creació", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
-  { field: "deliveryDate", header: "Data Entrega", columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "deliveryDate", header: "Data Entrega", columnType: ColumnType.Date, sortable: true, style: "width: 15%" },
   {
     field: "customerId",
     header: "Client",
@@ -106,6 +108,8 @@ const columns = ref<Column[]>([
     style: "width: 30%",
   },
 ]);
+
+const filterMetadata = createSalesTableViewFilterMetadata(columns.value);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

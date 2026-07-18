@@ -1,4 +1,6 @@
 import _ from "lodash";
+// Local polyfill: `uuid` was removed in LOT 0; use the Web Crypto API.
+const uuidv4 = (): string => crypto.randomUUID();
 
 Date.prototype.toJSON = function () {
   const hoursDiff = this.getHours() - this.getTimezoneOffset() / 60;

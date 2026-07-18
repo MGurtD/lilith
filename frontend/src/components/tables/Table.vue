@@ -7,6 +7,7 @@ import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
+import type { DataTableRowClickEvent } from "primevue/datatable";
 import { useStore } from "@/store";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
@@ -27,6 +28,7 @@ const PRESET_DEFAULTS: Record<TablePreset, Record<string, unknown>> = {
     scrollHeight: "flex",
     stripedRows: true,
     rowHover: true,
+    sortMode: "single",
   },
   "read-only": {
     paginator: false,
@@ -56,6 +58,8 @@ const props = withDefaults(
     columns: Column[];
     items: readonly any[];
     filterConfig?: FilterConfig[];
+    filterLabels?: Record<string, string>;
+    filterValueResolvers?: Record<string, (value: unknown) => string>;
     filterValues?: any;
     filterBodyWidth?: FilterBodyWidth;
     showFilters?: boolean;
@@ -96,7 +100,7 @@ const resolvedDataTableProps = computed(() => {
   return { ...presetRest, ...explicit, ...attrs };
 });
 
-// Sort: consumer prop takes priority, then active view config.
+// Sort: active view config takes priority, then consumer prop.
 // Bound explicitly in template so PrimeVue detects each prop change independently.
 // Guarded against incomplete sort configs — PrimeVue's multiSortField accessor
 // crashes on `multiSortMeta[0].field` when sortField is undefined but sortOrder
@@ -106,21 +110,31 @@ const resolvedDataTableProps = computed(() => {
 // the single {field, order} sort config into a single-element multiSortMeta
 // array, and skip the sortField/sortOrder bindings to avoid feeding PrimeVue
 // an inconsistent state.
-const isMultipleSort = computed(() => attrs.sortMode === "multiple");
+const isMultipleSort = computed(
+  () => attrs.sortMode === "multiple" || attrs["sort-mode"] === "multiple",
+);
 const resolvedSortField = computed(() => {
   if (isMultipleSort.value) return undefined;
-  const field = props.sortField ?? activeSortConfig.value?.field;
+  const field = activeViewId.value
+    ? activeSortConfig.value?.field
+    : props.sortField ?? activeSortConfig.value?.field;
   return field ? field : undefined;
 });
 const resolvedSortOrder = computed(() => {
   if (isMultipleSort.value) return undefined;
   if (!resolvedSortField.value) return undefined;
-  return props.sortOrder ?? activeSortConfig.value?.order;
+  return activeViewId.value
+    ? activeSortConfig.value?.order
+    : props.sortOrder ?? activeSortConfig.value?.order;
 });
 const resolvedMultiSortMeta = computed(() => {
   if (!isMultipleSort.value) return undefined;
-  const field = props.sortField ?? activeSortConfig.value?.field;
-  const order = props.sortOrder ?? activeSortConfig.value?.order;
+  const field = activeViewId.value
+    ? activeSortConfig.value?.field
+    : props.sortField ?? activeSortConfig.value?.field;
+  const order = activeViewId.value
+    ? activeSortConfig.value?.order
+    : props.sortOrder ?? activeSortConfig.value?.order;
   if (!field || order === undefined) return undefined;
   return [{ field, order: order as 1 | -1 }];
 });
@@ -178,6 +192,7 @@ const emit = defineEmits<{
   (e: "create"): void;
   (e: "delete", item: any): void;
   (e: "update:sortConfig", value: SortConfig | null): void;
+  (e: "row-click", event: DataTableRowClickEvent): void;
 }>();
 
 const slots = useSlots();
@@ -189,59 +204,181 @@ const viewStore = useUserTableViewStore();
 
 const appliedColumns = ref<Column[]>([...props.columns]);
 const activeViewId = ref<string>("");
+const activeIsDefault = ref(false);
 const viewConfigVisible = ref(false);
 const activeSortConfig = ref<SortConfig | null>(null);
+
+// Increments each time the user triggers a "clear filters" action. Used as
+// the Vue :key on the embedded TableFilter so PrimeVue InputText/Select
+// inputs are forced to remount with the cleared modelValue. PrimeVue's
+// InputText does not always re-sync its internal <input> when an external
+// modelValue flips from a typed string back to "" — a remount guarantees
+// a clean DOM. Only bumped on @clear, never on @filter, so the user's
+// focus and selection state are preserved while typing.
+const clearKey = ref(0);
+
+function bumpClearKey() {
+  clearKey.value++;
+}
+
+// Tracks whether the user has changed ANY part of the table state
+// (filters, columns visibility/order, or sort) since the last successful
+// auto-save (or since mount). Set to true on:
+//   - @filter / @clear (filter values)
+//   - onSortConfigUpdate (sort field/order via dialog)
+//   - watch on appliedColumns (column visibility/order via dialog)
+// Cleared in onRowClick right after dispatching the save. Drives whether
+// the row-click handler fires a PUT to the backend.
+const stateDirty = ref(false);
+
+function markStateDirty() {
+  stateDirty.value = true;
+}
 
 function onApplyViewConfig(columns: Column[], viewId: string) {
   appliedColumns.value = columns;
   activeViewId.value = viewId;
-  // Apply filter config if present
-  const view = viewStore.views.find((v) => v.id === viewId);
-  if (view) {
-    const filterValues = viewStore.applyFilterConfig(view);
-    if (filterValues) {
-      emit("update:filterValues", filterValues);
-      emit("filter");
-    }
-  }
+  // Refresh the cached default flag from the (possibly updated) store
+  // snapshot. Falls back to false when the view isn't in the list yet
+  // (e.g. a brand-new view created in the same tick before
+  // `viewStore.create`'s internal fetchViews has resolved).
+  const matched = viewStore.views.find((v) => v.id === viewId);
+  activeIsDefault.value = matched?.isDefault ?? false;
+  // Applying a saved view restores persisted state — it's NOT a user
+  // mutation. Reset the dirty flag so the next row click doesn't
+  // re-save the same config we just loaded.
+  stateDirty.value = false;
 }
 
 function onSortConfigUpdate(sortConfig: SortConfig | null) {
   activeSortConfig.value = sortConfig;
+  // Sort was changed by the user via the dialog → state is dirty.
+  markStateDirty();
   emit("update:sortConfig", sortConfig);
+}
+
+// Build the columns payload to persist: only the fields needed to
+// reconstruct visibility + order. Mirrors what TableViewConfig.buildViewConfig
+// does on save (filters out columns that don't carry user choices).
+function buildColumnsPayload(): Array<{ field: string; visible?: boolean; order?: number }> {
+  return appliedColumns.value
+    .filter((col) => col.order !== undefined || col.visible === false)
+    .map((col) => ({
+      field: col.field,
+      visible: col.visible,
+      order: col.order,
+    }));
+}
+
+// Row-click handler: forwards the event to the consumer (for navigation)
+// and, when state is dirty + the active view is the default view, kicks
+// off a fire-and-forget save of the full table state (columns + sort +
+// filters) to that default view. The save never blocks navigation;
+// errors are logged, not surfaced.
+//
+// Auto-save is gated on `activeIsDefault` rather than `activeViewId !== ""`
+// because the user may have selected a non-default view: in that case
+// the row click should not overwrite state onto a view that isn't theirs.
+function onRowClick(event: DataTableRowClickEvent) {
+  emit("row-click", event);
+  if (
+    stateDirty.value &&
+    activeIsDefault.value &&
+    activeViewId.value !== "" &&
+    store.user?.id &&
+    props.page
+  ) {
+    stateDirty.value = false;
+    viewStore
+      .saveStateToDefault(store.user.id, props.page, {
+        columns: buildColumnsPayload(),
+        sort: activeSortConfig.value ?? undefined,
+        filters: props.filterValues,
+      })
+      .catch((err) => {
+        console.warn("[Table] auto-save state failed", err);
+        // Re-arm so the next change retries instead of getting lost.
+        stateDirty.value = true;
+      });
+  }
+}
+
+// Wraps the original @filter / @clear emits so we can also mark the
+// state as dirty (which arms the row-click auto-save). Original emits
+// are kept so consumers continue to receive the events. The clear path
+// also bumps clearKey to force a remount of the embedded TableFilter,
+// guaranteeing that PrimeVue <InputText>/<Select> inputs re-sync their
+// DOM value when the consumer clears the filter model.
+function onFilterApplied() {
+  markStateDirty();
+  emit("filter");
+}
+
+function onClearApplied() {
+  bumpClearKey();
+  markStateDirty();
+  emit("clear");
 }
 
 async function loadDefaultView() {
   const userId = store.user?.id;
   if (!userId || !props.page) return;
 
+  // Reset dirty flag: loading a saved view means we're starting from a
+  // clean state — the user hasn't touched anything new yet.
+  stateDirty.value = false;
+
   await viewStore.fetchViews(userId, props.page);
-  const defaultView = viewStore.getDefaultView(userId, props.page);
+
+  const userViews = viewStore.views.filter(
+    (v) => v.userId === userId && v.page === props.page
+  );
+
+  const defaultView =
+    userViews.find((v) => v.isDefault) ?? userViews[0] ?? null;
+
   if (defaultView) {
     appliedColumns.value = viewStore.applyView(defaultView, props.columns);
     activeViewId.value = defaultView.id;
-    // Apply filter config if present
+    activeIsDefault.value = defaultView.isDefault;
     const filterValues = viewStore.applyFilterConfig(defaultView);
     if (filterValues) {
       emit("update:filterValues", filterValues);
       emit("filter");
     }
-    // Apply sort config if present
     const sortConfig = viewStore.applySortConfig(defaultView);
     activeSortConfig.value = sortConfig;
     emit("update:sortConfig", sortConfig);
   } else {
     appliedColumns.value = [...props.columns];
     activeViewId.value = "";
+    activeIsDefault.value = false;
     activeSortConfig.value = null;
     emit("update:sortConfig", null);
+  }
+}
+
+// Provision a default only when there are no saved views for the user on this
+// page. Existing views are loaded by `ensureDefaultAndLoad` afterwards.
+async function provisionDefaultOnFirstVisit() {
+  if (!props.page) return;
+  const userId = store.user?.id;
+  if (!userId) return;
+
+  if (viewStore.views.some((v) => v.userId === userId && v.page === props.page))
+    return;
+
+  try {
+    await viewStore.ensureDefault(userId, props.page);
+  } catch (err) {
+    console.warn("[Table] ensureDefault failed", err);
   }
 }
 
 // Watch for user authentication to load default view after page refresh
 watch(() => store.user?.id, (newUserId, oldUserId) => {
   if (newUserId && props.page && newUserId !== oldUserId) {
-    loadDefaultView();
+    ensureDefaultAndLoad();
   }
 }, { immediate: true });
 
@@ -253,59 +390,36 @@ onMounted(async () => {
       const unwatch = watch(() => store.user?.id, (userId) => {
         if (userId) {
           unwatch();
-          loadDefaultView().then(restoreFiltersIfNeeded);
+          ensureDefaultAndLoad();
         }
       });
     } else {
-      await loadDefaultView();
-      restoreFiltersIfNeeded();
+      await ensureDefaultAndLoad();
     }
   }
 });
 
-onUnmounted(() => {
-  if (props.page && activeViewId.value === "" && props.filterValues) {
-    const serialized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(props.filterValues)) {
-      if (value instanceof Date) {
-        serialized[key] = value.toISOString();
-      } else if (Array.isArray(value)) {
-        serialized[key] = value.map((v) => v instanceof Date ? v.toISOString() : v);
-      } else {
-        serialized[key] = value;
-      }
-    }
-    localStorage.setItem(`lilith-table-filters-${props.page}`, JSON.stringify(serialized));
-  }
-});
+// Orchestrates the autoprovision + load + restore sequence on mount.
+// Provisioning is conservative: the default view is auto-created only
+// when the user has NO views on this page. If they explicitly deleted
+// the default view, the first remaining view is loaded instead.
+async function ensureDefaultAndLoad() {
+  if (!props.page) return;
+  const userId = store.user?.id;
+  if (!userId) return;
 
-function restoreFiltersIfNeeded() {
-  if (props.page && activeViewId.value === "") {
-    const saved = localStorage.getItem(`lilith-table-filters-${props.page}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Convert date strings back to Date objects
-        const deserialized: Record<string, unknown> = {};
-        for (const [key, value] of Object.entries(parsed)) {
-          if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/)) {
-            deserialized[key] = new Date(value);
-          } else if (Array.isArray(value)) {
-            deserialized[key] = value.map((v) =>
-              typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}T/) ? new Date(v) : v
-            );
-          } else {
-            deserialized[key] = value;
-          }
-        }
-        emit("update:filterValues", deserialized);
-        emit("filter");
-      } catch {
-        // Invalid JSON, ignore
-      }
-    }
-  }
+  await provisionDefaultOnFirstVisit();
+  await loadDefaultView();
 }
+
+// The database is the single source of truth for table state. Any
+// stale localStorage snapshot from earlier iterations could shadow a
+// freshly-saved server view on remount, so we clear it on unmount.
+onUnmounted(() => {
+  if (props.page) {
+    localStorage.removeItem(`lilith-table-filters-${props.page}`);
+  }
+});
 
 watch(() => props.columns, (newColumns) => {
   if (props.page && activeViewId.value) {
@@ -317,6 +431,19 @@ watch(() => props.columns, (newColumns) => {
     }
   } else {
     appliedColumns.value = [...newColumns];
+  }
+}, { deep: true });
+
+// Watch for user-driven changes to column visibility or order applied
+// through TableViewConfig. The dialog mutates `appliedColumns` via its
+// own local state and applies it back through onApplyViewConfig — but
+// we also catch manual mutations here so any path that flips a column
+// off or reorders it marks the state dirty for the row-click save.
+watch(appliedColumns, () => {
+  if (props.page && activeViewId.value !== "") {
+    // Skip the initial assignment that loadDefaultView performs
+    // (stateDirty is already false there). Other changes are user-driven.
+    markStateDirty();
   }
 }, { deep: true });
 
@@ -429,6 +556,7 @@ function formatCellValue(col: Column, data: any): string {
     :sortField="resolvedSortField"
     :sortOrder="resolvedSortOrder"
     :multiSortMeta="resolvedMultiSortMeta"
+    @row-click="onRowClick"
   >
     <!-- TableFilter embedded in DataTable's native header slot -->
     <template
@@ -436,6 +564,7 @@ function formatCellValue(col: Column, data: any): string {
       #header
     >
       <TableFilter
+        :key="clearKey"
         :config="filterConfig"
         :model-value="filterValues"
         :body-width="filterBodyWidth"
@@ -443,8 +572,8 @@ function formatCellValue(col: Column, data: any): string {
         :show-action-labels="false"
         embedded
         @update:model-value="emit('update:filterValues', $event)"
-        @filter="emit('filter')"
-        @clear="emit('clear')"
+        @filter="onFilterApplied"
+        @clear="onClearApplied"
         @create="emit('create')"
       >
         <!-- Forward #prepend and #append to TableFilter -->
@@ -565,6 +694,9 @@ function formatCellValue(col: Column, data: any): string {
     :active-view-id="activeViewId"
     :filter-values="filterValues"
     :active-sort-config="activeSortConfig"
+    :filter-config="filterConfig"
+    :filter-labels="filterLabels"
+    :filter-value-resolvers="filterValueResolvers"
     @apply-config="onApplyViewConfig"
     @update:sort-config="onSortConfigUpdate"
     @update:filter-values="emit('update:filterValues', $event)"

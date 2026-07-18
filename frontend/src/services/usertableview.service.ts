@@ -58,4 +58,26 @@ export class UserTableViewService {
     );
     return response.status === 200;
   }
+
+  /**
+   * Returns the default view for (userId, page) if one exists. Otherwise:
+   *   - creates a "Per defecte" view if the user has NO views on that page.
+   *   - returns null when other views exist but none are flagged default
+   *     (user explicitly deleted the default — respect their choice).
+   *
+   * Safe to call concurrently; the backend dedupes via the unique key
+   * UK_UserTableView_UserId_Page_Name.
+   */
+  public async EnsureDefault(
+    userId: string,
+    page: string
+  ): Promise<UserTableView | null | undefined> {
+    let response = await this.apiClient.post(
+      `${this.resource}/ensure-default`,
+      { userId, page }
+    );
+    if (response.status === 200) {
+      return (response.data ?? null) as UserTableView | null;
+    }
+  }
 }

@@ -3,6 +3,8 @@
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -48,6 +50,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency } from "../../../utils/functions";
+import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const customerStore = useCustomersStore();
 
@@ -87,6 +90,10 @@ const columns = ref<Column[]>([
   { field: "isService", header: "Servei", columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
 
+const filterMetadata = createSalesTableViewFilterMetadata(columns.value, {
+  dateLabel: "Data creació",
+});
+
 const filter = ref({
   code: "",
   description: "",
@@ -95,10 +102,12 @@ const filter = ref({
 });
 
 const cleanFilter = () => {
-  filter.value.code = "";
-  filter.value.customerId = "";
-  filter.value.description = "";
-  filter.value.dates = undefined;
+  filter.value = {
+    code: "",
+    description: "",
+    customerId: "",
+    dates: undefined,
+  };
 };
 
 const props = defineProps<{

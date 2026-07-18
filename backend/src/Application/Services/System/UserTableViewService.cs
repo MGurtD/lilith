@@ -1,11 +1,14 @@
 using Application.Contracts;
 using Application.Services;
 using Domain.Entities.Auth;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services.System
 {
     public class UserTableViewService(IUnitOfWork unitOfWork, ILocalizationService localizationService) : IUserTableViewService
     {
+        private const string DefaultViewName = "Per defecte";
+
         public async Task<IEnumerable<UserTableView>> GetByUserAndPage(Guid userId, string page)
         {
             var views = unitOfWork.UserTableViews.Find(v => v.UserId == userId && v.Page == page);
@@ -115,6 +118,65 @@ namespace Application.Services.System
 
             await unitOfWork.UserTableViews.Update(existing);
             return new GenericResponse(true, existing);
+        }
+
+        public async Task<GenericResponse> EnsureDefault(EnsureDefaultRequest request)
+        {
+            var existingDefault = unitOfWork.UserTableViews
+                .Find(v => v.UserId == request.UserId &&
+                           v.Page == request.Page &&
+                           v.IsDefault)
+                .FirstOrDefault();
+
+            if (existingDefault != null)
+                return new GenericResponse(true, existingDefault);
+
+            var anyView = unitOfWork.UserTableViews
+                .Find(v => v.UserId == request.UserId &&
+                           v.Page == request.Page)
+                .Any();
+
+            if (anyView)
+            {
+                return new GenericResponse(true, (object?)null);
+            }
+
+            var newDefault = new UserTableView
+            {
+                Id = Guid.NewGuid(),
+                UserId = request.UserId,
+                Page = request.Page,
+                Name = DefaultViewName,
+                IsDefault = true,
+                ViewConfig = "{\"columns\":[]}",
+            };
+
+            try
+            {
+                await unitOfWork.UserTableViews.Add(newDefault);
+                return new GenericResponse(true, newDefault);
+            }
+            catch (DbUpdateException)
+            {
+                var persistedDefault = unitOfWork.UserTableViews
+                    .Find(v => v.UserId == request.UserId &&
+                               v.Page == request.Page &&
+                               v.IsDefault)
+                    .FirstOrDefault();
+
+                if (persistedDefault != null)
+                    return new GenericResponse(true, persistedDefault);
+
+                var any = unitOfWork.UserTableViews
+                    .Find(v => v.UserId == request.UserId &&
+                               v.Page == request.Page)
+                    .Any();
+
+                if (any)
+                    return new GenericResponse(true, (object?)null);
+
+                throw;
+            }
         }
     }
 }

@@ -6,6 +6,12 @@ import { getNewUuid } from "../utils/functions";
 import type { Column, Aggregation } from "@/components/tables/types";
 import { hydrateFilter } from "../utils/filter-hydrate";
 
+// Module-level cache for in-flight EnsureDefault promises. Keyed by
+// `${userId}:${page}` so concurrent calls (e.g. multiple <Table> instances
+// on the same page during dev hot-reload) share the same promise and
+// hit the backend only once. Cleared on resolve/reject.
+const ensureInFlight = new Map<string, Promise<UserTableView | null>>();
+
 interface ColumnConfig {
   field: string;
   visible?: boolean;
@@ -80,6 +86,144 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
     },
 
     /**
+     * Idempotent get-or-create for the default view on `(userId, page)`.
+     * Concurrent calls share the same in-flight promise. After settle,
+     * refreshes the views list so the newly-created default is visible.
+     *
+     * Returns `null` when the user has at least one view on this page but
+     * none is flagged as default — respect an explicit delete. The caller
+     * decides what to do (e.g. pick the first view, prompt the user).
+     */
+    async ensureDefault(
+      userId: string,
+      page: string
+    ): Promise<UserTableView | null> {
+      const key = `${userId}:${page}`;
+      const cached = ensureInFlight.get(key);
+      if (cached) return cached;
+
+      const promise = (async () => {
+        const view = await AppServices.UserTableView.EnsureDefault(
+          userId,
+          page
+        );
+        // Refresh the views list so the store reflects backend state.
+        await this.fetchViews(userId, page);
+        return view ?? null;
+      })();
+
+      ensureInFlight.set(key, promise);
+      try {
+        return await promise;
+      } finally {
+        ensureInFlight.delete(key);
+      }
+    },
+
+    /**
+     * Persist current filterValues into the default view's viewConfig.filters.
+     * Read-modify-write: GET existing → merge filters only (preserve columns
+     * and sort) → PUT. Errors are swallowed and logged (non-critical
+     * background operation triggered by row click).
+     */
+    async saveFiltersToDefault(
+      userId: string,
+      page: string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filterValues: any
+    ): Promise<boolean> {
+      return this.saveStateToDefault(userId, page, {
+        filters: filterValues,
+      });
+    },
+
+    /**
+     * Persist the full table state (columns + sort + filters) into the
+     * default view's viewConfig. Each section is optional — missing sections
+     * preserve whatever was already in the persisted viewConfig.
+     *
+     * Read-modify-write: GET existing → merge provided sections → PUT.
+     * Errors are swallowed and logged (non-critical background operation
+     * triggered by row click).
+     *
+     * @param state.columns Column overrides: array of `{ field, visible?, order? }`.
+     *                      Pass the CURRENT base columns (filtered from
+     *                      `appliedColumns`) so the persisted config reflects
+     *                      what the user actually sees.
+     * @param state.sort    Optional sort config `{ field, order: 1|-1 }`.
+     * @param state.filters Optional filter object snapshot from the UI.
+     */
+    async saveStateToDefault(
+      userId: string,
+      page: string,
+      state: {
+        columns?: Array<{ field: string; visible?: boolean; order?: number }>;
+        sort?: SortConfig;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filters?: any;
+      }
+    ): Promise<boolean> {
+      try {
+        await this.fetchViews(userId, page);
+        const defaultView = this.views.find(
+          (v) => v.userId === userId && v.page === page && v.isDefault
+        );
+        if (!defaultView) {
+          // No default exists and the user has chosen not to have one
+          // (deleted explicit). Skip persistence silently.
+          return false;
+        }
+
+        // Parse existing viewConfig, preserving any sections we don't touch.
+        let config: ViewConfig = { columns: [] };
+        if (defaultView.viewConfig) {
+          try {
+            const parsed = JSON.parse(defaultView.viewConfig);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+              config = parsed as ViewConfig;
+            }
+          } catch {
+            // Corrupted JSON — start fresh but keep the row
+          }
+        }
+
+        // Merge each provided section, replacing existing values entirely.
+        // Filters are a UI snapshot (not additive), same for sort. Columns
+        // are also a full snapshot so reordering or hiding sticks.
+        if (state.columns !== undefined) {
+          config.columns = state.columns;
+        }
+        if (state.sort !== undefined) {
+          config.sort = state.sort;
+        }
+        if (state.filters !== undefined) {
+          config.filters =
+            state.filters && typeof state.filters === "object"
+              ? (state.filters as Record<string, unknown>)
+              : undefined;
+        }
+
+        const viewConfigJson = JSON.stringify(config);
+        if (viewConfigJson === defaultView.viewConfig) {
+          // No-op: avoid the PUT when nothing changed (idempotency guard)
+          return true;
+        }
+
+        const updated = await AppServices.UserTableView.Update(
+          defaultView.id,
+          { ...defaultView, viewConfig: viewConfigJson }
+        );
+        if (updated) {
+          await this.fetchViews(userId, page);
+        }
+        return updated;
+      } catch (err) {
+        console.warn("[UserTableViewStore] saveStateToDefault failed", err);
+        return false;
+      }
+    },
+
+    /**
      * Apply a saved view's configuration to base columns.
      * Parses the unified ViewConfig JSON and extracts column configuration.
      */
@@ -103,8 +247,12 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
 
       // Create a map of base columns by field name for quick lookup
       const baseColumnsMap = new Map<string, Column>();
-      baseColumns.forEach((col) => {
-        baseColumnsMap.set(col.field, { ...col });
+      baseColumns.forEach((col, index) => {
+        baseColumnsMap.set(col.field, {
+          ...col,
+          visible: col.visible !== false,
+          order: col.order ?? index,
+        });
       });
 
       // Apply configuration to each column in config
@@ -180,7 +328,8 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       name: string,
       columns: Column[],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      filterValues?: any
+      filterValues?: any,
+      sort?: SortConfig
     ): UserTableView {
       // Build column config from current column state
       const columnConfig: ColumnConfig[] = columns
@@ -197,6 +346,9 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       };
       if (filterValues) {
         viewConfig.filters = filterValues;
+      }
+      if (sort) {
+        viewConfig.sort = sort;
       }
 
       return {
