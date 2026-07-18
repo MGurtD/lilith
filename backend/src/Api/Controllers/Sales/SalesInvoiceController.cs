@@ -7,7 +7,10 @@ namespace Api.Controllers.Sales
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SalesInvoiceController(ISalesInvoiceService service, ISalesInvoiceReportService reportService) : ControllerBase
+    public class SalesInvoiceController(
+        ISalesInvoiceService service,
+        ISalesInvoiceReportService reportService,
+        ISalesInvoicePdfService pdfService) : ControllerBase
     {
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -57,6 +60,19 @@ namespace Api.Controllers.Sales
             if (invoiceDto is null) return NotFound();
 
             return Ok(invoiceDto);
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetInvoicePdf(Guid id)
+        {
+            var invoiceDto = await reportService.GetReportById(id);
+            if (invoiceDto is null) return NotFound();
+
+            var pdf = pdfService.Generate(invoiceDto);
+            return File(pdf, "application/pdf", $"factura-{invoiceDto.Number}.pdf");
         }
 
         [HttpGet]

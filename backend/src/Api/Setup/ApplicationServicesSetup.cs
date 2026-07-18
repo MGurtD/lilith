@@ -12,14 +12,20 @@ using Application.Contracts;
 using Application.Contracts.Services.Geolocalization;
 using Application.Contracts.Services.GitHub;
 using Infrastructure.Persistance;
+using Infrastructure.Reports;
+using QuestPDF.Infrastructure;
 
 namespace Api.Setup;
 
 public static class ApplicationServicesSetup
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, bool enableQuestPdfDebugging = false)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+        QuestPDF.Settings.EnableDebugging = enableQuestPdfDebugging;
+
         services.AddSingleton<IQrCodeService, QrCodeService>();
+        services.AddSingleton<ISalesInvoicePdfService, SalesInvoicePdfService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();

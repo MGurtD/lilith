@@ -33,7 +33,7 @@ try
 
         builder.Services
             .AddDatabaseServices(appSettings.ConnectionStrings.Default)
-            .AddApplicationServices()
+            .AddApplicationServices(builder.Environment.IsDevelopment())
             .AddJwtSetup(builder.Environment.IsDevelopment(), appSettings.JwtConfig.Secret)
             .AddSwaggerSetup()
             .AddLocalizationSetup(); // Add localization services
