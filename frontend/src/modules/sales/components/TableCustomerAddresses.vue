@@ -53,7 +53,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import FormCustomerAddress from "./FormCustomerAddress.vue";
 import { CustomerAddress } from "../types";
 import { storeToRefs } from "pinia";
@@ -79,7 +79,7 @@ const selectedAddress = ref(undefined as CustomerAddress | undefined);
 const createButtonClick = () => {
   selectedAddress.value = {
     customerId: customer.value?.id,
-    id: uuidv4(),
+    id: getNewUuid(),
     name: "",
     country: "",
     region: "",

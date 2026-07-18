@@ -36,7 +36,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
@@ -61,7 +61,7 @@ onMounted(async () => {
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/expensetype/${uuidv4()}` });
+  router.push({ path: `/expensetype/${getNewUuid()}` });
 };
 
 const editExpenseType = (row: DataTableRowClickEvent) => {

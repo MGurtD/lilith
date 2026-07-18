@@ -45,7 +45,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -93,7 +93,7 @@ watch(
 );
 
 const createButtonClick = () => {
-  router.push({ path: `/tax/${uuidv4()}` });
+  router.push({ path: `/tax/${getNewUuid()}` });
 };
 
 const edit = (row: DataTableRowClickEvent) => {

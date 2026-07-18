@@ -48,7 +48,7 @@
   />
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -135,11 +135,11 @@ const cleanCustomerFilter = () => {
 };
 
 const createCustomer = () => {
-  router.push({ path: `/customers/${uuidv4()}` });
+  router.push({ path: `/customers/${getNewUuid()}` });
 };
 
 const createCustomerType = () => {
-  router.push({ path: `/customer-types/${uuidv4()}` });
+  router.push({ path: `/customer-types/${getNewUuid()}` });
 };
 
 onMounted(async () => {

@@ -8,7 +8,7 @@ import { useStore } from "../store";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useMenusStore } from "../store/menus";
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../utils/functions";
 import TableFilter, {
   type FilterConfig,
   type FilterBodyWidth,
@@ -106,7 +106,7 @@ const loading = computed(
   () => menusStore.loading || menusStore.treeLoading || menusStore.saving
 );
 
-const createNew = () => router.push({ path: `/menuitem/${uuidv4()}` });
+const createNew = () => router.push({ path: `/menuitem/${getNewUuid()}` });
 
 const clearFilter = () => {
   filter.value.search = "";

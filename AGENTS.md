@@ -250,24 +250,35 @@ pnpm install
 pnpm run dev
 ```
 
-## CodeGraph (Semantic Code Intelligence)
+## Codebase Memory MCP (Code Intelligence)
 
-This project has CodeGraph initialized (`.codegraph/` exists). It provides a pre-indexed knowledge graph via MCP tools.
+This project uses [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) as its code intelligence layer. It indexes the repository into a persistent knowledge graph and exposes **14 MCP tools** that answer structural questions in milliseconds without dumping source.
+
+**Available tools (14):**
+
+Indexing: `index_repository`, `list_projects`, `delete_project`, `index_status`
+Querying: `search_graph`, `trace_path`, `detect_changes`, `query_graph`, `get_graph_schema`, `get_code_snippet`, `get_architecture`, `search_code`, `manage_adr`, `ingest_traces`
 
 **Rules for the main agent (build):**
-- **NEVER** use `codegraph_explore` or `codegraph_context` directly — they return large source dumps that inflate context
-- **DO** use these lightweight tools for targeted lookups before editing:
-  - `codegraph_search` — find symbols by name
-  - `codegraph_callers` / `codegraph_callees` — trace call flow
-  - `codegraph_impact` — check what's affected before editing
-  - `codegraph_node` — get a single symbol's details
+- **NEVER** use `get_code_snippet` or `search_code` reflexively for every symbol — they return source and inflate context
+- **DO** prefer lightweight structural tools for targeted lookups before editing:
+  - `search_graph` — find symbols by name/label/file/degree
+  - `trace_path` — BFS call graph traversal (depth 1–5)
+  - `detect_changes` — map git diff to affected symbols
+  - `query_graph` — openCypher read-only queries
+  - `get_architecture` — high-level codebase overview
+  - `get_graph_schema` — node/edge/property reference
+  - `index_status` / `list_projects` — health check
+- Reach for `get_code_snippet` only when you need the exact body of one specific symbol
+- Reach for `search_code` only when no structural tool answers the question
 
 **Rules for subagents (explore, backend, frontend):**
-- Use `codegraph_explore` as the PRIMARY tool for exploration questions
-- Do NOT re-read files that `codegraph_explore` already returned source code for
-- Only fall back to grep/glob/read if codegraph returned no results
+- Use `get_architecture` and `search_graph` as the PRIMARY tools for exploration questions
+- Do NOT re-read files that `search_code` / `get_code_snippet` already returned source code for
+- Only fall back to grep/glob/read if the MCP returned no results
 
 **Maintenance:**
-- `codegraph sync` — incremental update (auto-sync runs via file watcher in MCP server)
-- `codegraph status` — check index health
-- After major refactors: `codegraph index --force` to rebuild
+- Indexing is automatic once `auto_index` is enabled; the background watcher keeps the graph fresh on file changes
+- `codebase-memory-mcp list_projects` — verify the project is indexed
+- `codebase-memory-mcp cli search_graph '{"name_pattern": ".*Handler.*"}'` — query from CLI
+- After major refactors, the watcher re-indexes automatically; force a rebuild with `codebase-memory-mcp delete_project` + `index_repository`

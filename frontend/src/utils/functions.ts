@@ -178,8 +178,8 @@ export const createBlobAndDownloadFile = (
   setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
-export const getNewUuid = () => {
-  return uuidv4();
+export const getNewUuid = (): string => {
+  return crypto.randomUUID();
 };
 
 export const extractTime = (isoString: string | null): string => {

@@ -159,7 +159,6 @@
   </DataTable>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -170,11 +169,7 @@ import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
 import { useSuppliersStore } from "../store/suppliers";
 import { onMounted, ref, computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
-import {
-  formatDateForQueryParameter,
-  formatDate,
-  formatCurrency,
-} from "../../../utils/functions";
+import { formatDateForQueryParameter, formatDate, formatCurrency, getNewUuid } from "../../../utils/functions";
 import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
@@ -341,7 +336,7 @@ const totalNetAmount = computed(() =>
 );
 
 const createButtonClick = () => {
-  router.push({ path: `/purchaseInvoice/${uuidv4()}` });
+  router.push({ path: `/purchaseInvoice/${getNewUuid()}` });
 };
 
 const editPurchaseInvoice = (row: DataTableRowClickEvent) => {

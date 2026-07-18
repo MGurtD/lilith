@@ -85,7 +85,6 @@
 <script setup lang="ts">
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
@@ -95,7 +94,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkcenterCost } from "../types";
-import { formatCurrency } from "../../../utils/functions";
+import { formatCurrency, getNewUuid } from "../../../utils/functions";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const router = useRouter();
@@ -185,7 +184,7 @@ const getMachineStatusById = (id: string) => {
 };
 
 const createButtonClick = () => {
-  router.push({ path: `/workcentercost/${uuidv4()}` });
+  router.push({ path: `/workcentercost/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
