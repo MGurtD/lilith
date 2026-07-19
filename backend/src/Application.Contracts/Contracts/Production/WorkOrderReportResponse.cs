@@ -1,8 +1,12 @@
 
+using Domain.Entities.Production;
+
 namespace Application.Contracts;
 
 public class WorkOrderReportResponse : ReportResponse
 {
+    public required Site Site { get; set; }
+    public required Enterprise Enterprise { get; set; }
     public required WorkOrderReportDto Order { get; set; }
     public required List<WorkOrderPhaseReportDto> Phases { get; set; }
     public required List<WorkOrderPhaseBillOfMaterialsReportDto> BillOfMaterials { get; set; }

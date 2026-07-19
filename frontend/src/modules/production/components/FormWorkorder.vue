@@ -116,6 +116,7 @@ const emit = defineEmits<{
   (e: "submit", workorder: WorkOrder): void;
   (e: "cancel"): void;
   (e: "download"): void;
+  (e: "downloadPdf"): void;
 }>();
 
 const toast = useToast();
@@ -128,6 +129,11 @@ const items = [
     label: "Descarregar",
     icon: PrimeIcons.FILE_WORD,
     command: () => emit("download"),
+  },
+  {
+    label: "Imprimir PDF",
+    icon: PrimeIcons.FILE_PDF,
+    command: () => emit("downloadPdf"),
   },
 ];
 

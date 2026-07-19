@@ -9,6 +9,12 @@ namespace Application.Services.Production
             var workOrder = await unitOfWork.WorkOrders.GetDetailed(id);
             if (workOrder == null) return null;
 
+            var site = (await unitOfWork.Sites.FindAsync(s => !s.Disabled)).FirstOrDefault();
+            if (site == null) return null;
+
+            var enterprise = await unitOfWork.Enterprises.Get(site.EnterpriseId);
+            if (enterprise == null) return null;
+
             var status = await unitOfWork.Lifecycles.StatusRepository.Get(workOrder.StatusId);
             var machineStatuses = await unitOfWork.MachineStatuses.FindAsync(s => !s.Disabled);
             var operatorTypes = await unitOfWork.OperatorTypes.FindAsync(ot => !ot.Disabled);
@@ -79,6 +85,8 @@ namespace Application.Services.Production
 
             return new WorkOrderReportResponse()
             {
+                Site = site,
+                Enterprise = enterprise,
                 Order = orderDto,
                 Phases = phaseDtos,
                 BillOfMaterials = bomDtos

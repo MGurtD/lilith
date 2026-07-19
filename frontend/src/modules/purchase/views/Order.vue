@@ -96,6 +96,11 @@ const items = [
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(),
   },
+  {
+    label: "Imprimir PDF",
+    icon: PrimeIcons.FILE_PDF,
+    command: () => printPdf(),
+  },
 ];
 
 const loadView = async () => {
@@ -263,4 +268,9 @@ const printInvoice = async () => {
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.Order.DownloadPdf(order.value!.id);
+  if (report) createBlobAndDownloadFile(`ComandaCompra_${order.value?.number}.pdf`, report);
+};
+
 </script>

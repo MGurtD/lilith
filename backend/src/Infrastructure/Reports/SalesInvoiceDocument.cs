@@ -1,5 +1,6 @@
 using System.Globalization;
 using Application.Contracts;
+using Infrastructure.Reports.Common.Components;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -34,6 +35,7 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
             page.MarginHorizontal(28);
             page.MarginVertical(28);
             page.DefaultTextStyle(style => style.FontSize(9));
+            page.Foreground().Element(ReportWatermark.Compose);
             page.Header().Element(ComposeHeader);
             page.Content().PaddingTop(4).Column(ComposeContent);
             page.Footer().Element(ComposeFooter);

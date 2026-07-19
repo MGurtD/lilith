@@ -14,11 +14,14 @@ namespace Application.Contracts
         public string TableUnitPrice { get; set; } = localizationService.GetLocalizedStringForCulture("Report.TableUnitPrice", languageCode);
         public string TableImport { get; set; } = localizationService.GetLocalizedStringForCulture("Report.TableAmount", languageCode);
         public string TableTotal { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.TableTotal", languageCode);
+        public string TableOrderTotal { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.OrderTotal", languageCode);
         public string FooterSignature { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.CustomerSign", languageCode);
+        public string FooterSignatureHint { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.CustomerSignHint", languageCode);
         public string ReturnsPolicy { get; set; } = localizationService.GetLocalizedStringForCulture("Report.DeliveryNote.ReturnsPolicy", languageCode);
 
         public Customer? Customer { get; set; }
         public Site? Site { get; set; }
+        public Enterprise? Enterprise { get; set; }
         public DeliveryNote? DeliveryNote { get; set; }
         public IList<DeliveryNoteOrderReportDto>? Orders { get; set; }
         public decimal Total { get; set; }

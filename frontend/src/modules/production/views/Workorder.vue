@@ -6,6 +6,7 @@
       :workorder="workorder"
       @submit="onWorkorderSubmit"
       @download="printReport"
+      @download-pdf="printPdf"
     ></FormWorkorder>
   </header>
   <main class="main">
@@ -381,6 +382,13 @@ const printReport = async () => {
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.WorkOrder.DownloadPdf(workorder.value!.id);
+  if (report) {
+    createBlobAndDownloadFile(`OrdreFabricacio_${workorder.value?.code}.pdf`, report);
+  }
+};
+
 </script>
 <style scoped>
 .main {
