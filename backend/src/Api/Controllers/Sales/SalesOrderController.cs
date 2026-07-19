@@ -8,7 +8,7 @@ namespace Api.Controllers.Sales
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SalesOrderController(ISalesOrderService service, ISalesOrderReportService reportService) : ControllerBase
+    public class SalesOrderController(ISalesOrderService service, ISalesOrderReportService reportService, ISalesOrderPdfService pdfService) : ControllerBase
     {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -26,6 +26,14 @@ namespace Api.Controllers.Sales
         {
             var salesOrders = service.GetOrderFromBudget(id);
             return Ok(salesOrders);
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        public async Task<IActionResult> GetPdf(Guid id, bool showPrices = true)
+        {
+            var report = await reportService.GetReportById(id, showPrices);
+            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"comanda-{report.Order!.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]

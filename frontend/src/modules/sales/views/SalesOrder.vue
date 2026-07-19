@@ -327,6 +327,11 @@ const items = [
     command: () => printInvoice(true),
   },
   {
+    label: "Imprimir PDF",
+    icon: PrimeIcons.FILE_PDF,
+    command: () => printPdf(),
+  },
+  {
     label: "Descarregar sense preu",
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(false),
@@ -673,4 +678,11 @@ const onDistributeAllCosts = async (salesOrderId: string) => {
     });
   }
 };
+const printPdf = async () => {
+  const report = await services.SalesOrder.DownloadPdf(salesOrder.value!.id, true);
+  if (report) {
+    createBlobAndDownloadFile(`Comanda_${salesOrder.value?.number}.pdf`, report);
+  }
+};
+
 </script>

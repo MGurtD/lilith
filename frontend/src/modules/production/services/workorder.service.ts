@@ -91,6 +91,13 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     );
     return response.data as GenericResponse<boolean>;
   }
+
+  async DownloadPdf(id: string): Promise<Blob | undefined> {
+    const response = await this.apiClient.get(`${this.resource}/Report/${id}/pdf`, {
+      responseType: "blob",
+    });
+    return response.status === 200 ? (response.data as Blob) : undefined;
+  }
 }
 export class WorkOrderPhaseService extends BaseService<WorkOrderPhase> {
   async getByWorkOrderId(

@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Reports\Assets\temges-logo.jpg" />
+    <EmbeddedResource Include="Reports\Assets\temges-watermark.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -221,6 +221,7 @@
     "Report.DeliveryNote.OrderTotal": "Total comanda",
     "Report.DeliveryNote.TableTotal": "Total albarà (IVA no inclòs)",
     "Report.DeliveryNote.CustomerSign": "Firma del client",
+    "Report.DeliveryNote.CustomerSignHint": "Nom, cognoms i segell",
     "Report.DeliveryNote.ReturnsPolicy": "No s'accepten devolucions passada 1 setmana de l'entrega",
     "Report.Budget.Title": "PRESSUPOST",
     "Report.Budget.HeaderDeliveryIn": "Entrega en",

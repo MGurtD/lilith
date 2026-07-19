@@ -99,6 +99,11 @@ const items = [
     command: () => printInvoice(true),
   },
   {
+    label: "Imprimir PDF",
+    icon: PrimeIcons.FILE_PDF,
+    command: () => printPdf(),
+  },
+  {
     label: "Descarregar sense preu",
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(false),
@@ -282,4 +287,9 @@ const printInvoice = async (showPrices: boolean) => {
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.DeliveryNote.DownloadPdf(deliveryNote.value!.id, true);
+  if (report) createBlobAndDownloadFile(`Albara_${deliveryNote.value?.number}.pdf`, report);
+};
+
 </script>

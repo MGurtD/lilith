@@ -7,6 +7,7 @@ public class PurchaseOrderReportResponse : ReportResponse
 {
     public required Supplier Supplier { get; set; }
     public required Site Site { get; set; }
+    public required Enterprise Enterprise { get; set; }
     public required PurchaseOrderReportDto Order { get; set; }
     public required List<PurchaseOrderDetailReportDto> Details { get; set; }
 

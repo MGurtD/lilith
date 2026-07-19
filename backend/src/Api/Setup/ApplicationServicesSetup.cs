@@ -26,6 +26,11 @@ public static class ApplicationServicesSetup
 
         services.AddSingleton<IQrCodeService, QrCodeService>();
         services.AddSingleton<ISalesInvoicePdfService, SalesInvoicePdfService>();
+        services.AddSingleton<IBudgetPdfService, BudgetPdfService>();
+        services.AddSingleton<ISalesOrderPdfService, SalesOrderPdfService>();
+        services.AddSingleton<IDeliveryNotePdfService, DeliveryNotePdfService>();
+        services.AddSingleton<IPurchaseOrderPdfService, PurchaseOrderPdfService>();
+        services.AddSingleton<IWorkOrderPdfService, WorkOrderPdfService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();

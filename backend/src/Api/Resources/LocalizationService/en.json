@@ -221,6 +221,7 @@
     "Report.DeliveryNote.OrderTotal": "Order Total",
     "Report.DeliveryNote.TableTotal": "Delivery Note Total (VAT not included)",
     "Report.DeliveryNote.CustomerSign": "Customer Signature",
+    "Report.DeliveryNote.CustomerSignHint": "Name, surname and stamp",
     "Report.DeliveryNote.ReturnsPolicy": "Returns are not accepted after 1 week from delivery",
     "Report.Budget.Title": "BUDGET",
     "Report.Budget.HeaderDeliveryIn": "Delivery in",

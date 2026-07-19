@@ -335,6 +335,11 @@ const items = [
     command: () => printInvoice(),
   },
   {
+    label: "Imprimir PDF",
+    icon: PrimeIcons.FILE_PDF,
+    command: () => printPdf(),
+  },
+  {
     label: "Crear comanda",
     icon: PrimeIcons.FLAG_FILL,
     command: () => createSalesOrder(),
@@ -652,4 +657,11 @@ const printInvoice = async () => {
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.Budget.DownloadPdf(budget.value!.id);
+  if (report) {
+    createBlobAndDownloadFile(`Pressupost_${budget.value?.number}.pdf`, report);
+  }
+};
+
 </script>

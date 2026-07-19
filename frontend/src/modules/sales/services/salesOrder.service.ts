@@ -140,4 +140,11 @@ export class SalesOrderHeaderService extends BaseService<SalesOrderHeader> {
     const response = await apiClient.put(endpoint, request);
     return response.status === 200;
   }
+  async DownloadPdf(id: string, showPrices: boolean): Promise<Blob | undefined> {
+    const response = await this.apiClient.get(
+      `${this.resource}/Report/${id}/pdf?showPrices=${showPrices}`,
+      { responseType: "blob" },
+    );
+    return response.status === 200 ? (response.data as Blob) : undefined;
+  }
 }
