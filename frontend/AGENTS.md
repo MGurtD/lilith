@@ -201,6 +201,22 @@ Use these instead of reimplementing:
 - `createBlobAndDownloadFile(name, blob)` - Download files
 - `formatCurrency(value)` - Currency formatting
 
+## Table Attachments
+
+`Table.vue` supports an optional read-only attachment column through `attachmentConfig`:
+
+```vue
+<Table
+  :attachment-config="{
+    entity: 'SalesOrder',
+    formats: ['.pdf', '.jpg', '.jpeg', '.png'],
+    title: 'Adjunts de la comanda',
+    titleField: 'number',
+  }"
+/>
+```
+
+It reuses `FileService.GetEntityFiles` and `FileViewer`; keep uploads and deletion in the detail view's `FileEntityPicker`. When `formats` is omitted, only PDF and image formats supported by `FileViewer` are shown. `titleField` identifies the opened row in the dialog title.
 ## Anti-Patterns to Avoid
 
 - Hard-coding API URLs (use service layer)

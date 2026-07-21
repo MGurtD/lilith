@@ -9,6 +9,12 @@
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
     page="References"
+    :attachment-config="{
+      entity: 'referenceMaps',
+      formats: ['.pdf', '.jpg', '.jpeg', '.png'],
+      title: 'Adjunts de la referència',
+      titleField: 'code',
+    }"
     showDeleteColumn
     :canDelete="() => true"
     @clear="cleanFilter"

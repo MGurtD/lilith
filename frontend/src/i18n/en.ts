@@ -402,6 +402,14 @@ const en = {
       instructions: "Scan the code or enter it manually",
     },
   },
+  table: {
+    attachments: {
+      tooltip: "Attachments",
+      dialogTitle: "Attachments",
+      noCompatible: "There are no compatible attachments",
+      loadError: "Attachments could not be loaded",
+    },
+  },
   fileViewer: {
     toolbar: {
       zoomOut: "Zoom out (Ctrl + -)",

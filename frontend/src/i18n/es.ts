@@ -403,6 +403,14 @@ const es = {
       instructions: "Escanea el código o introdúcelo manualmente",
     },
   },
+  table: {
+    attachments: {
+      tooltip: "Adjuntos",
+      dialogTitle: "Adjuntos",
+      noCompatible: "No hay adjuntos compatibles",
+      loadError: "No se han podido cargar los adjuntos",
+    },
+  },
   fileViewer: {
     toolbar: {
       zoomOut: "Alejar (Ctrl + -)",

@@ -11,6 +11,12 @@
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
     :sort-order="1"
+    :attachment-config="{
+      entity: 'Budget',
+      formats: ['.pdf', '.jpg', '.jpeg', '.png'],
+      title: 'Adjunts del pressupost',
+      titleField: 'number',
+    }"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @row-click="editRow"

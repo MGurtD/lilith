@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, useSlots, useAttrs, ref, watch, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useToast } from "primevue/usetoast";
 import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
 import TableViewConfig from "./TableViewConfig.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
+import FileViewer from "@/components/FileViewer.vue";
+import { FileService } from "@/services/file.service";
+import type { File } from "@/types";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
 import type { DataTableRowClickEvent } from "primevue/datatable";
@@ -17,7 +22,13 @@ import {
   formatTime,
   formatCurrency,
 } from "@/utils/functions";
-import { ColumnType, type Aggregation, type TablePreset, type Column } from "./types";
+import {
+  ColumnType,
+  type Aggregation,
+  type AttachmentConfig,
+  type TablePreset,
+  type Column,
+} from "./types";
 
 const PRESET_DEFAULTS: Record<TablePreset, Record<string, unknown>> = {
   "crud-list": {
@@ -66,6 +77,7 @@ const props = withDefaults(
     page?: string;
     showDeleteColumn?: boolean;
     canDelete?: (item: any) => boolean;
+    attachmentConfig?: AttachmentConfig | null;
     preset?: TablePreset;
     loading?: boolean;
     dataKey?: string;
@@ -199,7 +211,108 @@ const slots = useSlots();
 const attrs = useAttrs();
 const store = useStore();
 const viewStore = useUserTableViewStore();
+const { t } = useI18n();
+const toast = useToast();
+const fileService = new FileService();
 
+// --- Read-only attachments ---
+
+const RENDERABLE_ATTACHMENT_EXTENSIONS = new Set([
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".svg",
+]);
+
+const attachmentDialogVisible = ref(false);
+const attachmentDialogLoading = ref(false);
+const selectedAttachmentFiles = ref<File[]>([]);
+const selectedAttachmentFile = ref<File | null>(null);
+const selectedAttachmentItem = ref<unknown>(null);
+
+const attachmentDialogHeader = computed(() => {
+  const title = props.attachmentConfig?.title ?? t("table.attachments.dialogTitle");
+  const item = selectedAttachmentItem.value;
+  const field = props.attachmentConfig?.titleField;
+  const value = field && item && typeof item === "object"
+    ? (item as Record<string, unknown>)[field]
+    : null;
+  const identifier = typeof value === "string" || typeof value === "number"
+    ? String(value)
+    : null;
+  return identifier ? `${title} - ${identifier}` : title;
+});
+
+function getItemId(item: unknown): string | null {
+  if (!item || typeof item !== "object") return null;
+  const id = (item as { id?: unknown }).id;
+  return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+function getFileExtension(file: File): string {
+  const name = file.originalName.trim();
+  const lastDot = name.lastIndexOf(".");
+  return lastDot < 0 || lastDot === name.length - 1
+    ? ""
+    : name.slice(lastDot).toLowerCase();
+}
+
+function getCompatibleAttachmentFiles(files: File[]): File[] {
+  const formats = props.attachmentConfig?.formats;
+  const allowedFormats = formats?.length
+    ? new Set(
+        formats.map((format) =>
+          `${format.startsWith(".") ? "" : "."}${format}`.toLowerCase(),
+        ),
+      )
+    : RENDERABLE_ATTACHMENT_EXTENSIONS;
+
+  return files.filter((file) => allowedFormats.has(getFileExtension(file)));
+}
+
+async function openAttachments(item: unknown): Promise<void> {
+  const config = props.attachmentConfig;
+  const id = getItemId(item);
+  if (!config?.entity || !id) return;
+
+  // Loading happens only after an explicit user click. The table never
+  // preloads attachment counts or files for list rows.
+  selectedAttachmentItem.value = item;
+  selectedAttachmentFiles.value = [];
+  selectedAttachmentFile.value = null;
+  attachmentDialogVisible.value = true;
+  attachmentDialogLoading.value = true;
+
+  try {
+    const files = (await fileService.GetEntityFiles(config.entity, id)) ?? [];
+    const compatibleFiles = getCompatibleAttachmentFiles(files);
+    selectedAttachmentFiles.value = compatibleFiles;
+    selectedAttachmentFile.value = compatibleFiles[0] ?? null;
+
+    if (files.length > 0 && compatibleFiles.length === 0) {
+      toast.add({
+        severity: "warn",
+        summary: t("table.attachments.tooltip"),
+        detail: t("table.attachments.noCompatible"),
+        life: 4000,
+      });
+    }
+  } catch (error: unknown) {
+    console.error("[Table] attachment load failed", error);
+    toast.add({
+      severity: "error",
+      summary: t("table.attachments.tooltip"),
+      detail: t("table.attachments.loadError"),
+      life: 5000,
+    });
+  } finally {
+    attachmentDialogLoading.value = false;
+  }
+}
 // --- Table view management ---
 
 const appliedColumns = ref<Column[]>([...props.columns]);
@@ -640,6 +753,22 @@ function formatCellValue(col: Column, data: any): string {
       </template>
     </Column>
 
+    <!-- Read-only attachment action column -->
+    <Column
+      v-if="attachmentConfig"
+      :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }"
+      style="width: 3rem; min-width: 3rem; max-width: 3rem"
+    >
+      <template #body="slotProps">
+        <div
+          class="attachment-cell"
+          @click.stop="openAttachments(slotProps.data)"
+          v-tooltip.top="t('table.attachments.tooltip')"
+        >
+          <i class="pi pi-paperclip attachment-icon"></i>
+        </div>
+      </template>
+    </Column>
     <!-- Delete action column -->
     <Column v-if="showDeleteColumn" :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }" style="width: 3rem; min-width: 3rem; max-width: 3rem">
       <template #body="slotProps">
@@ -666,6 +795,7 @@ function formatCellValue(col: Column, data: any): string {
             <span v-else-if="col.total">{{ formatTotal(col) }}</span>
           </template>
         </Column>
+        <Column v-if="attachmentConfig" class="attachment-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
         <!-- Empty footer cell for delete column alignment -->
         <Column v-if="showDeleteColumn" class="delete-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
       </Row>
@@ -701,9 +831,109 @@ function formatCellValue(col: Column, data: any): string {
     @update:sort-config="onSortConfigUpdate"
     @update:filter-values="emit('update:filterValues', $event)"
   />
+
+  <Dialog
+    v-model:visible="attachmentDialogVisible"
+    :header="attachmentDialogHeader"
+    modal
+    :style="{ width: '90vw', height: '85vh' }"
+  >
+    <div class="attachments-dialog-content">
+      <ProgressSpinner
+        v-if="attachmentDialogLoading"
+        style="width: 50px; height: 50px"
+        strokeWidth="4"
+      />
+      <template v-else-if="selectedAttachmentFiles.length > 0">
+        <div v-if="selectedAttachmentFiles.length > 1" class="attachment-file-selector">
+          <Button
+            v-for="file in selectedAttachmentFiles"
+            :key="file.id"
+            :label="file.originalName"
+            size="small"
+            :severity="selectedAttachmentFile?.id === file.id ? 'primary' : 'secondary'"
+            :outlined="selectedAttachmentFile?.id !== file.id"
+            @click="selectedAttachmentFile = file"
+          />
+        </div>
+        <FileViewer
+          :key="selectedAttachmentFile?.id"
+          :file="selectedAttachmentFile"
+          class="attachment-file-viewer"
+        />
+      </template>
+      <div v-else class="attachments-empty-state">
+        <i class="pi pi-paperclip" aria-hidden="true"></i>
+        <p>{{ t("table.attachments.noCompatible") }}</p>
+      </div>
+    </div>
+  </Dialog>
 </template>
 
 <style scoped>
+.attachment-cell {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p-primary-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.attachment-cell:hover {
+  background-color: var(--p-primary-50);
+}
+
+.attachment-icon {
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+
+
+.attachments-dialog-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(85vh - 7rem);
+  min-height: 20rem;
+  gap: 1rem;
+}
+
+.attachment-file-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.attachment-file-selector :deep(.p-button) {
+  cursor: pointer;
+}
+
+
+.attachment-file-viewer {
+  flex: 1;
+  min-height: 0;
+}
+
+.attachments-empty-state {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--p-text-muted-color);
+  text-align: center;
+}
+
+.attachments-empty-state i {
+  font-size: 2.5rem;
+}
 .delete-cell {
   position: absolute;
   top: 0;

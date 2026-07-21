@@ -402,6 +402,14 @@ const ca = {
       instructions: "Escaneja el codi o introdueix-lo manualment",
     },
   },
+  table: {
+    attachments: {
+      tooltip: "Adjunts",
+      dialogTitle: "Adjunts",
+      noCompatible: "No hi ha adjunts compatibles",
+      loadError: "No s'han pogut carregar els adjunts",
+    },
+  },
   fileViewer: {
     toolbar: {
       zoomOut: "Allunyar (Ctrl + -)",
