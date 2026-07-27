@@ -1,6 +1,10 @@
 <template>
   <main class="home">
-    <img src="../assets/images/logo.jpg" alt="Logo Temges" class="home__logo" />
+    <img
+      src="../assets/images/logo.png"
+      alt="Logo RawCraft Software"
+      class="home__logo"
+    />
   </main>
 </template>
 <script setup lang="ts">
@@ -19,7 +23,8 @@ onMounted(() => {
 
 <style scoped>
 .home__logo {
-  height: 30vh;
+  width: min(40vw, 480px);
+  height: auto;
   display: block;
   position: absolute;
   top: calc(50% - var(--top-panel-height));

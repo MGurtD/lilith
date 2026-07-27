@@ -11,10 +11,10 @@ export interface BrandingConfig {
 import logoHeaderWhite from "../assets/images/logo-header-white.png";
 
 export const branding: BrandingConfig = {
-  companyName: "Temges",
-  companyShortName: "T",
+  companyName: "ZENITH by RS",
+  companyShortName: "ZENITH",
   logoPath: logoHeaderWhite, // Built asset URL
-  logoAlt: "Temges Logo",
+  logoAlt: "RawCraft Software Logo",
 };
 
 export function getCompanyName(collapsed?: boolean) {

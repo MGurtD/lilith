@@ -511,7 +511,7 @@ public class WorkOrderPhaseService(
         if (exists)
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailAlreadyExists"));
-
+        
         // Create detail
         await unitOfWork.WorkOrders.Phases.Details.Add(detail);
         return new GenericResponse(true, detail);
