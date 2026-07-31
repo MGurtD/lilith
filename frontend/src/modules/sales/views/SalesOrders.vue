@@ -13,6 +13,11 @@
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
     :sort-order="1"
+    :attachment-config="{
+      entity: 'SalesOrder',
+      title: 'Adjunts de la comanda',
+      titleField: 'number',
+    }"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @filter="filterSalesOrder"

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, useSlots, useAttrs, ref, watch, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
 import TableViewConfig from "./TableViewConfig.vue";
+import TableAttachmentViewer from "./TableAttachmentViewer.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
 import ColumnGroup from "primevue/columngroup";
@@ -17,7 +19,13 @@ import {
   formatTime,
   formatCurrency,
 } from "@/utils/functions";
-import { ColumnType, type Aggregation, type TablePreset, type Column } from "./types";
+import {
+  ColumnType,
+  type Aggregation,
+  type AttachmentConfig,
+  type TablePreset,
+  type Column,
+} from "./types";
 
 const PRESET_DEFAULTS: Record<TablePreset, Record<string, unknown>> = {
   "crud-list": {
@@ -66,6 +74,7 @@ const props = withDefaults(
     page?: string;
     showDeleteColumn?: boolean;
     canDelete?: (item: any) => boolean;
+    attachmentConfig?: AttachmentConfig | null;
     preset?: TablePreset;
     loading?: boolean;
     dataKey?: string;
@@ -199,6 +208,13 @@ const slots = useSlots();
 const attrs = useAttrs();
 const store = useStore();
 const viewStore = useUserTableViewStore();
+const { t } = useI18n();
+
+const attachmentViewer = ref<InstanceType<typeof TableAttachmentViewer> | null>(null);
+
+function openAttachments(item: unknown): void {
+  attachmentViewer.value?.open(item);
+}
 
 // --- Table view management ---
 
@@ -640,6 +656,22 @@ function formatCellValue(col: Column, data: any): string {
       </template>
     </Column>
 
+    <!-- Read-only attachment action column -->
+    <Column
+      v-if="attachmentConfig"
+      :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }"
+      style="width: 3rem; min-width: 3rem; max-width: 3rem"
+    >
+      <template #body="slotProps">
+        <div
+          class="attachment-cell"
+          @click.stop="openAttachments(slotProps.data)"
+          v-tooltip.top="t('table.attachments.tooltip')"
+        >
+          <i class="pi pi-paperclip attachment-icon"></i>
+        </div>
+      </template>
+    </Column>
     <!-- Delete action column -->
     <Column v-if="showDeleteColumn" :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }" style="width: 3rem; min-width: 3rem; max-width: 3rem">
       <template #body="slotProps">
@@ -666,6 +698,7 @@ function formatCellValue(col: Column, data: any): string {
             <span v-else-if="col.total">{{ formatTotal(col) }}</span>
           </template>
         </Column>
+        <Column v-if="attachmentConfig" class="attachment-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
         <!-- Empty footer cell for delete column alignment -->
         <Column v-if="showDeleteColumn" class="delete-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
       </Row>
@@ -701,9 +734,39 @@ function formatCellValue(col: Column, data: any): string {
     @update:sort-config="onSortConfigUpdate"
     @update:filter-values="emit('update:filterValues', $event)"
   />
+
+  <TableAttachmentViewer
+    v-if="attachmentConfig"
+    ref="attachmentViewer"
+    :config="attachmentConfig"
+  />
 </template>
 
 <style scoped>
+.attachment-cell {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p-primary-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.attachment-cell:hover {
+  background-color: var(--p-primary-50);
+}
+
+.attachment-icon {
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+
 .delete-cell {
   position: absolute;
   top: 0;

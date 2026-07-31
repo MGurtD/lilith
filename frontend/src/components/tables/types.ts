@@ -2,6 +2,18 @@ export type Aggregation = "sum" | "avg" | "count" | "min" | "max";
 
 export type TablePreset = "crud-list" | "read-only" | "detail-lines" | "selector";
 
+/**
+ * Enables the read-only attachment viewer system column in Table.
+ */
+export interface AttachmentConfig {
+  /** Logical entity name stored in File.entity (for example, "SalesOrder"). */
+  entity: string;
+  /** Dialog title. Defaults to the localized attachment label. */
+  title?: string;
+  /** Row field appended to the dialog title to identify the open entity. */
+  titleField?: string;
+}
+
 export enum ColumnType {
   Text = "text",
   Boolean = "boolean",

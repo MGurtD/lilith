@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace Api.Controllers.Production
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService, IWorkOrderPdfService pdfService) : ControllerBase
+    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService) : ControllerBase
     {
         [HttpPost("CreateFromWorkMaster")]
         public async Task<IActionResult> CreateFromWorkMaster([FromBody] CreateWorkOrderDto request)
@@ -126,12 +126,12 @@ namespace Api.Controllers.Production
             var workorders = await workOrderService.GetPlannableWorkOrders();
             return Ok(workorders);
         }
-        
+
         [HttpPost("Priorize")]
         public async Task<IActionResult> Priorize(List<UpdateWorkOrderOrderDTO> orders)
         {
             var response = await workOrderService.Priorize(orders);
-            
+
             if (response.Result)
                 return Ok(response);
             else
@@ -145,13 +145,6 @@ namespace Api.Controllers.Production
             return Ok(details);
         }
 
-        [HttpGet("Report/{id:guid}/pdf")]
-        [Produces("application/pdf")]
-        public async Task<IActionResult> GetPdf(Guid id)
-        {
-            var report = await reportService.GetReportById(id);
-            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"ordre-treball-{report.Order.Code}.pdf");
-        }
         [HttpGet("Report/{id:guid}")]
         public async Task<IActionResult> GetReportDataById(Guid id)
         {
