@@ -407,7 +407,7 @@ const es = {
     attachments: {
       tooltip: "Adjuntos",
       dialogTitle: "Adjuntos",
-      noCompatible: "No hay adjuntos compatibles",
+      empty: "No hay adjuntos disponibles.",
       loadError: "No se han podido cargar los adjuntos",
     },
   },

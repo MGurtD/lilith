@@ -13,7 +13,6 @@
     :sort-order="1"
     :attachment-config="{
       entity: 'Budget',
-      formats: ['.pdf', '.jpg', '.jpeg', '.png'],
       title: 'Adjunts del pressupost',
       titleField: 'number',
     }"

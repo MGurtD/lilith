@@ -8,8 +8,6 @@ export type TablePreset = "crud-list" | "read-only" | "detail-lines" | "selector
 export interface AttachmentConfig {
   /** Logical entity name stored in File.entity (for example, "SalesOrder"). */
   entity: string;
-  /** Allowed extensions, case-insensitive and with or without a leading dot. */
-  formats?: string[];
   /** Dialog title. Defaults to the localized attachment label. */
   title?: string;
   /** Row field appended to the dialog title to identify the open entity. */

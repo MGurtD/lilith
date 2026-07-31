@@ -406,7 +406,7 @@ const en = {
     attachments: {
       tooltip: "Attachments",
       dialogTitle: "Attachments",
-      noCompatible: "There are no compatible attachments",
+      empty: "There are no attachments available.",
       loadError: "Attachments could not be loaded",
     },
   },

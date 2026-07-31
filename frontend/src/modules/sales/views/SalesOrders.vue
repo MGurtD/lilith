@@ -15,7 +15,6 @@
     :sort-order="1"
     :attachment-config="{
       entity: 'SalesOrder',
-      formats: ['.pdf', '.jpg', '.jpeg', '.png'],
       title: 'Adjunts de la comanda',
       titleField: 'number',
     }"

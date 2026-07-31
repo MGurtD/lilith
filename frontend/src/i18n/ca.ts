@@ -406,7 +406,7 @@ const ca = {
     attachments: {
       tooltip: "Adjunts",
       dialogTitle: "Adjunts",
-      noCompatible: "No hi ha adjunts compatibles",
+      empty: "No hi ha adjunts disponibles.",
       loadError: "No s'han pogut carregar els adjunts",
     },
   },
