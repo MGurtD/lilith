@@ -33,39 +33,7 @@ public class ExpenseService(IUnitOfWork unitOfWork, ILocalizationService localiz
     public async Task<GenericResponse> Create(Expenses expense)
     {
         await unitOfWork.Expenses.Add(expense);
-
-        // Handle recurring expenses
-        if (expense.Recurring)
-        {
-            expense.RelatedExpenseId = expense.Id.ToString();
-            DateTime paymentDay = expense.PaymentDate;
-
-            while (paymentDay < expense.EndDate)
-            {
-                paymentDay = paymentDay.AddMonths(expense.Frecuency);
-                
-                if (expense.PaymentDate.Day != expense.PaymentDay)
-                {
-                    paymentDay = paymentDay.AddDays(expense.PaymentDay - expense.PaymentDate.Day);
-                }
-
-                var recurringExpense = new Expenses
-                {
-                    Id = Guid.NewGuid(),
-                    PaymentDate = paymentDay,
-                    RelatedExpenseId = expense.RelatedExpenseId,
-                    ExpenseTypeId = expense.ExpenseTypeId,
-                    Amount = expense.Amount,
-                    Description = expense.Description,
-                    Recurring = expense.Recurring,
-                    Frecuency = expense.Frecuency,
-                    PaymentDay = expense.PaymentDay,
-                    EndDate = expense.EndDate
-                };
-
-                await unitOfWork.Expenses.Add(recurringExpense);
-            }
-        }
+        await CreateRecurringExpenses(expense);
 
         return new GenericResponse(true, expense);
     }
@@ -77,10 +45,48 @@ public class ExpenseService(IUnitOfWork unitOfWork, ILocalizationService localiz
         {
             return new GenericResponse(false, 
                 localizationService.GetLocalizedString("EntityNotFound", expense.Id));
-        }
+        }        
 
         await unitOfWork.Expenses.Update(expense);
+        await RemoveRecurringExpenses(expense);
+        await CreateRecurringExpenses(expense);
         return new GenericResponse(true, expense);
+    }
+
+    // Genera les instàncies futures d'una despesa recurrent; no fa res si l'entitat no és recurrent
+    private async Task CreateRecurringExpenses(Expenses expense)
+    {
+        if (!expense.Recurring)
+            return;
+
+        expense.RelatedExpenseId = expense.Id.ToString();
+        DateTime paymentDay = expense.PaymentDate;
+
+        while (paymentDay < expense.EndDate)
+        {
+            paymentDay = paymentDay.AddMonths(expense.Frecuency);
+            
+            if (expense.PaymentDate.Day != expense.PaymentDay)
+            {
+                paymentDay = paymentDay.AddDays(expense.PaymentDay - expense.PaymentDate.Day);
+            }
+
+            var recurringExpense = new Expenses
+            {
+                Id = Guid.NewGuid(),
+                PaymentDate = paymentDay,
+                RelatedExpenseId = expense.RelatedExpenseId,
+                ExpenseTypeId = expense.ExpenseTypeId,
+                Amount = expense.Amount,
+                Description = expense.Description,
+                Recurring = expense.Recurring,
+                Frecuency = expense.Frecuency,
+                PaymentDay = expense.PaymentDay,
+                EndDate = expense.EndDate
+            };
+
+            await unitOfWork.Expenses.Add(recurringExpense);
+        }
     }
 
     public async Task<GenericResponse> RemoveExpense(Guid id)
@@ -92,16 +98,9 @@ public class ExpenseService(IUnitOfWork unitOfWork, ILocalizationService localiz
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Handle recurring expenses - remove parent and all related
         if (entity.Recurring)
         {
-            var parentId = string.IsNullOrEmpty(entity.RelatedExpenseId) ? entity.Id : Guid.Parse(entity.RelatedExpenseId);
-            var relatedParent = unitOfWork.Expenses.Find(e => e.Id == parentId).FirstOrDefault();
-            if (relatedParent is not null)
-                await unitOfWork.Expenses.Remove(relatedParent);
-
-            var relatedExpenses = unitOfWork.Expenses.Find(e => e.RelatedExpenseId == parentId.ToString());
-            await unitOfWork.Expenses.RemoveRange(relatedExpenses);
+            await RemoveRecurringExpenses(entity);
         }
         else
         {
@@ -109,5 +108,20 @@ public class ExpenseService(IUnitOfWork unitOfWork, ILocalizationService localiz
         }
 
         return new GenericResponse(true, entity);
+    }
+
+    // Elimina la despesa pare i totes les instàncies relacionades; no fa res si l'entitat no és recurrent
+    private async Task RemoveRecurringExpenses(Expenses expense)
+    {
+        if (!expense.Recurring)
+            return;
+
+        var parentId = string.IsNullOrEmpty(expense.RelatedExpenseId) ? expense.Id : Guid.Parse(expense.RelatedExpenseId);
+        var relatedParent = unitOfWork.Expenses.Find(e => e.Id == parentId).FirstOrDefault();
+        if (relatedParent is not null)
+            await unitOfWork.Expenses.Remove(relatedParent);
+
+        var relatedExpenses = unitOfWork.Expenses.Find(e => e.RelatedExpenseId == parentId.ToString());
+        await unitOfWork.Expenses.RemoveRange(relatedExpenses);
     }
 }
