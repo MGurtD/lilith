@@ -280,6 +280,14 @@
     "TableViewDeleted": "Vista eliminada correctament",
     "TableViewNotFound": "Vista no trobada",
     "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
-    "DefaultViewSet": "Vista per defecte establerta"
+    "DefaultViewSet": "Vista per defecte establerta",
+    "EnterpriseActiveAlreadyExists": "Ja existeix una Enterprise habilitada. Desactiveu-la abans d'habilitar-ne una altra.",
+    "BrandingEnterpriseUnavailable": "No hi ha cap Enterprise habilitada disponible per gestionar el branding.",
+    "BrandingLogoRequired": "Cal seleccionar un fitxer de logotip.",
+    "BrandingLogoInvalidSize": "El logotip ha de tenir una mida d'entre 1 byte i 2 MB.",
+    "BrandingLogoInvalidFormat": "El logotip ha de ser un fitxer PNG, JPEG o WebP vàlid.",
+    "BrandingLogoUploadFailed": "No s'ha pogut desar el logotip.",
+    "BrandingNameInvalid": "El nom comercial no pot superar els 60 caràcters.",
+    "BrandingPaletteInvalid": "La paleta de color seleccionada no és vàlida."
   }
 }
