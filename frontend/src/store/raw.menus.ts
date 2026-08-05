@@ -4,6 +4,18 @@ import { User } from "../types";
 export const applicationMenus = [
   {
     icon: PrimeIcons.COG,
+    title: "Sistema",
+    href: "",
+    child: [
+      {
+        icon: PrimeIcons.PALETTE,
+        title: "Branding",
+        href: "/system/application-branding",
+      },
+    ],
+  },
+  {
+    icon: PrimeIcons.COG,
     title: "General",
     href: "",
     child: [

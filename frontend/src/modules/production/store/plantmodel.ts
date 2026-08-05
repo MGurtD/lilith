@@ -374,6 +374,10 @@ export const usePlantModelStore = defineStore("plantmodel", {
         name: "",
         description: "",
         defaultSiteId: "",
+        brandName: "",
+        primaryColor: null,
+        logoMainFileId: null,
+        logoSidebarFileId: null,
         disabled: false,
       } as Enterprise;
     },

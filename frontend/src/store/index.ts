@@ -31,6 +31,7 @@ export const useStore = defineStore("applicationStore", {
       authorization: undefined as AuthenticationResponse | undefined,
       user: undefined as User | undefined,
       role: undefined as string | undefined,
+      brandName: "Temges",
       isWaiting: false,
       sidebar: {
         collapsed: false,
@@ -72,12 +73,18 @@ export const useStore = defineStore("applicationStore", {
       this.exercisePicker.exercise = undefined;
       this.exercisePicker.dates = undefined;
     },
+    setBrandName(brandName: string) {
+      this.brandName = brandName || "Temges";
+      document.title = this.currentMenuItem.title
+        ? this.brandName + " - " + this.currentMenuItem.title
+        : this.brandName;
+    },
     setMenuItem(menu: MenuItem) {
       this.currentMenuItem = menu;
 
-      if (menu.title && menu.title !== "") {
-        document.title = `Temges - ${menu.title}`;
-      }
+      document.title = menu.title
+        ? this.brandName + " - " + menu.title
+        : this.brandName;
     },
     setMenusByRole(user: User) {
       // legacy fallback

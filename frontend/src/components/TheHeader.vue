@@ -139,7 +139,7 @@ const goBack = () => router.back();
 <style scoped>
 .title-bar {
   position: fixed;
-  background-color: var(--p-blue-900);
+  background-color: var(--p-primary-900);
   color: var(--p-surface-400);
   top: 0;
   left: var(--side-bar-width);

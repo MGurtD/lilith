@@ -62,6 +62,7 @@ import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
 import ProgressBar from "primevue/progressbar";
 import { globalToast } from "@/utils/global-toast";
+import { useBrandingStore } from "@/store/branding";
 
 // Lara Blue preset (matches lara-light-blue from v3)
 const LaraBlue = definePreset(Lara, {
@@ -142,4 +143,9 @@ app
   .component("TabPanel", TabPanel)
   .component("ProgressBar", ProgressBar);
 
-app.mount("#app");
+const bootstrap = async () => {
+  await useBrandingStore(pinia).initialize();
+  app.mount("#app");
+};
+
+void bootstrap();
