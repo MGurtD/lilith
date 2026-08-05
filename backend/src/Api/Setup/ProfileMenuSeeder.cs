@@ -17,6 +17,9 @@ namespace Api.Setup
         private static readonly SeedMenu[] RootMenus =
         [
             // Application Menus
+            new SeedMenu("system","Sistema","pi pi-cog",null, [
+                new SeedMenu("application_branding","Branding","pi pi-palette","/system/application-branding")
+            ]),
             new SeedMenu("general","General","pi pi-cog",null, [
                 new SeedMenu("users","Usuaris","pi pi-users","/users"),
                 new SeedMenu("profiles","Perfils d'usuari","pi pi-users","/profiles"),

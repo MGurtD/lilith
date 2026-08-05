@@ -4,8 +4,8 @@
       <!-- Logo Section -->
       <div class="clockin__header">
         <img
-          src="../../../assets/images/logo.jpg"
-          alt="Logo Temges"
+          :src="brandingStore.mainLogoUrl"
+          :alt="brandingStore.brandName"
           class="clockin__logo"
         />
         <h1 class="clockin__title">{{ $t("shopfloor.clockin.title") }}</h1>
@@ -60,8 +60,10 @@ import { usePlantOperatorStore } from "../store";
 import { useToast } from "primevue/usetoast";
 import { useI18n } from "vue-i18n";
 import { useStore } from "../../../store";
+import { useBrandingStore } from "@/store/branding";
 
 const store = useStore();
+const brandingStore = useBrandingStore();
 const router = useRouter();
 const plantModelStore = usePlantModelStore();
 const plantOperatorStore = usePlantOperatorStore();

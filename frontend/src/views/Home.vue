@@ -1,8 +1,8 @@
 <template>
   <main class="home">
     <img
-      src="../assets/images/logo.jpg"
-      alt="Logo Temges"
+      :src="brandingStore.mainLogoUrl"
+      :alt="`Logotip ${brandingStore.brandName}`"
       class="home__logo"
     />
   </main>
@@ -10,8 +10,10 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useStore } from "../store";
+import { useBrandingStore } from "@/store/branding";
 
 const store = useStore();
+const brandingStore = useBrandingStore();
 
 onMounted(() => {
   store.setMenuItem({

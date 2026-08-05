@@ -280,6 +280,14 @@
     "TableViewDeleted": "View deleted successfully",
     "TableViewNotFound": "View not found",
     "CannotDeleteDefaultView": "Cannot delete the default view",
-    "DefaultViewSet": "Default view set"
+    "DefaultViewSet": "Default view set",
+    "EnterpriseActiveAlreadyExists": "An enabled Enterprise already exists. Disable it before enabling another one.",
+    "BrandingEnterpriseUnavailable": "No enabled Enterprise is available for branding management.",
+    "BrandingLogoRequired": "A logo file must be selected.",
+    "BrandingLogoInvalidSize": "The logo size must be between 1 byte and 2 MB.",
+    "BrandingLogoInvalidFormat": "The logo must be a valid PNG, JPEG, or WebP file.",
+    "BrandingLogoUploadFailed": "The logo could not be stored.",
+    "BrandingNameInvalid": "The brand name cannot exceed 60 characters.",
+    "BrandingPaletteInvalid": "The selected color palette is invalid."
   }
 }

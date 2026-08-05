@@ -280,6 +280,14 @@
     "TableViewDeleted": "Vista eliminada correctamente",
     "TableViewNotFound": "Vista no encontrada",
     "CannotDeleteDefaultView": "No se puede eliminar la vista por defecto",
-    "DefaultViewSet": "Vista por defecto establecida"
+    "DefaultViewSet": "Vista por defecto establecida",
+    "EnterpriseActiveAlreadyExists": "Ya existe una Enterprise habilitada. Desactívala antes de habilitar otra.",
+    "BrandingEnterpriseUnavailable": "No hay ninguna Enterprise habilitada disponible para gestionar el branding.",
+    "BrandingLogoRequired": "Debe seleccionar un archivo de logotipo.",
+    "BrandingLogoInvalidSize": "El logotipo debe tener un tamaño de entre 1 byte y 2 MB.",
+    "BrandingLogoInvalidFormat": "El logotipo debe ser un archivo PNG, JPEG o WebP válido.",
+    "BrandingLogoUploadFailed": "No se ha podido guardar el logotipo.",
+    "BrandingNameInvalid": "El nombre comercial no puede superar los 60 caracteres.",
+    "BrandingPaletteInvalid": "La paleta de color seleccionada no es válida."
   }
 }

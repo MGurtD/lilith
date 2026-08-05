@@ -7,6 +7,7 @@ import WarehouseRoutes from "./modules/warehouse/routes";
 import ShoopfloorRoutes from "./modules/plant/routes";
 import AnalyticsRoutes from "./modules/analytics/routes";
 import VerifactuRoutes from "./modules/verifactu/routes";
+import SystemRoutes from "./modules/system/routes";
 
 const Login = () => import("./views/Login.vue");
 const Home = () => import("./views/Home.vue");
@@ -42,6 +43,7 @@ const router = createRouter({
     ...ShoopfloorRoutes,
     ...AnalyticsRoutes,
     ...VerifactuRoutes,
+    ...SystemRoutes,
   ],
 });
 

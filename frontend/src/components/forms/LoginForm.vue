@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { UserLogin } from "../../services/authentications.service";
 import { useToast } from "primevue/usetoast";
 import InputGroup from "primevue/inputgroup";
 import InputGroupAddon from "primevue/inputgroupaddon";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
+import { useBrandingStore } from "@/store/branding";
+import { DEFAULT_MAIN_LOGO } from "@/config/branding";
 
 const emits = defineEmits(["login", "registerClick"]);
+const brandingStore = useBrandingStore();
+const logoLoadFailed = ref(false);
+const loginLogoUrl = computed(() =>
+  logoLoadFailed.value ? DEFAULT_MAIN_LOGO : brandingStore.mainLogoUrl,
+);
 
 const userLogin = ref({
   username: "",
@@ -40,7 +47,12 @@ const registerClick = () => {
   <div class="login-card surface-card p-6 shadow-8 border-round-xl w-full">
     <div class="text-center mb-6">
       <div class="logo-container mb-4">
-        <img src="../../assets/images/logo.jpg" alt="Logo" class="logo-image" />
+        <img
+          :src="loginLogoUrl"
+          :alt="brandingStore.brandName"
+          class="logo-image"
+          @error="logoLoadFailed = true"
+        />
       </div>
       <h1 class="text-3xl font-bold text-900 mb-2">
         {{ $t("login.welcome") || "Benvingut" }}
@@ -133,14 +145,14 @@ const registerClick = () => {
 .logo-container {
   position: relative;
   display: inline-block;
-  background: linear-gradient(135deg, var(--p-blue-50) 0%, var(--p-blue-100) 100%);
+  background: linear-gradient(135deg, var(--p-primary-50) 0%, var(--p-primary-100) 100%);
   border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(var(--p-blue-500), 0.1);
+  box-shadow: 0 4px 15px rgba(var(--p-primary-500), 0.1);
   transition: all 0.3s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(var(--p-blue-500), 0.15);
+    box-shadow: 0 8px 25px rgba(var(--p-primary-500), 0.15);
   }
 }
 
@@ -150,13 +162,13 @@ const registerClick = () => {
   max-width: 180px;
   object-fit: contain;
   border-radius: 20px;
-  border: 2px solid var(--p-blue-200);
+  border: 2px solid var(--p-primary-200);
   transition: all 0.3s ease;
   display: block;
 
   &:hover {
     transform: scale(1.02);
-    border-color: var(--p-blue-400);
+    border-color: var(--p-primary-400);
   }
 }
 .login-form {
@@ -179,15 +191,15 @@ const registerClick = () => {
 
     &:focus-within {
       transform: translateY(-1px);
-      box-shadow: 0 8px 25px rgba(var(--p-blue-500), 0.15);
+      box-shadow: 0 8px 25px rgba(var(--p-primary-500), 0.15);
 
       .input-addon {
-        background: var(--p-blue-50);
-        color: var(--p-blue-600);
+        background: var(--p-primary-50);
+        color: var(--p-primary-600);
       }
 
       .form-label {
-        color: var(--p-blue-600);
+        color: var(--p-primary-600);
       }
     }
   }
@@ -207,7 +219,7 @@ const registerClick = () => {
     transition: all 0.3s ease;
 
     &:focus {
-      border-color: var(--p-blue-500);
+      border-color: var(--p-primary-500);
       box-shadow: none;
     }
 
@@ -220,8 +232,8 @@ const registerClick = () => {
   .login-button {
     background: linear-gradient(
       135deg,
-      var(--p-blue-600) 0%,
-      var(--p-blue-500) 100%
+      var(--p-primary-600) 0%,
+      var(--p-primary-500) 100%
     );
     border: none;
     border-radius: 12px;
@@ -250,7 +262,7 @@ const registerClick = () => {
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(var(--p-blue-500), 0.3);
+      box-shadow: 0 10px 30px rgba(var(--p-primary-500), 0.3);
 
       &::before {
         left: 100%;
@@ -262,18 +274,18 @@ const registerClick = () => {
     }
 
     &:focus {
-      box-shadow: 0 0 0 3px rgba(var(--p-blue-500), 0.2);
+      box-shadow: 0 0 0 3px rgba(var(--p-primary-500), 0.2);
     }
   }
 
   .register-link {
-    color: var(--p-blue-600);
+    color: var(--p-primary-600);
     font-weight: 600;
     text-decoration: none;
     transition: all 0.3s ease;
 
     &:hover {
-      color: var(--p-blue-700);
+      color: var(--p-primary-700);
       text-decoration: underline;
     }
   }
@@ -339,7 +351,7 @@ const registerClick = () => {
 .form-input:focus,
 .login-button:focus,
 .register-link:focus {
-  outline: 2px solid var(--p-blue-400);
+  outline: 2px solid var(--p-primary-400);
   outline-offset: 2px;
 }
 </style>

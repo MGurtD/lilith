@@ -5,6 +5,10 @@ export interface Enterprise {
   name: string;
   description: string;
   defaultSiteId?: string | null;
+  brandName: string | null;
+  primaryColor: string | null;
+  logoMainFileId: string | null;
+  logoSidebarFileId: string | null;
   disabled: boolean;
 }
 
