@@ -26,10 +26,6 @@
         }"
       ></BaseInput>
     </section>
-    <LocationFields
-      :model-value="site"
-      :validation-errors="validation.errors"
-    />
     <section class="three-columns mb-2">
       <BaseInput
         label="Telèfon"
@@ -84,8 +80,13 @@
       </div>
     </section>
 
-    <div>
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+    <LocationFields
+      :model-value="site"
+      :validation-errors="validation.errors"
+    />
+
+    <div class="flex justify-content-end">
+      <Button label="Guardar" @click="submitForm" />
     </div>
   </form>
 </template>
