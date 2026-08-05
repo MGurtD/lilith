@@ -180,6 +180,7 @@ entity.value.date = convertDateTimeToJSON(entity.value.date);
 ### UI Conventions
 
 - PrimeVue components are globally registered
+- Use PrimeVue `FileUpload` instead of raw `<input type="file">` for future file uploads
 - Toast messages in Catalan with appropriate severity and life duration
 - Clone objects before editing in dialogs to prevent premature state mutation
 - Numeric defaults should be `0`, not `undefined`
