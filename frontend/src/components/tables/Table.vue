@@ -7,6 +7,7 @@ import TableViewConfig from "./TableViewConfig.vue";
 import TableAttachmentViewer from "./TableAttachmentViewer.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
+import ProgressColumn from "@/components/ProgressColumn.vue";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
 import type { DataTableRowClickEvent } from "primevue/datatable";
@@ -625,19 +626,31 @@ function formatCellValue(col: Column, data: any): string {
     </template>
 
     <!-- Dynamic columns -->
-    <Column
-      v-for="col in visibleColumns"
-      :key="col.field"
-      :field="col.field"
-      :header="col.header"
-      :sortable="col.sortable || activeSortConfig?.field === col.field"
-      :style="col.style"
-      :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
-    >
+    <template v-for="col in visibleColumns" :key="col.field">
+      <ProgressColumn
+        v-if="col.columnType === ColumnType.ProgressBar"
+        :field="col.field"
+        :header="col.header"
+        :sortable="col.sortable || activeSortConfig?.field === col.field"
+        :style="col.style"
+        :show-value="col.props?.showValue"
+        :cap="col.props?.cap"
+        :overrun-severity="col.props?.overrunSeverity"
+        :tooltip="col.props?.tooltip"
+      />
+      <Column
+        v-else
+        :field="col.field"
+        :header="col.header"
+        :sortable="col.sortable || activeSortConfig?.field === col.field"
+        :style="col.style"
+        :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
+      >
       <!-- Custom body slot from consumer takes priority -->
       <template v-if="slots[`body-${col.field}`]" #body="slotProps">
         <slot :name="`body-${col.field}`" v-bind="slotProps" />
       </template>
+
       <!-- Boolean: not affected by truncation (its own component) -->
       <template v-else-if="col.columnType === ColumnType.Boolean" #body="slotProps">
         <BooleanColumn
@@ -654,7 +667,8 @@ function formatCellValue(col: Column, data: any): string {
           :truncate="col.truncate !== false"
         />
       </template>
-    </Column>
+      </Column>
+    </template>
 
     <!-- Read-only attachment action column -->
     <Column

@@ -23,7 +23,22 @@ export enum ColumnType {
   Currency = "currency",
   Number = "number",
   Lookup = "lookup",
+  ProgressBar = "progressbar",
 }
+
+/** Options supported by the ProgressBar column type. */
+export interface ProgressBarColumnProps {
+  showValue?: boolean;
+  cap?: boolean;
+  overrunSeverity?: "text" | "bar" | "both";
+  tooltip?: string | ((data: never) => string);
+}
+
+/**
+ * Type-specific options for a table column.
+ * Extend this type as specialized column types are introduced.
+ */
+export type ColumnProps = ProgressBarColumnProps;
 
 export interface Column {
   field: string;
@@ -38,4 +53,5 @@ export interface Column {
   showColor?: boolean;
   resolver?: (id: string) => string;
   truncate?: boolean;
+  props?: ColumnProps;
 }

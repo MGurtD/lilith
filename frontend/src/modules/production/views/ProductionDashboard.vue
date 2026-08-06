@@ -43,48 +43,17 @@
       </template>
     </Column>
     <Column field="plannedQuantity" header="Quantitat" sortable />
-    <Column
+    <ProgressColumn
       header="Avanç fases"
       field="phaseProgressPercentage"
-      sortable
       style="min-width: 13rem"
-    >
-      <template #body="{ data }">
-        <div class="flex align-items-center gap-2">
-          <ProgressBar
-            :value="data.phaseProgressPercentage"
-            :showValue="false"
-            style="height: 0.75rem; flex: 1"
-          />
-          <span class="text-sm white-space-nowrap"
-            >{{ data.phaseProgressPercentage }}%</span
-          >
-        </div>
-      </template>
-    </Column>
-    <Column
+    />
+    <ProgressColumn
       header="Avanç temps"
       field="timeProgressPercentage"
-      sortable
+      :tooltip="timeBreakdown"
       style="min-width: 13rem"
-    >
-      <template #body="{ data }">
-        <div class="flex align-items-center gap-2">
-          <ProgressBar
-            :value="Math.min(data.timeProgressPercentage, 100)"
-            :showValue="false"
-            :class="{ 'time-overrun': data.timeProgressPercentage > 100 }"
-            style="height: 0.75rem; flex: 1"
-          />
-          <span
-            class="text-sm white-space-nowrap"
-            v-tooltip.top="timeBreakdown(data)"
-            :class="{ 'text-red-500 font-medium': data.timeProgressPercentage > 100 }"
-            >{{ data.timeProgressPercentage }}%</span
-          >
-        </div>
-      </template>
-    </Column>
+    />
     <Column field="orderPrice" header="Preu comanda" sortable>
       <template #body="{ data }">{{ formatCurrency(data.orderPrice) }}</template>
     </Column>
@@ -121,7 +90,8 @@ import { PrimeIcons } from "@primevue/core/api";
 import { FilterMatchMode } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 
-import { useStore } from "../../../store";
+import ProgressColumn from "@/components/ProgressColumn.vue";
+import { useStore } from "@/store";
 import { formatCurrency } from "../../../utils/functions";
 import { WorkOrderDashboardItem } from "../types";
 import { WorkOrderService } from "../services/workorder.service";
