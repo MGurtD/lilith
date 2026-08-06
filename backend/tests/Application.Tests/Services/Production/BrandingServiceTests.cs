@@ -37,6 +37,8 @@ public class BrandingServiceTests
 
             Assert.Equal("Acme", response.BrandName);
             Assert.Equal(BrandingPalette.Indigo, response.PrimaryColor);
+            Assert.Null(response.MainLogoVersion);
+            Assert.Null(response.SidebarLogoVersion);
         }
         finally
         {
@@ -189,6 +191,11 @@ public class BrandingServiceTests
             Assert.Contains(uow.FilesStore.Store, file => file.Entity == "EnterpriseBranding:sidebar");
             Assert.Equal(enterprise.LogoMainFileId, uow.FilesStore.Store.Single(file => file.Entity == "EnterpriseBranding:main").Id);
             Assert.Equal(enterprise.LogoSidebarFileId, uow.FilesStore.Store.Single(file => file.Entity == "EnterpriseBranding:sidebar").Id);
+
+            var response = await sut.GetCurrent();
+            Assert.Equal(enterprise.LogoMainFileId?.ToString("N"), response.MainLogoVersion);
+            Assert.Equal(enterprise.LogoSidebarFileId?.ToString("N"), response.SidebarLogoVersion);
+            Assert.NotEqual(response.MainLogoVersion, response.SidebarLogoVersion);
         }
         finally
         {
@@ -216,6 +223,75 @@ public class BrandingServiceTests
 
             Assert.True(response.HasMainLogo);
             Assert.False(response.HasSidebarLogo);
+            Assert.Equal(legacyFile.Id.ToString("N"), response.MainLogoVersion);
+            Assert.Null(response.SidebarLogoVersion);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
+
+    [Fact]
+    public async Task GetCurrent_logo_tokens_change_when_a_slot_file_is_replaced()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = NewEnterprise();
+            var uow = new FakeUnitOfWork(enterprise);
+            var sut = BuildSut(uow, root);
+
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,
+                NewFormFile(new MemoryStream(PngHeader), "main.png", "image/png"));
+            var first = await sut.GetCurrent();
+
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,
+                NewFormFile(new MemoryStream(PngHeader), "main-replacement.png", "image/png"));
+            var second = await sut.GetCurrent();
+
+            Assert.NotNull(first.MainLogoVersion);
+            Assert.NotNull(second.MainLogoVersion);
+            Assert.NotEqual(first.MainLogoVersion, second.MainLogoVersion);
+            Assert.Null(first.SidebarLogoVersion);
+            Assert.Null(second.SidebarLogoVersion);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
+
+    [Fact]
+    public async Task GetCurrent_returns_no_logo_token_for_invalid_slot_files()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = NewEnterprise();
+            var outsidePath = Path.Combine(Path.GetTempPath(), $"lilith-invalid-branding-{Guid.NewGuid():N}.png");
+            await System.IO.File.WriteAllBytesAsync(outsidePath, PngHeader);
+            try
+            {
+                var mainFile = NewBrandingFile(enterprise.Id, outsidePath, "EnterpriseBranding:main");
+                var sidebarFile = NewBrandingFile(enterprise.Id, Path.Combine(root, "missing.png"), "EnterpriseBranding:sidebar");
+                enterprise.LogoMainFileId = mainFile.Id;
+                enterprise.LogoSidebarFileId = sidebarFile.Id;
+                var uow = new FakeUnitOfWork(enterprise);
+                uow.FilesStore.Store.AddRange([mainFile, sidebarFile]);
+
+                var response = await BuildSut(uow, root).GetCurrent();
+
+                Assert.False(response.HasMainLogo);
+                Assert.False(response.HasSidebarLogo);
+                Assert.Null(response.MainLogoVersion);
+                Assert.Null(response.SidebarLogoVersion);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(outsidePath))
+                    System.IO.File.Delete(outsidePath);
+            }
         }
         finally
         {

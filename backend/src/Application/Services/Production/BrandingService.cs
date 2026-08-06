@@ -23,12 +23,17 @@ public class BrandingService(
         if (enterprise is null)
             return BrandingResponse.Default;
 
+        var mainLogo = await GetValidLogoFile(enterprise, enterprise.LogoMainFileId, BrandingLogoSlot.Main);
+        var sidebarLogo = await GetValidLogoFile(enterprise, enterprise.LogoSidebarFileId, BrandingLogoSlot.Sidebar);
+
         return new BrandingResponse(
             string.IsNullOrWhiteSpace(enterprise.BrandName) ? "Temges" : enterprise.BrandName.Trim(),
             BrandingPalette.NormalizeOrDefault(enterprise.PrimaryColor),
-            await IsValidLogoReference(enterprise, enterprise.LogoMainFileId, BrandingLogoSlot.Main),
-            await IsValidLogoReference(enterprise, enterprise.LogoSidebarFileId, BrandingLogoSlot.Sidebar),
-            GetVersion(enterprise));
+            mainLogo is not null,
+            sidebarLogo is not null,
+            GetVersion(enterprise),
+            mainLogo?.Id.ToString("N"),
+            sidebarLogo?.Id.ToString("N"));
     }
 
     public async Task<BrandingLogoContent?> GetCurrentLogo(BrandingLogoSlot slot)
@@ -37,18 +42,8 @@ public class BrandingService(
         if (enterprise is null)
             return null;
 
-        var fileId = GetLogoFileId(enterprise, slot);
-        if (!fileId.HasValue)
-            return null;
-
-        var file = await unitOfWork.Files.Get(fileId.Value);
-        if (file is null ||
-            !IsBrandingFile(file, enterprise.Id, slot) ||
-            file.Type != Domain.Entities.FileType.Image ||
-            !IsInsideUploadRoot(file.Path))
-            return null;
-
-        if (!global::System.IO.File.Exists(file.Path))
+        var file = await GetValidLogoFile(enterprise, GetLogoFileId(enterprise, slot), slot);
+        if (file is null)
             return null;
 
         return new BrandingLogoContent(
@@ -221,20 +216,22 @@ public class BrandingService(
         return enabled[0];
     }
 
-    private async Task<bool> IsValidLogoReference(
+    private async Task<Domain.Entities.File?> GetValidLogoFile(
         Enterprise enterprise,
         Guid? fileId,
         BrandingLogoSlot slot)
     {
         if (!fileId.HasValue)
-            return false;
+            return null;
 
         var file = await unitOfWork.Files.Get(fileId.Value);
         return file is not null &&
                IsBrandingFile(file, enterprise.Id, slot) &&
                file.Type == Domain.Entities.FileType.Image &&
                IsInsideUploadRoot(file.Path) &&
-               global::System.IO.File.Exists(file.Path);
+               global::System.IO.File.Exists(file.Path)
+            ? file
+            : null;
     }
 
     private async Task<(bool IsValid, string? Extension, string? ErrorKey)> ValidateLogo(IFormFile file)

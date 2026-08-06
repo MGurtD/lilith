@@ -450,8 +450,7 @@ const es = {
     },
   },
   login: {
-    welcome: "Bienvenido a Temges",
-    subtitle: "Inicia sesión para continuar",
+    welcome: "Bienvenido a {brandName}",
     username: "Nombre de usuario",
     usernamePlaceholder: "Introduce tu nombre de usuario",
     password: "Contraseña",

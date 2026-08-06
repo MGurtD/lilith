@@ -260,6 +260,24 @@ function buildSidebarTheme(primaryColor: unknown): Record<string, string> {
   } = surfaces;
   const createIconSurface = (surface: string) =>
     adjustBackgroundForContrast(mixColors(surface, WHITE, 0.08), LIGHT_TEXT, 3);
+  const primarySurfaces =
+    paletteOption.value === "black"
+      ? {
+          base: createGrayscaleSurface("#101010"),
+          hover: createGrayscaleSurface("#3C3C3C"),
+          selected: createGrayscaleSurface("#585858"),
+          active: createGrayscaleSurface("#707070"),
+        }
+      : {
+          base: createSurface(0.18, 0.04),
+          hover: createSurface(0.3, 0.1),
+          selected: createSurface(0.42, 0.14),
+          active: createSurface(0.54, 0.18),
+        };
+  const primaryIcon = createIconSurface(primarySurfaces.base);
+  const primaryHoverIcon = createIconSurface(primarySurfaces.hover);
+  const primarySelectedIcon = createIconSurface(primarySurfaces.selected);
+  const primaryActiveIcon = createIconSurface(primarySurfaces.active);
   const icon = createIconSurface(base);
   const hoverIcon = createIconSurface(hover);
   const selectedIcon = createIconSurface(selected);
@@ -285,7 +303,22 @@ function buildSidebarTheme(primaryColor: unknown): Record<string, string> {
   );
 
   return {
-    "--sidebar-base-bg": base,
+    "--sidebar-base-bg": "var(--p-primary-900)",
+    "--sidebar-primary-color": getReadableText(primarySurfaces.base),
+    "--sidebar-primary-hover-bg": primarySurfaces.hover,
+    "--sidebar-primary-hover-color": getReadableText(primarySurfaces.hover),
+    "--sidebar-primary-selected-bg": primarySurfaces.selected,
+    "--sidebar-primary-selected-color": getReadableText(primarySurfaces.selected),
+    "--sidebar-primary-active-bg": primarySurfaces.active,
+    "--sidebar-primary-active-color": getReadableText(primarySurfaces.active),
+    "--sidebar-primary-icon-bg": primaryIcon,
+    "--sidebar-primary-icon-color": getReadableText(primaryIcon),
+    "--sidebar-primary-hover-icon-bg": primaryHoverIcon,
+    "--sidebar-primary-hover-icon-color": getReadableText(primaryHoverIcon),
+    "--sidebar-primary-selected-icon-bg": primarySelectedIcon,
+    "--sidebar-primary-selected-icon-color": getReadableText(primarySelectedIcon),
+    "--sidebar-primary-active-icon-bg": primaryActiveIcon,
+    "--sidebar-primary-active-icon-color": getReadableText(primaryActiveIcon),
     "--sidebar-link-color": linkColor,
     "--sidebar-icon-bg": icon,
     "--sidebar-icon-color": iconColor,
@@ -309,7 +342,7 @@ function buildSidebarTheme(primaryColor: unknown): Record<string, string> {
     "--sidebar-submenu-hover-color": getReadableText(submenuHover),
     "--sidebar-submenu-selected-bg": submenuSelected,
     "--sidebar-submenu-selected-color": getReadableText(submenuSelected),
-    "--sidebar-mobile-bg": base,
+    "--sidebar-mobile-bg": "var(--p-primary-900)",
     "--sidebar-muted-color": linkColor,
     "--sidebar-accent": accent,
   };
@@ -519,5 +552,56 @@ function toggleCollapse() {
 :global(.v-sidebar-menu .vsm--mobile-item:hover) {
   background-color: var(--sidebar-hover-bg) !important;
   color: var(--sidebar-hover-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1) {
+  background-color: var(--sidebar-base-bg) !important;
+  color: var(--sidebar-primary-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_hover),
+:global(.v-sidebar-menu .vsm--link_level-1:hover) {
+  background-color: var(--sidebar-primary-hover-bg) !important;
+  color: var(--sidebar-primary-hover-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_active:not(.vsm--link_exact-active)),
+:global(.v-sidebar-menu.vsm_expanded .vsm--item.vsm--item_open > .vsm--link_level-1) {
+  background-color: var(--sidebar-primary-selected-bg) !important;
+  color: var(--sidebar-primary-selected-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_exact-active) {
+  background-color: var(--sidebar-primary-active-bg) !important;
+  color: var(--sidebar-primary-active-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1 .vsm--icon) {
+  background-color: var(--sidebar-primary-icon-bg) !important;
+  color: var(--sidebar-primary-icon-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_hover .vsm--icon),
+:global(.v-sidebar-menu .vsm--link_level-1:hover .vsm--icon) {
+  background-color: var(--sidebar-primary-hover-icon-bg) !important;
+  color: var(--sidebar-primary-hover-icon-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_active:not(.vsm--link_exact-active) .vsm--icon),
+:global(.v-sidebar-menu.vsm_expanded .vsm--item.vsm--item_open > .vsm--link_level-1 .vsm--icon) {
+  background-color: var(--sidebar-primary-selected-icon-bg) !important;
+  color: var(--sidebar-primary-selected-icon-color) !important;
+}
+
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_exact-active .vsm--icon) {
+  background-color: var(--sidebar-primary-active-icon-bg) !important;
+  color: var(--sidebar-primary-active-icon-color) !important;
+}
+
+:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_hover),
+:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1:hover),
+:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_active),
+:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_exact-active) {
+  background-color: transparent !important;
 }
 </style>

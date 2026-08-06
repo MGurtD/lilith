@@ -22,19 +22,30 @@ export const useBrandingStore = defineStore("branding", {
     hasMainLogo: false,
     hasSidebarLogo: false,
     version: "default",
+    mainLogoVersion: null as string | null,
+    sidebarLogoVersion: null as string | null,
     initialized: false,
   }),
   getters: {
     mainLogoUrl: (state): string =>
       state.hasMainLogo
-        ? brandingService.getCurrentLogoUrl("main", state.version)
+        ? brandingService.getCurrentLogoUrl(
+          "main",
+          state.mainLogoVersion || state.version,
+        )
         : DEFAULT_MAIN_LOGO,
     sidebarLogoUrl(): string {
       if (this.hasSidebarLogo) {
-        return brandingService.getCurrentLogoUrl("sidebar", this.version);
+        return brandingService.getCurrentLogoUrl(
+          "sidebar",
+          this.sidebarLogoVersion || this.version,
+        );
       }
       if (this.hasMainLogo) {
-        return brandingService.getCurrentLogoUrl("main", this.version);
+        return brandingService.getCurrentLogoUrl(
+          "main",
+          this.mainLogoVersion || this.version,
+        );
       }
       return DEFAULT_SIDEBAR_LOGO;
     },
@@ -59,6 +70,8 @@ export const useBrandingStore = defineStore("branding", {
       this.hasMainLogo = response.hasMainLogo;
       this.hasSidebarLogo = response.hasSidebarLogo;
       this.version = response.version || "default";
+      this.mainLogoVersion = response.mainLogoVersion || response.version || null;
+      this.sidebarLogoVersion = response.sidebarLogoVersion || response.version || null;
     },
     resetToDefault() {
       this.brandName = DEFAULT_BRAND_NAME;
@@ -66,6 +79,8 @@ export const useBrandingStore = defineStore("branding", {
       this.hasMainLogo = false;
       this.hasSidebarLogo = false;
       this.version = "default";
+      this.mainLogoVersion = null;
+      this.sidebarLogoVersion = null;
     },
     applyTheme() {
       const primaryPalette = palette(BRANDING_PALETTE_TOKENS[this.primaryColor]) as

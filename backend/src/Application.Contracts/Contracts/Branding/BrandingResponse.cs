@@ -5,14 +5,18 @@ public sealed record BrandingResponse(
     string? PrimaryColor,
     bool HasMainLogo,
     bool HasSidebarLogo,
-    string Version)
+    string Version,
+    string? MainLogoVersion,
+    string? SidebarLogoVersion)
 {
     public static BrandingResponse Default { get; } = new(
         "Temges",
         BrandingPalette.Default,
         false,
         false,
-        "default");
+        "default",
+        null,
+        null);
 }
 
 public enum BrandingLogoSlot

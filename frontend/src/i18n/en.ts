@@ -449,8 +449,7 @@ const en = {
     },
   },
   login: {
-    welcome: "Welcome to Temges",
-    subtitle: "Sign in to continue",
+    welcome: "Welcome to {brandName}",
     username: "Username",
     usernamePlaceholder: "Enter your username",
     password: "Password",

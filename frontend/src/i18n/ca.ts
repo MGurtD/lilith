@@ -449,8 +449,7 @@ const ca = {
     },
   },
   login: {
-    welcome: "Benvingut a Temges",
-    subtitle: "Inicia sessió per continuar",
+    welcome: "Benvingut a {brandName}",
     username: "Nom d'usuari",
     usernamePlaceholder: "Introdueix el teu nom d'usuari",
     password: "Contrasenya",

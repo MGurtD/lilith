@@ -55,6 +55,8 @@ export interface BrandingResponse {
   hasMainLogo: boolean;
   hasSidebarLogo: boolean;
   version: string;
+  mainLogoVersion?: string | null;
+  sidebarLogoVersion?: string | null;
 }
 
 export interface BrandingUpdateRequest {

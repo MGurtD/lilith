@@ -46,20 +46,15 @@ const registerClick = () => {
 <template>
   <div class="login-card surface-card p-6 shadow-8 border-round-xl w-full">
     <div class="text-center mb-6">
-      <div class="logo-container mb-4">
-        <img
-          :src="loginLogoUrl"
-          :alt="brandingStore.brandName"
-          class="logo-image"
-          @error="logoLoadFailed = true"
-        />
-      </div>
+      <img
+        :src="loginLogoUrl"
+        :alt="brandingStore.brandName"
+        class="logo-image mb-4"
+        @error="logoLoadFailed = true"
+      />
       <h1 class="text-3xl font-bold text-900 mb-2">
-        {{ $t("login.welcome") || "Benvingut" }}
+        {{ $t("login.welcome", { brandName: brandingStore.brandName }) }}
       </h1>
-      <p class="text-600 text-lg">
-        {{ $t("login.subtitle") || "Inicia sessió per continuar" }}
-      </p>
     </div>
 
     <form @submit.prevent="login" class="login-form">
@@ -131,8 +126,7 @@ const registerClick = () => {
 </template>
 <style lang="scss" scoped>
 .login-card {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
+  background: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
 
@@ -142,34 +136,13 @@ const registerClick = () => {
   }
 }
 
-.logo-container {
-  position: relative;
-  display: inline-block;
-  background: linear-gradient(135deg, var(--p-primary-50) 0%, var(--p-primary-100) 100%);
-  border-radius: 20px;
-  box-shadow: 0 4px 15px rgba(var(--p-primary-500), 0.1);
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(var(--p-primary-500), 0.15);
-  }
-}
-
 .logo-image {
   height: 80px;
   width: auto;
   max-width: 180px;
   object-fit: contain;
-  border-radius: 20px;
-  border: 2px solid var(--p-primary-200);
-  transition: all 0.3s ease;
+  margin-inline: auto;
   display: block;
-
-  &:hover {
-    transform: scale(1.02);
-    border-color: var(--p-primary-400);
-  }
 }
 .login-form {
   .form-group {
@@ -302,7 +275,6 @@ const registerClick = () => {
     height: 60px;
     width: auto;
     max-width: 90px;
-    border-radius: 10px;
   }
 
   .login-form {
@@ -328,7 +300,6 @@ const registerClick = () => {
     height: 50px;
     width: auto;
     max-width: 75px;
-    border-radius: 8px;
   }
 }
 
