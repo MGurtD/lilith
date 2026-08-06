@@ -44,7 +44,7 @@ const registerClick = () => {
 </script>
 
 <template>
-  <div class="login-card surface-card p-6 shadow-8 border-round-xl w-full">
+  <div class="login-card p-6 shadow-8 border-round-xl w-full">
     <div class="text-center mb-6">
       <img
         :src="loginLogoUrl"
