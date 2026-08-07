@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Frontend Localization"
+  short_description: "Audit Lilith Vue i18n coverage and consistency"
+  default_prompt: "Audit frontend localization for the requested scope and report errors and warnings without changing source files."

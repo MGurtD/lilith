@@ -392,6 +392,59 @@ const en = {
     },
   },
   home: {},
+  phaseTemplates: {
+    title: "Phase templates",
+    menuTitle: "Phase template management",
+    pageTitle: "Phase template",
+    fields: {
+      name: "Name",
+      disabled: "Disabled",
+    },
+    columns: {
+      disabled: "Disabled",
+    },
+    actions: {
+      create: "Create",
+      delete: "Delete",
+    },
+    dialogs: {
+      createTitle: "Create phase template",
+    },
+    messages: {
+      confirmDelete: "Are you sure you want to delete the template {name}?",
+      deleted: "Deleted",
+      updated: "Updated",
+      invalidForm: "Invalid form",
+    },
+    validation: {
+      nameRequired: "Name is required",
+    },
+    details: {
+      title: "Template details",
+      fields: {
+        order: "Order",
+        machineStatus: "Machine status",
+        comment: "Comment",
+      },
+      actions: {
+        add: "Add detail",
+        delete: "Delete detail",
+        save: "Save detail",
+      },
+      dialogs: {
+        createTitle: "Create detail",
+        editTitle: "Edit detail",
+      },
+      messages: {
+        confirmDelete: "Are you sure you want to delete the template detail?",
+      },
+      validation: {
+        orderRequired: "Order is required",
+        orderPositive: "Order must be positive",
+        machineStatusRequired: "Machine status is required",
+      },
+    },
+  },
   shopfloor: {
     clockin: {
       title: "Operator Access",

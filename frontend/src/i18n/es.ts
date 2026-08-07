@@ -393,6 +393,59 @@ const es = {
     },
   },
   home: {},
+  phaseTemplates: {
+    title: "Plantillas de fase",
+    menuTitle: "Gestión de plantillas de fase",
+    pageTitle: "Plantilla de fase",
+    fields: {
+      name: "Nombre",
+      disabled: "Desactivada",
+    },
+    columns: {
+      disabled: "Desactivada",
+    },
+    actions: {
+      create: "Crear",
+      delete: "Eliminar",
+    },
+    dialogs: {
+      createTitle: "Crear plantilla de fase",
+    },
+    messages: {
+      confirmDelete: "¿Seguro que desea eliminar la plantilla {name}?",
+      deleted: "Eliminada",
+      updated: "Actualizada",
+      invalidForm: "Formulario no válido",
+    },
+    validation: {
+      nameRequired: "El nombre es obligatorio",
+    },
+    details: {
+      title: "Detalles de la plantilla",
+      fields: {
+        order: "Orden",
+        machineStatus: "Estado de máquina",
+        comment: "Comentario",
+      },
+      actions: {
+        add: "Añadir detalle",
+        delete: "Eliminar detalle",
+        save: "Guardar detalle",
+      },
+      dialogs: {
+        createTitle: "Crear detalle",
+        editTitle: "Editar detalle",
+      },
+      messages: {
+        confirmDelete: "¿Seguro que desea eliminar el detalle de la plantilla?",
+      },
+      validation: {
+        orderRequired: "El orden es obligatorio",
+        orderPositive: "El orden debe ser positivo",
+        machineStatusRequired: "El estado de máquina es obligatorio",
+      },
+    },
+  },
   shopfloor: {
     clockin: {
       title: "Acceso Operario",

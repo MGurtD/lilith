@@ -14,10 +14,12 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Plantilles de fase</span>
+        <span class="text-900 font-bold">{{ t("phaseTemplates.title") }}</span>
         <div class="datatable-buttons">
           <Button
             :icon="PrimeIcons.PLUS"
+            :aria-label="t('phaseTemplates.actions.create')"
+            :title="t('phaseTemplates.actions.create')"
             rounded
             raised
             @click="createButtonClick"
@@ -25,13 +27,18 @@
         </div>
       </div>
     </template>
-    <Column field="name" sortable header="Nom" style="width: 30%"></Column>
+    <Column
+      field="name"
+      sortable
+      :header="t('phaseTemplates.fields.name')"
+      style="width: 30%"
+    ></Column>
     <Column
       field="description"
-      header="Descripció"
+      :header="t('common.description')"
       style="width: 50%"
     ></Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column :header="t('phaseTemplates.columns.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -41,6 +48,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('phaseTemplates.actions.delete')"
+          :title="t('phaseTemplates.actions.delete')"
           @click="deleteButton($event, slotProps.data)"
         />
       </template>
@@ -49,20 +58,20 @@
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('phaseTemplates.dialogs.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
   >
     <div>
       <BaseInput
-        label="Nom"
+        :label="t('phaseTemplates.fields.name')"
         v-model="phaseTemplateStore.phaseTemplate!.name"
         class="w-full mb-2"
       />
     </div>
     <div>
       <BaseInput
-        label="Descripció"
+        :label="t('common.description')"
         v-model="phaseTemplateStore.phaseTemplate!.description"
         class="w-full mb-2"
       />
@@ -70,7 +79,7 @@
     <br />
     <div>
       <Button
-        label="Crear"
+        :label="t('phaseTemplates.actions.create')"
         style="float: right"
         @click="onCreateSubmit"
       ></Button>
@@ -81,7 +90,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted, reactive } from "vue";
+import { onMounted, reactive, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -91,29 +100,35 @@ import { PhaseTemplate } from "../types";
 import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import BaseInput from "../../../components/BaseInput.vue";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const phaseTemplateStore = usePhaseTemplateStore();
+const { t, locale } = useI18n();
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear plantilla de fase",
   closable: true,
   position: "center",
   modal: true,
 } as DialogOptions);
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.LIST,
-    title: "Gestió de plantilles de fase",
+    title: t("phaseTemplates.menuTitle"),
   });
+};
 
+onMounted(async () => {
+  setMenuTitle();
   await phaseTemplateStore.fetchAll();
 });
+
+watch(locale, () => setMenuTitle());
 
 const createButtonClick = () => {
   const newId = getNewUuid();
@@ -146,7 +161,9 @@ const onCreateSubmit = async () => {
 const deleteButton = (event: any, phaseTemplate: PhaseTemplate) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar la plantilla ${phaseTemplate.name}?`,
+    message: t("phaseTemplates.messages.confirmDelete", {
+      name: phaseTemplate.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -156,7 +173,7 @@ const deleteButton = (event: any, phaseTemplate: PhaseTemplate) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("phaseTemplates.messages.deleted"),
           life: 3000,
         });
         await phaseTemplateStore.fetchAll();

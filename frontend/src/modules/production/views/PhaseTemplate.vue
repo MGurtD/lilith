@@ -19,7 +19,7 @@
 
   <Dialog
     v-model:visible="detailDialogOptions.visible"
-    :header="detailDialogOptions.title"
+    :header="detailDialogTitle"
     :closable="detailDialogOptions.closable"
     :modal="detailDialogOptions.modal"
   >
@@ -36,8 +36,9 @@ import FormPhaseTemplate from "../components/FormPhaseTemplate.vue";
 import TablePhaseTemplateDetails from "../components/TablePhaseTemplateDetails.vue";
 import FormPhaseTemplateDetail from "../components/FormPhaseTemplateDetail.vue";
 
-import { onMounted, ref, reactive } from "vue";
+import { computed, onMounted, ref, reactive, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { useStore } from "../../../store";
 import { usePhaseTemplateStore } from "../store/phasetemplate";
 import { storeToRefs } from "pinia";
@@ -45,11 +46,12 @@ import { PrimeIcons } from "@primevue/core/api";
 import { PhaseTemplate, PhaseTemplateDetail } from "../types";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useToast } from "primevue/usetoast";
-import { DialogOptions, FormActionMode } from "../../../types/component";
+import { FormActionMode } from "../../../types/component";
 
 const route = useRoute();
 const store = useStore();
 const toast = useToast();
+const { t, locale } = useI18n();
 const phaseTemplateStore = usePhaseTemplateStore();
 const plantModelStore = usePlantModelStore();
 const { phaseTemplate } = storeToRefs(phaseTemplateStore);
@@ -59,17 +61,18 @@ const selectedDetail = ref<PhaseTemplateDetail | undefined>(undefined);
 const detailActionMode = ref(FormActionMode.CREATE);
 const detailDialogOptions = reactive({
   visible: false,
-  title: "Detall de la plantilla",
   closable: true,
   position: "center",
   modal: true,
-} as DialogOptions);
+});
+const detailDialogTitle = computed(() =>
+  detailActionMode.value === FormActionMode.CREATE
+    ? t("phaseTemplates.details.dialogs.createTitle")
+    : t("phaseTemplates.details.dialogs.editTitle"),
+);
 
-onMounted(async () => {
-  id.value = route.params.id as string;
-  await loadViewData();
-
-  let pageTitle = "Plantilla de fase";
+const setMenuTitle = () => {
+  let pageTitle = t("phaseTemplates.pageTitle");
   if (phaseTemplate.value) {
     pageTitle = `${pageTitle} - ${phaseTemplate.value.name}`;
   }
@@ -79,6 +82,15 @@ onMounted(async () => {
     backButtonVisible: true,
     title: pageTitle,
   });
+};
+
+watch(locale, setMenuTitle);
+
+onMounted(async () => {
+  id.value = route.params.id as string;
+  await loadViewData();
+
+  setMenuTitle();
 });
 
 const loadViewData = async () => {
@@ -91,10 +103,11 @@ const onPhaseTemplateSubmit = async (model: PhaseTemplate) => {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Actualitzada",
+      summary: t("phaseTemplates.messages.updated"),
       life: 3000,
     });
     await loadViewData();
+    setMenuTitle();
   }
 };
 
@@ -102,14 +115,12 @@ const onPhaseTemplateSubmit = async (model: PhaseTemplate) => {
 const addDetail = (detail: PhaseTemplateDetail) => {
   selectedDetail.value = { ...detail };
   detailActionMode.value = FormActionMode.CREATE;
-  detailDialogOptions.title = "Crear detall";
   detailDialogOptions.visible = true;
 };
 
 const editDetail = (detail: PhaseTemplateDetail) => {
   selectedDetail.value = { ...detail };
   detailActionMode.value = FormActionMode.EDIT;
-  detailDialogOptions.title = "Editar detall";
   detailDialogOptions.visible = true;
 };
 

@@ -4,13 +4,15 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Ordre"
+          :label="t('phaseTemplates.details.fields.order')"
           v-model="detail.order"
           :class="{ 'p-invalid': validation.errors.order }"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Estat</label>
+        <label class="block text-900 mb-2">
+          {{ t("phaseTemplates.details.fields.machineStatus") }}
+        </label>
         <Select
           v-model="detail.machineStatusId"
           :options="plantModelStore.machineStatuses"
@@ -22,14 +24,16 @@
       </div>
     </section>
     <div class="mt-2">
-      <label class="block text-900 mb-1">Comentari</label>
+      <label class="block text-900 mb-1">
+        {{ t("phaseTemplates.details.fields.comment") }}
+      </label>
       <Textarea class="w-full" v-model="detail.comment"></Textarea>
     </div>
 
     <br />
     <div>
       <Button
-        label="Guardar detall"
+        :label="t('phaseTemplates.details.actions.save')"
         style="float: right"
         size="small"
         @click="submitForm"
@@ -40,6 +44,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { PhaseTemplateDetail } from "../types";
 import * as Yup from "yup";
 import {
@@ -63,19 +68,23 @@ const emit = defineEmits<{
 const plantModelStore = usePlantModelStore();
 
 const toast = useToast();
-const schema = Yup.object().shape({
-  order: Yup.number()
-    .required("L'ordre és obligatori")
-    .positive("L'ordre ha de ser positiu"),
-  machineStatusId: Yup.string().required("L'estat de màquina és obligatori"),
-});
+const { t } = useI18n();
+const getSchema = () =>
+  Yup.object().shape({
+    order: Yup.number()
+      .required(t("phaseTemplates.details.validation.orderRequired"))
+      .positive(t("phaseTemplates.details.validation.orderPositive")),
+    machineStatusId: Yup.string().required(
+      t("phaseTemplates.details.validation.machineStatusRequired"),
+    ),
+  });
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
 const validate = () => {
-  const formValidation = new FormValidation(schema);
+  const formValidation = new FormValidation(getSchema());
   validation.value = formValidation.validate(props.detail);
 };
 
@@ -90,7 +99,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("phaseTemplates.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

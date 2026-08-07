@@ -392,6 +392,59 @@ const ca = {
     },
   },
   home: {},
+  phaseTemplates: {
+    title: "Plantilles de fase",
+    menuTitle: "Gestió de plantilles de fase",
+    pageTitle: "Plantilla de fase",
+    fields: {
+      name: "Nom",
+      disabled: "Desactivada",
+    },
+    columns: {
+      disabled: "Desactivada",
+    },
+    actions: {
+      create: "Crear",
+      delete: "Eliminar",
+    },
+    dialogs: {
+      createTitle: "Crear plantilla de fase",
+    },
+    messages: {
+      confirmDelete: "Segur que voleu eliminar la plantilla {name}?",
+      deleted: "Eliminada",
+      updated: "Actualitzada",
+      invalidForm: "Formulari invàlid",
+    },
+    validation: {
+      nameRequired: "El nom és obligatori",
+    },
+    details: {
+      title: "Detalls de la plantilla",
+      fields: {
+        order: "Ordre",
+        machineStatus: "Estat de màquina",
+        comment: "Comentari",
+      },
+      actions: {
+        add: "Afegir detall",
+        delete: "Eliminar detall",
+        save: "Guardar detall",
+      },
+      dialogs: {
+        createTitle: "Crear detall",
+        editTitle: "Editar detall",
+      },
+      messages: {
+        confirmDelete: "Segur que voleu eliminar el detall de la plantilla?",
+      },
+      validation: {
+        orderRequired: "L'ordre és obligatori",
+        orderPositive: "L'ordre ha de ser positiu",
+        machineStatusRequired: "L'estat de màquina és obligatori",
+      },
+    },
+  },
   shopfloor: {
     clockin: {
       title: "Accés Operari",
