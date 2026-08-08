@@ -27,13 +27,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ t("purchase.fields.period") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -42,14 +42,14 @@
           <div
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
-            <label class="filter-label table-filter-prepend-label">Tipus</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.type") }}</label>
             <Select
               v-model="filter.expenseTypeId"
               :options="expenseStore.expenseTypes"
               optionValue="id"
               optionLabel="name"
               class="w-full"
-              placeholder="Tots els tipus"
+              :placeholder="t('purchase.placeholders.allExpenseTypes')"
               showClear
               size="small"
             />
@@ -58,7 +58,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--sm"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Freqüència</label
+              >{{ t("purchase.fields.frequency") }}</label
             >
             <Select
               v-model="filter.frecuency"
@@ -66,7 +66,7 @@
               optionValue="id"
               optionLabel="name"
               class="w-full"
-              placeholder="Totes"
+              :placeholder="t('purchase.placeholders.allFrequencies')"
               showClear
               size="small"
             />
@@ -74,20 +74,20 @@
         </template>
       </TableFilter>
     </template>
-    <Column header="Tipus" style="width: 15%">
+    <Column :header="t('purchase.fields.type')" style="width: 15%">
       <template #body="slotProps">
         {{ getExpenseTypeNameById(slotProps.data.expenseTypeId) }}
       </template>
     </Column>
     <Column
       field="description"
-      header="Descripció"
+      :header="t('purchase.fields.description')"
       style="width: 40%"
       sortable
     ></Column>
     <Column
       field="paymentDate"
-      header="Data pagament"
+      :header="t('purchase.fields.paymentDate')"
       style="width: 20%"
       sortable
     >
@@ -95,19 +95,19 @@
         {{ formatDate(slotProps.data.paymentDate) }}
       </template>
     </Column>
-    <Column field="amount" header="Import" style="width: 15%">
+    <Column field="amount" :header="t('purchase.fields.amount')" style="width: 15%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}
       </template>
     </Column>
-    <Column header="Freqüència" style="width: 12%">
+    <Column :header="t('purchase.fields.frequency')" style="width: 12%">
       <template #body="slotProps">
         {{
           getFrequencyName(slotProps.data.frecuency, slotProps.data.recurring)
         }}
       </template>
     </Column>
-    <Column header="Recurrent" style="width: 10%">
+    <Column :header="t('purchase.fields.recurring')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.recurring" :showColor="false" />
       </template>
@@ -123,7 +123,7 @@
     </Column>
     <template #footer
       ><div class="expenses-footer-total">
-        Total visible {{ formatCurrency(totalAmount) }}
+        {{ t("purchase.expenses.visibleTotal", { amount: formatCurrency(totalAmount) }) }}
       </div></template
     >
   </DataTable>
@@ -132,13 +132,14 @@
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { formatDate, formatDateForQueryParameter, formatCurrency, getNewUuid } from "../../../utils/functions";
 import { Expense } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { useUserFilterStore } from "../../../store/userfilter";
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
@@ -149,6 +150,7 @@ const expenseStore = useExpenseStore();
 const userFilterStore = useUserFilterStore();
 const toast = useToast();
 const confirm = useConfirm();
+const { t, locale } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
@@ -158,14 +160,21 @@ const filter = ref({
   dates: undefined as Array<Date> | undefined,
 });
 
-const frequencyOptions = [
-  { id: 0, name: "No recurrent" },
-  { id: 1, name: "Mensual" },
-  { id: 2, name: "Bimensual" },
-  { id: 3, name: "Trimestral" },
-  { id: 6, name: "Semestral" },
-  { id: 12, name: "Anual" },
-];
+const frequencyOptions = computed(() => [
+  { id: 0, name: t("purchase.frequency.notRecurring") },
+  { id: 1, name: t("purchase.frequency.monthly") },
+  { id: 2, name: t("purchase.frequency.bimonthly") },
+  { id: 3, name: t("purchase.frequency.quarterly") },
+  { id: 6, name: t("purchase.frequency.halfYearly") },
+  { id: 12, name: t("purchase.frequency.yearly") },
+]);
+
+const setMenuTitle = () => {
+  store.setMenuItem({
+    icon: PrimeIcons.WALLET,
+    title: t("purchase.expenses.title"),
+  });
+};
 
 const filteredExpenses = computed(() => {
   if (!expenseStore.expenses) return [];
@@ -212,16 +221,14 @@ const getUserFilter = () => {
 };
 
 onMounted(async () => {
-  store.setMenuItem({
-    icon: PrimeIcons.WALLET,
-    title: "Gestió de despeses",
-  });
+  setMenuTitle();
 
   await expenseStore.fetchExpenseTypes();
   setCurrentYear();
   getUserFilter();
   filterExpense();
 });
+watch(locale, setMenuTitle);
 onUnmounted(() => {
   const savedFilter = {
     expenseTypeId: filter.value.expenseTypeId,
@@ -282,7 +289,7 @@ const editExpense = (row: DataTableRowClickEvent) => {
 const deleteExpense = (event: any, expense: Expense) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar la despesa?`,
+    message: t("purchase.messages.confirmDeleteExpense"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -291,7 +298,7 @@ const deleteExpense = (event: any, expense: Expense) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await filterExpense();
@@ -308,11 +315,11 @@ const getExpenseTypeNameById = (id: string) => {
 
 const getFrequencyName = (frequency: number, recurring: boolean) => {
   if (!recurring || frequency === 0) {
-    return "No recurrent";
+    return t("purchase.frequency.notRecurring");
   }
 
   return (
-    frequencyOptions.find((option) => option.id === frequency)?.name ?? "-"
+    frequencyOptions.value.find((option) => option.id === frequency)?.name ?? "-"
   );
 };
 </script>

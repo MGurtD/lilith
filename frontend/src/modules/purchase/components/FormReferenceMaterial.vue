@@ -2,12 +2,12 @@
   <section class="three-columns">
     <div class="mt-1">
       <DropdownReferenceType
-        label="Tipus de material"
+        :label="t('purchase.materials.fields.materialType')"
         v-model="props.reference.referenceTypeId"
       />
     </div>
     <div class="mt-1">
-      <label class="block text-900 mb-2">Format</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.format") }}</label>
       <Select
         v-model="props.reference.referenceFormatId"
         :options="referenceStore.referenceFormats"
@@ -17,7 +17,7 @@
       />
     </div>
     <div class="mt-1">
-      <label class="block text-900 mb-2">Impost</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.tax") }}</label>
       <Select
         v-model="props.reference.taxId"
         :options="taxesStore.taxes"
@@ -31,14 +31,14 @@
     <div class="mt-1">
       <BaseInput
         :type="BaseInputType.CURRENCY"
-        label="Últim cost"
+        :label="t('purchase.materials.fields.lastCost')"
         id="lastCost"
         v-model="reference.lastCost"
         :disabled="disabled"
       />
     </div>
     <div>
-      <label class="block text-900 mb-2">Desactivada</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.disabled") }}</label>
       <Checkbox v-model="reference.disabled" :binary="true" />
     </div>
   </section>
@@ -52,6 +52,7 @@ import { useReferenceStore } from "../../shared/store/reference";
 import DropdownReferenceType from "../../shared/components/DropdownReferenceType.vue";
 import { ref, onMounted } from "vue";
 import Services from "../services";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   reference: Reference;
@@ -59,6 +60,7 @@ const props = defineProps<{
 
 const taxesStore = useTaxesStore();
 const referenceStore = useReferenceStore();
+const { t } = useI18n();
 
 const disabled = ref();
 

@@ -8,7 +8,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Series</span>
+        <span class="text-900 font-bold">{{ t("purchase.invoiceSeries.title") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -17,9 +17,9 @@
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Desactivada" style="width: 20%">
+    <Column field="name" :header="t('purchase.invoiceSeries.fields.name')" style="width: 20%"></Column>
+    <Column field="description" :header="t('purchase.invoiceSeries.fields.description')" style="width: 50%"></Column>
+    <Column :header="t('purchase.invoiceSeries.fields.disabled')" style="width: 20%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -42,6 +42,7 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { InvoiceSerie } from "../types";
 import { useStore } from "../../../store";
@@ -52,12 +53,13 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const purchaseStore = usePurchaseInvoiceSeries();
+const { t } = useI18n();
 
 onMounted(async () => {
   await purchaseStore.fetchPurchaseInvoiceSeries();
   store.setMenuItem({
     icon: PrimeIcons.SERVER,
-    title: "Sèries Factures de Compra",
+    title: t("purchase.invoiceSeries.title"),
   });
 });
 const createButtonClick = () => {
@@ -80,7 +82,9 @@ const deletePurchaseInvoiceSerie = (
 ) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la sèrie de factures de compra ${purchaseInvoiceSerie.name}?`,
+    message: t("purchase.invoiceSeries.messages.confirmDelete", {
+      name: purchaseInvoiceSerie.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -92,7 +96,7 @@ const deletePurchaseInvoiceSerie = (
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await purchaseStore.fetchPurchaseInvoiceSeries();

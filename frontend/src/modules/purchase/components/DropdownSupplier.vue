@@ -8,7 +8,7 @@
       filter
       :filter-fields="['comercialName']"
       :options="supplierStore.suppliers"
-      placeholder="Selecciona..."
+      :placeholder="$t('shared.common.selectPlaceholder')"
       optionValue="id"
       optionLabel="comercialName"
       class="w-full"

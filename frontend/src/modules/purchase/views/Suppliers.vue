@@ -10,11 +10,11 @@
     <TabList>
       <Tab value="0">
         <i :class="PrimeIcons.LINK" class="mr-2"></i>
-        <span>Proveïdors</span>
+        <span>{{ $t("purchase.suppliers.title") }}</span>
       </Tab>
       <Tab value="1">
         <i :class="PrimeIcons.HASHTAG" class="mr-2"></i>
-        <span>Tipus de Proveïdor</span>
+        <span>{{ $t("purchase.supplierTypes.title") }}</span>
       </Tab>
     </TabList>
     <TabPanels>
@@ -28,17 +28,17 @@
         >
           <Column
             field="comercialName"
-            header="Nom Comercial"
+            :header="$t('purchase.fields.commercialName')"
             style="width: 20%"
           ></Column>
           <Column
             field="taxName"
-            header="Nom Fiscal"
+            :header="$t('purchase.fields.taxName')"
             style="width: 20%"
           ></Column>
           <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
-          <Column field="phone" header="Telèfon" style="width: 20%"></Column>
-          <Column header="Tipus" style="width: 20%">
+          <Column field="phone" :header="$t('purchase.fields.phone')" style="width: 20%"></Column>
+          <Column :header="$t('purchase.fields.type')" style="width: 20%">
             <template #body="slotProps">
               <span>{{
                 getSupplierTypeName(slotProps.data.supplierTypeId)
@@ -64,10 +64,10 @@
           scrollHeight="flex"
           @row-click="editSupplierType"
         >
-          <Column field="name" header="Nom" style="width: 50%"></Column>
+          <Column field="name" :header="$t('purchase.fields.name')" style="width: 50%"></Column>
           <Column
             field="description"
-            header="Descripció"
+            :header="$t('purchase.fields.description')"
             style="width: 50%"
           ></Column>
           <Column>
@@ -95,6 +95,7 @@ import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Supplier, SupplierType } from "../types";
 import { useStore } from "../../../store";
+import { useI18n } from "vue-i18n";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
@@ -102,6 +103,7 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const supplierStore = useSuppliersStore();
+const { t } = useI18n();
 
 onMounted(async () => {
   await supplierStore.fetchSuppliers();
@@ -109,7 +111,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
-    title: "Proveïdors",
+    title: t("purchase.suppliers.title"),
   });
 });
 
@@ -151,7 +153,7 @@ const editSupplierType = (row: DataTableRowClickEvent) => {
 const deleteSupplier = (event: any, supplier: Supplier) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el proveïdor ${supplier.comercialName}?`,
+    message: t("purchase.messages.confirmDeleteSupplier", { name: supplier.comercialName }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -161,7 +163,7 @@ const deleteSupplier = (event: any, supplier: Supplier) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await supplierStore.fetchSuppliers();
@@ -173,7 +175,7 @@ const deleteSupplier = (event: any, supplier: Supplier) => {
 const deleteSupplierType = (event: any, supplierType: SupplierType) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el tipus de proveïdor ${supplierType.name}?`,
+    message: t("purchase.messages.confirmDeleteSupplierType", { name: supplierType.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -183,7 +185,7 @@ const deleteSupplierType = (event: any, supplierType: SupplierType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await supplierStore.fetchSupplierTypes();

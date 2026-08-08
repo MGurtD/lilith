@@ -2,7 +2,7 @@
   <form v-if="model">
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Pes mínim (kg)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.minimumWeight") }}</label>
         <InputNumber
           v-model="model.minWeight"
           class="w-full"
@@ -11,7 +11,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Pes màxim (kg)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.maximumWeight") }}</label>
         <InputNumber
           v-model="model.maxWeight"
           class="w-full"
@@ -22,7 +22,7 @@
     </section>
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Volum mínim (m³)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.minimumVolume") }}</label>
         <InputNumber
           v-model="model.minVolume"
           class="w-full"
@@ -31,7 +31,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Volum màxim (m³)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.maximumVolume") }}</label>
         <InputNumber
           v-model="model.maxVolume"
           class="w-full"
@@ -42,7 +42,7 @@
     </section>
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Distància mínima (km)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.minimumDistance") }}</label>
         <InputNumber
           v-model="model.minDistance"
           class="w-full"
@@ -51,7 +51,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Distància màxima (km)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.maximumDistance") }}</label>
         <InputNumber
           v-model="model.maxDistance"
           class="w-full"
@@ -62,7 +62,7 @@
     </section>
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Preu (€)</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.price") }}</label>
         <InputNumber
           v-model="model.price"
           class="w-full"
@@ -72,7 +72,7 @@
       </div>
     </section>
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="$t('common.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>

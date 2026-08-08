@@ -30,13 +30,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ t("purchase.purchaseInvoices.filters.period") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.purchaseInvoices.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -46,7 +46,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Proveïdor</label
+              >{{ t("purchase.purchaseInvoices.filters.supplier") }}</label
             >
             <DropdownSupplier label="" v-model="filter.supplierId" />
           </div>
@@ -54,7 +54,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Mètode de pagament</label
+              >{{ t("purchase.purchaseInvoices.filters.paymentMethod") }}</label
             >
             <Select
               v-model="filter.paymentMethodId"
@@ -70,7 +70,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--sm"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Número de compte</label
+              >{{ t("purchase.purchaseInvoices.filters.accountNumber") }}</label
             >
             <Select
               v-model="filter.accountNumber"
@@ -84,13 +84,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Venciment</label
+              >{{ t("purchase.purchaseInvoices.filters.dueDate") }}</label
             >
             <DatePicker
               v-model="filter.dueDates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.purchaseInvoices.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -101,12 +101,12 @@
     </template>
     <Column
       field="number"
-      header="Número"
+      :header="t('purchase.purchaseInvoices.columns.number')"
       :sortable="true"
       style="width: 10%"
     ></Column>
     <Column
-      header="Data"
+      :header="t('purchase.purchaseInvoices.columns.date')"
       field="purchaseInvoiceDate"
       sortable
       style="width: 10%"
@@ -115,33 +115,33 @@
         {{ formatDate(slotProps.data.purchaseInvoiceDate) }}
       </template>
     </Column>
-    <Column header="Proveïdor" style="width: 15%">
+    <Column :header="t('purchase.purchaseInvoices.columns.supplier')" style="width: 15%">
       <template #body="slotProps">
         {{ getSupplierNameById(slotProps.data.supplierId) }}
       </template>
     </Column>
     <Column
-      header="Núm. Fra. Proveïdor"
+      :header="t('purchase.purchaseInvoices.columns.supplierInvoiceNumber')"
       style="width: 15%"
       field="supplierNumber"
     ></Column>
-    <Column header="Estat" style="width: 15%">
+    <Column :header="t('purchase.purchaseInvoices.columns.status')" style="width: 15%">
       <template #body="slotProps">
         {{ getStatusNameById(slotProps.data.statusId) }}
       </template>
     </Column>
-    <Column header="Venciment" style="width: 10%">
+    <Column :header="t('purchase.purchaseInvoices.columns.dueDate')" style="width: 10%">
       <template #body="slotProps">
         {{ getLastDueDate(slotProps.data) }}
       </template>
     </Column>
-    <Column header="Import" style="width: 10%">
+    <Column :header="t('purchase.purchaseInvoices.columns.amount')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.netAmount) }}
       </template>
       <template #footer>
         <div class="total-footer">
-          <span class="total-label">Total</span>
+          <span class="total-label">{{ t("common.total") }}</span>
           <span class="total-value">{{ formatCurrency(totalNetAmount) }}</span>
         </div>
       </template>
@@ -176,6 +176,7 @@ import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -187,6 +188,7 @@ const lifecycleStore = useLifecyclesStore();
 const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const suppliersStore = useSuppliersStore();
+const { t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "100%", tablet: "100%" };
 
@@ -201,7 +203,7 @@ const filter = ref({
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Factures de compra",
+    title: t("purchase.purchaseInvoices.title"),
   });
 
   await lifecycleStore.fetchOneByName(lifecycleName);
@@ -291,8 +293,8 @@ const filterInvoices = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("purchase.messages.invalidFilter"),
+      detail: t("purchase.purchaseInvoices.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -352,7 +354,9 @@ const editPurchaseInvoice = (row: DataTableRowClickEvent) => {
 const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar la factura ${invoice.number}?`,
+    message: t("purchase.purchaseInvoices.messages.confirmDelete", {
+      number: invoice.number,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -361,7 +365,7 @@ const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await filterInvoices();

@@ -2,7 +2,7 @@
   <!-- Dialog Tarifa -->
   <Dialog
     v-model:visible="rateDialogVisible"
-    :header="rateFormMode === FormActionMode.CREATE ? 'Nova tarifa de compra' : 'Editar tarifa de compra'"
+    :header="rateFormMode === FormActionMode.CREATE ? t('purchase.purchaseRates.dialogs.createRate') : t('purchase.purchaseRates.dialogs.editRate')"
     :closable="true"
     :modal="true"
     style="width: 600px"
@@ -19,7 +19,7 @@
   <!-- Dialog Detall -->
   <Dialog
     v-model:visible="detailDialogVisible"
-    :header="detailFormMode === FormActionMode.CREATE ? 'Nou detall de tarifa' : 'Editar detall de tarifa'"
+    :header="detailFormMode === FormActionMode.CREATE ? t('purchase.purchaseRates.dialogs.createDetail') : t('purchase.purchaseRates.dialogs.editDetail')"
     :closable="true"
     :modal="true"
     style="width: 650px"
@@ -36,28 +36,28 @@
   <!-- Dialog Duplicar -->
   <Dialog
     v-model:visible="duplicateDialogVisible"
-    header="Duplicar tarifa"
+    :header="t('purchase.purchaseRates.dialogs.duplicateRate')"
     :closable="true"
     :modal="true"
     style="width: 500px"
   >
     <div class="flex flex-column gap-3">
       <div>
-        <label class="block text-900 mb-2">Nou nom</label>
+        <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.newName") }}</label>
         <InputText v-model="duplicateData.name" class="w-full" />
       </div>
       <div class="two-columns">
         <div>
-          <label class="block text-900 mb-2">Data inici</label>
+          <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.validFrom") }}</label>
           <DatePicker v-model="duplicateData.validFrom" class="w-full" dateFormat="dd/mm/yy" />
         </div>
         <div>
-          <label class="block text-900 mb-2">Data fi</label>
+          <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.validTo") }}</label>
           <DatePicker v-model="duplicateData.validTo" class="w-full" dateFormat="dd/mm/yy" />
         </div>
       </div>
       <div class="mt-2 text-right">
-        <Button label="Duplicar" icon="pi pi-copy" @click="confirmDuplicate" />
+        <Button :label="t('purchase.purchaseRates.actions.duplicate')" icon="pi pi-copy" @click="confirmDuplicate" />
       </div>
     </div>
   </Dialog>
@@ -77,17 +77,17 @@
     >
       <template #header>
         <div class="flex flex-wrap align-items-center justify-content-between gap-2">
-          <span class="text-l text-900 font-bold">Tarifes de compra</span>
+          <span class="text-l text-900 font-bold">{{ t("purchase.purchaseRates.title") }}</span>
           <Button :icon="PrimeIcons.PLUS" rounded @click="createRate" />
         </div>
       </template>
-      <Column header="Nom" field="name" style="width: 30%" sortable />
-      <Column header="Des de" field="validFrom" style="width: 20%" sortable>
+      <Column :header="t('purchase.purchaseRates.columns.name')" field="name" style="width: 30%" sortable />
+      <Column :header="t('purchase.purchaseRates.columns.from')" field="validFrom" style="width: 20%" sortable>
         <template #body="slotProps">
           {{ formatDate(slotProps.data.validFrom) }}
         </template>
       </Column>
-      <Column header="Fins a" field="validTo" style="width: 20%">
+      <Column :header="t('purchase.purchaseRates.columns.to')" field="validTo" style="width: 20%">
         <template #body="slotProps">
           {{ formatDate(slotProps.data.validTo) }}
         </template>
@@ -106,7 +106,7 @@
             <i
               :class="PrimeIcons.COPY"
               class="grid_copy_column_button mr-2"
-              title="Duplicar"
+              :title="t('purchase.purchaseRates.actions.duplicate')"
               @click.stop="openDuplicateDialog(slotProps.data)"
             />
             <i
@@ -131,7 +131,7 @@
       <template #header>
         <div class="flex flex-wrap align-items-center justify-content-between gap-2">
           <span class="text-l text-900 font-bold">
-            Detalls
+            {{ t("purchase.purchaseRates.details") }}
             <span v-if="purchaseRateStore.purchaseRate" class="text-600 font-normal ml-2">
               — {{ purchaseRateStore.purchaseRate.name }}
             </span>
@@ -144,23 +144,23 @@
           />
         </div>
       </template>
-      <Column header="Referència" field="reference.code" style="width: 20%">
+      <Column :header="t('purchase.purchaseRates.columns.reference')" field="reference.code" style="width: 20%">
         <template #body="slotProps">
             {{ referenceStore.getShortNameById(slotProps.data.referenceId) }}
         </template>
       </Column>
-      <Column header="Càlcul" field="calculationType" style="width: 15%">
+      <Column :header="t('purchase.purchaseRates.columns.calculation')" field="calculationType" style="width: 15%">
         <template #body="slotProps">
           {{ getCalculationTypeLabel(slotProps.data.calculationType) }}
         </template>
       </Column>
-      <Column header="Des de" field="from" style="width: 15%">
+      <Column :header="t('purchase.purchaseRates.columns.from')" field="from" style="width: 15%">
         <template #body="slotProps">{{ slotProps.data.from }}</template>
       </Column>
-      <Column header="Fins a" field="to" style="width: 15%">
+      <Column :header="t('purchase.purchaseRates.columns.to')" field="to" style="width: 15%">
         <template #body="slotProps">{{ slotProps.data.to }}</template>
       </Column>
-      <Column header="Preu" field="price" style="width: 15%">
+      <Column :header="t('purchase.purchaseRates.columns.price')" field="price" style="width: 15%">
         <template #body="slotProps">{{ formatCurrency(slotProps.data.price) }}</template>
       </Column>
       <Column style="width: 10%">
@@ -189,6 +189,7 @@ import { FormActionMode } from "../../../types/component";
 import { formatCurrency, formatDate } from "@/utils/functions";
 import FormPurchaseRate from "./FormPurchaseRate.vue";
 import FormPurchaseRateDetail from "./FormPurchaseRateDetail.vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   supplierId: string;
@@ -198,6 +199,7 @@ const confirm = useConfirm();
 const toast = useToast();
 const purchaseRateStore = usePurchaseRateStore();
 const referenceStore = useReferenceStore();
+const { t } = useI18n();
 
 // --- Rate dialogs ---
 const rateDialogVisible = ref(false);
@@ -226,10 +228,10 @@ onMounted(async () => {
 
 const getCalculationTypeLabel = (type: CalculationType) => {
   switch (type) {
-    case CalculationType.Volume: return "Volum";
-    case CalculationType.Weight: return "Pes";
-    case CalculationType.Units: return "Unitats";
-    default: return "Unitats";
+    case CalculationType.Volume: return t("purchase.purchaseRateDetail.calculationTypes.volume");
+    case CalculationType.Weight: return t("purchase.purchaseRateDetail.calculationTypes.weight");
+    case CalculationType.Units: return t("purchase.purchaseRateDetail.calculationTypes.units");
+    default: return t("purchase.purchaseRateDetail.calculationTypes.units");
   }
 };
 
@@ -267,27 +269,27 @@ const submitRateForm = async (rate: PurchaseRate) => {
   try {
     if (rateFormMode.value === FormActionMode.CREATE) {
       result = await purchaseRateStore.createPurchaseRate(rate);
-      if (result) toast.add({ severity: "success", summary: "Tarifa creada", life: 4000 });
+      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateCreated"), life: 4000 });
     } else {
       result = await purchaseRateStore.updatePurchaseRate(rate);
-      if (result) toast.add({ severity: "success", summary: "Tarifa actualitzada", life: 4000 });
+      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateUpdated"), life: 4000 });
     }
     if (result) rateDialogVisible.value = false;
-  } catch (error: any) {
-      toast.add({ severity: "error", summary: "Error", detail: error.message || "Error al guardar la tarifa", life: 4000 });
+  } catch (error: unknown) {
+      toast.add({ severity: "error", summary: t("purchase.purchaseRates.messages.error"), detail: error instanceof Error ? error.message : t("purchase.purchaseRates.messages.saveError"), life: 4000 });
   }
 };
 
 const deleteRate = (event: Event, rate: PurchaseRate) => {
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: "Está segur que vol eliminar la tarifa?",
+    message: t("purchase.purchaseRates.messages.confirmDeleteRate"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
       const result = await purchaseRateStore.deletePurchaseRate(rate);
-      if (result) toast.add({ severity: "success", summary: "Tarifa eliminada", life: 4000 });
+      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateDeleted"), life: 4000 });
     },
   });
 };
@@ -295,7 +297,7 @@ const deleteRate = (event: Event, rate: PurchaseRate) => {
 const openDuplicateDialog = (rate: PurchaseRate) => {
   selectedRate.value = rate;
   duplicateData.value = {
-    name: `${rate.name} (copia)`,
+    name: t("purchase.purchaseRates.copyName", { name: rate.name }),
     validFrom: new Date(rate.validFrom),
     validTo: new Date(rate.validTo),
   };
@@ -315,10 +317,10 @@ const confirmDuplicate = async () => {
     duplicateData.value.validTo
   );
   if (result) {
-    toast.add({ severity: "success", summary: "Tarifa duplicada", life: 4000 });
+    toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateDuplicated"), life: 4000 });
     duplicateDialogVisible.value = false;
   } else {
-    toast.add({ severity: "error", summary: "Error", detail: "No s'ha pogut duplicar la tarifa. Revisa les dates.", life: 4000 });
+    toast.add({ severity: "error", summary: t("purchase.purchaseRates.messages.error"), detail: t("purchase.purchaseRates.messages.duplicateError"), life: 4000 });
   }
 };
 
@@ -348,10 +350,10 @@ const submitDetailForm = async (detail: PurchaseRateDetail) => {
   let result = false;
   if (detailFormMode.value === FormActionMode.CREATE) {
     result = await purchaseRateStore.createPurchaseRateDetail(detail);
-    if (result) toast.add({ severity: "success", summary: "Detall creat", life: 4000 });
+    if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.detailCreated"), life: 4000 });
   } else {
     result = await purchaseRateStore.updatePurchaseRateDetail(detail);
-    if (result) toast.add({ severity: "success", summary: "Detall actualitzat", life: 4000 });
+    if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.detailUpdated"), life: 4000 });
   }
   if (result) detailDialogVisible.value = false;
 };
@@ -359,13 +361,13 @@ const submitDetailForm = async (detail: PurchaseRateDetail) => {
 const deleteDetail = (event: Event, detail: PurchaseRateDetail) => {
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: "Está segur que vol eliminar el detall?",
+    message: t("purchase.purchaseRates.messages.confirmDeleteDetail"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
       const result = await purchaseRateStore.deletePurchaseRateDetail(detail);
-      if (result) toast.add({ severity: "success", summary: "Detall eliminat", life: 4000 });
+      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.detailDeleted"), life: 4000 });
     },
   });
 };

@@ -17,6 +17,7 @@ import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
 import FormInvoiceSerie from "../components/FormInvoiceSerie.vue";
 import { InvoiceSerie } from "../types";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const router = useRouter();
@@ -24,6 +25,7 @@ const route = useRoute();
 const store = useStore();
 const purchaseInvoiceSerieStore = usePurchaseInvoiceSeries();
 const { purchaseInvoiceSerie } = storeToRefs(purchaseInvoiceSerieStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await purchaseInvoiceSerieStore.fetchPurchaseInvoiceSerie(
@@ -36,10 +38,12 @@ const loadView = async () => {
     purchaseInvoiceSerieStore.setNewPurchaseInvoiceSerie(
       route.params.id as string
     );
-    pageTitle = "Alta de sèrie de facturació";
+    pageTitle = t("purchase.invoiceSeries.createTitle");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Sèrie de facturació: ${purchaseInvoiceSerie.value.name}`;
+    pageTitle = t("purchase.invoiceSeries.detailTitle", {
+      name: purchaseInvoiceSerie.value.name,
+    });
   }
 
   store.setMenuItem({
@@ -61,13 +65,13 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await purchaseInvoiceSerieStore.createPurchaseInvoiceSerie(data);
-    message = "Sèrie de facturació creada correctament";
+    message = t("purchase.invoiceSeries.messages.created");
   } else {
     result = await purchaseInvoiceSerieStore.updatePurchaseInvoiceSerie(
       data.id,
       data
     );
-    message = "Sèrie de facturació actualizada correctament";
+    message = t("purchase.invoiceSeries.messages.updated");
   }
 
   if (result) {

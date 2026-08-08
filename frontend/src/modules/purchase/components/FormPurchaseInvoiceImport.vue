@@ -3,7 +3,7 @@
     <section class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Import Base"
+        :label="t('purchase.purchaseInvoiceImport.fields.baseAmount')"
         v-model="invoiceImport.baseAmount"
         :type="BaseInputType.CURRENCY"
         :class="{
@@ -12,7 +12,7 @@
         @update:modelValue="calcAmounts()"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">IVA</label>
+        <label class="block text-900 mb-2">{{ t("purchase.purchaseInvoiceImport.fields.tax") }}</label>
         <Select
           v-model="invoiceImport.taxId"
           :options="purchaseMasterData.masterData.taxes"
@@ -25,14 +25,14 @@
     <section class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Import Impost"
+        :label="t('purchase.purchaseInvoiceImport.fields.taxAmount')"
         v-model="invoiceImport.taxAmount"
         :type="BaseInputType.CURRENCY"
         disabled
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Total"
+        :label="t('common.total')"
         v-model="invoiceImport.netAmount"
         :type="BaseInputType.CURRENCY"
         disabled
@@ -59,9 +59,11 @@ import { useToast } from "primevue/usetoast";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { BaseInputType, FormActionMode } from "../../../types/component";
 import { isNumber, round } from "lodash";
+import { useI18n } from "vue-i18n";
 
 const purchaseMasterData = usePurchaseMasterDataStore();
 const toast = useToast();
+const { t } = useI18n();
 
 const props = defineProps<{
   formAction: FormActionMode;
@@ -72,7 +74,9 @@ const emit = defineEmits<{
 }>();
 
 const textActionButton = computed(() => {
-  return props.formAction === FormActionMode.CREATE ? "Afegir" : "Modificar";
+  return props.formAction === FormActionMode.CREATE
+    ? t("purchase.purchaseInvoiceImport.actions.add")
+    : t("purchase.purchaseInvoiceImport.actions.update");
 });
 
 const calcAmounts = () => {
@@ -92,7 +96,9 @@ const calcAmounts = () => {
 };
 
 const schema = Yup.object().shape({
-  baseAmount: Yup.number().required("L'import base és obligatori"),
+  baseAmount: Yup.number().required(
+    t("purchase.purchaseInvoiceImport.validation.baseAmountRequired"),
+  ),
 });
 const validation = ref({
   result: false,
@@ -115,7 +121,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

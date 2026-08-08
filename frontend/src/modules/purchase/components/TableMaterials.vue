@@ -25,7 +25,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Categoria</label
+              >{{ t("purchase.materials.fields.category") }}</label
             >
             <DropdownReferenceCategory
               label=""
@@ -35,13 +35,13 @@
           <div
             class="table-filter-prepend-field table-filter-prepend-field--sm"
           >
-            <label class="filter-label table-filter-prepend-label">Codi</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("purchase.materials.fields.code") }}</label>
             <BaseInput v-model="filter.code" />
           </div>
           <div
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
-            <label class="filter-label table-filter-prepend-label">Tipus</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("purchase.materials.fields.type") }}</label>
             <DropdownReferenceTypes
               label=""
               v-model="filter.referenceTypeId"
@@ -54,15 +54,15 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column field="description" header="Descripció" style="width: 25%"></Column>
+    <Column field="code" :header="t('purchase.materials.fields.code')" style="width: 15%"></Column>
+    <Column field="description" :header="t('purchase.materials.fields.description')" style="width: 25%"></Column>
     <!-- Service columns -->
-    <Column v-if="isService" header="Preu" style="width: 10%">
+    <Column v-if="isService" :header="t('purchase.materials.columns.price')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.price) }}
       </template>
     </Column>
-    <Column v-if="isService" header="Transport" style="width: 10%">
+    <Column v-if="isService" :header="t('purchase.materials.columns.transport')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.transportAmount) }}
       </template>
@@ -71,7 +71,7 @@
     <Column
       v-if="isMaterial"
       field="referenceTypeId"
-      header="Tipus"
+      :header="t('purchase.materials.fields.type')"
       style="width: 30%"
     >
       <template #body="slotProps">
@@ -81,7 +81,7 @@
     <Column
       v-if="isMaterial"
       field="referenceFormatId"
-      header="Format"
+      :header="t('purchase.materials.fields.format')"
       style="width: 10%"
     >
       <template #body="slotProps">
@@ -90,12 +90,12 @@
         }}</span>
       </template>
     </Column>
-    <Column v-if="isMaterial" header="Densitat (mm)" style="width: 10%">
+    <Column v-if="isMaterial" :header="t('purchase.materials.columns.density')" style="width: 10%">
       <template #body="slotProps">
         {{ getReferenceTypeDensity(slotProps.data.referenceTypeId) }}
       </template>
     </Column>
-    <Column v-if="isTool" header="Àrea" style="width: 10%">
+    <Column v-if="isTool" :header="t('purchase.materials.columns.area')" style="width: 10%">
       <template #body="slotProps">
         {{ getAreaName(slotProps.data.areaId) }}
       </template>
@@ -106,6 +106,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('purchase.materials.actions.delete')"
+          :title="t('purchase.materials.actions.delete')"
           @click="onDeleteRow($event, slotProps.data)"
         />
       </template>
@@ -128,11 +130,13 @@ import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownReferenceCategory from "../../shared/components/DropdownReferenceCategory.vue";
 import { formatCurrency } from "../../../utils/functions";
 import { usePlantModelStore } from "../../production/store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const userFilterStore = useUserFilterStore();
 const referenceTypeStore = useReferenceTypeStore();
 const referenceStore = useReferenceStore();
 const plantModelStore = usePlantModelStore();
+const { t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 

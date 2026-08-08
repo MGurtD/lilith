@@ -3,23 +3,23 @@
     <TabList>
       <Tab value="0">
         <i :class="PrimeIcons.BUILDING" class="mr-2"></i>
-        <span>Proveïdor</span>
+        <span>{{ t("purchase.supplier.tabs.supplier") }}</span>
       </Tab>
       <Tab value="1" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.TAG" class="mr-2"></i>
-        <span>Referencies</span>
+        <span>{{ t("purchase.supplier.tabs.references") }}</span>
       </Tab>
       <Tab value="2" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.USERS" class="mr-2"></i>
-        <span>Contactes</span>
+        <span>{{ t("purchase.supplier.tabs.contacts") }}</span>
       </Tab>
       <Tab value="3" v-if="formMode === FormActionMode.EDIT && isLogisticSupplier">
         <i :class="PrimeIcons.TRUCK" class="mr-2"></i>
-        <span>Tarifes de transport</span>
+        <span>{{ t("purchase.supplier.tabs.transportRates") }}</span>
       </Tab>
       <Tab value="4" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.MONEY_BILL" class="mr-2"></i>
-        <span>Tarifes de compra</span>
+        <span>{{ t("purchase.supplier.tabs.purchaseRates") }}</span>
       </Tab>
     </TabList>
     <TabPanels>
@@ -29,7 +29,7 @@
       <TabPanel value="1" v-if="formMode === FormActionMode.EDIT">
         <TableSupplierReferences
           v-if="supplier && supplierStore.supplierReferences"
-          title="Referències"
+          :title="t('purchase.supplier.tabs.references')"
           :formActionMode="formMode"
           :supplier-id="supplier.id"
           :supplier-references="supplierStore.supplierReferences"
@@ -40,7 +40,7 @@
       </TabPanel>
       <TabPanel value="2" v-if="formMode === FormActionMode.EDIT">
         <TableSupplierContacts
-          title="Contactes"
+          :title="t('purchase.supplier.tabs.contacts')"
           :formActionMode="formMode"
           @create="addContact"
           @update="editContact"
@@ -82,6 +82,7 @@ import TableTransportRates from "../components/TableTransportRates.vue";
 import TablePurchaseRates from "../components/TablePurchaseRates.vue";
 import { useTransportRateStore } from "../store/transportRate";
 import { usePurchaseRateStore } from "../store/purchaseRate";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -90,6 +91,7 @@ const supplierStore = useSuppliersStore();
 const referenceStore = useReferenceStore();
 const transportRateStore = useTransportRateStore();
 const purchaseRateStore = usePurchaseRateStore();
+const { t } = useI18n();
 const { supplier } = storeToRefs(supplierStore);
 
 const isLogisticSupplier = computed(() => {
@@ -113,10 +115,12 @@ const loadView = async () => {
   if (!supplier.value) {
     formMode.value = FormActionMode.CREATE;
     supplierStore.setNewSupplier(supplierId);
-    pageTitle = "Alta de proveïdor";
+    pageTitle = t("purchase.supplier.createTitle");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Proveïdor ${supplier.value.comercialName}`;
+    pageTitle = t("purchase.supplier.detailTitle", {
+      name: supplier.value.comercialName,
+    });
     // Carregar tarifes
     if (isLogisticSupplier.value) {
        await transportRateStore.fetchTransportRatesBySupplierId(supplierId);
@@ -143,10 +147,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await supplierStore.createSupplier(data);
-    message = "Proveïdor creat correctament";
+    message = t("purchase.supplier.messages.created");
   } else {
     result = await supplierStore.updateSupplier(data.id, data);
-    message = "Proveïdor actualizat correctament";
+    message = t("purchase.supplier.messages.updated");
   }
 
   if (result) {
@@ -164,7 +168,7 @@ const addContact = async (contact: SupplierContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte afegit",
+      summary: t("purchase.supplier.messages.contactAdded"),
       life: 5000,
     });
   }
@@ -175,7 +179,7 @@ const editContact = async (contact: SupplierContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte actualizat",
+      summary: t("purchase.supplier.messages.contactUpdated"),
       life: 5000,
     });
   }
@@ -186,7 +190,7 @@ const removeContact = async (contact: SupplierContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte eliminat",
+      summary: t("purchase.supplier.messages.contactDeleted"),
       life: 5000,
     });
   }
@@ -197,7 +201,7 @@ const addReference = async (Reference: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència afegida",
+      summary: t("purchase.supplier.messages.referenceAdded"),
       life: 5000,
     });
   }
@@ -208,7 +212,7 @@ const editReference = async (Reference: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència actualizada",
+      summary: t("purchase.supplier.messages.referenceUpdated"),
       life: 5000,
     });
   }
@@ -219,7 +223,7 @@ const removeReference = async (Reference: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència eliminada",
+      summary: t("purchase.supplier.messages.referenceDeleted"),
       life: 5000,
     });
   }

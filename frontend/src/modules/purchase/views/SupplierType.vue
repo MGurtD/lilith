@@ -14,6 +14,7 @@ import { useStore } from "../../../store";
 
 import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const router = useRouter();
@@ -21,6 +22,7 @@ const route = useRoute();
 const store = useStore();
 const supplierStore = useSuppliersStore();
 const { supplierType } = storeToRefs(supplierStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await supplierStore.fetchSupplierType(route.params.id as string);
@@ -30,10 +32,10 @@ const loadView = async () => {
   if (!supplierType.value) {
     formMode.value = FormActionMode.CREATE;
     supplierStore.setNewSupplierType(route.params.id as string);
-    pageTitle = "Alta de tipus de proveïdor";
+    pageTitle = t("purchase.supplierTypes.createTitle");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Tipus de proveïdor ${supplierType.value.name}`;
+    pageTitle = t("purchase.supplierTypes.detailTitle", { name: supplierType.value.name });
   }
 
   store.setMenuItem({
@@ -55,10 +57,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await supplierStore.createSupplierType(data);
-    message = "Tipus de proveïdor creat correctament";
+    message = t("purchase.messages.supplierTypeCreated");
   } else {
     result = await supplierStore.updateSupplierType(data.id, data);
-    message = "Tipus de proveïdor actualizat correctament";
+    message = t("purchase.messages.supplierTypeUpdated");
   }
 
   if (result) {

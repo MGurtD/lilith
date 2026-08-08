@@ -2,19 +2,19 @@
   <form v-if="model">
     <section class="two-columns mb-2">
       <BaseInput
-        label="Nom"
+        :label="$t('purchase.fields.name')"
         id="trName"
         v-model="model.name"
       />
       <BaseInput
-        label="Descripció"
+        :label="$t('purchase.fields.description')"
         id="trDescription"
         v-model="model.description"
       />
     </section>
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Data inici</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.startDate") }}</label>
         <DatePicker
           v-model="model.validFrom"
           class="w-full"
@@ -22,7 +22,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Data fi</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.endDate") }}</label>
         <DatePicker
           v-model="model.validTo"
           class="w-full"
@@ -31,7 +31,7 @@
       </div>
     </section>
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="$t('common.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>

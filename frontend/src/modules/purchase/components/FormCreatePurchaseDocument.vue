@@ -1,7 +1,7 @@
 <template>
   <form>
     <div class="mt-2">
-      <label class="block text-900 mb-2">Proveïdor</label>
+      <label class="block text-900 mb-2">{{ t("purchase.order.fields.supplier") }}</label>
       <Select
         class="w-full"
         v-model="createRequest.supplierId"
@@ -11,7 +11,7 @@
       />
     </div>
     <div class="mt-2">
-      <label class="block text-900 mb-2">Exercici</label>
+      <label class="block text-900 mb-2">{{ t("purchase.order.fields.exercise") }}</label>
       <Select
         class="w-full"
         v-model="createRequest.exerciseId"
@@ -21,12 +21,12 @@
       />
     </div>
     <div class="mt-2">
-      <label class="block text-900 mb-2">Data</label>
+      <label class="block text-900 mb-2">{{ t("purchase.order.fields.date") }}</label>
       <DatePicker v-model="createRequest.date" />
     </div>
 
     <footer class="mt-2">
-      <Button label="Crear" @click="onSubmit" style="float: right" />
+      <Button :label="t('purchase.order.actions.create')" @click="onSubmit" style="float: right" />
     </footer>
   </form>
 </template>
@@ -34,6 +34,7 @@
 import { onMounted, ref } from "vue";
 import { useSuppliersStore } from "../store/suppliers";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { CreatePurchaseDocumentRequest } from "../types";
 import * as Yup from "yup";
 import {
@@ -44,6 +45,7 @@ import { convertDateTimeToJSON } from "../../../utils/functions";
 import { useExerciseStore } from "../../shared/store/exercise";
 
 const toast = useToast();
+const { t } = useI18n();
 const exerciseStore = useExerciseStore();
 const suppliersStore = useSuppliersStore();
 
@@ -69,9 +71,9 @@ onMounted(async () => {
 });
 
 const schema = Yup.object().shape({
-  exerciseId: Yup.string().required("L'exercici és obligatori"),
-  supplierId: Yup.string().required("El client és obligatori"),
-  date: Yup.date().required("La data és obligatoria"),
+  exerciseId: Yup.string().required(t("purchase.order.validation.exerciseRequired")),
+  supplierId: Yup.string().required(t("purchase.order.validation.supplierRequired")),
+  date: Yup.date().required(t("purchase.order.validation.dateRequired")),
 });
 const validation = ref({
   result: false,
@@ -95,7 +97,7 @@ const onSubmit = () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });
