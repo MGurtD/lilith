@@ -8,14 +8,14 @@
     <!-- Afegir tab -->
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Imatge</Tab>
-        <Tab value="1">Percentatges</Tab>
-        <Tab value="2">Ubicacions</Tab>
+        <Tab value="0">{{ pt("Imatge") }}</Tab>
+        <Tab value="1">{{ pt("Percentatges") }}</Tab>
+        <Tab value="2">{{ pt("Ubicacions") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
           <FileEntityPicker
-            title="Imatge de la màquina"
+            :title="pt('Imatge de la màquina')"
             entity="WorkcenterPicture"
             :max-files="1"
             :id="route.params.id as string"
@@ -44,6 +44,9 @@
   </section>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FileEntityPicker from "../../../components/FileEntityPicker.vue";
 import FormWorkcenter from "../components/FormWorkcenter.vue";
 import TableWorkcenterProfitPercentage from "../components/TableWorkcenterProfitPercentage.vue";
@@ -144,7 +147,7 @@ const addWorkcenterProfitPercentage = async (
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Percentatge creat",
+      summary: pt("Percentatge creat"),
       detail: "El percentatge de profit s'ha creat correctament",
       life: 5000,
     });
@@ -170,7 +173,7 @@ const addWorkcenterLocation = async (locationId: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Ubicació afegida",
+      summary: pt("Ubicació afegida"),
       detail: "La ubicació s'ha assignat correctament a la màquina.",
       life: 5000,
     });

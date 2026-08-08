@@ -11,21 +11,21 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Materials de fabricació</span>
+        <span class="text-900 font-bold">{{ t("production.components.materialsDeFabricacio") }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAdd" />
       </div>
     </template>
-    <Column header="Material consum" style="width: 30%">
+    <Column :header="t('production.components.materialConsum')" style="width: 30%">
       <template #body="slotProps">
         {{ getReference(slotProps.data.referenceId) }}
       </template>
     </Column>
-    <Column field="quantity" header="Consum" style="width: 15%"></Column>
-    <Column field="width" header="Ample (x) mm" style="width: 12%"></Column>
-    <Column field="length" header="Llarg (y) mm" style="width: 12%"></Column>
-    <Column field="height" header="Alt (z) mm" style="width: 12%"></Column>
-    <Column field="diameter" header="Diàmetre mm" style="width: 12%"></Column>
-    <Column field="thickness" header="Gruix mm" style="width: 12%"></Column>
+    <Column field="quantity" :header="t('production.components.consum')" style="width: 15%"></Column>
+    <Column field="width" :header="t('production.components.ampleXMm')" style="width: 12%"></Column>
+    <Column field="length" :header="t('production.components.llargYMm')" style="width: 12%"></Column>
+    <Column field="height" :header="t('production.components.altZMm')" style="width: 12%"></Column>
+    <Column field="diameter" :header="t('production.components.diametreMm')" style="width: 12%"></Column>
+    <Column field="thickness" :header="t('production.components.gruixMm')" style="width: 12%"></Column>
     <Column style="width: 10%">
       <template #body="slotProps">
         <i
@@ -39,6 +39,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkOrderPhase, WorkOrderPhaseBillOfMaterials } from "../types";
@@ -95,7 +98,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, detail: WorkOrderPhaseBillOfMaterials) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el material de la fase?`,
+    message: t("production.components.confirmDeletePhaseMaterial"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

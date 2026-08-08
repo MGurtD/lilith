@@ -19,12 +19,14 @@ import { FormActionMode } from "../../../types/component";
 import router from "../../../router";
 import FormOperatorType from "../components/FormOperatorType.vue";
 import { usePlantModelStore } from "../store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const { operatorType } = storeToRefs(plantmodelStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await plantmodelStore.fetchOperatorType(route.params.id as string);
@@ -32,10 +34,10 @@ const loadView = async () => {
   if (!operatorType.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewOperatorType(route.params.id as string);
-    pageTitle = "Alta de tipus d' operari";
+    pageTitle = t("production.detail.createOperatorType");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Tipus d'operari: ${operatorType.value.name}`;
+    pageTitle = t("production.detail.operatorTypeTitle", { name: operatorType.value.name });
   }
 
   store.setMenuItem({
@@ -57,10 +59,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await plantmodelStore.createOperatorType(data);
-    message = "Tipus d'operari creat correctament";
+    message = t("production.detail.createdOperatorType");
   } else {
     result = await plantmodelStore.updateOperatorType(data.id, data);
-    message = "Tipus d'operari actualizat correctament";
+    message = t("production.detail.updatedOperatorType");
   }
 
   if (result) {

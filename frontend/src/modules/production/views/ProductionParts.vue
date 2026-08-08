@@ -19,7 +19,7 @@
             <ExerciseDatePicker :exercises="exerciseStore.exercises" />
           </div>
           <div class="filter-field">
-            <label>Màquina</label>
+            <label>{{ pt("Màquina") }}</label>
             <Select
               v-model="filter.workcenterId"
               :show-clear="true"
@@ -35,7 +35,7 @@
             />
           </div>
           <div class="filter-field">
-            <label>Operari</label>
+            <label>{{ pt("Operari") }}</label>
             <Select
               v-model="filter.operatorId"
               :show-clear="true"
@@ -90,14 +90,14 @@
         </div>
       </div>
     </template>
-    <template #empty> No s'han trobat tiquets. </template>
-    <template #loading> Carregant tiquets. Si us plau espera. </template>
-    <Column field="workcenterId" header="Màquina" style="width: 15%">
+    <template #empty> {{ pt("No s'han trobat tiquets.") }} </template>
+    <template #loading> {{ pt("Carregant tiquets. Si us plau espera.") }} </template>
+    <Column field="workcenterId" :header="pt('Màquina')" style="width: 15%">
       <template #body="slotProps">
         {{ plantModelStore.getWorkcenterNameById(slotProps.data.workcenterId) }}
       </template>
     </Column>
-    <Column field="operatorId" header="Operari" style="width: 15%">
+    <Column field="operatorId" :header="pt('Operari')" style="width: 15%">
       <template #body="slotProps">
         {{ plantModelStore.getOperatorNameById(slotProps.data.operatorId) }}
       </template>
@@ -107,23 +107,23 @@
         {{ getWorkOrderDetailedName(slotProps.data) }}
       </template>
     </Column>
-    <Column field="date" header="Data" style="width: 10%" sortable>
+    <Column field="date" :header="pt('Data')" style="width: 10%" sortable>
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
     </Column>
-    <Column field="quantity" header="Quantitat" style="width: 5%"></Column>
+    <Column field="quantity" :header="pt('Quantitat')" style="width: 5%"></Column>
     <Column
       field="workcenterTime"
-      header="Temps Maq."
+      :header="pt('Temps Maq.')"
       style="width: 10%"
     ></Column>
     <Column
       field="operatorTime"
-      header="Temps Oper."
+      :header="pt('Temps Oper.')"
       style="width: 10%"
     ></Column>
-    <Column header="Cost Operari" style="width: 10%" field="operatorHourCost">
+    <Column :header="pt('Cost Operari')" style="width: 10%" field="operatorHourCost">
       <template #body="slotProps">
         {{
           formatCurrency(
@@ -133,7 +133,7 @@
         }}
       </template>
     </Column>
-    <Column header="Cost Màquina" style="width: 10%" field="machineHourCost">
+    <Column :header="pt('Cost Màquina')" style="width: 10%" field="machineHourCost">
       <template #body="slotProps">
         {{
           formatCurrency(
@@ -185,6 +185,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -242,8 +245,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: pt("Filtre invàlid"),
+      detail: pt("Seleccioni un període"),
       life: 5000,
     });
   }
@@ -257,7 +260,7 @@ const cleanFilter = () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear tíquet de producció",
+  title: pt("Crear tíquet de producció"),
   closable: true,
   position: "center",
   modal: true,
@@ -266,7 +269,7 @@ const dialogOptions = reactive({
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CLOUD,
-    title: "Tíquets de producció",
+    title: pt("Tíquets de producció"),
   });
 
   plantModelStore.fetchWorkcenters();
@@ -433,7 +436,7 @@ const createProductionPart = async () => {
 const deleteProductionPart = (event: any, productionPart: ProductionPart) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar el tíquet de producció?`,
+    message: pt("Confirmar l'eliminació del tiquet de producció"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -442,7 +445,7 @@ const deleteProductionPart = (event: any, productionPart: ProductionPart) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await filterData();

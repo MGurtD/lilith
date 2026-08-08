@@ -3,7 +3,7 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="operator.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Cognom"
+        :label="t('production.components.cognom')"
         id="surname"
         v-model="operator.surname"
         :class="{
@@ -21,7 +21,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Codi"
+        :label="t('production.components.codi')"
         id="code"
         v-model="operator.code"
         :class="{
@@ -40,7 +40,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Tipus d'operari</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipusDOperari") }}</label>
         <Select
           v-model="operator.operatorTypeId"
           :options="plantModelStore.operatorTypes"
@@ -53,18 +53,21 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="operator.disabled" class="w-full" :binary="true" />
       </div>
     </section>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Operator } from "../types";
@@ -97,18 +100,18 @@ const { workcenterType } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   surname: Yup.string()
-    .required("El cognom és obligatori")
-    .max(250, "El cognom no pot superar els 250 carácters"),
+    .required(t("production.validation.elCognomEsObligatori"))
+    .max(250, t("production.validation.elCognomNoPotSuperarEls250Caracters")),
   code: Yup.string()
-    .required("El codi és obligatori")
-    .max(10, "El codi no pot superar els 10 carácters"),
+    .required(t("production.validation.elCodiEsObligatori"))
+    .max(10, t("production.validation.elCodiNoPotSuperarEls10Caracters")),
   vatNumber: Yup.string()
-    .required("El nif és obligatori")
-    .max(20, "El nif no pot superar els 20 carácters"),
-  operatorTypeId: Yup.string().required("El tipus d'operari es obligatori"),
+    .required(t("production.validation.elNifEsObligatori"))
+    .max(20, t("production.validation.elNifNoPotSuperarEls20Caracters")),
+  operatorTypeId: Yup.string().required(t("production.validation.elTipusDOperariEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -131,7 +134,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

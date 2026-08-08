@@ -3,27 +3,30 @@
     <section class="three-columns">
       <DatePicker
         class="mb-2"
-        label="Inici Torn:"
+        :label="t('production.components.iniciTorn')"
         v-model="shiftdetail.startTime"
         timeOnly
         hourFormat="24"
       />
       <DatePicker
         class="mb-2"
-        label="Fi Torn:"
+        :label="t('production.components.fiTorn')"
         v-model="shiftdetail.endTime"
         timeOnly
         hourFormat="24"
       />
       <div class="mb-4">
-        <label class="block text-900 mb-2">Temps productiu:</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tempsProductiu") }}</label>
         <Checkbox v-model="shiftdetail.isProductiveTime" :binary="true" />
       </div>
     </section>
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
+    <Button :label="t('production.components.confirmar')" @click="submitForm" style="float: right" />
   </form>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { ShiftDetail } from "../types";
@@ -71,7 +74,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

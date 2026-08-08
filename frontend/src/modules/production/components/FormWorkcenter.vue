@@ -1,11 +1,11 @@
 <template>
   <form v-if="workcenter">
     <div class="grid_add_row_button">
-      <Button label="Guardar" style="float: right" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" style="float: right" @click="submitForm" />
     </div>
     <section class="four-columns mb-2">
       <BaseInput
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="workcenter.name"
         :class="{
@@ -13,7 +13,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="workcenter.description"
         :class="{
@@ -24,19 +24,19 @@
         :type="BaseInputType.NUMERIC"
         :minFractionDigits="2"
         class="mb-2"
-        label="Marge de benefici"
+        :label="t('production.components.margeDeBenefici')"
         id="profitPercentage"
         v-model="workcenter.profitPercentage"
         suffix="%"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="workcenter.disabled" class="w-full" :binary="true" />
       </div>
     </section>
     <section class="three-columns">
       <div>
-        <label class="block text-900 mb-2">Tipus</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipus") }}</label>
         <Select
           v-model="workcenter.workcenterTypeId"
           :options="plantModelStore.workcenterTypes"
@@ -49,7 +49,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Area</label>
+        <label class="block text-900 mb-2">{{ t("production.components.area") }}</label>
         <Select
           v-model="workcenter.areaId"
           :options="plantModelStore.areas"
@@ -62,7 +62,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Torn</label>
+        <label class="block text-900 mb-2">{{ t("production.components.torn") }}</label>
         <Select
           v-model="workcenter.shiftId"
           :options="shiftStore.shifts"
@@ -79,6 +79,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
@@ -109,14 +112,14 @@ const { workcenter } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-  workcenterTypeId: Yup.string().required("El tipus es obligatori"),
-  areaId: Yup.string().required("L'area es obligatoria"),
-  shiftId: Yup.string().required("El torn es obligatori"),
+    .required(t("production.validation.laDescripcioEsObligatori"))
+    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
+  workcenterTypeId: Yup.string().required(t("production.validation.elTipusEsObligatori")),
+  areaId: Yup.string().required(t("production.validation.lAreaEsObligatoria")),
+  shiftId: Yup.string().required(t("production.validation.elTornEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -139,7 +142,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

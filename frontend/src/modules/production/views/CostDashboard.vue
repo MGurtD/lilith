@@ -13,12 +13,12 @@
     >
       <template #prepend>
         <div class="table-filter-prepend-field table-filter-prepend-field--lg">
-          <label class="filter-label table-filter-prepend-label">Període</label>
+          <label class="filter-label table-filter-prepend-label">{{ pt("Període") }}</label>
           <DatePicker
             v-model="filter.dates"
             selectionMode="range"
             dateFormat="dd/mm/yy"
-            placeholder="Selecciona període"
+            :placeholder="pt('Selecciona període')"
             showIcon
             size="small"
             class="w-full"
@@ -29,8 +29,8 @@
   </div>
   <Tabs value="0" class="dashboard-tabs">
     <TabList>
-      <Tab value="0">Gràfics</Tab>
-      <Tab value="1">Dades</Tab>
+      <Tab value="0">{{ pt("Gràfics") }}</Tab>
+      <Tab value="1">{{ pt("Dades") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -47,8 +47,7 @@
           <div v-else class="empty-state">
             <i :class="PrimeIcons.CHART_BAR" class="empty-icon"></i>
             <p class="empty-message">
-              Selecciona un interval de dates i un concepte per visualitzar les
-              dades
+              {{ pt("Selecciona un interval de dates i un concepte per visualitzar les dades") }}
             </p>
           </div>
         </div>
@@ -61,6 +60,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { ref, onMounted, computed, watch } from "vue";
 import { useStore } from "../../../store";
 import { useProductionCostDashboardStore } from "../store/productioncostdashboard";
@@ -92,13 +94,13 @@ const filter = ref({
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "consolidatedBy",
-    label: "Concepte",
+    label: pt("Concepte"),
     type: "select",
     options: optionValues.map((option) => ({
       label: option.value,
       value: option.id,
     })),
-    placeholder: "Selecciona...",
+    placeholder: pt("Selecciona..."),
     size: "xl",
   },
 ]);
@@ -147,7 +149,7 @@ const costs = ref([] as Array<ProductionCostDashboardGrouped>);
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Dashboard costs producció",
+    title: pt("Dashboard costs producció"),
   });
   await plantModelStore.fetchOperators();
   await plantModelStore.fetchWorkcenterTypes();

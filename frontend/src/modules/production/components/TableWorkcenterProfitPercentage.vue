@@ -13,15 +13,15 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Percentatges de benefici</span>
+          <span class="text-900 font-bold">{{ t("production.components.percentatgesDeBenefici") }}</span>
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
         </div>
       </template>
-      <template #empty>No s'han trobat percentatges.</template>
-      <template #loading>Carregant percentatges. Si us plau espera.</template>
+      <template #empty>{{ t("production.components.noSHanTrobatPercentatges") }}</template>
+      <template #loading>{{ t("production.components.carregantPercentatgesSiUsPlauEspera") }}</template>
       <Column
         field="profitPercentage"
-        header="Percentatge de benefici (%)"
+        :header="t('production.components.percentatgeDeBenefici')"
         sortable
         style="width: 85%"
       >
@@ -49,7 +49,7 @@
     >
       <div class="flex flex-column gap-3 mt-3">
         <div class="flex flex-column gap-2">
-          <label for="profitPercentage">Percentatge de profit (%)</label>
+          <label for="profitPercentage">{{ t("production.components.percentatgeDeProfit") }}</label>
           <InputNumber
             id="profitPercentage"
             v-model="newPercentage.profitPercentage"
@@ -66,20 +66,20 @@
             v-if="submitted && !newPercentage.profitPercentage"
             class="p-error"
           >
-            El percentatge és obligatori.
+            {{ t("production.components.elPercentatgeEsObligatori") }}
           </small>
         </div>
       </div>
 
       <template #footer>
         <Button
-          label="Cancel·lar"
+          :label="t('production.components.cancellar')"
           :icon="PrimeIcons.TIMES"
           text
           @click="dialogOptions.visible = false"
         />
         <Button
-          label="Guardar"
+          :label="t('production.components.guardar')"
           :icon="PrimeIcons.CHECK"
           @click="onSaveHandler"
         />
@@ -88,6 +88,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { WorkcenterProfitPercentage } from "../types";
 import { reactive, ref } from "vue";
@@ -108,7 +111,7 @@ const emits = defineEmits<{
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Nou percentatge de profit",
+  title: t("production.components.nouPercentatgeDeProfit"),
   closable: true,
   position: "center",
   modal: true,
@@ -141,8 +144,8 @@ const onSaveHandler = () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "Percentatge invàlid",
-      detail: "El percentatge ha de ser major que 0",
+      summary: t("production.components.percentatgeInvalid"),
+      detail: t("production.components.elPercentatgeHaDeSerMajorQue0"),
       life: 5000,
     });
     return;
@@ -155,8 +158,8 @@ const onSaveHandler = () => {
   if (exists) {
     toast.add({
       severity: "warn",
-      summary: "Percentatge duplicat",
-      detail: `El percentatge ${newPercentage.value.profitPercentage}% ja existeix`,
+      summary: t("production.components.percentatgeDuplicat"),
+      detail: t("production.components.duplicatePercentage", { percentage: newPercentage.value.profitPercentage }),
       life: 5000,
     });
     return;
@@ -171,7 +174,7 @@ const onDeleteRow = (event: Event, percentage: WorkcenterProfitPercentage) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols eliminar el percentatge ${percentage.profitPercentage}%?`,
+    message: t("production.components.confirmDeletePercentage", { percentage: percentage.profitPercentage }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

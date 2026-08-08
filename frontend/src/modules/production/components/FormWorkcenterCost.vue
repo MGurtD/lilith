@@ -2,7 +2,7 @@
   <form v-if="workcentercost">
     <section class="four-columns">
       <div>
-        <label class="block text-900 mb-2">Màquina</label>
+        <label class="block text-900 mb-2">{{ t("production.components.maquina") }}</label>
         <Select
           v-model="workcentercost.workcenterId"
           :options="plantModelStore.workcenters"
@@ -15,7 +15,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Estat de màquina</label>
+        <label class="block text-900 mb-2">{{ t("production.components.estatDeMaquina") }}</label>
         <Select
           v-model="workcentercost.machineStatusId"
           :options="plantModelStore.machineStatuses"
@@ -29,7 +29,7 @@
       </div>
       <BaseInput
         class="mb-2 w-full"
-        label="Preu hora"
+        :label="t('production.components.preuHora')"
         v-model="workcentercost.cost"
         :type="BaseInputType.CURRENCY"
         :class="{
@@ -37,7 +37,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox
           v-model="workcentercost.disabled"
           class="w-full"
@@ -47,12 +47,15 @@
     </section>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { WorkcenterCost } from "../types";
@@ -85,9 +88,9 @@ const plantModelStore = usePlantModelStore();
 const { workcentercost } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
-  workcenterId: Yup.string().required("La màquina és obligatoria"),
-  machineStatusId: Yup.string().required("L'estat de màquina és obligatori"),
-  cost: Yup.number().required("El cost es obligatori"),
+  workcenterId: Yup.string().required(t("production.validation.laMaquinaEsObligatoria")),
+  machineStatusId: Yup.string().required(t("production.validation.lEstatDeMaquinaEsObligatori")),
+  cost: Yup.number().required(t("production.validation.elCostEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -110,7 +113,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

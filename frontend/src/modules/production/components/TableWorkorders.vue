@@ -15,13 +15,13 @@
     <template #header>
       <slot name="header"></slot>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column header="Referencia" style="width: 40%">
+    <Column field="code" :header="t('production.components.codi')" style="width: 15%"></Column>
+    <Column :header="t('production.components.referencia')" style="width: 40%">
       <template #body="slotProps">
         {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
       </template>
     </Column>
-    <Column header="Client" style="width: 15%">
+    <Column :header="t('production.components.client')" style="width: 15%">
       <template #body="slotProps">
         {{
           customersStore.getCustomerNameById(
@@ -30,14 +30,14 @@
         }}
       </template>
     </Column>
-    <Column field="statusId" header="Estat" style="width: 10%">
+    <Column field="statusId" :header="t('production.components.estat')" style="width: 10%">
       <template #body="slotProps">
         {{ lifecycleStore.getStatusNameById(slotProps.data.statusId) }}
       </template>
     </Column>
     <Column
       field="plannedDate"
-      header="Data Prevista"
+      :header="t('production.components.dataPrevista')"
       sortable
       style="width: 12%"
     >
@@ -45,10 +45,10 @@
         {{ formatDate(slotProps.data.plannedDate) }}
       </template>
     </Column>
-    <Column field="order" header="Prioritat" style="width: 10%"></Column>
+    <Column field="order" :header="t('production.components.prioritat')" style="width: 10%"></Column>
     <Column
       field="plannedQuantity"
-      header="Quantitat"
+      :header="t('production.components.quantitat')"
       style="width: 10%"
     ></Column>
     <Column>
@@ -64,6 +64,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkOrder } from "../types";

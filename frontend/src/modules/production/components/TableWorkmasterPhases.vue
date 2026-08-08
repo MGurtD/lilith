@@ -15,28 +15,28 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Fases de la ruta</span>
+        <span class="text-900 font-bold">{{ t("production.components.fasesDeLaRuta") }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
       </div>
     </template>
-    <Column field="code" header="Codi" sortable style="width: 10%"></Column>
-    <Column field="description" header="Descripció" style="width: 20%"></Column>
-    <Column header="Tipus de màquina" style="width: 15%">
+    <Column field="code" :header="t('production.components.codi')" sortable style="width: 10%"></Column>
+    <Column field="description" :header="t('production.components.descripcio')" style="width: 20%"></Column>
+    <Column :header="t('production.components.tipusDeMaquina')" style="width: 15%">
       <template #body="slotProps">
         {{ getWorkcenterType(slotProps.data.workcenterTypeId) }}
       </template>
     </Column>
-    <Column header="Màquina preferida" style="width: 15%">
+    <Column :header="t('production.components.maquinaPreferida')" style="width: 15%">
       <template #body="slotProps">
         {{ getWorkcenter(slotProps.data.preferredWorkcenterId) }}
       </template>
     </Column>
-    <Column header="Tipus d'operari" style="width: 15%">
+    <Column :header="t('production.components.tipusDOperari')" style="width: 15%">
       <template #body="slotProps">
         {{ getOperatorType(slotProps.data.operatorTypeId) }}
       </template>
     </Column>
-    <Column header="Extern" style="width: 10%">
+    <Column :header="t('production.components.extern')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isExternalWork"></BooleanColumn>
       </template>
@@ -68,6 +68,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkMaster, WorkMasterPhase } from "../types";
@@ -92,7 +95,7 @@ const emit = defineEmits<{
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Nova fase",
+  title: t("production.components.novaFase"),
   closable: true,
   position: "center",
   modal: true,
@@ -168,8 +171,8 @@ const onAddHandler = (phase: WorkMasterPhase) => {
   if (existsPhase) {
     toast.add({
       severity: "warn",
-      summary: `Fase invàlida`,
-      detail: `La fase ${phase.code} ja existeix`,
+      summary: t("production.components.invalidPhase"),
+      detail: t("production.components.duplicatePhase", { code: phase.code }),
       life: 5000,
     });
     return;
@@ -192,7 +195,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, phase: WorkMasterPhase) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar la fase ${phase.code} - ${phase.description}?`,
+    message: t("production.components.confirmDeletePhase", { code: phase.code, description: phase.description }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

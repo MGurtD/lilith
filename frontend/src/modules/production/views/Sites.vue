@@ -10,20 +10,22 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Local</span>
+        <span class="text-900 font-bold">{{ t("production.sites.title") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
+          :aria-label="t('production.actions.create')"
+          :title="t('production.actions.create')"
           rounded
           raised
           @click="createButtonClick"
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 30%"></Column>
-    <Column field="city" header="Població" style="width: 20%"></Column>
-    <Column field="address" header="Adreça" style="width: 30%"></Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column field="name" :header="t('production.fields.name')" style="width: 20%"></Column>
+    <Column field="description" :header="t('common.description')" style="width: 30%"></Column>
+    <Column field="city" :header="t('production.sites.city')" style="width: 20%"></Column>
+    <Column field="address" :header="t('production.sites.address')" style="width: 30%"></Column>
+    <Column :header="t('production.fields.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -33,6 +35,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('production.actions.delete')"
+          :title="t('production.actions.delete')"
           @click="deleteButton($event, slotProps.data)"
         />
       </template>
@@ -50,19 +54,21 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Site } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
+const { t } = useI18n();
 
 onMounted(async () => {
   await plantmodelStore.fetchSites();
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de locals",
+    title: t("production.sites.menuTitle"),
   });
 });
 
@@ -83,7 +89,7 @@ const editSite = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, entity: Site) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el site ${entity.name}?`,
+    message: t("production.messages.confirmDeleteSite", { name: entity.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -93,7 +99,7 @@ const deleteButton = (event: any, entity: Site) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("production.messages.deleted"),
           life: 3000,
         });
         await plantmodelStore.fetchSites();

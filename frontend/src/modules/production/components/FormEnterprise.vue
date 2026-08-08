@@ -3,20 +3,20 @@
     <div class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="enterprise.name"
         :class="{ 'p-invalid': validation.errors.name }"
       />
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="enterprise.description"
         :class="{ 'p-invalid': validation.errors.description }"
       />
       <div>
-        <label class="block text-900 mb-2">Seu per defecte</label>
+        <label class="block text-900 mb-2">{{ t("production.components.seuPerDefecte") }}</label>
         <Select
           v-model="enterprise.defaultSiteId"
           :options="filteredSites"
@@ -26,18 +26,21 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="enterprise.disabled" class="w-full" :binary="true" />
       </div>
     </div>
 
     <div class="mt-2 flex justify-content-end">
-      <Button type="submit" label="Guardar" />
+      <Button type="submit" :label="t('production.components.guardar')" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import * as Yup from "yup";
@@ -69,11 +72,11 @@ onMounted(async () => {
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 caràcters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatòria")
-    .max(250, "La descripció no pot superar els 250 caràcters"),
+    .required(t("production.validation.laDescripcioEsObligatoria"))
+    .max(250, t("production.validation.laDescripcioNoPotSuperarEls250Caracters")),
 });
 
 const validation = ref({
@@ -93,7 +96,7 @@ const submitForm = () => {
     .join(". ");
   toast.add({
     severity: "warn",
-    summary: "Formulari invàlid",
+    summary: t("production.components.formulariInvalid"),
     detail: errors,
     life: 5000,
   });

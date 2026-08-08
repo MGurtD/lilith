@@ -19,12 +19,14 @@ import { FormActionMode } from "../../../types/component";
 import router from "../../../router";
 import FormSite from "../components/FormSite.vue";
 import { usePlantModelStore } from "../store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
 const siteStore = usePlantModelStore();
 const { site } = storeToRefs(siteStore);
+const { t } = useI18n();
 
 const loadView = async () => {
     await siteStore.fetchSite(route.params.id as string);
@@ -32,10 +34,10 @@ const loadView = async () => {
     if(!site.value){
         formMode.value = FormActionMode.CREATE;
         siteStore.setNewSite(route.params.id as string);
-        pageTitle = "Alta de locals";
+        pageTitle = t("production.detail.createSite");
     } else {
         formMode.value = FormActionMode.EDIT;
-        pageTitle = "Modificació de locals";
+        pageTitle = t("production.detail.editSite");
 
     }
     store.setMenuItem({
@@ -57,10 +59,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await siteStore.createSite(data);
-    message = "Local registrat correctament";
+    message = t("production.detail.createdSite");
   } else {
     result = await siteStore.updateSite(data.id, data);
-    message = "Local actualitzat correctament";
+    message = t("production.detail.updatedSite");
   }
 
   if (result) {

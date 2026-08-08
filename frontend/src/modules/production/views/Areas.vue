@@ -10,23 +10,25 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Area</span>
+        <span class="text-900 font-bold">{{ t("production.areas.title") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
+          :aria-label="t('production.actions.create')"
+          :title="t('production.actions.create')"
           rounded
           raised
           @click="createButtonClick"
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Visible planta" style="width: 10%">
+    <Column field="name" :header="t('production.fields.name')" style="width: 25%"></Column>
+    <Column field="description" :header="t('common.description')" style="width: 50%"></Column>
+    <Column :header="t('production.areas.visibleInPlant')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isVisibleInPlant" />
       </template>
     </Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column :header="t('production.fields.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -36,6 +38,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('production.actions.delete')"
+          :title="t('production.actions.delete')"
           @click="deleteButton($event, slotProps.data)"
         />
       </template>
@@ -47,26 +51,27 @@ import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { Area } from "../types";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
+const { t, locale } = useI18n();
+
+const setMenuTitle = () => store.setMenuItem({ icon: PrimeIcons.CALENDAR, title: t("production.areas.menuTitle") });
 
 onMounted(async () => {
   await plantmodelStore.fetchAreas();
 
-  store.setMenuItem({
-    icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'arees",
-  });
+  setMenuTitle();
 });
 
 const createButtonClick = () => {
@@ -85,7 +90,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, area: Area) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'area ${area.name}?`,
+    message: t("production.messages.confirmDeleteArea", { name: area.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -95,7 +100,7 @@ const deleteButton = (event: any, area: Area) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("production.messages.deleted"),
           life: 3000,
         });
         await plantmodelStore.fetchAreas();
@@ -103,4 +108,6 @@ const deleteButton = (event: any, area: Area) => {
     },
   });
 };
+
+watch(locale, setMenuTitle);
 </script>
