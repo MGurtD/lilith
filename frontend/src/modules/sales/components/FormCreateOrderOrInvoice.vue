@@ -1,7 +1,7 @@
 <template>
   <form>
     <div class="mb-2">
-      <label class="block text-900 mb-2">Client</label>
+      <label class="block text-900 mb-2">{{ t('sales.components.client') }}</label>
       <DropdownCustomers
         label=""
         placeholder=""
@@ -9,7 +9,7 @@
       />
     </div>
     <div class="mb-2">
-      <label class="block text-900 mb-2">Exercici</label>
+      <label class="block text-900 mb-2">{{ t('sales.components.exercici') }}</label>
       <Select
         class="w-full"
         v-model="createRequest.exerciseId"
@@ -19,16 +19,17 @@
       />
     </div>
     <div class="mb-2">
-      <label class="block text-900 mb-2">Data</label>
+      <label class="block text-900 mb-2">{{ t('sales.components.data') }}</label>
       <DatePicker v-model="createRequest.date" />
     </div>
 
     <footer class="mt-4">
-      <Button label="Crear" @click="onSubmit" style="float: right" />
+      <Button :label="t('sales.components.crear')" @click="onSubmit" style="float: right" />
     </footer>
   </form>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
@@ -41,6 +42,7 @@ import {
 import { convertDateTimeToJSON } from "../../../utils/functions";
 import { useExerciseStore } from "../../shared/store/exercise";
 
+const { t } = useI18n();
 const toast = useToast();
 const exerciseStore = useExerciseStore();
 
@@ -66,9 +68,9 @@ onMounted(async () => {
 });
 
 const schema = Yup.object().shape({
-  exerciseId: Yup.string().required("L'exercici és obligatori"),
-  customerId: Yup.string().required("El client és obligatori"),
-  date: Yup.date().required("La data és obligatòria"),
+  exerciseId: Yup.string().required(t("sales.validation.exerciseRequired")),
+  customerId: Yup.string().required(t("sales.validation.customerRequired")),
+  date: Yup.date().required(t("sales.validation.dateRequired")),
 });
 const validation = ref({
   result: false,
@@ -95,7 +97,7 @@ const onSubmit = () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

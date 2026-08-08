@@ -5,14 +5,14 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Número Albarà"
+            :label="t('sales.components.numeroAlbara')"
             id="salesOrderNumber"
             v-model="deliveryNote.number"
             disabled
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Client</label>
+          <label class="block text-900 mb-2">{{ t('sales.components.client') }}</label>
           <div style="display: flex; align-items: center; gap: 0.5rem">
             <Select
               v-model="deliveryNote.customerId"
@@ -36,7 +36,7 @@
         <div class="mt-2">
           <BaseInput
             v-model="createdOn"
-            label="Data Creació"
+            :label="t('sales.components.dataCreacio')"
             :disabled="true"
           />
         </div>
@@ -44,7 +44,7 @@
       <section class="three-columns">
         <div class="mt-2">
           <DropdownLifecycleStatusTransitions
-            label="Estat"
+            :label="t('sales.components.estat')"
             :statusId="deliveryNote.statusId"
             v-model="deliveryNote.statusId"
             :class="{
@@ -53,7 +53,7 @@
           />
         </div>
         <div class="mt-2">
-          <label class="block text-900 mb-2">Data Entrega</label>
+          <label class="block text-900 mb-2">{{ t('sales.components.dataEntrega') }}</label>
           <DatePicker
             v-model="deliveryNote.deliveryDate"
             dateFormat="dd/mm/yy"
@@ -63,7 +63,7 @@
         <div class="mt-2">
           <BaseInput
             v-model="salesInvoiceNumber"
-            label="Número de factura"
+            :label="t('sales.components.numeroDeFactura')"
             :disabled="true"
           />
         </div>
@@ -72,6 +72,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { useCustomersStore } from "../store/customers";
@@ -87,6 +88,7 @@ import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../../types/component";
 import { convertDateTimeToJSON, formatDate } from "../../../utils/functions";
 
+const { t } = useI18n();
 const props = defineProps<{
   deliveryNote: DeliveryNote;
 }>();
@@ -113,10 +115,10 @@ const createdOn = computed((): string => {
 });
 
 const schema = Yup.object().shape({
-  siteId: Yup.string().required("L'origen es obligatori"),
-  customerId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
+  siteId: Yup.string().required(t("sales.validation.siteRequired")),
+  customerId: Yup.string().required(t("sales.validation.customerRequired")),
+  statusId: Yup.string().required(t("sales.validation.statusRequired")),
+  exerciseId: Yup.string().required(t("sales.validation.exerciseRequired")),
 });
 const validation = ref({
   result: false,
@@ -144,7 +146,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

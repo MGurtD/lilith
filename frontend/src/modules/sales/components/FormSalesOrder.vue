@@ -5,14 +5,14 @@
         <div>
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Num. Comanda"
+            :label="t('sales.components.numComanda')"
             id="salesOrderNumber"
             v-model="salesOrder.number"
             disabled
           />
         </div>
         <div>
-          <label class="block text-900 mb-2">Client</label>
+          <label class="block text-900 mb-2">{{ t('sales.components.client') }}</label>
           <div style="display: flex; align-items: center; gap: 0.5rem">
             <Select
               v-model="salesOrder.customerId"
@@ -37,14 +37,14 @@
         <div>
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Comanda Client"
+            :label="t('sales.components.comandaClient')"
             id="customerSalesOrderNumber"
             v-model="salesOrder.customerNumber"
           />
         </div>
         <div>
           <DropdownLifecycleStatusTransitions
-            label="Estat"
+            :label="t('sales.components.estat')"
             :statusId="salesOrder.statusId"
             v-model="salesOrder.statusId"
             :class="{
@@ -55,17 +55,17 @@
       </section>
       <section class="four-columns mt-2">
         <div>
-          <label class="block text-900 mb-2">Data Alta</label>
+          <label class="block text-900 mb-2">{{ t('sales.components.dataAlta') }}</label>
           <DatePicker v-model="salesOrder.date" dateFormat="dd/mm/yy" />
         </div>
         <div>
-          <label class="block text-900 mb-2">Data Entrega</label>
+          <label class="block text-900 mb-2">{{ t('sales.components.dataEntrega') }}</label>
           <DatePicker v-model="salesOrder.expectedDate" dateFormat="dd/mm/yy" />
         </div>
         <div>
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Num. Pressupost"
+            :label="t('sales.components.numPressupost')"
             id="budgetNumber"
             disabled
             :modelValue="budgetStore.budget?.number ?? ''"
@@ -76,7 +76,7 @@
           <BaseInput
             :type="BaseInputType.TEXT"
             :disabled="true"
-            label="Albarà Entrega"
+            :label="t('sales.components.albaraEntrega')"
             id="deliveryNote"
             :modelValue="deliveryNoteNumber"
           />
@@ -86,6 +86,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import * as Yup from "yup";
@@ -103,6 +104,7 @@ import { BaseInputType } from "../../../types/component";
 import { convertDateTimeToJSON } from "../../../utils/functions";
 import { useBudgetStore } from "../store/budget";
 
+const { t } = useI18n();
 const emit = defineEmits<{
   (e: "submit", salesOrder: SalesOrderHeader): void;
   (e: "cancel"): void;
@@ -123,10 +125,10 @@ const deliveryNoteNumber = computed(() => {
 });
 
 const schema = Yup.object().shape({
-  siteId: Yup.string().required("L'origen es obligatori"),
-  customerId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
+  siteId: Yup.string().required(t("sales.validation.siteRequired")),
+  customerId: Yup.string().required(t("sales.validation.customerRequired")),
+  statusId: Yup.string().required(t("sales.validation.statusRequired")),
+  exerciseId: Yup.string().required(t("sales.validation.exerciseRequired")),
 });
 
 const validation = ref({
@@ -151,7 +153,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

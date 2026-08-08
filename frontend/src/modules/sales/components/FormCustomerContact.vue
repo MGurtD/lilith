@@ -2,7 +2,7 @@
   <form v-if="contact">
     <section class="three-columns">
       <BaseInput
-        label="Nom"
+        :label="t('sales.components.nom')"
         id="firstName"
         v-model="contact.firstName"
         class="mb-2"
@@ -11,7 +11,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Cognoms"
+        :label="t('sales.components.cognoms')"
         id="lastName"
         v-model="contact.lastName"
         class="mb-2"
@@ -20,7 +20,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Càrrec"
+        :label="t('sales.components.carrec')"
         id="charge"
         v-model="contact.charge"
         class="mb-2"
@@ -32,7 +32,7 @@
     <section class="four-columns">
       <BaseInput
         class="mb-2"
-        label="Correu electrònic"
+        :label="t('sales.components.correuElectronic')"
         id="email"
         v-model="contact.email"
         :class="{
@@ -41,13 +41,13 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Extensió"
+        :label="t('sales.components.extensio')"
         id="extension"
         v-model="contact.extension"
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Telèfon"
+        :label="t('sales.components.telefon')"
         id="phone"
         v-model="contact.phoneNumber"
         :class="{
@@ -55,19 +55,20 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Predeterminat</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.predeterminat') }}</label>
         <Checkbox v-model="contact.main" class="w-full" :binary="true" />
       </div>
     </section>
 
     <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="cancel" />
+      <Button :label="t('sales.components.guardar')" @click="submitForm" />
+      <Button :label="t('sales.components.cancelar')" severity="secondary" @click="cancel" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { CustomerContact } from "../types";
 import * as Yup from "yup";
@@ -77,6 +78,7 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 
+const { t } = useI18n();
 const props = defineProps<{
   contact: CustomerContact;
 }>();
@@ -90,17 +92,17 @@ const toast = useToast();
 
 const schema = Yup.object().shape({
   firstName: Yup.string()
-    .required("El nom és obligatori")
+    .required(t("sales.validation.nameRequired"))
     .max(250, "El nom no pot superar els 250 carácters"),
   lastName: Yup.string()
-    .required("Els cognoms són obligatoris")
+    .required(t("sales.validation.lastNameRequired"))
     .max(250, "Els cognoms no poden superar els 250 carácters"),
   charge: Yup.string(),
   email: Yup.string()
-    .required("El correu és obligatori")
+    .required(t("sales.validation.emailRequired"))
     .email("Correu electrònic invàlid"),
   phoneNumber: Yup.string()
-    .required("El telèfon és obligatori")
+    .required(t("sales.validation.phoneRequired"))
     .max(15, "Ha superat la longitud màxima del telèfon"),
 
   disabled: Yup.boolean().required(),
@@ -127,7 +129,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

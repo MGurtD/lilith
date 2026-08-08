@@ -21,17 +21,16 @@
           class="grid_delete_column_button"
           @click="onDeleteRow($event, slotProps.data)"
         />
-        &nbsp;
         <span class="vertical-align-middle ml-2 font-bold line-height-3"
           >Comanda {{ slotProps.data.salesOrderNumber }} (Núm. Client:
           {{ slotProps.data.customerNumber }})</span
         >
       </template>
-      <Column field="salesOrderNumber" header="Comanda" style="width: 5%" />
+      <Column field="salesOrderNumber" :header="t('sales.components.comanda')" style="width: 5%" />
       <Column field="" header="" style="width: 2%" />
-      <Column field="quantity" header="Quantitat" style="width: 5%" />
+      <Column field="quantity" :header="t('sales.components.quantitat')" style="width: 5%" />
       <Column
-        header="Referència"
+        :header="t('sales.components.referencia')"
         field="reference.code"
         sortable
         style="width: 15%"
@@ -40,20 +39,20 @@
           <LinkReference :id="slotProps.data.referenceId" />
         </template>
       </Column>
-      <Column field="description" header="Descripció" style="width: 30%" />
-      <Column field="unitPrice" header="Preu un." style="width: 10%">
+      <Column field="description" :header="t('sales.components.descripcio')" style="width: 30%" />
+      <Column field="unitPrice" :header="t('sales.components.preuUn')" style="width: 10%">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.unitPrice) }}
         </template>
       </Column>
-      <Column field="amount" header="Total" style="width: 10%">
+      <Column field="amount" :header="t('sales.components.total')" style="width: 10%">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.amount) }}
         </template>
       </Column>
       <template #footer>
         <div class="total-footer">
-          <span class="total-label">Total</span>
+          <span class="total-label">{{ t('sales.components.total') }}</span>
           <span class="total-value">{{ formatCurrency(deliveryNoteAmount) }}</span>
         </div>
       </template>
@@ -61,6 +60,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { useScrollHeight } from "@/composables/useScrollHeight";
 import LinkReference from "../../shared/components/LinkReference.vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -69,6 +69,7 @@ import { computed } from "vue";
 import { formatCurrency } from "../../../utils/functions";
 import { useConfirm } from "primevue/useconfirm";
 
+const { t } = useI18n();
 const props = defineProps<{
   orders: Array<SalesOrderHeader> | undefined;
   canDelete: boolean;
@@ -110,7 +111,7 @@ const onDeleteRow = (event: any, clickedOrder: any) => {
 
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol desassignar la comanda ${order.number}?`,
+    message: t("sales.componentMessages.unassignOrder", { number: order.number }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -1,6 +1,6 @@
 <template>
   <SplitButton
-    label="Guardar"
+    :label="t('sales.detail.actions.save')"
     @click="submitForm"
     :model="items"
     :size="'small'"
@@ -16,10 +16,10 @@
 
   <Tabs value="0">
     <TabList>
-      <Tab value="0">Detall</Tab>
-      <Tab value="1">Transports</Tab>
-      <Tab value="2">Serveis Externs</Tab>
-      <Tab value="3">Fitxers</Tab>
+      <Tab value="0">{{ t("sales.detail.tabs.detail") }}</Tab>
+      <Tab value="1">{{ t("sales.detail.tabs.transports") }}</Tab>
+      <Tab value="2">{{ t("sales.detail.tabs.externalServices") }}</Tab>
+      <Tab value="3">{{ t("sales.detail.tabs.files") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -42,18 +42,18 @@
               class="flex flex-wrap align-items-center justify-content-between gap-2"
             >
               <span class="text-l text-900 font-bold"
-                >Linies de la comanda</span
+                >{{ t("sales.detail.labels.orderLines") }}</span
               >
               <section v-if="!deliveryNoteStore.deliveryNote">
                 <Button
                   :size="'small'"
-                  label="Ponderar Costos"
+                  :label="t('sales.detail.actions.weighCosts')"
                   @click="onDistributeAllCosts(salesOrder.id)"
                   class="mr-2 dark-gray-button"
                 />
                 <Button
                   :size="'small'"
-                  label="Afegir línea"
+                  :label="t('sales.detail.actions.addLine')"
                   @click="
                     openOrderDetailDialog(FormActionMode.CREATE, {} as any)
                   "
@@ -80,12 +80,12 @@
               class="flex flex-wrap align-items-center justify-content-between gap-2"
             >
               <span class="text-l text-900 font-bold"
-                >Transports de la comanda</span
+                >{{ t("sales.detail.labels.orderTransports") }}</span
               >
               <section v-if="!deliveryNoteStore.deliveryNote">
                 <Button
                   :size="'small'"
-                  label="Afegir transport"
+                  :label="t('sales.detail.actions.addTransport')"
                   @click="
                     openSalesOrderTransportDialog(FormActionMode.CREATE, {} as any)
                   "
@@ -106,11 +106,11 @@
             <div
               class="flex flex-wrap align-items-center justify-content-between gap-2"
             >
-              <span class="text-l text-900 font-bold">Serveis externs</span>
+              <span class="text-l text-900 font-bold">{{ t("sales.detail.tabs.externalServices") }}</span>
             </div>
           </template>
         </TableSalesOrderExternalServices>
-        <p v-else class="mt-3 text-500">Sense serveis externs calculats.</p>
+        <p v-else class="mt-3 text-500">{{ t("sales.detail.labels.noExternalServices") }}</p>
       </TabPanel>
       <TabPanel value="3">
         <FileEntityPicker
@@ -161,7 +161,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
@@ -201,6 +201,7 @@ import TableSalesOrderExternalServices from "../components/TableSalesOrderExtern
 import type { SalesOrderExternalServiceRow } from "../components/TableSalesOrderExternalServices.vue";
 import { ReferenceService } from "../../shared/services/reference.service";
 import { useSuppliersStore } from "../../purchase/store/suppliers";
+import { useI18n } from "vue-i18n";
 
 const referenceService = new ReferenceService("/reference");
 const salesOrderForm = ref();
@@ -222,6 +223,7 @@ const taxesStore = useTaxesStore();
 const budgetStore = useBudgetStore();
 const supplierStore = useSuppliersStore();
 const { salesOrder } = storeToRefs(salesOrderStore);
+const { t } = useI18n();
 
 export type { SalesOrderExternalServiceRow };
 const externalServicesWithSuppliers = ref<SalesOrderExternalServiceRow[]>([]);
@@ -300,15 +302,15 @@ const onExternalServiceSupplierChange = async (row: SalesOrderExternalServiceRow
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Proveïdor actualitzat",
-      detail: "S'ha desat el proveïdor per al servei extern.",
+      summary: t("sales.detail.messages.supplierUpdated"),
+      detail: t("sales.detail.messages.supplierSaved"),
       life: 3000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "No s'ha pogut desar el proveïdor.",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.supplierSaveError"),
       life: 3000,
     });
   }
@@ -320,35 +322,35 @@ watch(
   { deep: true }
 );
 
-const items = [
+const items = computed(() => [
   {
-    label: "Descarregar",
+    label: t("sales.detail.actions.download"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(true),
   },
   {
-    label: "Imprimir PDF",
+    label: t("sales.detail.actions.printPdf"),
     icon: PrimeIcons.FILE_PDF,
     command: () => printPdf(),
   },
   {
-    label: "Descarregar sense preu",
+    label: t("sales.detail.actions.downloadWithoutPrice"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(false),
   },
   {
-    label: "Crear albarà",
+    label: t("sales.detail.actions.createDeliveryNote"),
     icon: PrimeIcons.TRUCK,
     command: () => createDeliveryNote(),
   },
-];
+]);
 
-const detailDialogTitle = "Línia de comanda";
+const detailDialogTitle = computed(() => t("sales.detail.dialogs.orderLine"));
 const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
 const selectedSalesOrderDetail = ref(undefined as undefined | SalesOrderDetail);
 
-const transportDialogTitle = "Transport de comanda";
+const transportDialogTitle = computed(() => t("sales.detail.dialogs.orderTransport"));
 const isTransportDialogVisible = ref(false);
 const formTransportMode = ref(FormActionMode.EDIT);
 const salesOrderTransport = ref(undefined as undefined | SalesOrderTransport);
@@ -357,7 +359,7 @@ const loadView = async (salesOrderId: string) => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     backButtonVisible: true,
-    title: "Comanda",
+    title: t("sales.orders.title"),
   });
 
   budgetStore.budget = undefined;
@@ -376,10 +378,10 @@ const loadView = async (salesOrderId: string) => {
   taxesStore.fetchAll();
   workOrderStore.fetchBySalesOrder(salesOrderId);
 
-  let pageTitle = "Comanda";
+  let pageTitle = t("sales.orders.title");
   if (salesOrder.value) {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Comanda ${salesOrder.value.number}`;
+    pageTitle = `${t("sales.orders.title")} ${salesOrder.value.number}`;
 
     // Get the related DeliveryNote info
     if (salesOrder.value.deliveryNoteId) {
@@ -475,8 +477,8 @@ const onOrderSubmit = async (salesOrder: SalesOrderHeader) => {
   if (!salesOrder.date) {
     toast.add({
       severity: "error",
-      summary: "Error al crear la comanda ",
-      detail: "La data no pot estar buida",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.dateRequired"),
       life: 5000,
     });
     return false;
@@ -487,8 +489,8 @@ const onOrderSubmit = async (salesOrder: SalesOrderHeader) => {
 
   result = await salesOrderStore.Update(salesOrder.id, salesOrder);
   message = result
-    ? "Comanda actualitzada"
-    : "Error a l'actualitzar la comanda";
+    ? t("sales.detail.messages.updated")
+    : t("sales.orders.messages.createError");
 
   toast.add({
     life: 5000,
@@ -536,8 +538,8 @@ const createWorkOrder = async (dto: CreateWorkOrderFromSalesOrderDto) => {
     if (updated) {
       toast.add({
         severity: "success",
-        summary: "Generació OF",
-        detail: `Ordre de fabricació ${response.content!.code} generada`,
+        summary: t("sales.detail.messages.workOrderGeneration"),
+        detail: t("sales.detail.messages.workOrderCreated", { code: response.content!.code }),
         life: 5000,
       });
 
@@ -546,8 +548,8 @@ const createWorkOrder = async (dto: CreateWorkOrderFromSalesOrderDto) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Generació OF",
-      detail: `Error al generar la ordre de fabricació`,
+      summary: t("sales.detail.messages.workOrderGeneration"),
+      detail: t("sales.detail.messages.workOrderError"),
       life: 5000,
     });
   }
@@ -563,7 +565,7 @@ const createDeliveryNote = async () => {
   if (salesOrder.value.deliveryNoteId) {
     toast.add({
       severity: "warn",
-      summary: "Aquesta comanda ja té un albarà associat",
+      summary: t("sales.detail.messages.alreadyAssociated"),
       life: 5000,
     });
     return;
@@ -574,7 +576,7 @@ const createDeliveryNote = async () => {
   if (response.result && response.content?.id) {
     toast.add({
       severity: "success",
-      summary: `Albarà ${response.content.number} creat correctament`,
+      summary: t("sales.detail.messages.createdDeliveryNote", { number: response.content.number }),
       life: 5000,
     });
 
@@ -584,7 +586,7 @@ const createDeliveryNote = async () => {
 
   toast.add({
     severity: "error",
-    summary: "Error al crear l'albarà",
+    summary: t("sales.deliveryNotes.messages.createError"),
     detail: response.errors[0],
     life: 5000,
   });
@@ -611,8 +613,8 @@ const printInvoice = async (showPrices: boolean) => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("sales.detail.messages.error"),
+        detail: t("sales.detail.messages.reportError"),
       });
     }
   }
@@ -663,17 +665,15 @@ const onDistributeAllCosts = async (salesOrderId: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Costos ponderats",
-      detail:
-        "S'han ponderat els costos de transport i serveis externs correctament entre els detalls.",
+      summary: t("sales.detail.messages.costsWeighed"),
+      detail: t("sales.detail.messages.costsWeighedDetail"),
       life: 5000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al ponderar",
-      detail:
-        "No s'han pogut ponderar els costos (és possible que hi hagi un error al servidor).",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.costsWeighedError"),
       life: 5000,
     });
   }
