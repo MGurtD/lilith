@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { MenuItemNode } from "../types/menuitem";
+import type { MenuItemNode } from "@/modules/system/types/menuitem";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
-import { useStore } from "../store";
+import { useStore } from "@/store";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import { useMenusStore } from "../store/menus";
-import { getNewUuid } from "../utils/functions";
+import { useMenusStore } from "@/modules/system/store/menus";
+import { getNewUuid } from "@/utils/functions";
 import TableFilter, {
   type FilterConfig,
   type FilterBodyWidth,
-} from "../components/tables/TableFilter.vue";
+} from "@/components/tables/TableFilter.vue";
 
 const router = useRouter();
 const appStore = useStore();

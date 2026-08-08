@@ -6,13 +6,13 @@ import {
   createMenuItem,
   updateMenuItem,
   deleteMenuItem,
-} from "../services/menuitem.service";
+} from "@/modules/system/services/menuitem.service";
 import type {
   MenuItemFlat,
   MenuItemNode,
   CreateMenuItemRequest,
   UpdateMenuItemRequest,
-} from "../types/menuitem";
+} from "@/modules/system/types/menuitem";
 
 interface State {
   items: MenuItemFlat[]; // flat list

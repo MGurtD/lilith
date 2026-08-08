@@ -27,9 +27,12 @@ Inspect template text and visible props such as `label`, `header`, `placeholder`
 
 Do not translate identifiers, routes, URLs, CSS values, API payload fields, business data, file names, or lifecycle/status values stored in the database.
 
-Run the audit skill over every file in scope before editing to capture the baseline:
+Run the audit skill over every file in scope before editing to capture the baseline. Use JSON when the scope is a directory or the text report is truncated; review every finding, not only the printed subset:
 
     node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --scope <view> --scope <owned-child>
+    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --format json --scope <directory-or-view> --scope <owned-child>
+
+The auditor is heuristic and `--strict` fails only for localization errors, not hardcoded-text warnings. Independently inspect each scoped view and its script for literal strings used by toasts, confirmations, dialog/page titles, validation, and menu metadata. Do not mark the translation complete while any user-facing hardcoded warning or manually found literal remains. Code or syntax examples may remain literal only when documented in the completion report.
 
 ## 3. Design keys
 
@@ -58,9 +61,10 @@ Run the audit skill over every file in scope before editing to capture the basel
 
 ## 5. Validate and report
 
-Run strict validation over the complete screen boundary:
+Run strict validation over the complete screen boundary, then inspect the complete JSON report. `--strict` passing is necessary but does not prove that hardcoded UI text has been removed:
 
     node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --strict --scope <view> --scope <owned-child>
+    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --format json --scope <view> --scope <owned-child>
 
 Then run:
 
@@ -72,5 +76,5 @@ Finally:
 1. Review `git diff` and confirm all new keys exist in `ca`, `es`, and `en`.
 2. Verify interpolation and placeholders in each locale.
 3. Distinguish new findings from pre-existing global localization debt.
-4. Summarize the translated screen, owned children, reused/new namespaces, validation results, and any intentionally excluded shared text.
+4. Summarize the translated screen, owned children, reused/new namespaces, validation results, and every remaining hardcoded-text warning with its reason. Never describe a result as fully localized if unresolved user-facing literal warnings remain.
 5. Do not commit, push, launch the runtime, or modify backend localization unless explicitly requested.

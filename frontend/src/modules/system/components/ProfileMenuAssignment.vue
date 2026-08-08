@@ -3,8 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
-import { useProfileMenuSelectionStore } from "../store/profile-menu-selection";
-import { useStore } from "../store";
+import { useProfileMenuSelectionStore } from "@/modules/system/store/profile-menu-selection";
+import { useStore } from "@/store";
 
 const props = defineProps<{ profileId: string }>();
 
@@ -59,10 +59,8 @@ const onUnselectAll = () => {
 
 const saveSelection = () => {
   confirm.require({
-    message:
-      (t("profiles.confirmAssignMenus") as string) ||
-      "Confirmes desar la selecció de menús?",
-    header: (t("common.confirm") as string) || "Confirmació",
+    message: t("profiles.confirmAssignMenus"),
+    header: t("common.confirm"),
     icon: "pi pi-exclamation-triangle",
     accept: async () => {
       const ok = await selectionStore.save();
@@ -70,8 +68,8 @@ const saveSelection = () => {
       toast.add({
         severity: ok ? "success" : "error",
         summary: ok
-          ? (t("common.saved") as string) || "Desat correctament"
-          : (t("common.error") as string) || "Error en el procés",
+          ? t("common.saved")
+          : t("common.error"),
         life: ok ? 2500 : 4000,
       });
 
@@ -124,7 +122,7 @@ onMounted(async () => {
             <Button
               size="small"
               icon="pi pi-link"
-              :label="t('common.assign') || 'Assignar'"
+            :label="t('common.assign')"
               @click="saveSelection"
             />
           </div>
@@ -133,7 +131,7 @@ onMounted(async () => {
 
       <Column selectionMode="multiple" headerStyle="width: 3rem" />
 
-      <Column :header="t('menuItems.title') || 'Títol'">
+      <Column :header="t('menuItems.title')">
         <template #body="slotProps">
           <div class="flex align-items-center">
             <span :style="{ marginLeft: slotProps.data.level * 16 + 'px' }">{{
@@ -144,17 +142,17 @@ onMounted(async () => {
       </Column>
       <Column
         field="key"
-        :header="t('menuItems.key') || 'Clau'"
+        :header="t('menuItems.key')"
         style="width: 20%"
       />
       <Column
         field="route"
-        :header="t('menuItems.route') || 'Ruta'"
+        :header="t('menuItems.route')"
         style="width: 25%"
       />
       <Column
         field="sortOrder"
-        :header="t('menuItems.order') || 'Ordre'"
+        :header="t('menuItems.order')"
         style="width: 8%"
       />
     </DataTable>

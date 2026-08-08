@@ -2,8 +2,8 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import * as yup from "yup";
-import { FormValidation } from "../../utils/form-validator";
-import type { ProfileDetail } from "../../types/profile";
+import { FormValidation } from "@/utils/form-validator";
+import type { ProfileDetail } from "@/modules/system/types/profile";
 
 const props = defineProps<{
   initialData: Partial<ProfileDetail>;

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import Services from "@/services";
+import Services from "@/modules/system/services";
 import type { ApiKey, CreateApiKeyResponse } from "@/types";
 
 interface CreateApiKeyRequest {

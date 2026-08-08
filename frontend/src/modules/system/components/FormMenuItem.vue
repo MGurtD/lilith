@@ -2,11 +2,11 @@
 import { ref, watch, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import * as yup from "yup";
-import { FormValidation } from "../../utils/form-validator";
-import IconPicker from "../IconPicker.vue";
-import type { MenuItemFlat, MenuItemNode } from "../../types/menuitem";
-import { getMenuItemsHierarchy } from "../../services/menuitem.service";
-import { BaseInputType } from "../../types/component";
+import { FormValidation } from "@/utils/form-validator";
+import IconPicker from "@/components/IconPicker.vue";
+import type { MenuItemFlat, MenuItemNode } from "@/modules/system/types/menuitem";
+import { getMenuItemsHierarchy } from "@/modules/system/services/menuitem.service";
+import { BaseInputType } from "@/types/component";
 
 const props = defineProps<{
   modelValue: Partial<MenuItemFlat>;

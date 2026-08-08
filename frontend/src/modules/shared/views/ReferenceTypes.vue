@@ -13,7 +13,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Tipus de matèries primes</span>
+        <span class="text-900 font-bold">{{ $t('shared.referenceTypes.title') }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -22,19 +22,19 @@
         />
       </div>
     </template>
-    <Column field="name" sortable header="Nom" style="width: 25%"></Column>
+    <Column field="name" sortable :header="$t('shared.referenceTypes.columns.name')" style="width: 25%"></Column>
     <Column
       field="description"
       sortable
-      header="Descripció"
+      :header="$t('shared.referenceTypes.columns.description')"
       style="width: 40%"
     ></Column>
     <Column
       field="density"
-      header="Densitat (cm/m3)"
+      :header="$t('shared.referenceTypes.columns.density')"
       style="width: 15%"
     ></Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column :header="$t('shared.referenceTypes.columns.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -55,6 +55,7 @@ import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -67,13 +68,14 @@ const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const referenceTypeStore = useReferenceTypeStore();
+const { t } = useI18n();
 
 onMounted(async () => {
   await referenceTypeStore.fetchAll();
 
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Gestió de tipus de materials",
+    title: t("shared.referenceTypes.menuTitle"),
   });
 });
 
@@ -94,7 +96,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, rawmaterialtype: ReferenceType) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el tipus de materials ${rawmaterialtype.name}?`,
+    message: t("shared.referenceTypes.messages.confirmDelete", { name: rawmaterialtype.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -106,7 +108,7 @@ const deleteButton = (event: any, rawmaterialtype: ReferenceType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("shared.referenceTypes.messages.deleted"),
           life: 3000,
         });
         await referenceTypeStore.fetchAll();

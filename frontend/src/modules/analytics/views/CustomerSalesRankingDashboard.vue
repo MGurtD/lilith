@@ -131,7 +131,7 @@ import { CustomerRankingService } from "../services/customerRanking.service";
 
 const store = useStore();
 const toast = useToast();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const customerRankingService = new CustomerRankingService("/customerranking");
 
 const filter = ref({
@@ -184,11 +184,15 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "32rem",
 };
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.CHART_PIE,
     title: t("analytics.customerRanking.title"),
   });
+};
+
+onMounted(async () => {
+  setMenuTitle();
 
   await loadRankingData();
 });
@@ -304,7 +308,7 @@ const pieChartOptions = ref({
         label: function (context: any) {
           const label = context.label || "";
           const value = context.parsed || 0;
-          const formatted = new Intl.NumberFormat("de-DE", {
+          const formatted = new Intl.NumberFormat(locale.value, {
             style: "currency",
             currency: "EUR",
           }).format(value);
@@ -444,6 +448,11 @@ const prepareData = () => {
     ],
   };
 };
+
+watch(locale, () => {
+  setMenuTitle();
+  prepareData();
+});
 </script>
 
 <style scoped>

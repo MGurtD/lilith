@@ -14,12 +14,14 @@
       >
         <template #prepend>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Període</label>
+            <label class="filter-label table-filter-prepend-label">
+              {{ t("analytics.cashflow.filters.period") }}
+            </label>
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('analytics.cashflow.filters.periodPlaceholder')"
               showIcon
               size="small"
               class="w-full"
@@ -31,7 +33,7 @@
     <div class="dashboard-kpis">
       <div class="kpi-card">
         <div class="kpi-label">
-          {{ t("analytics.cashflow.kpi.incomes") || "Ingressos" }}
+          {{ t("analytics.cashflow.kpi.incomes") }}
         </div>
         <div class="kpi-value text-green-500">
           {{ formatCurrency(totalIncomes) }}
@@ -39,7 +41,7 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">
-          {{ t("analytics.cashflow.kpi.expenses") || "Despeses" }}
+          {{ t("analytics.cashflow.kpi.expenses") }}
         </div>
         <div class="kpi-value text-pink-500">
           {{ formatCurrency(totalExpenses) }}
@@ -47,7 +49,7 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">
-          {{ t("analytics.cashflow.kpi.net") || "Nete" }}
+          {{ t("analytics.cashflow.kpi.net") }}
         </div>
         <div
           :class="[
@@ -60,9 +62,7 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">
-          {{
-            t("analytics.cashflow.kpi.avgMonthlyNet") || "Mitjana mensual neta"
-          }}
+          {{ t("analytics.cashflow.kpi.avgMonthlyNet") }}
         </div>
         <div
           :class="[
@@ -77,8 +77,8 @@
   </div>
   <Tabs value="0">
     <TabList>
-      <Tab value="0">{{ t("analytics.cashflow.tabs.chart") || "Gràfics" }}</Tab>
-      <Tab value="1">{{ t("analytics.cashflow.tabs.data") || "Dades" }}</Tab>
+      <Tab value="0">{{ t("analytics.cashflow.tabs.chart") }}</Tab>
+      <Tab value="1">{{ t("analytics.cashflow.tabs.data") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -108,7 +108,7 @@
         >
           <Column
             field="date"
-            :header="t('common.date') || 'Data'"
+            :header="t('common.date')"
             style="width: 15%"
             sortable
           >
@@ -116,13 +116,13 @@
               {{ formatDate(slotProps.data.date) }}
             </template>
           </Column>
-          <Column :header="t('common.type') || 'Tipus'" field="type" />
-          <Column :header="t('common.detail') || 'Detall'" field="detail" />
+          <Column :header="t('common.type')" field="type" />
+          <Column :header="t('common.detail')" field="detail" />
           <Column
-            :header="t('common.description') || 'Descripció'"
+            :header="t('common.description')"
             field="description"
           />
-          <Column :header="t('common.total') || 'Total'" field="total">
+          <Column :header="t('common.total')" field="total">
             <template #body="slotProps">
               <span
                 :class="
@@ -165,7 +165,7 @@ import { ConsolidatedExpense, ExpenseType } from "../../purchase/types";
 
 const store = useStore();
 const incomeService = new IncomeService("/income");
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const toast = useToast();
 
 const currentYear = new Date().getFullYear();
@@ -193,11 +193,15 @@ const clearFilter = () => {
 const incomes = ref([] as Array<ConsolidatedIncomes>);
 const expenses = ref([] as Array<ConsolidatedExpense>);
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Dashboard comparatiu flux de caixa",
+    title: t("analytics.cashflow.title"),
   });
+};
+
+onMounted(async () => {
+  setMenuTitle();
 
   await filterDashboard();
 });
@@ -233,9 +237,7 @@ const filterDashboard = async () => {
       toast.add({
         severity: "error",
         summary: t("common.error"),
-        detail:
-          t("analytics.cashflow.messages.loadError") ||
-          "Error loading dashboard data",
+        detail: t("analytics.cashflow.messages.loadError"),
         life: 5000,
       });
       return;
@@ -304,7 +306,7 @@ const setChartData = () => {
 
   const incomeDataset = {
     type: "line",
-    label: t("analytics.cashflow.series.incomes") || "Ingressos",
+    label: t("analytics.cashflow.series.incomes"),
     borderColor: "#B3FFBA",
     backgroundColor: "#B3FFBA",
     data: labels.map((month) => incomesGroupedByYearMonth[month] || 0),
@@ -314,7 +316,7 @@ const setChartData = () => {
   };
   const expenseDataset = {
     type: "line",
-    label: t("analytics.cashflow.series.expenses") || "Despeses",
+    label: t("analytics.cashflow.series.expenses"),
     borderColor: "#ff336f",
     backgroundColor: "#ff336f",
     data: labels.map((month) => expensesGroupedByYearMonth[month] || 0),
@@ -333,7 +335,7 @@ const setChartData = () => {
   }
   const balanceDataset = {
     type: "line",
-    label: t("analytics.cashflow.series.balance") || "Saldo acumulat",
+    label: t("analytics.cashflow.series.balance"),
     borderColor: "#8a8a8a",
     backgroundColor: "rgba(138, 138, 138, 0.15)",
     data: balanceData,
@@ -467,6 +469,12 @@ const avgMonthlyNet = computed(() => {
 // Recompute chart when data changes
 watch([incomes, expenses], () => {
   chartData.value = setChartData();
+});
+
+watch(locale, () => {
+  setMenuTitle();
+  chartData.value = setChartData();
+  chartOptions.value = setChartOptions();
 });
 </script>
 <style scoped>

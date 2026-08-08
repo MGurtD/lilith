@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { useMenusStore } from "./menus";
-import { useProfilesStore } from "./profiles";
-import type { MenuItemNode } from "../types/menuitem";
+import { useMenusStore } from "@/modules/system/store/menus";
+import { useProfilesStore } from "@/modules/system/store/profiles";
+import type { MenuItemNode } from "@/modules/system/types/menuitem";
 
 interface RowItem {
   id: string;

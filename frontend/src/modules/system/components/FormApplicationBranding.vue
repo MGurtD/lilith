@@ -4,7 +4,7 @@
       <Button
         v-if="canEdit"
         type="submit"
-        label="Guardar"
+        :label="t('branding.saveButton')"
         icon="pi pi-save"
         :loading="saving"
       />
@@ -13,13 +13,13 @@
     <div class="two-columns">
       <BaseInput
         v-model="brandName"
-        label="Nom comercial"
+        :label="t('branding.form.brandName')"
         id="application-brand-name"
         :disabled="!canEdit || saving"
         :class="{ 'p-invalid': validation.errors.brandName }"
       />
       <fieldset class="branding-palette-field" :disabled="!canEdit || saving">
-        <legend>Paleta de color</legend>
+        <legend>{{ t('branding.form.palette') }}</legend>
         <div class="branding-palette-options">
           <label
             v-for="option in BRANDING_PALETTE_OPTIONS"
@@ -45,12 +45,12 @@
     </div>
 
     <Message v-if="!canEdit" severity="info" class="mt-3">
-      No tens permisos per modificar el Branding.
+      {{ t('branding.noPermission') }}
     </Message>
 
     <div class="branding-logos mt-4">
       <div class="branding-logo-card">
-        <label class="block text-900 mb-2">Logotip principal</label>
+        <label class="block text-900 mb-2">{{ t('branding.logos.main.label') }}</label>
         <img
           v-if="brandingStore.hasMainLogo"
           :src="brandingStore.mainLogoUrl"
@@ -58,23 +58,23 @@
           class="branding-preview"
         />
         <div v-else class="branding-preview branding-preview--empty">
-          No hi ha cap logotip principal configurat
+          {{ t('branding.logos.main.empty') }}
         </div>
         <div class="branding-logo-actions">
           <FileUpload
             mode="basic"
             custom-upload
             auto
-            choose-label="Seleccionar"
+            :choose-label="t('branding.logos.select')"
             accept="image/png,image/jpeg,image/webp"
             :max-file-size="2 * 1024 * 1024"
-            invalid-file-size-message="El logotip no pot superar els 2 MB"
+            :invalid-file-size-message="t('branding.logos.fileSizeError')"
             :choose-button-props="{ loading: processingSlot === 'main' }"
             :disabled="!canEdit || processingSlot !== null"
             @select="uploadLogo('main', $event)"
           />
           <Button
-            label="Eliminar"
+            :label="t('branding.logos.delete')"
             severity="secondary"
             text
             :disabled="!canEdit || processingSlot !== null || !brandingStore.hasMainLogo"
@@ -84,7 +84,7 @@
       </div>
 
       <div class="branding-logo-card">
-        <label class="block text-900 mb-2">Logotip de la barra lateral</label>
+        <label class="block text-900 mb-2">{{ t('branding.logos.sidebar.label') }}</label>
         <img
           v-if="brandingStore.hasSidebarLogo"
           :src="brandingStore.sidebarLogoUrl"
@@ -92,23 +92,23 @@
           class="branding-preview branding-preview--dark"
         />
         <div v-else class="branding-preview branding-preview--dark branding-preview--empty">
-          No hi ha cap logotip de barra lateral configurat
+          {{ t('branding.logos.sidebar.empty') }}
         </div>
         <div class="branding-logo-actions">
           <FileUpload
             mode="basic"
             custom-upload
             auto
-            choose-label="Seleccionar"
+            :choose-label="t('branding.logos.select')"
             accept="image/png,image/jpeg,image/webp"
             :max-file-size="2 * 1024 * 1024"
-            invalid-file-size-message="El logotip no pot superar els 2 MB"
+            :invalid-file-size-message="t('branding.logos.fileSizeError')"
             :choose-button-props="{ loading: processingSlot === 'sidebar' }"
             :disabled="!canEdit || processingSlot !== null"
             @select="uploadLogo('sidebar', $event)"
           />
           <Button
-            label="Eliminar"
+            :label="t('branding.logos.delete')"
             severity="secondary"
             text
             :disabled="!canEdit || processingSlot !== null || !brandingStore.hasSidebarLogo"
@@ -124,6 +124,7 @@
 import { ref } from "vue";
 import { isAxiosError } from "axios";
 import * as Yup from "yup";
+import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import FileUpload from "primevue/fileupload";
 import type { FileUploadSelectEvent } from "primevue/fileupload";
@@ -140,6 +141,7 @@ import { FormValidation, FormValidationResult } from "@/utils/form-validator";
 
 const props = defineProps<{ canEdit: boolean }>();
 
+const { t } = useI18n();
 const toast = useToast();
 const brandingStore = useBrandingStore();
 const brandName = ref(brandingStore.brandName);
@@ -150,14 +152,14 @@ const processingSlot = ref<BrandingLogoSlot | null>(null);
 const schema = Yup.object({
   brandName: Yup.string()
     .nullable()
-    .max(60, "El nom comercial no pot superar els 60 caràcters"),
+    .max(60, () => t("branding.validation.brandNameMax")),
 });
 const validation = ref({ result: false, errors: {} } as FormValidationResult);
 
 const errorMessage = (error: unknown): string =>
   isAxiosError(error) && error.response?.status === 403
-    ? "No tens permisos per modificar el Branding."
-    : "No s'ha pogut actualitzar el Branding.";
+    ? t("branding.toasts.noPermission")
+    : t("branding.toasts.error");
 
 const saveBranding = async () => {
   validation.value = new FormValidation(schema).validate({
@@ -174,7 +176,7 @@ const saveBranding = async () => {
     await brandingStore.initialize();
     brandName.value = brandingStore.brandName;
     primaryColor.value = brandingStore.primaryColor;
-    toast.add({ severity: "success", summary: "Branding actualitzat correctament", life: 5000 });
+    toast.add({ severity: "success", summary: t("branding.toasts.updated"), life: 5000 });
   } catch (error: unknown) {
     toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
   } finally {
@@ -187,7 +189,7 @@ const uploadLogo = async (slot: BrandingLogoSlot, event: FileUploadSelectEvent) 
   if (!file || !props.canEdit) return;
 
   if (file.size > 2 * 1024 * 1024) {
-    toast.add({ severity: "warn", summary: "El logotip no pot superar els 2 MB", life: 5000 });
+    toast.add({ severity: "warn", summary: t("branding.logos.fileSizeError"), life: 5000 });
     return;
   }
 
@@ -195,7 +197,7 @@ const uploadLogo = async (slot: BrandingLogoSlot, event: FileUploadSelectEvent) 
   try {
     await brandingService.uploadCurrentLogo(slot, file);
     await brandingStore.initialize();
-    toast.add({ severity: "success", summary: "Logotip actualitzat correctament", life: 5000 });
+    toast.add({ severity: "success", summary: t("branding.toasts.logoUpdated"), life: 5000 });
   } catch (error: unknown) {
     toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
   } finally {
@@ -210,7 +212,7 @@ const removeLogo = async (slot: BrandingLogoSlot) => {
   try {
     await brandingService.removeCurrentLogo(slot);
     await brandingStore.initialize();
-    toast.add({ severity: "success", summary: "Logotip eliminat correctament", life: 5000 });
+    toast.add({ severity: "success", summary: t("branding.toasts.logoDeleted"), life: 5000 });
   } catch (error: unknown) {
     toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
   } finally {

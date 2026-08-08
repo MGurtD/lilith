@@ -2,7 +2,6 @@
 name: backend
 description: Especialista en backend .NET 10 Clean Architecture de Lilith ERP. Úsame cuando necesites (1) añadir entidades, servicios o endpoints, (2) trabajar con migraciones EF Core, (3) implementar lógica de negocio en servicios, (4) configurar localización multilingual, (5) resolver errores de build o runtime en el backend, (6) orquestar cambios que afectan solo al backend.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
 temperature: 0.2
 tools:
   write: true

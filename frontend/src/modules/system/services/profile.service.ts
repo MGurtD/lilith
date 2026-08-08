@@ -5,7 +5,7 @@ import {
   CreateProfileRequest,
   UpdateProfileRequest,
   ProfileMenuAssignmentRequest,
-} from "@/types/profile";
+} from "@/modules/system/types/profile";
 import { Profile } from "@/types";
 
 export class ProfileService extends BaseService<any> {

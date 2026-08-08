@@ -2,11 +2,11 @@ import { defineStore } from "pinia";
 import { AuthenticationResponse, User } from "../types";
 import { MenuItem, SidebarConfig } from "../types/component";
 import { jwtDecode } from "jwt-decode";
-import { UserService } from "../services/user.service";
+import { UserService } from "../modules/system/services/user.service";
 import { PrimeIcons } from "@primevue/core/api";
 import { getMenusByRole } from "./raw.menus"; // fallback
-import { AppProfileService } from "../services/profile.service";
-import { UserMenuResponse, MenuNode } from "../types/profile";
+import { AppProfileService } from "../modules/system/services/profile.service";
+import { UserMenuResponse, MenuNode } from "../modules/system/types/profile";
 import { Exercise } from "../modules/shared/types";
 import { useUserFilterStore } from "./userfilter";
 import { useExerciseStore } from "../modules/shared/store/exercise";

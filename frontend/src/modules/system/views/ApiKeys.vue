@@ -2,12 +2,12 @@
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "@/store";
-import { useApiKeysStore } from "@/store/apiKeys";
+import { useApiKeysStore } from "@/modules/system/store/apiKeys";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
-import { getNewUuid } from "../utils/functions";
-import FormApiKey from "@/components/forms/FormApiKey.vue";
+import { getNewUuid } from "@/utils/functions";
+import FormApiKey from "@/modules/system/components/FormApiKey.vue";
 import type { CreateApiKeyResponse } from "@/types";
 
 const { t } = useI18n();

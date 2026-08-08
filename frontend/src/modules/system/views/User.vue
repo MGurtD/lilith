@@ -11,16 +11,18 @@
 import { onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useRoute, useRouter } from "vue-router";
-import { useStore } from "../store";
+import { useI18n } from "vue-i18n";
+import { useStore } from "@/store";
 import { useToast } from "primevue/usetoast";
-import { Role } from "../services/authentications.service";
-import { AuthenticationService, ChangePasswordRequest } from "../services/authentications.service";
-import { UserService } from "../services/user.service";
-import { RoleService } from "../services/role.service";
-import { Profile, User } from "../types";
-import { AppProfileService } from "../services/profile.service";
-import FormUser from "../components/forms/FormUser.vue";
+import { Role } from "@/services/authentications.service";
+import { AuthenticationService, ChangePasswordRequest } from "@/services/authentications.service";
+import { UserService } from "@/modules/system/services/user.service";
+import { RoleService } from "@/services/role.service";
+import { Profile, User } from "@/types";
+import { AppProfileService } from "@/modules/system/services/profile.service";
+import FormUser from "@/modules/system/components/FormUser.vue";
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
@@ -39,7 +41,7 @@ const loadView = async () => {
   if (user.value) {
     store.setMenuItem({
       icon: PrimeIcons.USER,
-      title: `Usuari ${user.value.username}`,
+      title: t("userView.pageTitle", { username: user.value.username }),
       backButtonVisible: true,
     });
   }
@@ -52,13 +54,12 @@ onMounted(async () => {
 const toast = useToast();
 const submitForm = async () => {
   const data = user.value as User;
-  const message = "Usuari actualizat correctament";
 
   const updated = await service.Update(data);
   if (updated) {
     toast.add({
       severity: "success",
-      summary: message,
+      summary: t("userView.toasts.updated"),
       life: 5000,
     });
     router.back();
@@ -72,15 +73,15 @@ const changePassword = async (request: ChangePasswordRequest) => {
   if (changed) {
     toast.add({
       severity: "success",
-      summary: "Canvi de contrasenya",
-      detail: "Contrasenya actualitzada",
+      summary: t("userView.toasts.passwordChangedSummary"),
+      detail: t("userView.toasts.passwordChanged"),
       life: 10000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Canvi de contrasenya",
-      detail: "Error al actualitzar contrasenya",
+      summary: t("userView.toasts.passwordChangedSummary"),
+      detail: t("userView.toasts.passwordError"),
       life: 10000,
     });
   }

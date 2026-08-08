@@ -4,7 +4,7 @@ import type {
   MenuItemFlat,
   MenuItemNode,
   UpdateMenuItemRequest,
-} from "@/types/menuitem";
+} from "@/modules/system/types/menuitem";
 
 const baseUrl = "/MenuItem";
 

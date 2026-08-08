@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useStore } from "../store";
-import { useProfilesStore } from "../store/profiles";
+import { useStore } from "@/store";
+import { useProfilesStore } from "@/modules/system/store/profiles";
 import { PrimeIcons } from "@primevue/core/api";
 import { useI18n } from "vue-i18n";
-import FormProfile from "../components/forms/FormProfile.vue";
-import ProfileMenuAssignment from "../components/ProfileMenuAssignment.vue";
+import FormProfile from "@/modules/system/components/FormProfile.vue";
+import ProfileMenuAssignment from "@/modules/system/components/ProfileMenuAssignment.vue";
 import { useToast } from "primevue/usetoast";
-import type { ProfileDetail } from "../types/profile";
+import type { ProfileDetail } from "@/modules/system/types/profile";
 
 const { t } = useI18n();
 const route = useRoute();

@@ -107,7 +107,7 @@ import BaseInput from "@/components/BaseInput.vue";
 import { BaseInputType } from "@/types/component";
 import { FormValidation, FormValidationResult } from "@/utils/form-validator";
 import type { Language, Profile, Role } from "@/types";
-import type { CreateManagedUserRequest } from "@/services/user.service";
+import type { CreateManagedUserRequest } from "@/modules/system/services/user.service";
 
 const props = defineProps<{
   roles: Role[];

@@ -3,14 +3,14 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="$t('shared.statuses.form.name')"
         v-model="status.name"
         :class="{
           'p-invalid': validation.errors.baseAmount,
         }"
       ></BaseInput>
       <div class="mb-4">
-        <label class="block text-900 mb-2">Color</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statuses.form.color') }}</label>
         <Select
           v-model="status.color"
           :options="colors"
@@ -23,20 +23,20 @@
         />
       </div>
       <div class="mb-4">
-        <label class="block text-900 mb-2">Deshabilitat</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statuses.form.disabled') }}</label>
         <Checkbox v-model="status.disabled" :binary="true" />
       </div>
     </section>
 
     <section v-if="availableTags.length > 0">
       <div class="mb-4">
-        <label class="block text-900 mb-2">Etiquetes</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statuses.form.tags') }}</label>
         <MultiSelect
           v-model="selectedTagIds"
           :options="availableTags"
           optionValue="id"
           optionLabel="name"
-          placeholder="Selecciona etiquetes"
+          :placeholder="$t('shared.statuses.form.tagsPlaceholder')"
           class="w-full"
           display="chip"
         >
@@ -64,7 +64,7 @@
         v-if="status.lifecycleTags && status.lifecycleTags.length > 0"
         class="mb-4"
       >
-        <label class="block text-900 mb-2">Etiquetes assignades</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statuses.form.assignedTags') }}</label>
         <div class="flex gap-2 flex-wrap">
           <Tag
             v-for="tag in status.lifecycleTags"
@@ -78,12 +78,13 @@
       </div>
     </section>
 
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
+    <Button :label="$t('shared.statuses.form.confirm')" @click="submitForm" style="float: right" />
   </form>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { Status, LifecycleTag } from "../types";
 import * as Yup from "yup";
 import {
@@ -94,6 +95,7 @@ import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
 import SharedServices from "../services";
 
+const { t } = useI18n();
 const toast = useToast();
 
 const props = defineProps<{
@@ -174,7 +176,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

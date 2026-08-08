@@ -1,14 +1,14 @@
 <template>
   <main class="container">
-    <Button label="Guardar" class="grid_add_row_button" @click="submitForm" />
+    <Button :label="$t('shared.lifecycle.save')" class="grid_add_row_button" @click="submitForm" />
     <section class="section_lifecycle mt-5">
       <FormLifecycle v-if="lifecycle" :lifecycle="lifecycle" />
     </section>
 
     <Tabs v-if="formMode === FormActionMode.EDIT && lifecycle" value="0">
       <TabList>
-        <Tab value="0">Estats i Transicions</Tab>
-        <Tab value="1">Etiquetes</Tab>
+        <Tab value="0">{{ $t('shared.lifecycle.tabStatesTransitions') }}</Tab>
+        <Tab value="1">{{ $t('shared.lifecycle.tabTags') }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -108,6 +108,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import TableStatuses from "../components/TableStatuses.vue";
 import TableStatusTransitions from "../components/TableStatusTransitions.vue";
 import TableLifecycleTags from "../components/TableLifecycleTags.vue";
@@ -135,6 +136,7 @@ const auxiliarFormAction = ref(FormActionMode.CREATE);
 const selectedStatus = ref(undefined as Status | undefined);
 const selectedStatusTransition = ref(undefined as StatusTransition | undefined);
 const selectedTag = ref(undefined as LifecycleTag | undefined);
+const { t } = useI18n();
 
 const dialogOptions = reactive({
   visible: false,
@@ -152,10 +154,10 @@ const loadView = async () => {
   if (!lifecycle.value) {
     formMode.value = FormActionMode.CREATE;
     lifecycleStore.setNew(route.params.id as string);
-    pageTitle = "Alta cicle de vida";
+    pageTitle = t("shared.lifecycle.messages.newTitle");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Cicle de vida ${lifecycle.value.name}`;
+    pageTitle = t("shared.lifecycle.messages.editTitle", { name: lifecycle.value.name });
   }
 
   store.setMenuItem({
@@ -178,7 +180,7 @@ const openStatus = (action: FormActionMode, status: Status) => {
   selectedTag.value = undefined;
 
   dialogOptions.visible = true;
-  dialogOptions.title = "Introducció d'estats";
+  dialogOptions.title = t("shared.lifecycle.dialogAddStatus");
 };
 
 const deleteStatus = async (status: Status) => {
@@ -188,8 +190,8 @@ const deleteStatus = async (status: Status) => {
   if (exist) {
     toast.add({
       severity: "warn",
-      summary: "Estat dependent",
-      detail: `L'estat ${status.name} forma part d'una transició`,
+      summary: t("shared.lifecycle.messages.dependentStatus"),
+      detail: t("shared.lifecycle.messages.dependentStatusDetail", { name: status.name }),
       life: 5000,
     });
     return;
@@ -240,7 +242,7 @@ const openStatusTransition = (
   selectedTag.value = undefined;
 
   dialogOptions.visible = true;
-  dialogOptions.title = "Introducció de transicions";
+  dialogOptions.title = t("shared.lifecycle.dialogAddTransition");
 };
 
 const deleteStatusTransition = async (transition: StatusTransition) =>
@@ -273,7 +275,7 @@ const openTag = (action: FormActionMode, tag: LifecycleTag) => {
 
   dialogOptions.visible = true;
   dialogOptions.title =
-    action === FormActionMode.CREATE ? "Nova etiqueta" : "Editar etiqueta";
+    action === FormActionMode.CREATE ? t("shared.lifecycle.dialogNewTag") : t("shared.lifecycle.dialogEditTag");
 };
 
 const deleteTag = async (tag: LifecycleTag) => {
@@ -281,7 +283,7 @@ const deleteTag = async (tag: LifecycleTag) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Etiqueta eliminada correctament",
+      summary: t("shared.lifecycle.messages.tagDeleted"),
       life: 4000,
     });
     await loadView();
@@ -299,7 +301,7 @@ const onTagSubmit = async (tag: LifecycleTag) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Etiqueta desada correctament",
+      summary: t("shared.lifecycle.messages.tagSaved"),
       life: 4000,
     });
     dialogOptions.visible = false;
@@ -317,10 +319,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await lifecycleStore.create(data);
-    message = "Cicle de vida creat correctament";
+    message = t("shared.lifecycle.messages.created");
   } else {
     result = await lifecycleStore.update(data.id, data);
-    message = "Cicle de vida actualizat correctament";
+    message = t("shared.lifecycle.messages.updated");
   }
 
   if (result) {

@@ -2,16 +2,16 @@
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import type { MenuItemFlat } from "../types/menuitem";
+import type { MenuItemFlat } from "@/modules/system/types/menuitem";
 import {
   getMenuItem,
   createMenuItem,
   updateMenuItem,
-} from "../services/menuitem.service";
-import FormMenuItem from "../components/forms/FormMenuItem.vue";
+} from "@/modules/system/services/menuitem.service";
+import FormMenuItem from "@/modules/system/components/FormMenuItem.vue";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
-import { useStore } from "../store";
+import { useStore } from "@/store";
 
 const route = useRoute();
 const router = useRouter();

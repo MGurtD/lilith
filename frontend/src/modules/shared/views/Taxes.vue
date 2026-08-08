@@ -8,7 +8,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Impostos</span>
+        <span class="text-900 font-bold">{{ $t('shared.taxes.title') }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -17,18 +17,18 @@
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 30%"></Column>
+    <Column field="name" :header="$t('shared.taxes.columns.name')" style="width: 30%"></Column>
     <Column
       field="percentatge"
-      header="% Percentatge"
+      :header="$t('shared.taxes.columns.percentage')"
       style="width: 25%"
     ></Column>
-    <Column header="Inversió subjecte passiu" style="width: 25%">
+    <Column :header="$t('shared.taxes.columns.reverseCharge')" style="width: 25%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isReverseCharge" :showColor="false" />
       </template>
     </Column>
-    <Column header="Desactivada" style="width: 15%">
+    <Column :header="$t('shared.taxes.columns.disabled')" style="width: 15%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
       </template>
@@ -48,6 +48,7 @@
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
@@ -62,11 +63,12 @@ const store = useStore();
 const taxStore = useTaxesStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
 
 const refreshMenu = () => {
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
-    title: "Gestió d'impostos",
+    title: t("shared.taxes.menuTitle"),
   });
 };
 
@@ -109,7 +111,7 @@ const edit = (row: DataTableRowClickEvent) => {
 const deleteTax = (event: any, tax: Tax) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar l'impost?`,
+    message: t("shared.taxes.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -118,13 +120,13 @@ const deleteTax = (event: any, tax: Tax) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("shared.taxes.messages.deleted"),
           life: 3000,
         });
       } else {
         toast.add({
           severity: "error",
-          summary: "No s'ha pogut eliminar l'impost",
+          summary: t("shared.taxes.messages.deleteError"),
           life: 4000,
         });
       }

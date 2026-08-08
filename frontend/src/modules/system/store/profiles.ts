@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
-import { AppProfileService } from "../services/profile.service";
-import type { Profile } from "../types";
+import { AppProfileService } from "@/modules/system/services/profile.service";
+import type { Profile } from "@/types";
 import type {
   ProfileDetail,
   ProfileMenuAssignmentRequest,
   CreateProfileRequest,
   UpdateProfileRequest,
-} from "../types/profile";
+} from "@/modules/system/types/profile";
 
 interface State {
   items: Profile[];

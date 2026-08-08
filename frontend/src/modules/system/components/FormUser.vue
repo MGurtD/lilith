@@ -77,7 +77,7 @@
         :type="BaseInputType.PASSWORD"
         id="currentPassword"
         class="mb-2 w-full"
-        label="Contrasenya actual"
+        :label="$t('forms.user.currentPasswordLabel') as string"
         v-model="currentPassword"
       ></BaseInput>
       <BaseInput
@@ -139,17 +139,17 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useStore } from "../../store";
+import { useStore } from "@/store";
 import * as Yup from "yup";
 import {
   FormValidation,
   FormValidationResult,
-} from "../../utils/form-validator";
+} from "@/utils/form-validator";
 import { useToast } from "primevue/usetoast";
-import { BaseInputType } from "../../types/component";
-import { UserLogin, ChangePasswordRequest } from "../../services/authentications.service";
-import { User, Role, Profile } from "../../types";
-import LanguageSwitcher from "../LanguageSwitcher.vue";
+import { BaseInputType } from "@/types/component";
+import { UserLogin, ChangePasswordRequest } from "@/services/authentications.service";
+import { User, Role, Profile } from "@/types";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 
 const { t } = useI18n();
 const appStore = useStore();
@@ -225,7 +225,7 @@ const changePassword = () => {
   if (!currentPassword.value || currentPassword.value.length < 1) {
     toast.add({
       severity: "warn",
-      summary: "Has d'introduir la contrasenya actual",
+      summary: t("forms.user.toasts.currentPasswordRequired"),
     });
     return;
   }

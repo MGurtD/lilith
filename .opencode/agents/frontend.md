@@ -2,7 +2,6 @@
 name: frontend
 description: Especialista en frontend Vue 3 + TypeScript de Lilith ERP. Úsame cuando necesites (1) añadir vistas, componentes o stores para una entidad, (2) implementar CRUD con PrimeVue DataTable y formularios, (3) crear o extender servicios de API, (4) añadir rutas con lazy loading, (5) resolver errores de TypeScript o problemas de estado, (6) orquestar cambios que afectan solo al frontend.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
 temperature: 0.2
 tools:
   write: true

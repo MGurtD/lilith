@@ -80,19 +80,19 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { UserService } from "../services/user.service";
-import { useStore } from "../store";
+import { UserService } from "@/modules/system/services/user.service";
+import { useStore } from "@/store";
 import { PrimeIcons } from "@primevue/core/api";
-import BooleanColumn from "../components/tables/BooleanColumn.vue";
+import BooleanColumn from "@/components/tables/BooleanColumn.vue";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { User, Profile, Role, Language } from "../types";
-import { AppProfileService } from "../services/profile.service";
+import { User, Profile, Role, Language } from "@/types";
+import { AppProfileService } from "@/modules/system/services/profile.service";
 import { RoleService } from "@/services/role.service";
 import LanguageService from "@/services/language.service";
-import CreateUserForm from "@/components/forms/CreateUserForm.vue";
+import CreateUserForm from "@/modules/system/components/CreateUserForm.vue";
 import { useToast } from "primevue/usetoast";
-import type { CreateManagedUserRequest } from "@/services/user.service";
+import type { CreateManagedUserRequest } from "@/modules/system/services/user.service";
 
 const { t } = useI18n();
 

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { useStore } from "../store";
-import { useProfilesStore } from "../store/profiles";
+import { useStore } from "@/store";
+import { useProfilesStore } from "@/modules/system/store/profiles";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import { getNewUuid } from "../utils/functions";
+import { getNewUuid } from "@/utils/functions";
 
 const { t } = useI18n();
 const router = useRouter();
