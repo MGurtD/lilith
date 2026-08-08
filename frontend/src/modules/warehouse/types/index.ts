@@ -22,16 +22,25 @@ export interface LocationTypeOption {
   label: string;
 }
 
-export const LOCATION_TYPE_OPTIONS: LocationTypeOption[] = [
-  { value: "Supply", label: "Subministrament" },
-  { value: "Receiving", label: "Recepció" },
-  { value: "Shipping", label: "Expedició" },
-  { value: "Storage", label: "Emmagatzematge" },
-];
+type Translate = (key: string) => string;
 
-export const getLocationTypeLabel = (value: string | null | undefined): string => {
+const LOCATION_TYPE_KEYS: Record<string, string> = {
+  Supply: "warehouse.locationTypes.supply",
+  Receiving: "warehouse.locationTypes.receiving",
+  Shipping: "warehouse.locationTypes.shipping",
+  Storage: "warehouse.locationTypes.storage",
+};
+
+export const getLocationTypeOptions = (t: Translate): LocationTypeOption[] =>
+  Object.entries(LOCATION_TYPE_KEYS).map(([value, key]) => ({ value, label: t(key) }));
+
+export const getLocationTypeLabel = (
+  value: string | null | undefined,
+  t: Translate,
+): string => {
   if (!value) return "";
-  return LOCATION_TYPE_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
+  const key = LOCATION_TYPE_KEYS[value];
+  return key ? t(key) : value;
 };
 
 export interface Stock {

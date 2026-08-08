@@ -3,7 +3,7 @@
     <section class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('warehouse.fields.name')"
         id="name"
         v-model="location.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('common.description')"
         id="description"
         v-model="location.description"
         :class="{
@@ -22,25 +22,25 @@
     </section>
     <section class="two-columns mt-3">
       <div>
-        <label class="block text-900 mb-2">Tipologia</label>
+        <label class="block text-900 mb-2">{{ t("warehouse.fields.locationType") }}</label>
         <Select
           v-model="location.locationType"
           :options="locationTypeOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Sense tipus"
+          :placeholder="t('warehouse.placeholders.noLocationType')"
           class="w-full"
           showClear
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivada</label>
+        <label class="block text-900 mb-2">{{ t("warehouse.fields.disabled") }}</label>
         <Checkbox v-model="location.disabled" class="w-full" :binary="true" />
       </div>
     </section>
     <div class="pt-4">
       <Button
-        label="Guardar"
+        :label="t('common.save')"
         size="small"
         style="float: right"
         @click="submitForm"
@@ -50,9 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
-import { Location, LocationTypeOption, LOCATION_TYPE_OPTIONS } from "../types";
+import { Location, LocationTypeOption, getLocationTypeOptions } from "../types";
 import * as Yup from "yup";
 import {
   FormValidation,
@@ -61,6 +62,7 @@ import {
 import { useToast } from "primevue/usetoast";
 
 const toast = useToast();
+const { t } = useI18n();
 
 const props = defineProps<{
   location: Location;
@@ -71,23 +73,23 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const locationTypeOptions: LocationTypeOption[] = LOCATION_TYPE_OPTIONS;
+const locationTypeOptions = computed<LocationTypeOption[]>(() => getLocationTypeOptions(t));
 
-const schema = Yup.object().shape({
+const schema = computed(() => Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("warehouse.validation.nameRequired"))
+    .max(250, t("warehouse.validation.nameMaxLength")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-});
+    .required(t("warehouse.validation.descriptionRequired"))
+    .max(250, t("warehouse.validation.descriptionMaxLength")),
+}));
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
 const validate = () => {
-  const formValidation = new FormValidation(schema);
+  const formValidation = new FormValidation(schema.value);
   validation.value = formValidation.validate(props.location);
 };
 
@@ -102,7 +104,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("warehouse.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });
