@@ -1,80 +1,33 @@
 ---
 name: translate-frontend-view
-description: Translate a complete Lilith Vue 3 frontend screen with the existing Vue i18n, Pinia language, and PrimeVue locale utilities. Use when converting hardcoded user-facing text in a requested view and its screen-owned child components to Catalan, Spanish, and English; completing a partially localized screen; replacing literal translation fallbacks; or validating that a screen changes language consistently without altering backend localization resources.
+description: Translate a complete Lilith Vue screen to ca/es/en. Use when replacing hardcoded user-facing text, completing a partially localized view, fixing literal translation fallbacks, or validating reactive language changes in a view and its owned children.
+compatibility: OpenCode with frontend dependencies installed by pnpm.
 ---
 
-# Translate Frontend View
+# Translate A Frontend Screen
 
-Translate the complete visible screen, not only the named `.vue` file. Preserve unrelated work and do not broaden the change to a whole module unless the user asks.
+Translate the visible screen boundary, not only the named file. Preserve unrelated work and do not broaden to shared components without validating every consumer.
 
-## 1. Establish the boundary
+## Workflow
 
-1. Resolve the repository root and inspect `git status --short` before editing.
-2. Follow the repository CodeGraph instructions: locate the route, requested view, imported components, and callers before filesystem-wide searches. If graph results conflict, verify the concrete route and import declarations with targeted source reads and treat current source as authoritative.
-3. Include components owned exclusively by the screen when they render its labels, dialogs, tables, or messages.
-4. Exclude shared components unless the same translation is correct for every consumer. Record excluded shared components in the completion summary when they leave visible debt.
+1. Read `frontend/AGENTS.md`, inspect worktree status, and resolve route, view, and screen-owned children.
+2. Load `audit-frontend-localization` and capture a scoped baseline.
+3. Inventory template labels, visible props, toasts, confirmations, validation, titles, menus, and accessible names.
+4. Exclude identifiers, routes, CSS, payload values, business data, and persisted lifecycle/status values.
+5. Reuse a key only when meaning matches. Otherwise extend the current feature namespace with semantic names.
+6. Add each key to `ca.ts`, `es.ts`, and `en.ts` with identical placeholders. Catalan is the source; Spanish and English must be natural translations.
+7. Use `t(...)` in touched script/template code and interpolation for dynamic values.
+8. Keep translations reactive with direct template calls or computed values. Do not store a one-time translated title when locale changes must update it.
+9. Let the PrimeVue locale handle built-in component text.
+10. Run the scoped strict audit again and manually resolve or explain every remaining hardcoded-text warning.
 
-## 2. Inventory user-facing text
+## Verify
 
-Inspect template text and visible props such as `label`, `header`, `placeholder`, `title`, `aria-label`, `tooltip`, and empty-state messages. Inspect script values used by:
+From `frontend/` run:
 
-- Toasts and global toasts.
-- Confirmation prompts.
-- Dialog and menu titles.
-- Client-side validation.
-- Computed labels and dynamic messages.
-- Existing accessible names for icon-only controls. If an icon-only action has no accessible name, add a localized aria-label or tooltip without changing its behavior.
+```bash
+pnpm run i18n:check
+pnpm run typecheck
+```
 
-Do not translate identifiers, routes, URLs, CSS values, API payload fields, business data, file names, or lifecycle/status values stored in the database.
-
-Run the audit skill over every file in scope before editing to capture the baseline. Use JSON when the scope is a directory or the text report is truncated; review every finding, not only the printed subset:
-
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --scope <view> --scope <owned-child>
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --format json --scope <directory-or-view> --scope <owned-child>
-
-The auditor is heuristic and `--strict` fails only for localization errors, not hardcoded-text warnings. Independently inspect each scoped view and its script for literal strings used by toasts, confirmations, dialog/page titles, validation, and menu metadata. Do not mark the translation complete while any user-facing hardcoded warning or manually found literal remains. Code or syntax examples may remain literal only when documented in the completion report.
-
-## 3. Design keys
-
-1. Reuse a `common.*` key only when wording and meaning match exactly in every context.
-2. Extend the existing feature namespace when one exists.
-3. Otherwise create a lowerCamel namespace from the view name, for example `phaseTemplates`.
-4. Group keys by behavior when useful: `title`, `filters`, `columns`, `actions`, `dialogs`, `messages`, and `validation`.
-5. Prefer stable semantic names such as `actions.create`; do not encode Catalan wording or component position in a key.
-6. Keep frontend keys separate from backend JSON localization keys. The systems share only the culture code and `Accept-Language` contract.
-
-## 4. Apply translations
-
-1. Add every new key in the same logical location in:
-   - `frontend/src/i18n/ca.ts`
-   - `frontend/src/i18n/es.ts`
-   - `frontend/src/i18n/en.ts`
-2. Use Catalan as the functional source and produce natural Spanish and English translations.
-3. Preserve the same named placeholders in all locales. Prefer named Vue i18n placeholders such as `{name}`.
-4. In newly touched `<script setup>` code, import `useI18n` and declare `const { t } = useI18n()`.
-5. Use `t(...)` from both script and template for new replacements. Do not mechanically rewrite existing `$t(...)` outside touched code.
-6. Pass dynamic values through interpolation, for example `t("orders.messages.deleted", { number })`.
-7. Remove literal `||` or `??` fallbacks only when the referenced key is added to all locales.
-8. Keep translated values reactive when the locale changes. Prefer direct template bindings or computed translation values; for titles persisted into stores, update them from a locale-aware watcher instead of storing a one-time translation result.
-9. Let `applyPrimeVueLocale` translate PrimeVue built-ins; do not duplicate PrimeVue locale strings in application dictionaries.
-10. Preserve UTF-8, BOM state, and existing newlines. Never broadly recode locale files to fix an isolated string.
-
-## 5. Validate and report
-
-Run strict validation over the complete screen boundary, then inspect the complete JSON report. `--strict` passing is necessary but does not prove that hardcoded UI text has been removed:
-
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --strict --scope <view> --scope <owned-child>
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs --format json --scope <view> --scope <owned-child>
-
-Then run:
-
-    cd frontend
-    pnpm run typecheck
-
-Finally:
-
-1. Review `git diff` and confirm all new keys exist in `ca`, `es`, and `en`.
-2. Verify interpolation and placeholders in each locale.
-3. Distinguish new findings from pre-existing global localization debt.
-4. Summarize the translated screen, owned children, reused/new namespaces, validation results, and every remaining hardcoded-text warning with its reason. Never describe a result as fully localized if unresolved user-facing literal warnings remain.
-5. Do not commit, push, launch the runtime, or modify backend localization unless explicitly requested.
+Report the translated boundary, namespaces, validation results, and justified remaining warnings. Do not claim complete localization while unresolved user-facing literals remain.

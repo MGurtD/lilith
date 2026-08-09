@@ -3,7 +3,7 @@
     <div class="table-filter__content">
       <div class="table-filter__row table-filter__row--main">
         <div v-if="showTitle" class="table-filter__title">
-          <span v-if="showTitle" class="table-filter__title-text">Filtres</span>
+          <span v-if="showTitle" class="table-filter__title-text">{{ t("tables.filters.title") }}</span>
         </div>
 
         <div
@@ -36,7 +36,7 @@
               :options="field.options"
               :optionLabel="field.optionLabel || 'label'"
               :optionValue="field.optionValue || 'value'"
-              :placeholder="field.placeholder || 'Selecciona...'"
+              :placeholder="field.placeholder || t('tables.filters.selectPlaceholder')"
               class="w-full"
               size="small"
               showClear
@@ -80,7 +80,7 @@
               :options="field.options"
               :optionLabel="field.optionLabel || 'label'"
               :optionValue="field.optionValue || 'value'"
-              :placeholder="field.placeholder || 'Selecciona...'"
+              :placeholder="field.placeholder || t('tables.filters.selectPlaceholder')"
               :display="field.display || 'chip'"
               :maxSelectedLabels="field.maxSelectedLabels ?? 3"
               :filter="field.filter ?? true"
@@ -96,25 +96,25 @@
           <slot name="action-prepend"></slot>
           <Button
             v-if="showFilterAction"
-            :label="showActionLabels ? 'Filtrar' : undefined"
+            :label="showActionLabels ? t('tables.filters.apply') : undefined"
             icon="pi pi-filter"
             @click="$emit('filter')"
             class="p-button-primary"
             size="small"
             rounded
-            aria-label="Filtrar"
-            v-tooltip.top="'Filtrar'"
+            :aria-label="t('tables.filters.apply')"
+            v-tooltip.top="t('tables.filters.apply')"
           />
           <Button
             v-if="hasFilters"
-            :label="showActionLabels ? 'Netejar' : undefined"
+            :label="showActionLabels ? t('tables.filters.clear') : undefined"
             icon="pi pi-filter-slash"
             @click="$emit('clear')"
             class="p-button-secondary p-button-outlined"
             size="small"
             rounded
-            aria-label="Netejar"
-            v-tooltip.top="'Netejar filtres'"
+            :aria-label="t('tables.filters.clear')"
+            v-tooltip.top="t('tables.filters.clearTooltip')"
           />
           <div
             v-if="showCreate"
@@ -122,14 +122,14 @@
           ></div>
           <Button
             v-if="showCreate"
-            :label="showActionLabels ? 'Nou' : undefined"
+            :label="showActionLabels ? t('tables.filters.create') : undefined"
             icon="pi pi-plus"
             @click="$emit('create')"
             class="p-button-success"
             size="small"
             rounded
-            aria-label="Nou"
-            v-tooltip.top="'Crear nou'"
+            :aria-label="t('tables.filters.create')"
+            v-tooltip.top="t('tables.filters.createTooltip')"
           />
           <slot name="append"></slot>
         </div>
@@ -228,8 +228,10 @@
 
 <script setup lang="ts">
 import { PropType, computed, CSSProperties, useSlots } from "vue";
+import { useI18n } from "vue-i18n";
 
 const slots = useSlots();
+const { t } = useI18n();
 
 export interface FilterConfig {
   key: string;

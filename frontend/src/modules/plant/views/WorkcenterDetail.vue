@@ -15,25 +15,25 @@
               <Tab value="0">
                 <div class="flex align-items-center gap-2">
                   <i :class="PrimeIcons.CALENDAR"></i>
-                  <span class="font-bold">Fases disponibles</span>
+                  <span class="font-bold">{{ $t("plant.fases-disponibles") }}</span>
                 </div>
               </Tab>
               <Tab v-if="hasLoadedPhase" value="1">
                 <div class="flex align-items-center gap-2">
                   <i :class="PrimeIcons.FILE"></i>
-                  <span class="font-bold">Documentació</span>
+                  <span class="font-bold">{{ $t("plant.documentacio") }}</span>
                 </div>
               </Tab>
               <Tab v-if="hasLoadedPhase" value="2">
                 <div class="flex align-items-center gap-2">
                   <i :class="PrimeIcons.COMMENTS"></i>
-                  <span class="font-bold">Comentaris</span>
+                  <span class="font-bold">{{ $t("plant.comentaris") }}</span>
                 </div>
               </Tab>
               <Tab v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
                 <div class="flex align-items-center gap-2">
                   <i :class="PrimeIcons.BOX"></i>
-                  <span class="font-bold">Materials</span>
+                  <span class="font-bold">{{ $t("plant.materials") }}</span>
                 </div>
               </Tab>
             </TabList>
@@ -72,12 +72,12 @@
     <footer class="touch-panel">
       <!-- Operator Group -->
       <div class="action-group operator-group">
-        <span class="group-label">Operari</span>
+        <span class="group-label">{{ $t("plant.operari") }}</span>
         <div class="group-buttons">
           <Button
             v-if="!isOperatorClockedIn"
             :icon="PrimeIcons.SIGN_IN"
-            label="Entrar"
+            :label='$t("plant.entrar")'
             severity="primary"
             class="touch-button"
             :disabled="!canManageOperators"
@@ -86,7 +86,7 @@
           <Button
             v-else
             :icon="PrimeIcons.SIGN_OUT"
-            label="Sortir"
+            :label='$t("plant.sortir")'
             severity="primary"
             class="touch-button"
             :disabled="!canManageOperators"
@@ -97,7 +97,7 @@
 
       <!-- Machine Status Group (always visible, dynamic buttons only when phase loaded) -->
       <div class="action-group activity-group">
-        <span class="group-label">Estat màquina</span>
+        <span class="group-label">{{ $t("plant.estat-maquina") }}</span>
         <div class="group-buttons">
           <!-- Dynamic activity buttons from phase details (only when phase loaded) -->
           <template v-if="hasLoadedPhase">
@@ -130,7 +130,7 @@
           <!-- Other statuses - always visible -->
           <Button
             :icon="PrimeIcons.PLUS"
-            label="Altres"
+            :label='$t("plant.altres")'
             severity="primary"
             class="touch-button"
             @click="handleMachineStatusChange"
@@ -140,11 +140,11 @@
 
       <!-- Phase Group (only if phase is loaded) -->
       <div class="action-group phase-group">
-        <span class="group-label">Fase</span>
+        <span class="group-label">{{ $t("plant.fase") }}</span>
         <div class="group-buttons">
           <Button
             :icon="PrimeIcons.PLUS"
-            label="Afegir qtt."
+            :label='$t("plant.afegir-qtt")'
             severity="primary"
             class="touch-button"
             @click="phaseQuantitiesVisible = true"
@@ -152,7 +152,7 @@
           />
           <Button
             :icon="PrimeIcons.CHECK_CIRCLE"
-            label="Finalitzar"
+            :label='$t("plant.finalitzar")'
             severity="primary"
             class="touch-button"
             @click="handleWorkOrderPhaseClose"
@@ -208,6 +208,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
@@ -240,6 +241,8 @@ import {
 } from "../types";
 import actionsService from "../services/actions.service";
 import { normalizeColor, isColorLight } from "@/utils/functions";
+
+const { t } = useI18n();
 
 const route = useRoute();
 const toast = useToast();
@@ -374,7 +377,7 @@ onMounted(async () => {
   if (!workcenter.value) {
     toast.add({
       severity: "error",
-      summary: "Centre de treball no trobat",
+      summary: t("plant.centre-de-treball-no-trobat"),
       life: 4000,
     });
     return;
@@ -431,13 +434,13 @@ const handleOperatorClockIn = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Entrada registrada correctament",
+      summary: t("plant.entrada-registrada-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al registrar l'entrada",
+      summary: t("plant.messages.operatorClockInError"),
       life: 4000,
     });
   }
@@ -448,13 +451,13 @@ const handleOperatorClockOut = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Sortida registrada correctament",
+      summary: t("plant.sortida-registrada-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al registrar la sortida",
+      summary: t("plant.error-al-registrar-la-sortida"),
       life: 4000,
     });
   }
@@ -469,7 +472,7 @@ const handleCloseMachine = async () => {
   if (!closedStatus.value) {
     toast.add({
       severity: "error",
-      summary: "No s'ha trobat l'estat de màquina tancada",
+      summary: t("plant.messages.closedMachineStatusNotFound"),
       life: 4000,
     });
     return;
@@ -484,7 +487,7 @@ const handleCloseMachine = async () => {
     if (!loadedWorkOrder) {
       toast.add({
         severity: "error",
-        summary: "No s'han pogut carregar les dades de l'ordre",
+        summary: t("plant.messages.workOrderDataLoadError"),
         life: 4000,
       });
       return;
@@ -497,7 +500,7 @@ const handleCloseMachine = async () => {
     if (!currentPhase) {
       toast.add({
         severity: "error",
-        summary: "No s'ha pogut trobar la fase actual",
+        summary: t("plant.messages.currentPhaseNotFound"),
         life: 4000,
       });
       return;
@@ -527,13 +530,13 @@ const handleCloseMachine = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Màquina tancada correctament",
+      summary: t("plant.maquina-tancada-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al tancar la màquina",
+      summary: t("plant.error-al-tancar-la-maquina"),
       life: 4000,
     });
   }
@@ -545,13 +548,13 @@ const handleActivityChange = async (statusId: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Activitat canviada correctament",
+      summary: t("plant.activitat-canviada-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al canviar l'activitat",
+      summary: t("plant.messages.activityChangeError"),
       life: 4000,
     });
   }
@@ -566,13 +569,13 @@ const onStatusChanged = async (request: ChangeMachineStatusRequest) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Estat canviat correctament",
+      summary: t("plant.estat-canviat-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al canviar l'estat",
+      summary: t("plant.messages.statusChangeError"),
       life: 4000,
     });
   }
@@ -612,15 +615,15 @@ const handlePhaseDetailSelected = async (data: {
     }
     toast.add({
       severity: "success",
-      summary: "Fase de fabricació carregada",
-      detail: "L'activitat s'ha carregat correctament al centre de treball",
+      summary: t("plant.fase-de-fabricacio-carregada"),
+      detail: t("plant.messages.activityLoaded"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al carregar la fase",
-      detail: "No s'ha pogut carregar l'activitat",
+      summary: t("plant.error-al-carregar-la-fase"),
+      detail: t("plant.messages.activityLoadError"),
       life: 4000,
     });
   }
@@ -642,7 +645,7 @@ const handleWorkOrderPhaseClose = async () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "No hi ha cap fase carregada",
+      summary: t("plant.no-hi-ha-cap-fase-carregada"),
       life: 4000,
     });
     return;
@@ -655,7 +658,7 @@ const handleWorkOrderPhaseClose = async () => {
   if (!loadedWorkOrder) {
     toast.add({
       severity: "error",
-      summary: "No s'han pogut carregar les dades de l'ordre",
+      summary: t("plant.messages.workOrderDataLoadError"),
       life: 4000,
     });
     return;
@@ -669,7 +672,7 @@ const handleWorkOrderPhaseClose = async () => {
   if (!currentPhase) {
     toast.add({
       severity: "error",
-      summary: "No s'ha pogut trobar la fase actual",
+      summary: t("plant.messages.currentPhaseNotFound"),
       life: 4000,
     });
     return;
@@ -707,13 +710,13 @@ const handlePhaseUnloaded = async (data: UnloadWorkOrderPhaseRequest) => {
     }
     toast.add({
       severity: "success",
-      summary: "Fase finalitzada correctament",
+      summary: t("plant.fase-finalitzada-correctament"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al finalitzar la fase",
+      summary: t("plant.error-al-finalitzar-la-fase"),
       life: 4000,
     });
   }

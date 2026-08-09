@@ -93,11 +93,7 @@ function propertyName(node, ts) {
 
 function scalarValue(node, ts) {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
-  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
-  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
-  if (node.kind === ts.SyntaxKind.NullKeyword) return null;
-  if (ts.isNumericLiteral(node)) return Number(node.text);
-  throw new Error("Unsupported localization value");
+  throw new Error("Localization values must be strings");
 }
 
 function parseObjectLiteral(node, ts, sourceFile, prefix, flattened, errors) {
@@ -199,12 +195,21 @@ function scanSourceFile(filePath) {
     warnings.push(finding("warning", "LITERAL_TRANSLATION_FALLBACK", "Translation call uses a literal fallback", filePath, lineAt(source, match.index), undefined, match[2].replace(/\s+/g, " ").trim()));
   }
 
+  const propertyRegex = new RegExp("\\b(" + VISIBLE_SCRIPT_PROPERTIES.join("|") + ")\\s*:\\s*([\"'\\x60])([^\"'\\x60\\r\\n]+)\\2", "g");
+  for (const match of source.matchAll(propertyRegex)) {
+    const value = match[3].trim();
+    if (shouldIgnoreVisibleText(value)) continue;
+    warnings.push(finding("warning", "HARD_CODED_UI_TEXT", "Possible hardcoded user-facing property: " + match[1], filePath, lineAt(source, match.index), undefined, value));
+  }
+
   if (path.extname(filePath) !== ".vue") return { usages, warnings };
   const templateStart = source.match(/<template(?:\s[^>]*)?>/i);
   const templateEnd = source.lastIndexOf("</template>");
   if (templateStart && templateEnd > templateStart.index) {
     const templateOffset = templateStart.index + templateStart[0].length;
-    const templateText = source.slice(templateOffset, templateEnd).replace(/<!--[\s\S]*?-->/g, "");
+    const templateText = source
+      .slice(templateOffset, templateEnd)
+      .replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\r\n]/g, " "));
     const textRegex = />([^<>{}]+)</g;
     for (const match of templateText.matchAll(textRegex)) {
       const value = match[1].replace(/\s+/g, " ").trim();
@@ -221,12 +226,6 @@ function scanSourceFile(filePath) {
     }
   }
 
-  const propertyRegex = new RegExp("\\b(" + VISIBLE_SCRIPT_PROPERTIES.join("|") + ")\\s*:\\s*([\"'\\x60])([^\"'\\x60\\r\\n]+)\\2", "g");
-  for (const match of source.matchAll(propertyRegex)) {
-    const value = match[3].trim();
-    if (shouldIgnoreVisibleText(value)) continue;
-    warnings.push(finding("warning", "HARD_CODED_UI_TEXT", "Possible hardcoded user-facing property: " + match[1], filePath, lineAt(source, match.index), undefined, value));
-  }
   return { usages, warnings };
 }
 

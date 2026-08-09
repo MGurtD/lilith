@@ -23,7 +23,7 @@
           </div>
           <div class="flex flex-column">
             <span class="font-bold text-lg text-900"
-              >Afegir quantitat</span
+              >{{ $t("plant.afegir-quantitat") }}</span
             >
             <span class="text-sm text-500">{{
               loadedPhase?.phaseDescription
@@ -33,7 +33,7 @@
         <div class="flex gap-4 flex-wrap">
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Ordre</span
+              >{{ $t("plant.ordre") }}</span
             >
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.workOrderCode
@@ -41,7 +41,7 @@
           </div>
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Ref.</span
+              >{{ $t("plant.ref-2") }}</span
             >
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.salesReferenceDisplay
@@ -49,7 +49,7 @@
           </div>
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Quantitat</span
+              >{{ $t("plant.quantitat") }}</span
             >
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.plannedQuantity
@@ -73,7 +73,7 @@
       <div class="actions-panel">
         <Button
           :icon="PrimeIcons.TIMES"
-          label="Cancel·lar"
+          :label='$t("plant.cancel-lar")'
           severity="secondary"
           @click="onCancel"
           :disabled="isSubmitting"
@@ -81,7 +81,7 @@
         />
         <Button
           :icon="PrimeIcons.CHECK"
-          label="Afegir"
+          :label='$t("plant.afegir")'
           severity="primary"
           :disabled="isSubmitting || !hasQuantity"
           :loading="isSubmitting"
@@ -94,11 +94,14 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { watch, computed, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
+
+const { t } = useI18n();
 
 interface Props {
   visible: boolean;
@@ -168,7 +171,7 @@ const onSubmit = async () => {
     if (!validation.valid) {
       toast.add({
         severity: "warn",
-        summary: "Validaci\u00f3 de quantitat",
+        summary: t("plant.validaci-u00f3-de-quantitat"),
         detail: validation.error,
         life: 6000,
       });
@@ -184,7 +187,7 @@ const onSubmit = async () => {
     if (result) {
       toast.add({
         severity: "success",
-        summary: "Quantitat afegida correctament",
+        summary: t("plant.quantitat-afegida-correctament"),
         life: 4000,
       });
       emit("quantities-updated");
@@ -192,7 +195,7 @@ const onSubmit = async () => {
     } else {
       toast.add({
         severity: "error",
-        summary: "Error al afegir la quantitat",
+        summary: t("plant.error-al-afegir-la-quantitat"),
         life: 4000,
       });
     }

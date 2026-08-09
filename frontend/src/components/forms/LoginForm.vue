@@ -8,6 +8,7 @@ import InputText from "primevue/inputtext";
 import Button from "primevue/button";
 import { useBrandingStore } from "@/store/branding";
 import { DEFAULT_MAIN_LOGO } from "@/config/branding";
+import { useI18n } from "vue-i18n";
 
 const emits = defineEmits(["login", "registerClick"]);
 const brandingStore = useBrandingStore();
@@ -22,6 +23,7 @@ const userLogin = ref({
 } as UserLogin);
 
 const toast = useToast();
+const { t } = useI18n();
 const login = () => {
   if (
     userLogin.value.username.length === 0 ||
@@ -29,8 +31,8 @@ const login = () => {
   ) {
     toast.add({
       severity: "error",
-      summary: "Login incorrecte",
-      detail: "El nom d'usuari i la contrasenya són obligatoris",
+      summary: t("login.invalid"),
+      detail: t("login.credentialsRequired"),
     });
     return;
   }
@@ -72,9 +74,7 @@ const registerClick = () => {
             class="form-input"
             v-model="userLogin.username"
             @keyup.enter="login"
-            :placeholder="
-              $t('login.usernamePlaceholder') || 'Introdueix el teu usuari'
-            "
+            :placeholder="$t('login.usernamePlaceholder')"
           />
         </InputGroup>
       </div>
@@ -93,10 +93,7 @@ const registerClick = () => {
             class="form-input"
             v-model="userLogin.password"
             @keyup.enter="login"
-            :placeholder="
-              $t('login.passwordPlaceholder') ||
-              'Introdueix la teva contrasenya'
-            "
+            :placeholder="$t('login.passwordPlaceholder')"
           />
         </InputGroup>
       </div>
@@ -111,10 +108,10 @@ const registerClick = () => {
 
       <!--<div class="text-center">
         <span class="text-600">{{
-          $t("login.noAccount") || "No tens compte?"
+           $t("login.noAccount")
         }}</span>
         <Button
-          :label="$t('login.createAccount') || 'Crear compte'"
+           :label="$t('login.createAccount')"
           link
           class="register-link p-0 ml-2"
           @click="registerClick"

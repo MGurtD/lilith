@@ -12,21 +12,21 @@
       @row-select="onRowSelect"
     >
       <!-- Code -->
-      <Column field="workOrderCode" header="Codi">
+      <Column field="workOrderCode" :header='$t("plant.codi")'>
         <template #body="slotProps">
           <span class="font-bold">{{ slotProps.data.workOrderCode }}</span>
         </template>
       </Column>
 
       <!-- Customer Name -->
-      <Column field="customerName" header="Client">
+      <Column field="customerName" :header='$t("plant.client")'>
         <template #body="slotProps">
           <span>{{ slotProps.data.customerName }}</span>
         </template>
       </Column>
 
       <!-- Reference -->
-      <Column field="salesReferenceDisplay" header="Referència">
+      <Column field="salesReferenceDisplay" :header='$t("plant.referencia")'>
         <template #body="slotProps">
           <span
             class="reference-text"
@@ -40,13 +40,13 @@
       <!-- Quantity -->
       <Column
         field="plannedQuantity"
-        header="Quantitat"
+        :header='$t("plant.quantitat")'
         :sortable="true"
         style="min-width: 100px; text-align: right"
       />
 
       <!-- Planned Date -->
-      <Column header="Planificada">
+      <Column :header='$t("plant.planificada")'>
         <template #body="slotProps">
           <span v-if="slotProps.data.plannedDate">
             {{ formatDate(slotProps.data.plannedDate) }}
@@ -55,7 +55,7 @@
       </Column>
 
       <!-- Start Time -->
-      <Column header="Iniciada">
+      <Column :header='$t("plant.iniciada")'>
         <template #body="slotProps">
           <span v-if="slotProps.data.startTime">
             {{ formatDate(slotProps.data.startTime) }}
@@ -64,7 +64,7 @@
       </Column>
 
       <!-- Work Order Status -->
-      <Column header="Estat">
+      <Column :header='$t("plant.estat")'>
         <template #body="slotProps">
           <Tag
             :value="slotProps.data.workOrderStatus"
@@ -77,17 +77,14 @@
       <!-- Priority -->
       <Column
         field="priority"
-        header="Prioritat"
+        :header='$t("plant.prioritat")'
         style="min-width: 100px; text-align: center"
       />
 
       <template #empty>
         <div class="no-data">
           <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-          <p>
-            No s'han trobat ordres de fabricació planificades per aquest tipus
-            de màquina
-          </p>
+          <p>{{ $t("plant.no-s-han-trobat-ordres-de-fabricacio-planificades-per-aquest-tipus-de-maquina") }}</p>
         </div>
       </template>
     </DataTable>

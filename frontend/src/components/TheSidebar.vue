@@ -29,7 +29,7 @@
     <template #footer>
       <div class="sidebar-footer">
         <Button
-          :label="store.sidebar.collapsed ? '' : 'Sol·licitud de suport'"
+          :label="store.sidebar.collapsed ? '' : $t('support.request')"
           icon="pi pi-question-circle"
           severity="secondary"
           text
@@ -42,7 +42,7 @@
 
   <Dialog
     v-model:visible="showSupportDialog"
-    header="Sol·licitud de suport"
+    :header="$t('support.request')"
     :modal="true"
     :style="{ width: '480px' }"
     @hide="showSupportDialog = false"

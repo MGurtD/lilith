@@ -1,54 +1,51 @@
 ---
 name: audit-frontend-localization
-description: Audit Lilith frontend localization without changing source files. Use when checking Vue i18n key parity across Catalan, Spanish, and English; finding missing static translation references, placeholder mismatches, literal translation fallbacks, unused keys, or likely hardcoded user-facing text; validating a translated view and its owned child components; or producing a global localization-debt report.
+description: Audit Lilith frontend localization without editing source. Use when checking ca/es/en parity, placeholders, missing static keys, literal fallbacks, unused keys, or hardcoded user-facing text globally or for a Vue screen boundary.
+compatibility: OpenCode with frontend dependencies installed by pnpm.
 ---
 
 # Audit Frontend Localization
 
-Audit first and report evidence. Do not edit application files unless the user separately asks for fixes.
+This workflow is read-only. Report evidence; do not fix findings unless the user separately requests changes.
 
-## Run the audit
+## Run
 
-Run from the repository root:
+From the repository root:
 
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.mjs
+```bash
+node frontend/scripts/audit-i18n.mjs --strict
+node frontend/scripts/audit-i18n.mjs --scope frontend/src/path --strict
+node frontend/scripts/audit-i18n.mjs --scope frontend/src/path --format json
+```
 
-Options:
+Repeat `--scope` for a view and each screen-owned child. Default scope is `frontend/src`. Exit code `1` means strict localization errors; `2` means invalid arguments or execution failure. Warnings do not fail strict mode.
 
-- `--scope <file-or-directory>`: limit source scanning; repeat for a view and each owned child component. Default: `frontend/src`.
-- `--format text|json`: select human-readable or machine-readable output. Default: `text`.
-- `--strict`: exit with code `1` when localization errors exist. Warnings never fail strict mode.
-- `--repo-root <path>`: override repository discovery, primarily for fixtures and isolated validation.
+## Classify
 
-Exit codes: `0` for a completed report, `1` for strict-mode localization errors, and `2` for invalid arguments or execution failures.
+Errors:
 
-## Interpret findings
+- A key is missing from any of `ca`, `es`, or `en`.
+- Placeholders differ between locales.
+- A static translation reference has no dictionary key.
+- A locale dictionary has duplicate, unsupported, or non-string values.
 
-Treat these as errors:
+Warnings requiring review:
 
-- A key is not present in every one of `ca.ts`, `es.ts`, and `en.ts`.
-- The named or positional placeholders for the same key differ by locale.
-- A statically referenced `t(...)`, `$t(...)`, or `i18n.global.t(...)` key is missing.
-- A locale dictionary contains a duplicate or unsupported property shape.
+- Literal translation fallback.
+- Likely hardcoded template text, visible attribute, toast, dialog, or message property.
+- Globally unused static key; dynamic key construction can be a false positive.
 
-Treat these as warnings requiring human review:
+Do not classify identifiers, routes, URLs, CSS values, API payloads, business data, file names, or persisted lifecycle/status values as UI translations.
 
-- A translation call falls back to a literal with `||` or `??`.
-- Template text, a visible component attribute, or a toast/dialog property appears hardcoded.
-- A global audit finds a key with no static reference. Dynamic key construction can make this a false positive.
+## Screen Audit
 
-Do not classify domain data, identifiers, routes, URLs, CSS values, status values persisted in the database, or API payload values as UI translations.
+1. Resolve the route, view, and screen-owned children.
+2. Run a baseline audit over the complete boundary.
+3. Review every warning manually; use JSON if text output is truncated.
+4. Report findings by severity with file and line, distinguishing scoped findings from global debt.
 
-## Validate a translated screen
+After changing the auditor itself, run from `frontend/`:
 
-1. Resolve the screen boundary before auditing: include the requested view and its screen-owned children, but not unrelated shared components.
-2. Pass one `--scope` for every file or common owning directory.
-3. Run with `--strict --format text`.
-4. Review hardcoded-text warnings manually; heuristics deliberately prefer false positives over missed visible text.
-5. Run `pnpm run typecheck` from `frontend/` after the localization audit passes.
-
-## Maintain the auditor
-
-Run its deterministic tests after changing the script:
-
-    node .opencode/skills/audit-frontend-localization/scripts/audit-i18n.test.mjs
+```bash
+pnpm run i18n:audit:test
+```

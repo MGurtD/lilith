@@ -5,14 +5,14 @@ import path from "node:path";
 import test from "node:test";
 import { runAudit } from "./audit-i18n.mjs";
 
-const TYPESCRIPT_SOURCE = path.resolve("frontend", "node_modules", "typescript");
+const TYPESCRIPT_SOURCE = path.resolve("node_modules", "typescript");
 
 function localeSource(locale, entries) {
   const lines = Object.entries(entries).map(([key, value]) => "    " + key + ": " + JSON.stringify(value) + ",");
   return "const " + locale + " = { screen: {\n" + lines.join("\n") + "\n  } };\nexport default " + locale + ";\n";
 }
 
-function createFixture({ locales, view }) {
+function createFixture({ locales, view, script }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lilith-i18n-audit-"));
   const i18n = path.join(root, "frontend", "src", "i18n");
   const views = path.join(root, "frontend", "src", "views");
@@ -22,6 +22,7 @@ function createFixture({ locales, view }) {
     fs.writeFileSync(path.join(i18n, locale + ".ts"), localeSource(locale, locales[locale]), "utf8");
   }
   fs.writeFileSync(path.join(views, "Fixture.vue"), view, "utf8");
+  if (script) fs.writeFileSync(path.join(views, "fixture.ts"), script, "utf8");
   return root;
 }
 
@@ -30,7 +31,9 @@ function auditFixture(configuration) {
   try {
     return runAudit({
       repoRoot: root,
-      scopes: ["frontend/src/views/Fixture.vue"],
+      scopes: configuration.script
+        ? ["frontend/src/views"]
+        : ["frontend/src/views/Fixture.vue"],
       typescriptPath: TYPESCRIPT_SOURCE,
     });
   } finally {
@@ -93,4 +96,22 @@ test("scans attributes after nested Vue templates", () => {
   const values = report.warnings.filter((item) => item.code === "HARD_CODED_UI_TEXT").map((item) => item.value);
   assert.ok(values.includes("Interior"));
   assert.ok(values.includes("Exterior"));
+});
+
+test("scans hardcoded user-facing properties in TypeScript files", () => {
+  const report = auditFixture({
+    locales: validLocales,
+    view: "<template><span>{{ $t('screen.title') }}</span></template>",
+    script: "toast.add({ summary: 'No s ha pogut desar' });",
+  });
+  assert.ok(report.warnings.some((item) => item.file.endsWith("fixture.ts") && item.code === "HARD_CODED_UI_TEXT"));
+});
+
+test("preserves source line numbers when template comments are removed", () => {
+  const report = auditFixture({
+    locales: validLocales,
+    view: "<template>\n<!-- comment\ncontinued -->\n<Button label=\"Guardar\" />\n</template>",
+  });
+  const warning = report.warnings.find((item) => item.value === "Guardar");
+  assert.equal(warning.line, 4);
 });

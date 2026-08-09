@@ -3,10 +3,8 @@
     <!-- Empty state when no comments exist -->
     <div v-if="!hasAnyComments" class="empty-state">
       <i :class="PrimeIcons.COMMENTS" class="empty-icon"></i>
-      <p class="empty-text">Sense comentaris</p>
-      <span class="empty-subtext">
-        No hi ha comentaris a l'ordre de treball, fase o detalls de fase.
-      </span>
+      <p class="empty-text">{{ $t("plant.sense-comentaris") }}</p>
+      <span class="empty-subtext">{{ $t("plant.no-hi-ha-comentaris-a-l-ordre-de-treball-fase-o-detalls-de-fase") }}</span>
     </div>
 
     <!-- Comments content when at least one comment exists -->
@@ -16,7 +14,7 @@
         <template #title>
           <div class="card-header">
             <i :class="PrimeIcons.BOX" class="header-icon"></i>
-            <span>Ordre de Treball</span>
+            <span>{{ $t("plant.ordre-de-treball") }}</span>
             <Tag severity="info" :value="workOrderCode" class="code-tag" />
           </div>
         </template>
@@ -30,12 +28,12 @@
         <template #title>
           <div class="card-header">
             <i :class="PrimeIcons.COG" class="header-icon"></i>
-            <span>Fase</span>
+            <span>{{ $t("plant.fase") }}</span>
             <Tag severity="success" :value="phaseDisplay" class="code-tag" />
             <Button
               v-if="currentPhase"
               :icon="PrimeIcons.PENCIL"
-              label="Editar"
+              :label='$t("plant.editar")'
               size="small"
               text
               class="edit-button"
@@ -45,9 +43,7 @@
         </template>
         <template #content>
           <p v-if="phaseComment" class="comment-text">{{ phaseComment }}</p>
-          <p v-else class="empty-comment-text">
-            Aquesta fase no té cap comentari. Fes clic a "Editar" per afegir-ne un.
-          </p>
+          <p v-else class="empty-comment-text">{{ $t("plant.aquesta-fase-no-te-cap-comentari-fes-clic-a-editar-per-afegir-ne-un") }}</p>
         </template>
       </Card>
 
@@ -56,7 +52,7 @@
         <template #title>
           <div class="card-header">
             <i :class="PrimeIcons.LIST" class="header-icon"></i>
-            <span>Detalls de Fase</span>
+            <span>{{ $t("plant.detalls-de-fase") }}</span>
             <Badge :value="detailComments.length" severity="secondary" />
           </div>
         </template>

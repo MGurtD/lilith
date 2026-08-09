@@ -9,6 +9,7 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { formatDate } from "@/utils/functions";
 import { hydrateFilter } from "@/utils/filter-hydrate";
+import { useI18n } from "vue-i18n";
 
 
 const props = defineProps<{
@@ -47,6 +48,7 @@ const emit = defineEmits<{
 
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
 const store = useStore();
 const viewStore = useUserTableViewStore();
 
@@ -436,8 +438,8 @@ async function saveView() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista existent per actualitzar",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectExistingToUpdate"),
       life: 3000,
     });
     return;
@@ -452,8 +454,8 @@ async function saveView() {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Vista actualitzada",
-      detail: "La configuració s'ha desat correctament",
+      summary: t("tables.views.updated"),
+      detail: t("tables.views.updateSuccess"),
       life: 3000,
     });
     emit("apply-config", localColumns.value, selectedViewId.value);
@@ -468,8 +470,8 @@ async function saveAsNewView() {
   if (!newViewName.value.trim()) {
     toast.add({
       severity: "warn",
-      summary: "Nom requerit",
-      detail: "Introdueix un nom per a la nova vista",
+      summary: t("tables.views.nameRequired"),
+      detail: t("tables.views.enterName"),
       life: 3000,
     });
     return;
@@ -501,8 +503,8 @@ async function saveAsNewView() {
 
   toast.add({
     severity: "success",
-    summary: "Vista creada",
-    detail: "La nova vista s'ha creat correctament",
+    summary: t("tables.views.created"),
+    detail: t("tables.views.createSuccess"),
     life: 3000,
   });
   newViewName.value = "";
@@ -513,8 +515,8 @@ function deleteView() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista per eliminar",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectToDelete"),
       life: 3000,
     });
     return;
@@ -524,8 +526,8 @@ function deleteView() {
   const wasActiveInTable = deletedViewId === props.activeViewId;
 
   confirm.require({
-    message: `Està segur que vol eliminar la vista "${selectedView.value.name}"?`,
-    header: "Confirmació",
+    message: t("tables.views.confirmDelete", { name: selectedView.value.name }),
+    header: t("tables.views.confirmation"),
     icon: "pi pi-exclamation-triangle",
     accept: async () => {
       const deleted = await viewStore.delete(deletedViewId);
@@ -533,7 +535,7 @@ function deleteView() {
 
       toast.add({
         severity: "success",
-        summary: "Vista eliminada",
+        summary: t("tables.views.deleted"),
         life: 3000,
       });
 
@@ -576,8 +578,8 @@ async function toggleDefault() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista per establir com per defecte",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectToSetDefault"),
       life: 3000,
     });
     return;
@@ -588,10 +590,12 @@ async function toggleDefault() {
   if (set) {
     toast.add({
       severity: "success",
-      summary: isDefault ? "Vista normal" : "Vista per defecte",
+      summary: isDefault
+        ? t("tables.views.normal")
+        : t("tables.views.default"),
       detail: isDefault
-        ? "La vista ja no és la predeterminada"
-        : "La vista s'ha establert com a per defecte",
+        ? t("tables.views.defaultRemoved")
+        : t("tables.views.defaultSet"),
       life: 3000,
     });
   }
@@ -622,7 +626,7 @@ function buildViewConfig(): string {
   <Dialog
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
-    header="Configuració de la vista"
+    :header="$t('tables.views.configuration')"
     :modal="true"
     :closable="true"
     :style="{ width: '600px' }"
@@ -631,7 +635,7 @@ function buildViewConfig(): string {
     <div class="view-config-content">
       <!-- Top: Current view management -->
       <div v-if="hasSavedViews" class="view-management-section">
-        <label>Vista actual</label>
+        <label>{{ $t("tables.views.current") }}</label>
         <div class="view-management-row">
           <div class="view-selector-wrapper">
             <Select
@@ -639,7 +643,7 @@ function buildViewConfig(): string {
               :options="selectOptions"
               option-label="name"
               option-value="id"
-              placeholder="Selecciona una vista..."
+              :placeholder="$t('tables.views.selectPlaceholder')"
               class="w-full"
               size="small"
             >
@@ -649,7 +653,7 @@ function buildViewConfig(): string {
                   <i
                     v-if="slotProps.option.isDefault"
                     class="pi pi-star-fill default-star"
-                    title="Vista per defecte"
+                    :title="$t('tables.views.default')"
                   />
                 </div>
               </template>
@@ -661,9 +665,9 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              :aria-label="selectedView?.isDefault ? 'Treure de per defecte' : 'Establir com a per defecte'"
+                :aria-label="selectedView?.isDefault ? $t('tables.views.removeDefault') : $t('tables.views.setDefault')"
               @click="toggleDefault"
-              v-tooltip.top="selectedView?.isDefault ? 'Treure de per defecte' : 'Establir com a per defecte'"
+                v-tooltip.top="selectedView?.isDefault ? $t('tables.views.removeDefault') : $t('tables.views.setDefault')"
             />
           </div>
           <div class="view-management-actions">
@@ -673,8 +677,8 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              aria-label="Desar canvis"
-              v-tooltip.top="'Desar canvis'"
+              :aria-label="$t('tables.views.saveChanges')"
+              v-tooltip.top="$t('tables.views.saveChanges')"
               @click="saveView"
               :disabled="selectedViewId === ''"
             />
@@ -684,8 +688,8 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              aria-label="Eliminar"
-              v-tooltip.top="'Eliminar'"
+              :aria-label="$t('tables.views.delete')"
+              v-tooltip.top="$t('tables.views.delete')"
               @click="deleteView"
               :disabled="selectedViewId === ''"
             />
@@ -695,7 +699,7 @@ function buildViewConfig(): string {
 
       <!-- Saved filters (read-only, sourced from DB via selectedView.viewConfig) -->
       <div v-if="savedFilterRows.length > 0" class="saved-filters-section">
-        <label>Filtres desats</label>
+        <label>{{ $t("tables.views.savedFilters") }}</label>
         <div class="saved-filters-list">
           <div
             v-for="row in savedFilterRows"
@@ -712,7 +716,7 @@ function buildViewConfig(): string {
 
       <!-- Column configuration list -->
       <div class="field">
-        <label>Configuració de columnes</label>
+        <label>{{ $t("tables.views.columnConfiguration") }}</label>
         <div class="columns-config-list">
           <div
             v-for="(col, index) in localColumns"
@@ -744,7 +748,7 @@ function buildViewConfig(): string {
               :binary="true"
               @update:model-value="toggleTotal(index)"
             />
-            <span v-if="col.total !== undefined" class="total-label">Total</span>
+            <span v-if="col.total !== undefined" class="total-label">{{ $t("tables.views.total") }}</span>
             <!-- Sort toggle -->
             <Button
               :icon="
@@ -760,17 +764,17 @@ function buildViewConfig(): string {
               text
               :aria-label="
                 localSortField !== col.field
-                  ? 'Sense ordenació'
+                  ? $t('tables.views.noSort')
                   : localSortOrder === 1
-                    ? 'Ascendent'
-                    : 'Descendent'
+                    ? $t('tables.views.ascending')
+                    : $t('tables.views.descending')
               "
               v-tooltip.top="
                 localSortField !== col.field
-                  ? 'Sense ordenació'
+                  ? $t('tables.views.noSort')
                   : localSortOrder === 1
-                    ? 'Ascendent'
-                    : 'Descendent'
+                    ? $t('tables.views.ascending')
+                    : $t('tables.views.descending')
               "
               @click.stop="cycleSortForColumn(col.field)"
             />
@@ -780,12 +784,12 @@ function buildViewConfig(): string {
 
       <!-- Bottom: Create new view -->
       <div class="create-view-section">
-        <label>Nova vista</label>
+        <label>{{ $t("tables.views.new") }}</label>
         <div class="create-view-row">
           <InputText
             ref="newViewNameInput"
             v-model="newViewName"
-            placeholder="Nom de la nova vista..."
+            :placeholder="$t('tables.views.newNamePlaceholder')"
             class="w-full"
             size="small"
           />
@@ -795,8 +799,8 @@ function buildViewConfig(): string {
             size="small"
             rounded
             text
-            aria-label="Crear nova vista"
-            v-tooltip.top="'Crear nova vista'"
+            :aria-label="$t('tables.views.createNew')"
+            v-tooltip.top="$t('tables.views.createNew')"
             @click="saveAsNewView"
           />
         </div>

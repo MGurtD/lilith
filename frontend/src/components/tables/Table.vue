@@ -607,8 +607,8 @@ function formatCellValue(col: Column, data: any): string {
             size="small"
             text
             rounded
-            aria-label="Configuració de la vista"
-            v-tooltip.top="'Configuració de la vista'"
+            :aria-label="t('tables.views.configuration')"
+            v-tooltip.top="t('tables.views.configuration')"
             @click="viewConfigVisible = true"
           />
         </template>

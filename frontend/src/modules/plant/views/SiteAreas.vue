@@ -3,7 +3,7 @@
     <!-- Barra de filtros sticky (solo visible cuando hay filtro activo) -->
     <div v-if="showOnlyMyWorkcenters" class="filters-container">
       <Chip
-        label="Els meus centres"
+        :label='$t("plant.els-meus-centres")'
         icon="pi pi-user-check"
         class="filter-chip filter-active"
         removable
@@ -63,8 +63,8 @@
       @click="toggleMyWorkcenters"
       v-tooltip.left="
         showOnlyMyWorkcenters
-          ? 'Veure tots els centres'
-          : 'Veure només els meus centres'
+          ? $t('plant.tooltips.showAllWorkcenters')
+          : $t('plant.tooltips.showMyWorkcenters')
       "
       :badge="myWorkcentersCount > 0 ? String(myWorkcentersCount) : undefined"
       badgeSeverity="success"
@@ -74,6 +74,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   usePlantDataStore,
   usePlantRealtimeStore,
@@ -95,6 +96,7 @@ const STORAGE_KEY = "temges.plant-visible-areas";
 const FILTER_STORAGE_KEY = "temges.plant-filter-my-workcenters";
 
 const store = useStore();
+const { t } = useI18n();
 const dataStore = usePlantDataStore();
 const realtimeStore = usePlantRealtimeStore();
 const operatorStore = usePlantOperatorStore();
@@ -165,7 +167,9 @@ onMounted(async () => {
   // 3. Configurar header
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
-    title: `Àrees de ${dataStore.site?.name || "Planta"}`,
+    title: t("plant.titles.siteAreas", {
+      siteName: dataStore.site?.name || t("plant.titles.plant"),
+    }),
   });
 
   // 4. Connectar WebSocket general i configurar handlers al store
