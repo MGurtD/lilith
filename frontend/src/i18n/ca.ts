@@ -1161,6 +1161,16 @@ const ca = {
       brandName: "Nom comercial",
       palette: "Paleta de color",
     },
+    palette: {
+      black: "Negre",
+      blue: "Blau",
+      indigo: "Indi",
+      emerald: "Maragda",
+      teal: "Turquesa",
+      violet: "Violeta",
+      orange: "Taronja",
+      rose: "Rosa",
+    },
     validation: {
       brandNameMax: "El nom comercial no pot superar els 60 caràcters",
     },

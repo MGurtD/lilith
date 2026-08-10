@@ -38,7 +38,7 @@
               :style="{ backgroundColor: option.swatch }"
               aria-hidden="true"
             ></span>
-            <span>{{ option.label }}</span>
+            <span>{{ t(option.translationKey) }}</span>
           </label>
         </div>
       </fieldset>

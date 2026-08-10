@@ -5,6 +5,7 @@
     :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
+    :show-create="false"
     preset="crud-list"
     page="SalesInvoicesByDates"
     class="small-datatable"

@@ -72,6 +72,7 @@ const props = withDefaults(
     filterValues?: any;
     filterBodyWidth?: FilterBodyWidth;
     showFilters?: boolean;
+    showCreate?: boolean;
     page?: string;
     showDeleteColumn?: boolean;
     canDelete?: (item: any) => boolean;
@@ -91,7 +92,7 @@ const props = withDefaults(
     sortField?: string;
     sortOrder?: number;
   }>(),
-  { showFilters: true, paginator: null, scrollable: null },
+  { showFilters: true, showCreate: true, paginator: null, scrollable: null },
 );
 
 const resolvedDataTableProps = computed(() => {
@@ -587,6 +588,7 @@ function formatCellValue(col: Column, data: any): string {
         :body-width="filterBodyWidth"
         :show-title="false"
         :show-action-labels="false"
+        :show-create="showCreate"
         embedded
         @update:model-value="emit('update:filterValues', $event)"
         @filter="onFilterApplied"

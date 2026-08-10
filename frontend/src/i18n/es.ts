@@ -1105,6 +1105,16 @@ const es = {
       brandName: "Nombre comercial",
       palette: "Paleta de color",
     },
+    palette: {
+      black: "Negro",
+      blue: "Azul",
+      indigo: "Índigo",
+      emerald: "Esmeralda",
+      teal: "Turquesa",
+      violet: "Violeta",
+      orange: "Naranja",
+      rose: "Rosa",
+    },
     validation: {
       brandNameMax: "El nombre comercial no puede superar los 60 caracteres",
     },

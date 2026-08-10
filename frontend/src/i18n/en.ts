@@ -1138,6 +1138,16 @@ const en = {
       brandName: "Brand name",
       palette: "Color palette",
     },
+    palette: {
+      black: "Black",
+      blue: "Blue",
+      indigo: "Indigo",
+      emerald: "Emerald",
+      teal: "Teal",
+      violet: "Violet",
+      orange: "Orange",
+      rose: "Rose",
+    },
     validation: {
       brandNameMax: "Brand name cannot exceed 60 characters",
     },

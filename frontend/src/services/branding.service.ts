@@ -16,17 +16,17 @@ export const DEFAULT_BRANDING_PALETTE: BrandingPalette = "blue";
 
 export const BRANDING_PALETTE_OPTIONS: ReadonlyArray<{
   value: BrandingPalette;
-  label: string;
+  translationKey: string;
   swatch: string;
 }> = [
-  { value: "black", label: "Negre", swatch: "#000000" },
-  { value: "blue", label: "Blau", swatch: "#3B82F6" },
-  { value: "indigo", label: "Indi", swatch: "#6366F1" },
-  { value: "emerald", label: "Maragda", swatch: "#10B981" },
-  { value: "teal", label: "Turquesa", swatch: "#14B8A6" },
-  { value: "violet", label: "Violeta", swatch: "#8B5CF6" },
-  { value: "orange", label: "Taronja", swatch: "#F97316" },
-  { value: "rose", label: "Rosa", swatch: "#F43F5E" },
+  { value: "black", translationKey: "branding.palette.black", swatch: "#000000" },
+  { value: "blue", translationKey: "branding.palette.blue", swatch: "#3B82F6" },
+  { value: "indigo", translationKey: "branding.palette.indigo", swatch: "#6366F1" },
+  { value: "emerald", translationKey: "branding.palette.emerald", swatch: "#10B981" },
+  { value: "teal", translationKey: "branding.palette.teal", swatch: "#14B8A6" },
+  { value: "violet", translationKey: "branding.palette.violet", swatch: "#8B5CF6" },
+  { value: "orange", translationKey: "branding.palette.orange", swatch: "#F97316" },
+  { value: "rose", translationKey: "branding.palette.rose", swatch: "#F43F5E" },
 ];
 
 export const BRANDING_PALETTE_TOKENS: Record<BrandingPalette, string> = {
