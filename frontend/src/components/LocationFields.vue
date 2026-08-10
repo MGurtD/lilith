@@ -2,7 +2,7 @@
   <section class="three-columns mb-2">
     <DropdownCountry
       v-model="model.country"
-      label="País"
+      :label="t('location.country')"
       :class="{
         'p-invalid': validationErrors?.country,
       }"
@@ -23,7 +23,7 @@
 
   <section class="four-columns mb-2">
     <BaseInput
-      label="Direcció"
+      :label="t('location.address')"
       id="location-address"
       v-model="model.address"
       :class="{
@@ -31,7 +31,7 @@
       }"
     ></BaseInput>
     <BaseInput
-      label="Ciutat"
+      :label="t('location.city')"
       id="location-city"
       v-model="model.city"
       :class="{
@@ -39,7 +39,7 @@
       }"
     ></BaseInput>
     <BaseInput
-      label="Província"
+      :label="t('location.region')"
       id="location-region"
       v-model="model.region"
       :class="{
@@ -47,7 +47,7 @@
       }"
     ></BaseInput>
     <BaseInput
-      label="Codi Postal"
+      :label="t('location.postalCode')"
       id="location-postalCode"
       v-model="model.postalCode"
       :class="{

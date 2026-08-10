@@ -3,20 +3,20 @@
     <section class="two-columns">
       <BaseInput
         class="mb-3"
-        label="Nom"
+        :label="$t('shared.lifecycleTags.form.name')"
         v-model="tag.name"
         :class="{ 'p-invalid': validation.errors.name }"
       />
 
       <BaseInput
         class="mb-3"
-        label="Descripció"
+        :label="$t('shared.lifecycleTags.form.description')"
         v-model="tag.description"
         :class="{ 'p-invalid': validation.errors.description }"
       />
 
       <div class="mb-3">
-        <label class="block text-900 mb-2">Color</label>
+        <label class="block text-900 mb-2">{{ $t('shared.lifecycleTags.form.color') }}</label>
         <Select
           v-model="tag.color"
           :options="colors"
@@ -27,24 +27,25 @@
       </div>
 
       <div class="mb-3">
-        <label class="block text-900 mb-2">Icona</label>
+        <label class="block text-900 mb-2">{{ $t('shared.lifecycleTags.form.icon') }}</label>
         <IconPicker v-model="tag.icon" />
       </div>
     </section>
 
     <div class="flex justify-content-end gap-2 mt-4">
       <Button
-        label="Cancel·lar"
+        :label="$t('shared.lifecycleTags.form.cancel')"
         severity="secondary"
         @click="$emit('cancel')"
       />
-      <Button label="Confirmar" @click="submitForm" />
+      <Button :label="$t('shared.lifecycleTags.form.confirm')" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import IconPicker from "../../../components/IconPicker.vue";
 import { LifecycleTag } from "../types";
@@ -56,6 +57,7 @@ import {
 import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
 
+const { t } = useI18n();
 const toast = useToast();
 
 const props = defineProps<{
@@ -99,7 +101,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

@@ -1,7 +1,7 @@
 <template>
   <div>
     <Button
-      label="Guardar"
+      :label="t('purchase.materials.actions.save')"
       class="grid_add_row_button"
       size="small"
       @click="submitForm"
@@ -13,7 +13,7 @@
       <div class="mt-1">
         <BaseInput
           class="mb-2"
-          label="Codi"
+          :label="t('purchase.materials.fields.code')"
           id="code"
           v-model="reference.code"
         ></BaseInput>
@@ -21,14 +21,14 @@
       <div class="mt-1">
         <BaseInput
           class="mb-2"
-          label="Descripció"
+          :label="t('purchase.materials.fields.description')"
           id="description"
           v-model="reference.description"
         ></BaseInput>
       </div>
       <div class="mt-1">
         <DropdownReferenceCategory
-          label="Categoria"
+          :label="t('purchase.materials.fields.category')"
           v-model="reference.categoryName"
           disabled
         />
@@ -62,6 +62,7 @@ import {
 } from "../../../utils/form-validator";
 import { ref } from "vue";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   reference: Reference;
@@ -71,13 +72,14 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const schema = {
   code: Yup.string()
-    .required("El codi és obligatoria")
-    .max(50, "El codi no pot superar els 50 carácters"),
+    .required(t("purchase.materials.validation.codeRequired"))
+    .max(50, t("purchase.materials.validation.codeMaxLength")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
+    .required(t("purchase.materials.validation.descriptionRequired"))
+    .max(250, t("purchase.materials.validation.descriptionMaxLength")),
 };
 
 const validation = ref({
@@ -90,25 +92,27 @@ const validate = () => {
   if (props.reference.categoryName === ReferenceCategoryEnum.MATERIAL) {
     categorySchema = Yup.object().shape({
       ...schema,
-      taxId: Yup.string().required("L'IVA és obligatori"),
+      taxId: Yup.string().required(t("purchase.materials.validation.taxRequired")),
       referenceTypeId: Yup.string().required(
-        "El tipus de referència és obligatori",
+        t("purchase.materials.validation.referenceTypeRequired"),
       ),
-      referenceFormatId: Yup.string().required("El format és obligatori"),
+      referenceFormatId: Yup.string().required(
+        t("purchase.materials.validation.formatRequired"),
+      ),
     });
   } else if (props.reference.categoryName === ReferenceCategoryEnum.SERVICE) {
     categorySchema = Yup.object().shape({
       ...schema,
-      price: Yup.number().required("El preu és obligatori"),
+      price: Yup.number().required(t("purchase.materials.validation.priceRequired")),
       transportAmount: Yup.number().required(
-        "El preu de transport és obligatori",
+        t("purchase.materials.validation.transportPriceRequired"),
       ),
     });
   } else if (props.reference.categoryName === ReferenceCategoryEnum.TOOL) {
     categorySchema = Yup.object().shape({
       ...schema,
-      areaId: Yup.string().required("L'àrea és obligatoria"),
-      taxId: Yup.string().required("L'IVA és obligatori"),
+      areaId: Yup.string().required(t("purchase.materials.validation.areaRequired")),
+      taxId: Yup.string().required(t("purchase.materials.validation.taxRequired")),
     });
   }
 
@@ -127,7 +131,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

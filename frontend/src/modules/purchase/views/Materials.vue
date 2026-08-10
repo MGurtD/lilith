@@ -11,7 +11,7 @@
 import TableMaterials from "../components/TableMaterials.vue";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { Reference } from "../../../modules/shared/types";
 import { useConfirm } from "primevue/useconfirm";
@@ -20,6 +20,7 @@ import { getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../../modules/shared/store/reference";
 import { useTaxesStore } from "../../shared/store/tax";
 import { useReferenceTypeStore } from "../../shared/store/referenceType";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
@@ -28,6 +29,7 @@ const taxesStore = useTaxesStore();
 const referenceTypeStore = useReferenceTypeStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t, locale } = useI18n();
 
 const filter = ref({
   code: "",
@@ -35,17 +37,22 @@ const filter = ref({
   referenceCategory: "",
 });
 
-onMounted(async () => {
-  let title = "Referències de compra";
+const setPageTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.TICKET,
-    title,
+    title: t("purchase.materials.title"),
   });
+};
+
+onMounted(async () => {
+  setPageTitle();
 
   await referenceStore.fetchReferencesByModule("purchase");
   taxesStore.fetchAll();
   referenceTypeStore.fetchAll();
 });
+
+watch(locale, setPageTitle);
 
 const addReference = () => {
   router.push({
@@ -61,7 +68,9 @@ const editReference = (reference: Reference) => {
 
 const deleteReference = (reference: Reference) => {
   confirm.require({
-    message: `Está segur que vol eliminar el material ${reference.description}?`,
+    message: t("purchase.materials.messages.confirmDelete", {
+      name: reference.description,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -77,7 +86,7 @@ const deleteReference = (reference: Reference) => {
       } else {
         toast.add({
           severity: "success",
-          summary: "Material eliminat correctament",
+          summary: t("purchase.materials.messages.deleted"),
           life: 5000,
         });
       }

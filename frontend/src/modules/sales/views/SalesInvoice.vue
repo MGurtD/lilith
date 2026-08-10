@@ -2,7 +2,7 @@
   <div class="button-panel">
     <div class="flex align-items-end justify-content-end">
       <SplitButton
-        label="Guardar"
+        :label="t('sales.detail.actions.save')"
         @click="updateInvoice"
         :model="items"
         :size="'small'"
@@ -20,7 +20,7 @@
             <i class="pi pi-wallet" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Base imposable</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.taxableBase") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.baseAmount)
             }}</span>
@@ -32,7 +32,7 @@
             <i class="pi pi-percentage" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Impostos</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.taxes") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.taxAmount)
             }}</span>
@@ -44,7 +44,7 @@
             <i class="pi pi-calculator" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Total factura</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.invoiceTotal") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.netAmount)
             }}</span>
@@ -59,7 +59,7 @@
             <i class="pi pi-verified" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Verifactu</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.verifactu") }}</span>
             <span
               class="total-card-value"
               :class="getVerifactuStatusClass()"
@@ -78,11 +78,11 @@
       <TabList>
         <Tab value="0">
           <i :class="PrimeIcons.LIST" class="mr-2"></i>
-          <span>Detalls de la factura</span>
+          <span>{{ t("sales.detail.labels.invoiceDetails") }}</span>
         </Tab>
         <Tab v-if="canEditCustomerData" value="1">
           <i :class="PrimeIcons.ID_CARD" class="mr-2"></i>
-          <span>Dades fiscals</span>
+          <span>{{ t("sales.detail.labels.fiscalData") }}</span>
         </Tab>
       </TabList>
       <TabPanels>
@@ -99,18 +99,18 @@
               <div
                 class="flex flex-wrap align-items-center justify-content-between gap-2"
               >
-                <span class="text-900 font-bold">Detall de la factura</span>
+                <span class="text-900 font-bold">{{ t("sales.detail.labels.invoiceDetails") }}</span>
                 <div>
                   <Button
                     :size="'small'"
-                    label="Afegir albarà"
+                    :label="t('sales.detail.actions.createDeliveryNote')"
                     @click="openDeliveryNoteSelector"
                     :disabled="!isEditable"
                   />
-                  &nbsp;&nbsp;
                   <Button
                     :size="'small'"
-                    label="Afegir linia lliure"
+                    :label="t('sales.detail.actions.addLine')"
+                    class="ml-2"
                     @click="openAddDetail"
                     :disabled="!isEditable"
                   />
@@ -285,12 +285,12 @@ import { useSharedDataStore } from "../../shared/store/masterData";
 const items = computed(() => {
   const options = [
     {
-      label: "Descarregar",
+      label: t("sales.detail.actions.download"),
       icon: PrimeIcons.FILE_WORD,
       command: () => printInvoice(),
     },
     {
-      label: "Imprimir PDF",
+      label: t("sales.detail.actions.printPdf"),
       icon: PrimeIcons.FILE_PDF,
       command: () => printInvoicePdf(),
     },
@@ -298,7 +298,7 @@ const items = computed(() => {
 
   if (!invoice.value?.parentSalesInvoiceId) {
     options.push({
-      label: "Rectificativa",
+      label: t("sales.detail.messages.rectificativeInvoice"),
       icon: PrimeIcons.FILE_IMPORT,
       command: () => requestRectificativeQuantity(),
     });
@@ -353,7 +353,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.WALLET,
-    title: `Factura de venta ${invoice.value!.invoiceNumber} - ${
+    title: `${t("sales.invoices.title")} ${invoice.value!.invoiceNumber} - ${
       invoice.value!.customerComercialName
     }`,
     backButtonVisible: true,
@@ -553,8 +553,8 @@ const printInvoice = async () => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pogut generar la factura",
+        summary: t("sales.detail.messages.error"),
+        detail: t("sales.detail.messages.reportError"),
       });
     }
   }
@@ -571,8 +571,8 @@ const printInvoicePdf = async () => {
   } catch {
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "No s'ha pogut generar el PDF de la factura",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.reportError"),
     });
   }
 };
@@ -582,7 +582,7 @@ const openDeliveryNoteSelector = async () => {
     await deliveryNoteStore.GetToInvoice(invoice.value.customerId);
 
     currentDialogType.value = dialogType.FromDeliveryNote;
-    dialogOptions.title = "Selector d'albarans d'entrega";
+    dialogOptions.title = t("sales.detail.dialogs.deliveryNoteSelector");
     dialogOptions.visible = true;
   }
 };
@@ -618,7 +618,7 @@ const openAddDetail = () => {
     const tax = taxesStore.taxes?.find((t) => t.percentatge === 21);
     if (tax) currentInvoiceDetail.taxId = tax.id;
 
-    dialogOptions.title = "Introducció de línea lliure";
+    dialogOptions.title = t("sales.detail.dialogs.freeLine");
     dialogOptions.visible = true;
   }
 };
@@ -642,7 +642,7 @@ const requestRectificativeQuantity = async () => {
   };
 
   dialogOptions.visible = true;
-  dialogOptions.title = "Crear factura rectificativa";
+  dialogOptions.title = t("sales.detail.dialogs.rectificativeInvoice");
   currentDialogType.value = dialogType.Rectificative;
 };
 const createRectificativeInvoice = async () => {
@@ -652,8 +652,8 @@ const createRectificativeInvoice = async () => {
     );
     if (response && response.result && response.content) {
       toast.add({
-        summary: "Factura rectificativa",
-        detail: `Creada correctament amb el número ${response.content.invoiceNumber}`,
+        summary: t("sales.detail.messages.rectificativeInvoice"),
+        detail: t("sales.detail.messages.rectificativeCreated", { number: response.content.invoiceNumber }),
         severity: "success",
         life: 10000,
       });
@@ -661,8 +661,8 @@ const createRectificativeInvoice = async () => {
       router.back();
     } else {
       toast.add({
-        summary: "Factura rectificativa",
-        detail: "Error en la creació de la factura",
+        summary: t("sales.detail.messages.rectificativeInvoice"),
+        detail: t("sales.detail.messages.invoiceCreationError"),
         severity: "error",
         life: 10000,
       });
@@ -677,17 +677,17 @@ const sendToVerifactu = async () => {
     if (response && response.result) {
       toast.add({
         severity: "success",
-        summary: "Enviament a Verifactu",
-        detail: "Factura enviada correctament a Verifactu",
+        summary: t("sales.detail.labels.verifactu"),
+        detail: t("sales.detail.messages.verifactuSent"),
         life: 5000,
       });
       await invoiceStore.GetById(invoiceId.value);
     } else {
       toast.add({
         severity: "error",
-        summary: "Error en l'enviament",
+        summary: t("sales.detail.messages.error"),
         detail:
-          "No s'ha pogut enviar la factura" +
+          t("sales.detail.messages.sendError") +
           (response?.errors && response?.errors.length > 0
             ? `: ${response.errors[0]}`
             : ""),

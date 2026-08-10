@@ -2,10 +2,10 @@
   <form v-if="invoiceDetail">
     <section class="two-columns-7525">
       <div class="mt-2">
-        <BaseInput label="Descripció" v-model="invoiceDetail.description" />
+        <BaseInput :label="t('sales.components.descripcio')" v-model="invoiceDetail.description" />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Impost</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.impost') }}</label>
         <Select
           v-model="invoiceDetail.taxId"
           :options="sharedData.taxes"
@@ -20,7 +20,7 @@
       <div class="mt-2">
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat"
+          :label="t('sales.components.quantitat')"
           v-model="invoiceDetail.quantity"
           @update:model-value="calcAmount"
         />
@@ -28,7 +28,7 @@
       <div class="mt-2">
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu Unitat"
+          :label="t('sales.components.preuUnitat')"
           v-model:model-value="invoiceDetail.unitPrice"
           @update:model-value="calcAmount"
         />
@@ -36,7 +36,7 @@
       <div class="mt-2">
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Total"
+          :label="t('sales.components.total')"
           v-model:model-value="invoiceDetail.amount"
           disabled
         />
@@ -44,7 +44,7 @@
     </section>
 
     <Button
-      label="Crear"
+      :label="t('sales.components.crear')"
       @click="submitForm"
       style="float: right"
       :size="'small'"
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { SalesInvoiceDetail } from "../types";
 import * as Yup from "yup";
@@ -67,6 +68,7 @@ import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
 import { round } from "lodash";
 
+const { t } = useI18n();
 const props = defineProps<{
   invoiceDetail: SalesInvoiceDetail;
 }>();
@@ -90,8 +92,8 @@ const calcAmount = () => {
 };
 
 const schema = Yup.object().shape({
-  quantity: Yup.number().min(1).required("La quantitat ha de ser superior a 1"),
-  unitPrice: Yup.number().required("El preu unitat és obligatori"),
+  quantity: Yup.number().min(1).required(t("sales.validation.quantityGreaterThanOneRequired")),
+  unitPrice: Yup.number().required(t("sales.validation.unitPriceRequired")),
 });
 const validation = ref({
   result: false,
@@ -114,7 +116,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

@@ -27,7 +27,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Client</label
+              >{{ pt("Client") }}</label
             >
             <DropdownCustomers label="" v-model="filter.customerId" />
           </div>
@@ -35,7 +35,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Referència</label
+              >{{ pt("Referència") }}</label
             >
             <DropdownReference
               label=""
@@ -48,7 +48,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Última actual.</label
+              >{{ pt("Última actual.") }}</label
             >
             <DatePicker
               v-model="filter.dates"
@@ -56,7 +56,7 @@
               dateFormat="dd/mm/yy"
               :showIcon="true"
               class="w-full"
-              placeholder="Selecciona periode"
+              :placeholder="pt('Selecciona periode')"
               size="small"
             />
           </div>
@@ -66,14 +66,14 @@
     <Column
       field="reference.code"
       sortable
-      header="Referencia"
+      :header="pt('Referencia')"
       style="width: 40%"
     >
       <template #body="slotProps">
         {{ referenceStore.getFullName(slotProps.data.reference) }}
       </template>
     </Column>
-    <Column sortable header="Client" style="width: 20%">
+    <Column sortable :header="pt('Client')" style="width: 20%">
       <template #body="slotProps">
         {{
           customersStore.getCustomerNameById(
@@ -82,22 +82,22 @@
         }}
       </template>
     </Column>
-    <Column field="updatedOn" header="Actualitzada" sortable style="width: 10%">
+    <Column field="updatedOn" :header="pt('Actualitzada')" sortable style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.updatedOn) }}
       </template>
     </Column>
-    <Column header="Mode" style="width: 12.5%">
+    <Column :header="pt('Mode')" style="width: 12.5%">
       <template #body="slotProps">
         {{ returnMode(slotProps.data.mode) }}
       </template>
     </Column>
     <Column
       field="baseQuantity"
-      header="Quantitat Base"
+      :header="pt('Quantitat Base')"
       style="width: 10%"
     ></Column>
-    <Column header="Cost" style="width: 10%">
+    <Column :header="pt('Cost')" style="width: 10%">
       <template #body="slotProps">
         {{
           formatCurrency(
@@ -109,7 +109,7 @@
         }}
       </template>
     </Column>
-    <Column header="Desactivada" style="width: 5%">
+    <Column :header="pt('Desactivada')" style="width: 5%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -142,7 +142,7 @@
   >
     <div>
       <DropdownReference
-        label="Referència"
+        :label="pt('Referència')"
         v-model="workmasterStore.workmaster!.referenceId"
         class="w-full"
         :fullName="true"
@@ -151,7 +151,7 @@
     <br />
     <div>
       <Button
-        label="Crear"
+        :label="pt('Crear')"
         style="float: right"
         @click="onCreateSubmit"
       ></Button>
@@ -159,7 +159,7 @@
   </Dialog>
   <Dialog
     v-model:visible="copyDialogVisible"
-    header="Copiar ruta de fabricació"
+    :header="pt('Copiar ruta de fabricació')"
     :closable="!copyLoading"
     :modal="true"
     :style="{ width: '50vw', maxWidth: '700px' }"
@@ -167,7 +167,7 @@
     <div v-if="copyModel" class="flex flex-column gap-3">
       <div class="flex flex-column gap-1">
         <label class="font-semibold text-sm text-color-secondary"
-          >Ruta d'origen</label
+          >{{ pt("Ruta d'origen") }}</label
         >
         <span class="text-lg">{{ copySourceName }}</span>
       </div>
@@ -179,7 +179,7 @@
 
       <div class="flex flex-column gap-2">
         <label class="font-semibold text-sm text-color-secondary"
-          >Destí de la còpia</label
+          >{{ pt("Destí de la còpia") }}</label
         >
 
         <div class="flex align-items-center gap-2">
@@ -188,7 +188,7 @@
             inputId="destExisting"
             value="existing"
           />
-          <label for="destExisting">Referència existent</label>
+          <label for="destExisting">{{ pt("Referència existent") }}</label>
         </div>
         <div v-if="copyDestinyMode === 'existing'" class="ml-4">
           <DropdownReference
@@ -204,7 +204,7 @@
             inputId="destNew"
             value="new"
           />
-          <label for="destNew">Crear nova referència</label>
+          <label for="destNew">{{ pt("Crear nova referència") }}</label>
         </div>
         <div
           v-if="copyDestinyMode === 'new'"
@@ -212,12 +212,12 @@
         >
           <BaseInput
             id="referenceCode"
-            label="Codi"
+            :label="pt('Codi')"
             v-model="copyModel.referenceCode"
           />
           <BaseInput
             id="referenceDescription"
-            label="Descripció"
+            :label="pt('Descripció')"
             v-model="copyModel.referenceDescription"
           />
         </div>
@@ -225,14 +225,14 @@
 
       <div class="flex flex-column gap-1">
         <label class="font-semibold text-sm text-color-secondary mb-1"
-          >Mode de fabricació</label
+          >{{ pt("Mode de fabricació") }}</label
         >
         <Select
           v-model="copyModel.mode"
           :options="workmasterStore.workmasterModes"
           optionLabel="value"
           optionValue="id"
-          placeholder="Selecciona el mode"
+          :placeholder="pt('Selecciona el mode')"
           class="w-full"
         />
       </div>
@@ -241,14 +241,14 @@
     <template #footer>
       <div class="flex justify-content-end gap-2">
         <Button
-          label="Cancel·lar"
+          :label="pt('Cancel·lar')"
           severity="secondary"
           text
           :disabled="copyLoading"
           @click="copyDialogVisible = false"
         />
         <Button
-          label="Copiar"
+          :label="pt('Copiar')"
           icon="pi pi-copy"
           :loading="copyLoading"
           @click="onCopySubmit"
@@ -258,6 +258,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
@@ -344,7 +347,7 @@ const filteredData = computed(() => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear ruta",
+  title: pt("Crear ruta"),
   closable: true,
   position: "center",
   modal: true,
@@ -369,7 +372,7 @@ const copySourceName = ref("");
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de rutes de fabricació",
+    title: pt("Gestió de rutes de fabricació"),
   });
 
   referenceStore.fetchReferencesByModule("sales");
@@ -413,7 +416,7 @@ const onCopySubmit = async () => {
   if (copyDestinyMode.value === "existing" && !copyModel.value.referenceId) {
     toast.add({
       severity: "warn",
-      summary: "Selecciona una referència de destí",
+      summary: pt("Selecciona una referència de destí"),
       life: 5000,
     });
     return;
@@ -425,7 +428,7 @@ const onCopySubmit = async () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "Introdueix el codi de la nova referència",
+      summary: pt("Introdueix el codi de la nova referència"),
       life: 5000,
     });
     return;
@@ -452,7 +455,7 @@ const onCopySubmit = async () => {
     if (copied.result) {
       toast.add({
         severity: "success",
-        summary: "Ruta copiada correctament",
+        summary: pt("Ruta copiada correctament"),
         life: 3000,
       });
       copyDialogVisible.value = false;
@@ -511,7 +514,7 @@ const deleteButton = (event: any, workmaster: WorkMaster) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: pt("Eliminada"),
           life: 3000,
         });
         await workmasterStore.fetchAll();

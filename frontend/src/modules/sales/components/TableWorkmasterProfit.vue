@@ -4,25 +4,25 @@
     :multiSortMeta="sortingFields"
     :value="processedPhases"
   >
-    <Column field="code" sortable header="Fase"></Column>
-    <Column field="order" sortable header="Pas"></Column>
-    <Column field="workcenterTypeId" header="Màquina">
+    <Column field="code" sortable :header="t('sales.components.fase')"></Column>
+    <Column field="order" sortable :header="t('sales.components.pas')"></Column>
+    <Column field="workcenterTypeId" :header="t('sales.components.maquina')">
       <template #body="slotProps">
         {{ getWorkcenterType(slotProps.data.workcenterTypeId) }}
       </template>
     </Column>
-    <Column field="machineStatusId" header="Estat">
+    <Column field="machineStatusId" :header="t('sales.components.estat')">
       <template #body="slotProps">
         {{ getStatusName(slotProps.data.machineStatusId) }}
       </template>
     </Column>
-    <Column field="estimatedTime" header="Temps total"> </Column>
-    <Column field="isCycleTime" header="Temps de cicle">
+    <Column field="estimatedTime" :header="t('sales.components.tempsTotal')"> </Column>
+    <Column field="isCycleTime" :header="t('sales.components.tempsDeCicle')">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isCycleTime" />
       </template>
     </Column>
-    <Column header="% de benefici">
+    <Column :header="t('sales.components.deBenefici')">
       <template #body="slotProps">
         <BaseInput
           :type="BaseInputType.NUMERIC"
@@ -40,7 +40,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-l text-900">Temps total operatiu </span>
+        <span class="text-l text-900">{{ t("sales.componentMessages.totalOperatingTime") }}</span>
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :minFractionDigits="0"
@@ -50,7 +50,7 @@
           disabled
         >
         </BaseInput>
-        <span class="text-l text-900 font-bold">Benefici ponderat </span>
+        <span class="text-l text-900 font-bold">{{ t("sales.componentMessages.weightedProfit") }}</span>
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :minFractionDigits="2"
@@ -59,13 +59,14 @@
           suffix="%"
           readonly
         />
-        <Button @click="emitProfitAverage" icon="pi pi-copy" label="Aplicar" />
+        <Button @click="emitProfitAverage" icon="pi pi-copy" :label="t('sales.components.aplicar')" />
       </div>
     </template>
   </DataTable>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, watchEffect, computed, onMounted, reactive, watch } from "vue";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import {
@@ -90,6 +91,7 @@ interface ProcessedPhase {
   profitPercentage: number;
 }
 
+const { t } = useI18n();
 const props = defineProps<{
   workMasterId: string | null;
   quantity: number;

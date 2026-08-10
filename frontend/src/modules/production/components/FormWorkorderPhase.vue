@@ -2,7 +2,7 @@
   <form v-if="phase">
     <div>
       <Button
-        label="Guardar Fase"
+        :label="t('production.components.guardarFase')"
         class="grid_add_row_button"
         size="small"
         @click="submitForm"
@@ -11,15 +11,15 @@
     </div>
     <section class="three-columns mb-2">
       <div>
-        <BaseInput label="Codi de la fase" v-model="phase.code" />
+        <BaseInput :label="t('production.components.codiDeLaFase')" v-model="phase.code" />
       </div>
       <div>
-        <BaseInput label="Descripció" v-model="phase.description" />
+        <BaseInput :label="t('production.components.descripcio')" v-model="phase.description" />
       </div>
       <div>
         <DropdownLifecycleStatusTransitions
           ref="statusTransitionsDropdown"
-          label="Estat"
+          :label="t('production.components.estat')"
           :statusId="phase.statusId"
           v-model="phase.statusId"
           :class="{
@@ -30,7 +30,7 @@
     </section>
     <section class="four-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Tipus de màquina</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipusDeMaquina") }}</label>
         <Select
           v-model="phase.workcenterTypeId"
           :options="plantModelStore.workcenterTypes"
@@ -44,7 +44,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Màquina preferida</label>
+        <label class="block text-900 mb-2">{{ t("production.components.maquinaPreferida") }}</label>
         <Select
           v-model="phase.preferredWorkcenterId"
           :options="preferredWorkcenters"
@@ -59,7 +59,7 @@
           :type="BaseInputType.NUMERIC"
           :minFractionDigits="2"
           class="mb-2"
-          label="Marge de benefici"
+          :label="t('production.components.margeDeBenefici')"
           id="profitPercentage"
           v-model="phase.profitPercentage"
           suffix="%"
@@ -67,7 +67,7 @@
         ></BaseInput>
       </div>
       <div>
-        <label class="block text-900 mb-2">Tipus d'operari</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipusDOperari") }}</label>
         <Select
           v-model="phase.operatorTypeId"
           :options="plantModelStore.operatorTypes"
@@ -82,7 +82,7 @@
     </section>
     <section class="four-columns mb-2">
       <div>
-        <label class="block text-900 mt-1 mb-1">Externa</label>
+        <label class="block text-900 mt-1 mb-1">{{ t("production.components.externa") }}</label>
         <Checkbox
           v-model="phase.isExternalWork"
           class="w-full"
@@ -91,7 +91,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Servei</label>
+        <label class="block text-900 mb-2">{{ t("production.components.servei") }}</label>
         <Select
           v-model="phase.serviceReferenceId"
           :options="serviceReferences"
@@ -105,7 +105,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost servei"
+          :label="t('production.components.costServei')"
           v-model="phase.externalWorkCost"
           :disabled="!phase.isExternalWork"
           :class="{
@@ -116,7 +116,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost transport"
+          :label="t('production.components.costTransport')"
           v-model="phase.transportCost"
           :disabled="!phase.isExternalWork"
           :class="{
@@ -129,6 +129,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
 import { computed, onMounted, ref } from "vue";
 import { WorkOrder, WorkOrderPhase } from "../types";
@@ -223,8 +226,8 @@ const isExternalWorkChanged = async () => {
 };
 
 const schema = Yup.object().shape({
-  code: Yup.string().required("El codi és obligatori"),
-  statusId: Yup.string().required("L'estat és obligatori"),
+  code: Yup.string().required(t("production.validation.elCodiEsObligatori")),
+  statusId: Yup.string().required(t("production.validation.lEstatEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -251,7 +254,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

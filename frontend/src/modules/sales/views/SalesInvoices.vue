@@ -20,19 +20,19 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Període</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
         <DatePicker
           v-model="filter.dates"
           selectionMode="range"
           dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
+          :placeholder="t('sales.list.periodPlaceholder')"
           showIcon
           class="w-full"
           size="small"
         />
       </div>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.customer") }}</label>
         <DropdownCustomers label="" v-model="filter.customerId" />
       </div>
     </template>
@@ -44,7 +44,7 @@
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.invoices.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
@@ -68,7 +68,8 @@ import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { useCustomersStore } from "../store/customers";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
@@ -89,31 +90,34 @@ const userFilterStore = useUserFilterStore();
 const customersStore = useCustomersStore();
 const invoiceStore = useSalesInvoiceStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
-const columns = ref<Column[]>([
-  { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+const columns = computed<Column[]>(() => [
+  { field: "invoiceNumber", header: t("common.number"), sortable: true, style: "width: 10%" },
+  { field: "invoiceDate", header: t("common.date"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customersStore.getCustomerNameById,
     style: "width: 25%",
   },
   {
     field: "statusId",
-    header: "Estat",
+    header: t("common.status"),
     columnType: ColumnType.Lookup,
     resolver: lifecycleStore.getStatusNameById,
     style: "width: 15%",
   },
-  { field: "dueDate", header: "Venciment", style: "width: 15%", sortable: true },
-  { field: "netAmount", header: "Import", columnType: ColumnType.Currency, style: "width: 20%" },
+  { field: "dueDate", header: t("sales.list.columns.dueDate"), style: "width: 15%", sortable: true },
+  { field: "netAmount", header: t("common.amount"), columnType: ColumnType.Currency, style: "width: 20%" },
 ]);
 
-const filterMetadata = createSalesTableViewFilterMetadata(columns.value);
+const filterMetadata = computed(() =>
+  createSalesTableViewFilterMetadata(columns.value),
+);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -121,7 +125,6 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear factura",
   closable: true,
   position: "center",
   modal: true,
@@ -143,11 +146,14 @@ onMounted(async () => {
   getUserFilter();
   await filterInvoices();
 
-  store.setMenuItem({
-    icon: PrimeIcons.MONEY_BILL,
-    title: "Factures de venta",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.MONEY_BILL, title: t("sales.invoices.title") });
+};
+
+watch(locale, setMenuItem);
 
 onUnmounted(() => {
   userFilterStore.addFilter("SalesInvoices", "", filter.value);
@@ -223,11 +229,11 @@ const createInvoice = async () => {
     const errorMessage =
       response.errors.length > 0
         ? response.errors[0]
-        : "Error desconegut, contacte amb l'administrador.";
+        : t("sales.list.messages.unknownError");
 
     toast.add({
       severity: "warn",
-      summary: "Error al crear la factura",
+      summary: t("sales.invoices.messages.createError"),
       detail: errorMessage,
       life: 10000,
     });
@@ -244,7 +250,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteSalesInvoice = (invoice: SalesInvoice) => {
   confirm.require({
-    message: `Està segur que vol eliminar la factura?`,
+    message: t("sales.invoices.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -253,7 +259,7 @@ const deleteSalesInvoice = (invoice: SalesInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
         await filterInvoices();

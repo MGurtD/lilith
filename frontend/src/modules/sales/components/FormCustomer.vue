@@ -3,7 +3,7 @@
     <section class="three-columns">
       <BaseInput
         name="comercialName"
-        label="Nom Comercial"
+        :label="t('sales.components.nomComercial')"
         id="comercialName"
         v-model="customer.comercialName"
         :class="{
@@ -11,7 +11,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Nom Fiscal"
+        :label="t('sales.components.nomFiscal')"
         id="taxName"
         v-model="customer.taxName"
         :class="{
@@ -19,7 +19,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Tipus Client</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.tipusClient') }}</label>
         <Select
           v-model="customer.customerTypeId"
           :options="customerStore.customerTypes"
@@ -45,7 +45,7 @@
       ></BaseInput>
       <BaseInput
         name="web"
-        label="Web"
+        :label="t('sales.components.web')"
         id="web"
         v-model="customer.web"
         :class="{
@@ -65,7 +65,7 @@
     <section class="three-columns mb-2">
       <BaseInput
         name="accountNumber"
-        label="Número de compte"
+        :label="t('sales.components.numeroDeCompte')"
         id="accountNumber"
         v-model="customer.accountNumber"
         :class="{
@@ -73,7 +73,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Forma de pagament</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.formaDePagament') }}</label>
         <Select
           v-model="customer.paymentMethodId"
           :options="sharedData.paymentMethods"
@@ -87,21 +87,22 @@
       </div>
     </section>
     <div class="mb-2">
-      <label class="block text-900 mb-2">Observacions</label>
+      <label class="block text-900 mb-2">{{ t('sales.components.observacions') }}</label>
       <Textarea v-model="customer.observations" class="w-full" />
     </div>
     <div class="mb-2">
-      <label class="block text-900 mb-2">Notes de factura</label>
+      <label class="block text-900 mb-2">{{ t('sales.components.notesDeFactura') }}</label>
       <Textarea v-model="customer.invoiceNotes" class="w-full" />
     </div>
     <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
+      <Button :label="t('sales.components.guardar')" @click="submitForm" />
+      <Button :label="t('sales.components.cancelar')" severity="secondary" @click="emit('cancel')" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { useCustomersStore } from "../store/customers";
 import { storeToRefs } from "pinia";
@@ -115,6 +116,7 @@ import { useToast } from "primevue/usetoast";
 import { useSharedDataStore } from "../../../modules/shared/store/masterData";
 import LanguageSwitcher from "../../../components/LanguageSwitcher.vue";
 
+const { t } = useI18n();
 const emit = defineEmits<{
   (e: "submit", customer: Customer): void;
   (e: "cancel"): void;
@@ -127,11 +129,11 @@ const toast = useToast();
 
 const schema = Yup.object().shape({
   comercialName: Yup.string()
-    .required("El nom comercial és obligatori")
+    .required(t("sales.validation.commercialNameRequired"))
     .max(250, "El nom comercial no pot superar els 250 carácters"),
-  taxName: Yup.string().required("El nom fiscal és obligatori"),
-  vatNumber: Yup.string().required("El CIF és obligatori"),
-  accountNumber: Yup.string().required("El número de compte es obligatori"),
+  taxName: Yup.string().required(t("sales.validation.taxNameRequired")),
+  vatNumber: Yup.string().required(t("sales.validation.vatNumberRequired")),
+  accountNumber: Yup.string().required(t("sales.validation.accountNumberRequired")),
 });
 const validation = ref({
   result: false,
@@ -154,7 +156,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

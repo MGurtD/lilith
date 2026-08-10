@@ -3,7 +3,7 @@
     <section class="four-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="operatorType.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="operatorType.description"
         :class="{
@@ -21,7 +21,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Cost/hora"
+        :label="t('production.components.costHora')"
         id="cost"
         :type="BaseInputType.CURRENCY"
         v-model="operatorType.cost"
@@ -30,7 +30,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox
           v-model="operatorType.disabled"
           class="w-full"
@@ -40,12 +40,15 @@
     </section>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { OperatorType } from "../types";
@@ -78,12 +81,12 @@ const { operatorType } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-  cost: Yup.number().required("El cost es obligatori").min(0),
+    .required(t("production.validation.laDescripcioEsObligatori"))
+    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
+  cost: Yup.number().required(t("production.validation.elCostEsObligatori")).min(0),
 });
 const validation = ref({
   result: false,
@@ -106,7 +109,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

@@ -31,7 +31,7 @@
                 dateFormat="dd/mm/yy"
                 showIcon
                 inputId="period"
-                placeholder="Selecciona període"
+                :placeholder="t('verifactu.integrationRequests.filters.periodPlaceholder')"
                 size="small"
                 class="w-full"
               />
@@ -107,7 +107,11 @@
       >
         <template #body="slotProps">
           <Tag
-            :value="slotProps.data.success ? 'OK' : 'ERR'"
+            :value="
+              slotProps.data.success
+                ? t('verifactu.integrationRequests.status.success')
+                : t('verifactu.integrationRequests.status.error')
+            "
             :severity="slotProps.data.success ? 'success' : 'danger'"
           />
         </template>
@@ -159,7 +163,7 @@
             class="cursor-pointer"
             v-if="slotProps.data.qrCodeBase64"
             :src="slotProps.data.qrCodeBase64"
-            alt="QR"
+            :alt="t('verifactu.integrationRequests.table.qrCodeAlt')"
             style="height: 45px"
             @click="openQr(slotProps.data.qrCodeUrl)"
           />
@@ -252,7 +256,11 @@
               $t("verifactu.integrationRequests.table.columns.success")
             }}</span>
             <Tag
-              :value="selectedRequest.success ? 'OK' : 'ERR'"
+              :value="
+                selectedRequest.success
+                  ? t('verifactu.integrationRequests.status.success')
+                  : t('verifactu.integrationRequests.status.error')
+              "
               :severity="selectedRequest.success ? 'success' : 'danger'"
             />
           </div>
@@ -306,7 +314,7 @@
       </div>
       <template #footer>
         <Button
-          :label="$t('common.close') || 'Tancar'"
+          :label="$t('common.close')"
           icon="pi pi-times"
           @click="detailDialogVisible = false"
         />
@@ -366,7 +374,7 @@ const filterBodyWidth: FilterBodyWidth = {
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "searchQuery",
-    label: t("common.search") || "Cercar",
+    label: t("common.search"),
     type: "text",
     placeholder: `${t("common.search")} ...`,
     size: "lg",

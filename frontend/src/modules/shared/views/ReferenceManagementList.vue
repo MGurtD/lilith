@@ -24,7 +24,7 @@
             <InputIcon class="pi pi-search" />
             <InputText
               v-model="filters['global'].value"
-              placeholder="Cercar..."
+              :placeholder="$t('shared.references.searchPlaceholder')"
             />
           </IconField>
           <Button
@@ -35,11 +35,11 @@
           />
         </div>
       </template>
-      <template #empty>Sense referències.</template>
-      <Column field="code" header="Codi" sortable />
-      <Column field="description" header="Descripció" sortable />
-      <Column field="version" header="Versió" />
-      <Column header="Ventes">
+      <template #empty>{{ $t('shared.references.empty') }}</template>
+      <Column field="code" :header="$t('shared.references.columns.code')" sortable />
+      <Column field="description" :header="$t('shared.references.columns.description')" sortable />
+      <Column field="version" :header="$t('shared.references.columns.version')" />
+      <Column :header="$t('shared.references.columns.sales')">
         <template #body="{ data }">
           <i
             v-if="data.sales"
@@ -48,7 +48,7 @@
           />
         </template>
       </Column>
-      <Column header="Compres">
+      <Column :header="$t('shared.references.columns.purchase')">
         <template #body="{ data }">
           <i
             v-if="data.purchase"
@@ -57,7 +57,7 @@
           />
         </template>
       </Column>
-      <Column header="Producció">
+      <Column :header="$t('shared.references.columns.production')">
         <template #body="{ data }">
           <i
             v-if="data.production"
@@ -66,7 +66,7 @@
           />
         </template>
       </Column>
-      <Column header="Activa">
+      <Column :header="$t('shared.references.columns.active')">
         <template #body="{ data }">
           <i
             v-if="!data.disabled"
@@ -83,6 +83,7 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { FilterMatchMode } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -94,6 +95,7 @@ import { getNewUuid } from "../../../utils/functions";
 const router = useRouter();
 const store = useStore();
 const referenceStore = useReferenceStore();
+const { t } = useI18n();
 
 const { references } = storeToRefs(referenceStore);
 const loading = ref(false);
@@ -106,7 +108,7 @@ onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
     backButtonVisible: false,
-    title: "Gestió de referències",
+    title: t("shared.references.menuTitle"),
   });
   loading.value = true;
   await referenceStore.fetchReferences();

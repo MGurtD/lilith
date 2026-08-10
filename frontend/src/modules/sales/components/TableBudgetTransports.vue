@@ -14,12 +14,12 @@
         <slot name="header"></slot>
       
     </template>
-    <Column field="destination" header="Destinació" style="width: 25%" />
-    <Column field="description" header="Descripció" style="width: 20%" />
-    <Column field="weight" header="Pes (kg)" style="width: 10%" />
-    <Column field="volume" header="Volum (m³)" style="width: 10%" />
-    <Column field="distance" header="Distància (km)" style="width: 10%" />
-    <Column field="price" header="Preu" style="width: 15%">
+    <Column field="destination" :header="t('sales.components.destinacio')" style="width: 25%" />
+    <Column field="description" :header="t('sales.components.descripcio')" style="width: 20%" />
+    <Column field="weight" :header="t('sales.components.pesKg')" style="width: 10%" />
+    <Column field="volume" :header="t('sales.components.volumM')" style="width: 10%" />
+    <Column field="distance" :header="t('sales.components.distanciaKm')" style="width: 10%" />
+    <Column field="price" :header="t('sales.components.preu')" style="width: 15%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.price) }}
       </template>
@@ -37,6 +37,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Budget, BudgetTransport } from "../types";
@@ -45,6 +46,7 @@ import { useToast } from "primevue/usetoast";
 import { useBudgetStore } from "../store/budget";
 import { formatCurrency } from "../../../utils/functions";
 
+const { t } = useI18n();
 const props = defineProps<{
   budget: Budget;
   transports: Array<BudgetTransport> | undefined;
@@ -72,7 +74,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, transport: BudgetTransport) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar el transport?`,
+    message: t("sales.componentMessages.deleteTransport"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -87,14 +89,14 @@ const onDistributeCosts = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Costos ponderats",
+      summary: t('sales.components.costosPonderats'),
       detail: "S'han ponderat els costos de transport correctament entre els detalls.",
       life: 5000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al ponderar",
+      summary: t('sales.components.errorAlPonderar'),
       detail: "No s'han pogut ponderar els costos (és possible que el pes total sigui 0 o hi hagi un error al servidor).",
       life: 5000,
     });

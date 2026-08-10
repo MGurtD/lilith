@@ -11,26 +11,27 @@
       >
         <span class="text-l text-900 font-bold"></span>
         <section>
-          <Button :size="'small'" label="Generar" class="mr-2" />
+          <Button :size="'small'" :label="t('sales.components.generar')" class="mr-2" />
         </section>
       </div>
     </template>
-    <Column field="quantity" header="Quantitat" style="width: 10%" />
-    <Column header="Referencia" style="width: 15%">
+    <Column field="quantity" :header="t('sales.components.quantitat')" style="width: 10%" />
+    <Column :header="t('sales.components.referencia')" style="width: 15%">
       <template #body="slotProps">
         {{ referenceStore.getShortNameById(slotProps.data.referenceId) }}
       </template>
     </Column>
-    <Column field="description" header="Descripció" style="width: 40%" />
-    <Column field="unitPrice" header="Preu un." style="width: 10%">
+    <Column field="description" :header="t('sales.components.descripcio')" style="width: 40%" />
+    <Column field="unitPrice" :header="t('sales.components.preuUn')" style="width: 10%">
       <template #body="slotProps"> {{ slotProps.data.unitPrice }} € </template>
     </Column>
-    <Column header="Total" style="width: 10%">
+    <Column :header="t('sales.components.total')" style="width: 10%">
       <template #body="slotProps"> {{ slotProps.data.amount }} € </template>
     </Column>
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { SalesOrderDetail } from "../types";
 import { useReferenceStore } from "../../shared/store/reference";
@@ -39,6 +40,7 @@ import { computed } from "vue";
 import { CreateWorkOrderDto } from "../../production/types";
 import { convertDateTimeToJSON } from "../../../utils/functions";
 
+const { t } = useI18n();
 const props = defineProps<{
   salesOrderDetails: Array<SalesOrderDetail> | undefined;
 }>();
@@ -77,7 +79,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, salesOrderDetail: SalesOrderDetail) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la referència?`,
+    message: t("sales.componentMessages.deleteReference"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

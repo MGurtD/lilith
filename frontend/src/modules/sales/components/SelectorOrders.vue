@@ -12,7 +12,7 @@
     <template #header>
       <header class="selector-filter">
         <div class="selector-filter-field">
-          <label for="">Buscar</label> &nbsp;
+          <label>{{ t('sales.components.buscar') }}</label>
           <InputText
             style="width: 150px; height: 35px"
             v-model="selectedOrder"
@@ -39,14 +39,14 @@
     </template>
 
     <Column selectionMode="multiple" style="width: 3%"></Column>
-    <Column header="Número" field="number" style="width: 10%"></Column>
+    <Column :header="t('sales.components.numero')" field="number" style="width: 10%"></Column>
     <Column
-      header="Número client"
+      :header="t('sales.components.numeroClient')"
       field="customerNumber"
       style="width: 20%"
     ></Column>
 
-    <Column header="Data" field="date" style="width: 10%">
+    <Column :header="t('sales.components.data')" field="date" style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
@@ -54,11 +54,13 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, ref } from "vue";
 import { SalesOrderHeader } from "../types";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDate } from "../../../utils/functions";
 
+const { t } = useI18n();
 const selectedOrders = ref([] as Array<SalesOrderHeader>);
 
 const props = defineProps<{

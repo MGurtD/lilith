@@ -4,7 +4,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Ordre"
+          :label="t('production.components.ordre')"
           v-model="detail.order"
           :class="{
             'p-invalid': validation.errors.order,
@@ -12,7 +12,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Estat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.estat") }}</label>
         <Select
           v-model="detail.machineStatusId"
           :options="plantModelStore.machineStatuses"
@@ -25,7 +25,7 @@
         />
       </div>
       <div>
-        <label class="block text-900v mb-1">Temps de cicle</label>
+        <label class="block text-900v mb-1">{{ t("production.components.tempsDeCicle") }}</label>
         <Checkbox v-model="detail.isCycleTime" class="w-full" :binary="true" />
       </div>
     </section>
@@ -34,7 +34,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Temps màquina (min)"
+          :label="t('production.components.tempsMaquinaMin')"
           v-model="detail.estimatedTime"
           :class="{
             'p-invalid': validation.errors.estimatedTime,
@@ -45,7 +45,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Temps operari (min)"
+          :label="t('production.components.tempsOperariMin')"
           v-model="detail.estimatedOperatorTime"
           :class="{
             'p-invalid': validation.errors.estimatedTime,
@@ -54,14 +54,14 @@
       </div>
     </section>
     <div class="mt-2">
-      <label class="block text-900v mb-1">Comentari fabricació</label>
+      <label class="block text-900v mb-1">{{ t("production.components.comentariFabricacio") }}</label>
       <Textarea class="w-full" v-model="detail.comment"></Textarea>
     </div>
 
     <br />
     <div>
       <Button
-        label="Guardar pas"
+        :label="t('production.components.guardarPas')"
         style="float: right"
         size="small"
         @click="submitForm"
@@ -71,6 +71,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import { WorkMasterPhaseDetail } from "../types";
 import * as Yup from "yup";
@@ -97,9 +100,9 @@ const plantModelStore = usePlantModelStore();
 const toast = useToast();
 const schema = Yup.object().shape({
   order: Yup.number()
-    .required("L'ordre és obligatori")
+    .required(t("production.validation.lOrdreEsObligatori"))
     .positive("L'ordre ha de ser positiu"),
-  estimatedTime: Yup.number().required("El temps estimat és obligatori"),
+  estimatedTime: Yup.number().required(t("production.validation.elTempsEstimatEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -122,7 +125,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

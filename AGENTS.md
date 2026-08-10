@@ -1,284 +1,91 @@
-# AGENTS.md - Lilith ERP System
+# Lilith ERP Agent Guide
 
-Guidelines for AI coding agents working in this manufacturing ERP monorepo.
+Project instructions for OpenCode sessions in this monorepo. Keep this file limited to durable, project-wide rules. Task procedures belong in `.opencode/skills/`.
 
-## Project Overview
+## Repository
 
-**Monorepo structure**: Backend (.NET 10) + Frontend (Vue 3) as single integrated unit  
-**Domain**: Manufacturing ERP covering Sales, Purchase, Production, Warehouse  
-**Languages**: Catalan primary (ca), Spanish (es), English (en)  
-**Architecture**: Backend uses Clean Architecture (6 layers), Frontend uses domain modules
+- `backend/`: .NET 10 backend with Domain, Application.Contracts, Application, Infrastructure, Api, and Verifactu projects.
+- `frontend/`: Vue 3.5, TypeScript 6, Vite 8, Pinia 2, PrimeVue 4, and Axios.
+- Business domains include Sales, Purchase, Production, Warehouse, Plant, and System.
+- Supported cultures are Catalan (`ca`), Spanish (`es`), and English (`en`). Catalan is the default/source culture.
 
-## Quick Commands
+Before changing frontend code, read `frontend/AGENTS.md`. Treat it as the canonical frontend policy.
 
-### Backend (backend/)
+## Prerequisites
+
+- .NET SDK `10.0.100` (see `backend/global.json`).
+- Node `^20.19.0` or `>=22.12.0`.
+- pnpm `10.28.0`; never use npm or yarn in `frontend/`.
+- PostgreSQL for database-backed runtime work.
+
+## Verification Commands
+
+Run backend commands from `backend/`:
 
 ```bash
-cd backend
-
-# Build and run
 dotnet build
-dotnet run --project src/Api/
-dotnet watch run --project src/Api/  # Hot reload
-
-# Database migrations
-dotnet ef migrations add MigrationName --project src/Infrastructure/
-dotnet ef database update --project src/Infrastructure/
-
-# Run single test
-⚠️ NO TESTS CONFIGURED (critical architectural debt)
+dotnet test
+dotnet test tests/Application.Tests/Application.Tests.csproj --filter "FullyQualifiedName~TypeOrMethod"
+dotnet run --project src/Api
 ```
 
-**Swagger**: https://localhost:5001/swagger
-
-### Frontend (frontend/)
+Run frontend commands from `frontend/`:
 
 ```bash
-cd frontend
-
-# Setup (requires pnpm v10+)
-pnpm install
-
-# Development
-pnpm run dev                    # Start dev server at http://localhost:8100
-pnpm run typecheck              # Type check without building
-pnpm run build                  # Production build
-pnpm run build-development      # Dev mode build to dist-test/
-
-# Run single test
-⚠️ NO TESTS CONFIGURED
+pnpm run i18n:check
+pnpm run typecheck
+pnpm run build
+pnpm run smoke
+pnpm run smoke:e2e
 ```
 
-**Package manager**: MUST use pnpm (not npm/yarn)
+The frontend has no unit/component test framework. It does have Playwright smoke checks. Run only the checks relevant to the change; use the production build for broad frontend changes.
 
-## Code Style Guidelines
+Local launch-profile Swagger is `https://localhost:7284/swagger`. Docker exposes the API separately on port `5000`.
 
-### Backend (C# 12)
+## Backend Rules
 
-**Critical conventions:**
-- **Primary constructors**: `public class BudgetService(IUnitOfWork unitOfWork, ILocalizationService localization) : IBudgetService`
-- **ALWAYS async/await** for all I/O operations
-- **ALWAYS inject ILocalizationService** for user-facing messages
-- **ALWAYS use StatusConstants** - Never hardcode "Budget", "SalesOrder", "Pendent d'acceptar"
-- **ALWAYS return GenericResponse** for write operations (create/update/delete)
-- **Nullable reference types** enabled: `string Name { get; set; } = string.Empty;` or `string? Description { get; set; }`
+- New business workflow logic belongs in application services, not controllers. Existing controllers contain legacy exceptions; do not copy them.
+- Controllers handle HTTP concerns and delegate through service interfaces. Do not inject `IUnitOfWork` into new controller code.
+- Keep data access and query shape in repositories. Use asynchronous APIs for database and other I/O.
+- Use `ILocalizationService` and resource keys for new user-facing backend messages.
+- Read the current `StatusConstants.cs` before using lifecycle or status identifiers. Never copy status catalogues into documentation.
+- Use `GenericResponse` where the analogous write service contract uses it. Do not change established public contracts solely for uniformity.
+- Nullable reference types are enabled. Model optionality explicitly and avoid suppressing nullability without evidence.
+- Keep dependency direction inward for new code. Treat current cross-project exceptions as legacy constraints, not examples.
+- Prefer the established style in the nearest current module over generic templates.
 
-**Layer responsibilities:**
-- **Controllers**: HTTP validation only, NO business logic
-- **Services**: ALL business logic + localization + workflow orchestration
-- **Repositories**: Data access only, EF Core queries with Include() for relations
+## Shared Data Rules
 
-**Naming conventions:**
-- Services: `IBudgetService`, `BudgetService`
-- Repositories: `IBudgetRepository`, `BudgetRepository`
-- Controllers: `BudgetController`
-- Entities: PascalCase (`SalesOrderHeader`, `WorkOrder`)
+- Entity IDs are application-generated GUIDs. The frontend or backend may assign them; the database does not.
+- Deletion behavior is entity-specific. Inspect the analogous service and repository before choosing physical deletion, `Disabled`, or another lifecycle transition.
+- Most entities use `CreatedOn`, `UpdatedOn`, and `Disabled`, but not every entity uses the standard timestamp configuration.
+- Lifecycle identifiers and persisted statuses are domain values, not frontend translation strings.
 
-### Frontend (TypeScript + Vue 3)
+## Localization
 
-**Critical conventions:**
-- **ALWAYS use Composition API** with `<script setup>` (never Options API)
-- **ALWAYS PascalCase** component files: `WorkOrderDetail.vue`
-- **ALWAYS path alias** `@/` for imports: `import { useStore } from "@/store"`
-- **ALWAYS lazy-load routes**: `component: () => import('./views/WorkOrder.vue')`
-- **ALWAYS normalize dates** before API calls: `convertDateTimeToJSON(date)`
-- **ALWAYS Catalan** for all UI messages and labels
+- Backend: localize user-facing responses through `ILocalizationService` and keep placeholders consistent across all resource files.
+- Frontend: use Vue i18n keys with parity across `ca`, `es`, and `en`; do not add hardcoded Catalan as the desired end state.
+- Culture selection is query parameter, authenticated locale claim, `Accept-Language`, then configured default.
+- Do not mix backend resource keys with frontend Vue i18n keys.
 
-**Architecture patterns:**
-- Services extend `BaseService<T>` with inherited CRUD methods
-- Pinia stores manage state + orchestrate service calls
-- Clone objects before editing in dialogs: `const editModel = { ...original }`
-- Numeric defaults are `0`, not `undefined`
+## Safety
 
-**Naming conventions:**
-- Components: PascalCase files and imports
-- Stores: `useWorkOrderStore`, `useBudgetStore`
-- Services: `WorkOrderService`, `BudgetService`
-- Functions: camelCase
+- Inspect the current implementation and a close analogue before editing. Documentation describes intent; current source defines the active contract.
+- Do not generate or remove EF migrations, update a database, install dependencies, run servers, commit, or push unless the user explicitly requests it.
+- Preserve unrelated worktree changes.
+- Do not add compatibility layers without a concrete persisted or external consumer requirement.
 
-### Shared Conventions (Backend + Frontend)
+## Task Skills
 
-**Database patterns:**
-- **UUID primary keys** (client-generated): Backend `Guid.NewGuid()`, Frontend `getNewUuid()`
-- **Soft deletes** via `Disabled` field - never physical deletion
-- **Audit timestamps**: `CreatedOn`, `UpdatedOn` auto-managed
+Load the matching skill for specialized workflows:
 
-**Localization:**
-- All lifecycle/status names in database are Catalan
-- Error messages via `ILocalizationService` (backend) or Catalan strings (frontend)
-- Culture detection: query param → JWT claim → Accept-Language header → default (ca)
+- `adding-backend-entity`
+- `frontend-crud`
+- `backend-localization`
+- `audit-frontend-localization`
+- `translate-frontend-view`
+- `migrate-datatable-to-table`
+- `contextual-help`
 
-## Critical Architectural Patterns
-
-### Backend Request Flow
-
-```
-HTTP Request → Controller → Service → Repository → Database
-             ↓            ↓          ↓
-         Validate    Business   Data Access
-         ModelState  Logic +    (EF Core)
-                    Localize
-```
-
-**Controller pattern:**
-```csharp
-[HttpPost]
-public async Task<IActionResult> Create(CreateRequest request)
-{
-    if (!ModelState.IsValid) return BadRequest(ModelState);
-    var response = await service.Create(request);
-    return response.Result ? Ok(response.Content) : BadRequest(response);
-}
-```
-
-**Service pattern:**
-```csharp
-public async Task<GenericResponse> Create(Budget budget)
-{
-    var exists = unitOfWork.Budgets.Find(b => b.Id == budget.Id).Any();
-    if (exists)
-        return new GenericResponse(false, 
-            localizationService.GetLocalizedString("EntityAlreadyExists"));
-    
-    await unitOfWork.Budgets.Add(budget);
-    return new GenericResponse(true, budget);
-}
-```
-
-### Frontend Data Flow
-
-```
-Component → Store → Service → API
-    ↓        ↓        ↓
-   UI     State    HTTP
-Rendering  Mgmt   (Axios)
-```
-
-**Component → Store:**
-```typescript
-const store = useWorkOrderStore();
-await store.create(model);
-```
-
-**Store → Service:**
-```typescript
-async create(model: WorkOrder) {
-  const result = await Services.WorkOrder.create(model);
-  if (result) await this.fetchOne(model.id);
-  return result;
-}
-```
-
-**Service (BaseService):**
-```typescript
-export class WorkOrderService extends BaseService<WorkOrder> {
-  constructor() { super("workorder"); }
-}
-```
-
-### Backend Architecture Layers
-
-```
-         API (Composition Root)
-           ↓         ↓
-    Application  Infrastructure
-           ↓         ↓
-     Application.Contracts
-           ↓
-         Domain (Pure Core)
-```
-
-**Dependency rule**: Dependencies only flow inward. Inner layers never reference outer layers.
-
-## Anti-Patterns to Avoid
-
-**Backend:**
-- ❌ Business logic in controllers
-- ❌ Hardcoded error strings (use ILocalizationService)
-- ❌ Magic strings for lifecycle/status names (use StatusConstants)
-- ❌ Direct `IUnitOfWork` injection in controllers (use service interfaces)
-- ❌ Mixing languages in error messages
-- ❌ Returning `bool` instead of `GenericResponse` for operations
-
-**Frontend:**
-- ❌ Options API (always use Composition API with `<script setup>`)
-- ❌ Mutating store state outside actions
-- ❌ Hard-coding API URLs (use service layer)
-- ❌ Using `any` type
-- ❌ Forgetting to normalize dates before API calls
-- ❌ Mixing languages in UI (maintain Catalan)
-
-## Documentation References
-
-**Backend deep dives:**
-- Architecture: `backend/docs/architecture-layers.md`
-- Patterns: `backend/docs/architectural-patterns.md`
-- Domain model: `backend/docs/domain-model.md`
-- Developer guide: `backend/docs/developer-guide.md`
-- Localization: `backend/docs/localization.md`
-- Request flow: `backend/docs/request-flow.md`
-
-**Frontend guide:**
-- Comprehensive reference: `frontend/AGENTS.md`
-
-**Skills (task-specific guides):**
-- See `.opencode/skills/` directory for focused, task-oriented guides
-- Use skills for: adding entities, implementing CRUD, understanding workflows
-
-## Environment Setup
-
-**Prerequisites:**
-- .NET 10 SDK
-- Node.js 18+ with pnpm v10+
-- PostgreSQL 16+
-
-**Connection strings:**
-- Backend: `backend/src/Api/appsettings.Development.json`
-- Frontend: `frontend/.env` with `VITE_API_BASE_URL` and `VITE_REPORTS_BASE_URL`
-
-**First time setup:**
-```bash
-# Backend
-cd backend
-dotnet restore
-dotnet ef database update --project src/Infrastructure/
-dotnet run --project src/Api/
-
-# Frontend
-cd frontend
-pnpm install
-pnpm run dev
-```
-
-## Codebase Memory MCP (Code Intelligence)
-
-This project uses [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) as its code intelligence layer. It indexes the repository into a persistent knowledge graph and exposes **14 MCP tools** that answer structural questions in milliseconds without dumping source.
-
-**Available tools (14):**
-
-Indexing: `index_repository`, `list_projects`, `delete_project`, `index_status`
-Querying: `search_graph`, `trace_path`, `detect_changes`, `query_graph`, `get_graph_schema`, `get_code_snippet`, `get_architecture`, `search_code`, `manage_adr`, `ingest_traces`
-
-**Rules for the main agent (build):**
-- **NEVER** use `get_code_snippet` or `search_code` reflexively for every symbol — they return source and inflate context
-- **DO** prefer lightweight structural tools for targeted lookups before editing:
-  - `search_graph` — find symbols by name/label/file/degree
-  - `trace_path` — BFS call graph traversal (depth 1–5)
-  - `detect_changes` — map git diff to affected symbols
-  - `query_graph` — openCypher read-only queries
-  - `get_architecture` — high-level codebase overview
-  - `get_graph_schema` — node/edge/property reference
-  - `index_status` / `list_projects` — health check
-- Reach for `get_code_snippet` only when you need the exact body of one specific symbol
-- Reach for `search_code` only when no structural tool answers the question
-
-**Rules for subagents (explore, backend, frontend):**
-- Use `get_architecture` and `search_graph` as the PRIMARY tools for exploration questions
-- Do NOT re-read files that `search_code` / `get_code_snippet` already returned source code for
-- Only fall back to grep/glob/read if the MCP returned no results
-
-**Maintenance:**
-- Indexing is automatic once `auto_index` is enabled; the background watcher keeps the graph fresh on file changes
-- `codebase-memory-mcp list_projects` — verify the project is indexed
-- `codebase-memory-mcp cli search_graph '{"name_pattern": ".*Handler.*"}'` — query from CLI
-- After major refactors, the watcher re-indexes automatically; force a rebuild with `codebase-memory-mcp delete_project` + `index_repository`
+Skills provide decision procedures, not substitute source code. If a skill conflicts with current code, current code and verified project configuration win.

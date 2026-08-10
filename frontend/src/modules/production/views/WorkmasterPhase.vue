@@ -10,8 +10,8 @@
   <main class="main" v-if="workmasterPhase">
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Pasos</Tab>
-        <Tab value="1">Materials</Tab>
+        <Tab value="0">{{ pt("Pasos") }}</Tab>
+        <Tab value="1">{{ pt("Materials") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -55,6 +55,9 @@
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkmasterPhase from "../components/FormWorkmasterPhase.vue";
 import TableWorkmasterPhaseDetails from "../components/TableWorkmasterPhaseDetails.vue";
 import FormWorkmasterPhaseDetail from "../components/FormWorkmasterPhaseDetail.vue";
@@ -89,7 +92,7 @@ const phaseId = ref("");
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Linea",
+  title: pt("Linea"),
   closable: true,
   position: "center",
   modal: true,
@@ -127,8 +130,8 @@ const onWorkmasterPhaseSubmit = async (phase: WorkMasterPhase) => {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Fase actualitzada",
-      detail: `La fase ${phase.code} ha estat actualitzada correctament`,
+      summary: pt("Fase actualitzada"),
+      detail: pt("Fase actualitzada correctament"),
       life: 10000,
     });
   }

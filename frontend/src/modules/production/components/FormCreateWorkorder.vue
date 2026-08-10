@@ -1,7 +1,7 @@
 <template>
   <form v-if="createWorkOrderDto">
     <div>
-      <label class="block text-900 mb-2">Ruta</label>
+      <label class="block text-900 mb-2">{{ t("production.components.ruta") }}</label>
       <Select
         v-model="createWorkOrderDto.workMasterId"
         :virtualScrollerOptions="{ itemSize: 38 }"
@@ -19,13 +19,13 @@
     <div class="mt-2">
       <BaseInput
         class="mb-2 w-full"
-        label="Quantitat"
+        :label="t('production.components.quantitat')"
         v-model="createWorkOrderDto.plannedQuantity"
         :type="BaseInputType.NUMERIC"
       ></BaseInput>
     </div>
     <div>
-      <label class="block text-900 mb-2">Data Prevista</label>
+      <label class="block text-900 mb-2">{{ t("production.components.dataPrevista") }}</label>
       <DatePicker
         v-model="createWorkOrderDto.plannedDate"
         dateFormat="dd/mm/yy"
@@ -33,17 +33,20 @@
       />
     </div>
     <div class="mt-2">
-      <label class="block text-900 mb-2">Comentari Fabriació</label>
+      <label class="block text-900 mb-2">{{ t("production.components.comentariFabriacio") }}</label>
       <Textarea class="w-full" v-model="createWorkOrderDto.comment" />
     </div>
     <br />
     <div>
-      <Button label="Crear" style="float: right" @click="submitForm"></Button>
+      <Button :label="t('production.components.crear')" style="float: right" @click="submitForm"></Button>
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import { CreateWorkOrderDto, WorkMaster } from "../types";
 import * as Yup from "yup";
@@ -82,10 +85,10 @@ const formatWorkMasterLabel = (workMaster: WorkMaster) => {
 
 const schema = Yup.object().shape({
   plannedQuantity: Yup.number()
-    .min(1, "La quantitat ha de ser superior a 0")
-    .required("La quanitat és obligatoria"),
-  workMasterId: Yup.string().required("La ruta de fabricació és obligatoria"),
-  plannedDate: Yup.string().required("La data prevista és obligatoria"),
+    .min(1, t("production.validation.laQuantitatHaDeSerSuperiorA0"))
+    .required(t("production.validation.laQuanitatEsObligatoria")),
+  workMasterId: Yup.string().required(t("production.validation.laRutaDeFabricacioEsObligatoria")),
+  plannedDate: Yup.string().required(t("production.validation.laDataPrevistaEsObligatoria")),
 });
 const validation = ref({
   result: false,
@@ -108,7 +111,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

@@ -2,7 +2,7 @@
   <form v-if="customerType">
     <BaseInput
       class="mb-2"
-      label="Nom"
+      :label="t('sales.components.nom')"
       id="name"
       v-model="customerType.name"
       :class="{
@@ -11,7 +11,7 @@
     ></BaseInput>
     <BaseInput
       class="mb-2"
-      label="Descripció"
+      :label="t('sales.components.descripcio')"
       id="description"
       v-model="customerType.description"
       :class="{
@@ -20,12 +20,13 @@
     ></BaseInput>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('sales.components.guardar')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { CustomerType } from "../types";
 import * as Yup from "yup";
@@ -35,6 +36,7 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 
+const { t } = useI18n();
 const props = defineProps<{
   customerType: CustomerType;
 }>();
@@ -48,10 +50,10 @@ const toast = useToast();
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
+    .required(t("sales.validation.nameRequired"))
     .max(250, "El nom comercial no pot superar els 250 carácters"),
   description: Yup.string()
-    .required("La descripció és obligatori")
+    .required(t("sales.validation.descriptionRequired"))
     .max(250, "La descripció no pot superar els 250 carácters"),
 });
 const validation = ref({
@@ -75,7 +77,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

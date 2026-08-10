@@ -3,28 +3,28 @@
     <Tabs value="general">
       <TabList>
         <Tab value="general">
-          <i :class="PrimeIcons.INFO_CIRCLE" class="mr-2" />General
+          <i :class="PrimeIcons.INFO_CIRCLE" class="mr-2" />{{ $t('shared.referenceManagement.tabs.general') }}
         </Tab>
         <Tab
           value="sales"
           v-if="formMode === FormActionMode.EDIT && reference.sales"
         >
-          <i :class="PrimeIcons.SHOPPING_CART" class="mr-2" />Ventes
+          <i :class="PrimeIcons.SHOPPING_CART" class="mr-2" />{{ $t('shared.referenceManagement.tabs.sales') }}
         </Tab>
         <Tab
           value="purchase"
           v-if="formMode === FormActionMode.EDIT && reference.purchase"
         >
-          <i :class="PrimeIcons.TRUCK" class="mr-2" />Compres
+          <i :class="PrimeIcons.TRUCK" class="mr-2" />{{ $t('shared.referenceManagement.tabs.purchase') }}
         </Tab>
         <Tab
           value="production"
           v-if="formMode === FormActionMode.EDIT && reference.production"
         >
-          <i :class="PrimeIcons.COG" class="mr-2" />Producció
+          <i :class="PrimeIcons.COG" class="mr-2" />{{ $t('shared.referenceManagement.tabs.production') }}
         </Tab>
         <Tab value="warehouse" v-if="formMode === FormActionMode.EDIT">
-          <i :class="PrimeIcons.BUILDING" class="mr-2" />Magatzem
+          <i :class="PrimeIcons.BUILDING" class="mr-2" />{{ $t('shared.referenceManagement.tabs.warehouse') }}
         </Tab>
       </TabList>
 
@@ -33,7 +33,7 @@
         <TabPanel value="general">
           <div class="flex justify-content-end mb-2">
             <Button
-              label="Guardar"
+              :label="$t('shared.referenceManagement.general.save')"
               size="small"
               :icon="PrimeIcons.SAVE"
               @click="submitGeneral"
@@ -42,30 +42,30 @@
           <form>
             <section class="five-columns">
               <div class="mt-1">
-                <BaseInput label="Codi" id="code" v-model="reference.code" />
+                <BaseInput :label="$t('shared.referenceManagement.general.code')" id="code" v-model="reference.code" />
               </div>
               <div class="mt-1">
                 <BaseInput
-                  label="Descripció"
+                  :label="$t('shared.referenceManagement.general.description')"
                   id="description"
                   v-model="reference.description"
                 />
               </div>
               <div class="mt-1">
                 <BaseInput
-                  label="Versió"
+                  :label="$t('shared.referenceManagement.general.version')"
                   id="version"
                   v-model="reference.version"
                 />
               </div>
               <div class="mt-1">
                 <DropdownReferenceType
-                  label="Tipus de material"
+                  :label="$t('shared.referenceManagement.general.materialType')"
                   v-model="reference.referenceTypeId"
                 />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Format</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.format') }}</label>
                 <Select
                   v-model="reference.referenceFormatId"
                   :options="referenceStore.referenceFormats"
@@ -79,12 +79,12 @@
             <section class="five-columns">
               <div class="mt-1">
                 <DropdownCustomers
-                  label="Client"
+                  :label="$t('shared.referenceManagement.general.client')"
                   v-model="reference.customerId"
                 />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Impost</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.tax') }}</label>
                 <Select
                   v-model="reference.taxId"
                   :options="taxesStore.taxes"
@@ -96,7 +96,7 @@
               <div class="mt-1">
                 <BaseInput
                   :type="BaseInputType.CURRENCY"
-                  label="Cost Teóric Fabricació"
+                  :label="$t('shared.referenceManagement.general.theoreticalCost')"
                   id="workMasterCost"
                   v-model="reference.workMasterCost"
                   disabled
@@ -105,7 +105,7 @@
               <div class="mt-1">
                 <BaseInput
                   :type="BaseInputType.CURRENCY"
-                  label="Cost Última Fabricació / Compra"
+                  :label="$t('shared.referenceManagement.general.lastCost')"
                   id="lastCost"
                   v-model="reference.lastCost"
                   disabled
@@ -122,23 +122,23 @@
             </section>
             <section class="five-columns">
               <div class="mt-1">
-                <label class="block text-900 mb-2">Activa</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.active') }}</label>
                 <Checkbox v-model="isActive" :binary="true" />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Ventes</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.sales') }}</label>
                 <Checkbox v-model="reference.sales" :binary="true" />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Compres</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.purchase') }}</label>
                 <Checkbox v-model="reference.purchase" :binary="true" />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Producció</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.production') }}</label>
                 <Checkbox v-model="reference.production" :binary="true" />
               </div>
               <div class="mt-1">
-                <label class="block text-900 mb-2">Servei</label>
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.service') }}</label>
                 <Checkbox v-model="reference.isService" :binary="true" />
               </div>
             </section>
@@ -146,7 +146,7 @@
 
           <div v-if="formMode === FormActionMode.EDIT" class="mt-4">
             <FileEntityPicker
-              title="Documentació"
+              :title="$t('shared.referenceManagement.general.documentation')"
               entity="referenceMaps"
               :id="reference.id"
               :key="reference.id"
@@ -167,7 +167,7 @@
             </div>
             <div class="mt-1 flex align-items-end">
               <Button
-                label="Guardar PVP"
+                :label="$t('shared.referenceManagement.sales.savePvp')"
                 size="small"
                 :icon="PrimeIcons.SAVE"
                 @click="submitGeneral"
@@ -185,21 +185,21 @@
             :rows="10"
           >
             <template #header>
-              <label class="block text-900">Històric de ventes (albarans)</label>
+              <label class="block text-900">{{ $t('shared.referenceManagement.sales.salesHistory') }}</label>
             </template>
-            <template #empty>Sense ventes registrades.</template>
-            <Column field="date" header="Data">
+            <template #empty>{{ $t('shared.referenceManagement.sales.noSales') }}</template>
+            <Column field="date" :header="$t('shared.referenceManagement.sales.columns.date')">
               <template #body="{ data }">{{ formatDate(data.date) }}</template>
             </Column>
-            <Column field="number" header="Albarà" />
-            <Column field="customerName" header="Client" />
-            <Column field="quantity" header="Quantitat" />
-            <Column field="unitPrice" header="Preu unitari">
+            <Column field="number" :header="$t('shared.referenceManagement.sales.columns.deliveryNote')" />
+            <Column field="customerName" :header="$t('shared.referenceManagement.sales.columns.client')" />
+            <Column field="quantity" :header="$t('shared.referenceManagement.sales.columns.quantity')" />
+            <Column field="unitPrice" :header="$t('shared.referenceManagement.sales.columns.unitPrice')">
               <template #body="{ data }">{{
                 formatCurrency(data.unitPrice)
               }}</template>
             </Column>
-            <Column field="amount" header="Import">
+                  <Column field="amount" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.amount')">
               <template #body="{ data }">{{
                 formatCurrency(data.amount)
               }}</template>
@@ -213,7 +213,7 @@
             <div class="mt-1">
               <BaseInput
                 :type="BaseInputType.CURRENCY"
-                label="PUC (últim cost de compra)"
+                :label="$t('shared.referenceManagement.sales.pucLabel')"
                 id="puc"
                 v-model="reference.lastCost"
                 disabled
@@ -223,10 +223,10 @@
 
           <Tabs value="suppliers">
             <TabList>
-              <Tab value="suppliers">Proveïdors i tarifes</Tab>
-              <Tab value="externalServices">Tarifes de serveis externs</Tab>
-              <Tab value="transport">Tarifes de transport</Tab>
-              <Tab value="purchaseHistory">Històric de compres</Tab>
+              <Tab value="suppliers">{{ $t('shared.referenceManagement.purchase.tabs.suppliers') }}</Tab>
+              <Tab value="externalServices">{{ $t('shared.referenceManagement.purchase.tabs.externalServices') }}</Tab>
+              <Tab value="transport">{{ $t('shared.referenceManagement.purchase.tabs.transport') }}</Tab>
+              <Tab value="purchaseHistory">{{ $t('shared.referenceManagement.purchase.tabs.purchaseHistory') }}</Tab>
             </TabList>
             <TabPanels>
               <TabPanel value="suppliers">
@@ -241,7 +241,7 @@
                     <div
                       class="flex flex-wrap align-items-center justify-content-between gap-2"
                     >
-                      <label class="block text-900">Proveïdors i tarifes</label>
+                      <label class="block text-900">{{ $t('shared.referenceManagement.purchase.suppliersTable.title') }}</label>
                       <Button
                         :icon="PrimeIcons.PLUS"
                         rounded
@@ -250,23 +250,23 @@
                       />
                     </div>
                   </template>
-                  <template #empty>Sense proveïdors assignats.</template>
-                  <Column header="Proveïdor">
+                  <template #empty>{{ $t('shared.referenceManagement.purchase.suppliersTable.empty') }}</template>
+                  <Column :header="$t('shared.referenceManagement.purchase.suppliersTable.columns.supplier')">
                     <template #body="{ data }">{{
                       suppliersStore.getName(data.supplierId)
                     }}</template>
                   </Column>
-                  <Column field="supplierCode" header="Codi proveïdor" />
+                  <Column field="supplierCode" :header="$t('shared.referenceManagement.purchase.suppliersTable.columns.supplierCode')" />
                   <Column
                     field="supplierDescription"
-                    header="Descripció proveïdor"
+                    :header="$t('shared.referenceManagement.purchase.suppliersTable.columns.supplierDescription')"
                   />
-                  <Column field="supplierPrice" header="Preu">
+                  <Column field="supplierPrice" :header="$t('shared.referenceManagement.purchase.suppliersTable.columns.price')">
                     <template #body="{ data }">{{
                       formatCurrency(data.supplierPrice)
                     }}</template>
                   </Column>
-                  <Column field="supplyDays" header="Dies entrega" />
+                  <Column field="supplyDays" :header="$t('shared.referenceManagement.purchase.suppliersTable.columns.deliveryDays')" />
                   <Column>
                     <template #body="{ data }">
                       <i
@@ -292,27 +292,27 @@
                   scrollHeight="flex"
                   :loading="ratesLoading"
                 >
-                  <template #empty>Sense tarifes de serveis externs.</template>
-                  <Column field="supplierName" header="Proveïdor" />
-                  <Column field="rateName" header="Tarifa" />
-                  <Column header="Vàlid des de">
+                  <template #empty>{{ $t('shared.referenceManagement.purchase.externalServicesTable.empty') }}</template>
+                  <Column field="supplierName" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.supplier')" />
+                  <Column field="rateName" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.rate')" />
+                  <Column :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.validFrom')">
                     <template #body="{ data }">{{
                       formatDate(data.validFrom)
                     }}</template>
                   </Column>
-                  <Column header="Vàlid fins a">
+                  <Column :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.validTo')">
                     <template #body="{ data }">{{
                       formatDate(data.validTo)
                     }}</template>
                   </Column>
-                  <Column header="Càlcul">
+                  <Column :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.calculation')">
                     <template #body="{ data }">{{
                       getCalculationTypeLabel(data.calculationType)
                     }}</template>
                   </Column>
-                  <Column field="from" header="Des de" />
-                  <Column field="to" header="Fins a" />
-                  <Column field="price" header="Preu">
+                  <Column field="from" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.from')" />
+                  <Column field="to" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.to')" />
+                  <Column field="price" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.price')">
                     <template #body="{ data }">{{
                       formatCurrency(data.price)
                     }}</template>
@@ -328,16 +328,16 @@
                   scrollHeight="flex"
                   :loading="ratesLoading"
                 >
-                  <template #empty>Sense tarifes de transport.</template>
-                  <Column field="supplierName" header="Proveïdor" />
-                  <Column field="rateName" header="Tarifa" />
-                  <Column field="description" header="Descripció" />
-                  <Column header="Vàlid des de">
+                  <template #empty>{{ $t('shared.referenceManagement.purchase.transportTable.empty') }}</template>
+                  <Column field="supplierName" :header="$t('shared.referenceManagement.purchase.transportTable.columns.supplier')" />
+                  <Column field="rateName" :header="$t('shared.referenceManagement.purchase.transportTable.columns.rate')" />
+                  <Column field="description" :header="$t('shared.referenceManagement.purchase.transportTable.columns.description')" />
+                  <Column :header="$t('shared.referenceManagement.purchase.transportTable.columns.validFrom')">
                     <template #body="{ data }">{{
                       formatDate(data.validFrom)
                     }}</template>
                   </Column>
-                  <Column header="Vàlid fins a">
+                  <Column :header="$t('shared.referenceManagement.purchase.transportTable.columns.validTo')">
                     <template #body="{ data }">{{
                       formatDate(data.validTo)
                     }}</template>
@@ -355,21 +355,21 @@
                   paginator
                   :rows="10"
                 >
-                  <template #empty>Sense compres registrades.</template>
-                  <Column field="date" header="Data">
+                  <template #empty>{{ $t('shared.referenceManagement.purchase.purchaseHistoryTable.empty') }}</template>
+                  <Column field="date" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.date')">
                     <template #body="{ data }">{{
                       formatDate(data.date)
                     }}</template>
                   </Column>
-                  <Column field="number" header="Albarà" />
-                  <Column field="supplierName" header="Proveïdor" />
-                  <Column field="quantity" header="Quantitat" />
-                  <Column field="unitPrice" header="Preu unitari">
+                  <Column field="number" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.deliveryNote')" />
+                  <Column field="supplierName" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.supplier')" />
+                  <Column field="quantity" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.quantity')" />
+                  <Column field="unitPrice" :header="$t('shared.referenceManagement.purchase.purchaseHistoryTable.columns.unitPrice')">
                     <template #body="{ data }">{{
                       formatCurrency(data.unitPrice)
                     }}</template>
                   </Column>
-                  <Column field="amount" header="Import">
+            <Column field="amount" :header="$t('shared.referenceManagement.sales.columns.amount')">
                     <template #body="{ data }">{{
                       formatCurrency(data.amount)
                     }}</template>
@@ -391,31 +391,31 @@
             @row-click="openWorkMaster"
           >
             <template #header>
-              <label class="block text-900">Rutes de fabricació</label>
+              <label class="block text-900">{{ $t('shared.referenceManagement.production.workMastersTitle') }}</label>
             </template>
-            <template #empty>Sense rutes de fabricació.</template>
-            <Column field="baseQuantity" header="Quantitat Base" />
-            <Column field="machineCost" header="Cost màquina">
+            <template #empty>{{ $t('shared.referenceManagement.production.workMastersEmpty') }}</template>
+            <Column field="baseQuantity" :header="$t('shared.referenceManagement.production.workMastersColumns.baseQuantity')" />
+            <Column field="machineCost" :header="$t('shared.referenceManagement.production.workMastersColumns.machineCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.machineCost)
               }}</template>
             </Column>
-            <Column field="operatorCost" header="Cost operari">
+            <Column field="operatorCost" :header="$t('shared.referenceManagement.production.workMastersColumns.operatorCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.operatorCost)
               }}</template>
             </Column>
-            <Column field="materialCost" header="Cost material">
+            <Column field="materialCost" :header="$t('shared.referenceManagement.production.workMastersColumns.materialCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.materialCost)
               }}</template>
             </Column>
-            <Column field="externalCost" header="Cost extern">
+            <Column field="externalCost" :header="$t('shared.referenceManagement.production.workMastersColumns.externalCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.externalCost)
               }}</template>
             </Column>
-            <Column header="Cost total">
+            <Column :header="$t('shared.referenceManagement.production.workMastersColumns.totalCost')">
               <template #body="{ data }">{{
                 formatCurrency(workMasterTotal(data))
               }}</template>
@@ -434,33 +434,33 @@
             @row-click="openWorkOrder"
           >
             <template #header>
-              <label class="block text-900">Ordres de fabricació (OFs)</label>
+              <label class="block text-900">{{ $t('shared.referenceManagement.production.workOrdersTitle') }}</label>
             </template>
-            <template #empty>Sense ordres de fabricació.</template>
-            <Column field="code" header="Codi" />
-            <Column field="plannedDate" header="Data planificada">
+            <template #empty>{{ $t('shared.referenceManagement.production.workOrdersEmpty') }}</template>
+            <Column field="code" :header="$t('shared.referenceManagement.production.workOrdersColumns.code')" />
+            <Column field="plannedDate" :header="$t('shared.referenceManagement.production.workOrdersColumns.plannedDate')">
               <template #body="{ data }">{{
                 formatDate(data.plannedDate)
               }}</template>
             </Column>
-            <Column field="plannedQuantity" header="Qty. planificada" />
-            <Column field="totalQuantity" header="Qty. fabricada" />
-            <Column field="operatorCost" header="Cost operari">
+            <Column field="plannedQuantity" :header="$t('shared.referenceManagement.production.workOrdersColumns.plannedQuantity')" />
+            <Column field="totalQuantity" :header="$t('shared.referenceManagement.production.workOrdersColumns.producedQuantity')" />
+            <Column field="operatorCost" :header="$t('shared.referenceManagement.production.workOrdersColumns.operatorCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.operatorCost)
               }}</template>
             </Column>
-            <Column field="machineCost" header="Cost màquina">
+            <Column field="machineCost" :header="$t('shared.referenceManagement.production.workOrdersColumns.machineCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.machineCost)
               }}</template>
             </Column>
-            <Column field="materialCost" header="Cost material">
+            <Column field="materialCost" :header="$t('shared.referenceManagement.production.workOrdersColumns.materialCost')">
               <template #body="{ data }">{{
                 formatCurrency(data.materialCost)
               }}</template>
             </Column>
-            <Column header="Cost total OF">
+            <Column :header="$t('shared.referenceManagement.production.workOrdersColumns.totalCost')">
               <template #body="{ data }">{{
                 formatCurrency(workOrderTotal(data))
               }}</template>
@@ -480,17 +480,17 @@
             :rows="10"
           >
             <template #header>
-              <label class="block text-900">Estoc per ubicació</label>
+              <label class="block text-900">{{ $t('shared.referenceManagement.warehouse.stockTitle') }}</label>
             </template>
-            <template #empty>Sense estoc.</template>
-            <Column field="warehouseName" header="Magatzem" />
-            <Column field="locationName" header="Ubicació" />
-            <Column field="quantity" header="Quantitat" />
-            <Column field="width" header="Ample" />
-            <Column field="length" header="Llarg" />
-            <Column field="height" header="Alt" />
-            <Column field="diameter" header="Diàmetre" />
-            <Column field="thickness" header="Gruix" />
+            <template #empty>{{ $t('shared.referenceManagement.warehouse.stockEmpty') }}</template>
+            <Column field="warehouseName" :header="$t('shared.referenceManagement.warehouse.stockColumns.warehouse')" />
+            <Column field="locationName" :header="$t('shared.referenceManagement.warehouse.stockColumns.location')" />
+            <Column field="quantity" :header="$t('shared.referenceManagement.warehouse.stockColumns.quantity')" />
+            <Column field="width" :header="$t('shared.referenceManagement.warehouse.stockColumns.width')" />
+            <Column field="length" :header="$t('shared.referenceManagement.warehouse.stockColumns.length')" />
+            <Column field="height" :header="$t('shared.referenceManagement.warehouse.stockColumns.height')" />
+            <Column field="diameter" :header="$t('shared.referenceManagement.warehouse.stockColumns.diameter')" />
+            <Column field="thickness" :header="$t('shared.referenceManagement.warehouse.stockColumns.thickness')" />
           </DataTable>
         </TabPanel>
       </TabPanels>
@@ -500,12 +500,12 @@
     <Dialog
       v-model:visible="supplierDialogVisible"
       modal
-      header="Proveïdor"
+      :header="$t('shared.referenceManagement.supplierDialog.title')"
       :style="{ width: '32rem' }"
     >
       <div v-if="editingSupplier" class="flex flex-column gap-3">
         <div>
-          <label class="block text-900 mb-2">Proveïdor</label>
+          <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.supplierDialog.supplierLabel') }}</label>
           <Select
             v-model="editingSupplier.supplierId"
             :options="suppliersStore.suppliers"
@@ -516,35 +516,35 @@
           />
         </div>
         <BaseInput
-          label="Codi proveïdor"
+          :label="$t('shared.referenceManagement.supplierDialog.supplierCode')"
           id="supplierCode"
           v-model="editingSupplier.supplierCode"
         />
         <BaseInput
-          label="Descripció proveïdor"
+          :label="$t('shared.referenceManagement.supplierDialog.supplierDescription')"
           id="supplierDescription"
           v-model="editingSupplier.supplierDescription"
         />
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu"
+          :label="$t('shared.referenceManagement.supplierDialog.price')"
           id="supplierPrice"
           v-model="editingSupplier.supplierPrice"
         />
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Dies d'entrega"
+          :label="$t('shared.referenceManagement.supplierDialog.deliveryDays')"
           id="supplyDays"
           v-model="editingSupplier.supplyDays"
         />
       </div>
       <template #footer>
         <Button
-          label="Cancel·lar"
+          :label="$t('shared.referenceManagement.supplierDialog.cancel')"
           text
           @click="supplierDialogVisible = false"
         />
-        <Button label="Guardar" :icon="PrimeIcons.SAVE" @click="saveSupplier" />
+        <Button :label="$t('shared.referenceManagement.supplierDialog.save')" :icon="PrimeIcons.SAVE" @click="saveSupplier" />
       </template>
     </Dialog>
   </div>
@@ -556,6 +556,7 @@ import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 
@@ -603,6 +604,7 @@ const referenceStore = useReferenceStore();
 const taxesStore = useTaxesStore();
 const suppliersStore = useSuppliersStore();
 const customersStore = useCustomersStore();
+const { t } = useI18n();
 
 const deliveryNoteService = new DeliveryNoteService("/DeliveryNote");
 const receiptService = new ReceiptService("/Receipt");
@@ -798,10 +800,13 @@ const loadView = async () => {
     if (!reference.value) {
       formMode.value = FormActionMode.CREATE;
       referenceStore.setNewReference(id.value, ReferenceCategoryEnum.PRODUCT);
-      pageTitle = "Alta de referència";
+      pageTitle = t("shared.referenceManagement.messages.newTitle");
     } else {
       formMode.value = FormActionMode.EDIT;
-      pageTitle = `Referència ${reference.value.code} - ${reference.value.description}`;
+      pageTitle = t("shared.referenceManagement.messages.editTitle", {
+        code: reference.value.code,
+        description: reference.value.description,
+      });
       await loadRelated();
     }
 
@@ -814,7 +819,7 @@ const loadView = async () => {
     console.error("Error loading view:", error);
     toast.add({
       severity: "error",
-      summary: "Error al carregar la vista",
+      summary: t("shared.referenceManagement.messages.loadError"),
       life: 5000,
     });
   } finally {
@@ -840,13 +845,13 @@ const submitGeneral = async () => {
   if (formMode.value === FormActionMode.CREATE) {
     result = await referenceStore.createReference(data);
     message = result
-      ? "Referència creada correctament"
-      : "La referència + versió introduïda ja existeix";
+      ? t("shared.referenceManagement.messages.referenceCreated")
+      : t("shared.referenceManagement.messages.referenceExists");
   } else {
     result = await referenceStore.updateReference(data.id, data);
     message = result
-      ? "Referència actualitzada correctament"
-      : "No s'ha pogut actualitzar la referència";
+      ? t("shared.referenceManagement.messages.referenceSaved")
+      : t("shared.referenceManagement.messages.referenceSaveError");
   }
 
   toast.add({
@@ -889,7 +894,7 @@ const saveSupplier = async () => {
   if (!editingSupplier.value.supplierId) {
     toast.add({
       severity: "warn",
-      summary: "Selecciona un proveïdor",
+      summary: t("shared.referenceManagement.messages.selectSupplier"),
       life: 4000,
     });
     return;
@@ -904,7 +909,7 @@ const saveSupplier = async () => {
 
   toast.add({
     severity: ok ? "success" : "warn",
-    summary: ok ? "Proveïdor guardat" : "No s'ha pogut guardar el proveïdor",
+    summary: ok ? t("shared.referenceManagement.messages.supplierSaved") : t("shared.referenceManagement.messages.supplierSaveError"),
     life: 4000,
   });
   if (ok) supplierDialogVisible.value = false;
@@ -912,7 +917,7 @@ const saveSupplier = async () => {
 
 const removeSupplier = (data: SupplierReference) => {
   confirm.require({
-    message: "Està segur que vol eliminar el proveïdor seleccionat?",
+    message: t("shared.referenceManagement.messages.confirmDeleteSupplier"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -920,7 +925,7 @@ const removeSupplier = (data: SupplierReference) => {
       const ok = await referenceStore.deleteSupplier(data);
       toast.add({
         severity: ok ? "success" : "warn",
-        summary: ok ? "Proveïdor eliminat" : "No s'ha pogut eliminar",
+        summary: ok ? t("shared.referenceManagement.messages.supplierDeleted") : t("shared.referenceManagement.messages.supplierDeleteError"),
         life: 4000,
       });
     },

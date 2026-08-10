@@ -16,7 +16,7 @@
         <span v-if="selectedDocument" class="selected-name">
           {{ selectedDocument.originalName }}
         </span>
-        <span v-else class="no-selection"> Selecciona un document </span>
+        <span v-else class="no-selection">{{ $t("plant.selecciona-un-document") }}</span>
       </div>
     </div>
 
@@ -35,18 +35,16 @@
           stripedRows
         >
           <template #empty>
-            <div class="no-data">
-              No hi ha instruccions de treball disponibles
-            </div>
+            <div class="no-data">{{ $t("plant.no-hi-ha-instruccions-de-treball-disponibles") }}</div>
           </template>
-          <Column field="originalName" header="Nom">
+          <Column field="originalName" :header='$t("plant.nom")'>
             <template #body="slotProps">
               <div class="text-overflow-ellipsis">
                 {{ slotProps.data.originalName }}
               </div>
             </template>
           </Column>
-          <Column field="type" header="Tipus" style="width: 60px">
+          <Column field="type" :header='$t("plant.tipus")' style="width: 60px">
             <template #body="slotProps">
               <Tag :value="getFileType(slotProps.data)" severity="info" />
             </template>
@@ -68,7 +66,7 @@
       class="documents-drawer"
     >
       <template #header>
-        <span class="drawer-header">Documents</span>
+        <span class="drawer-header">{{ $t("plant.documents") }}</span>
       </template>
       <DataTable
           :value="activePhaseStore.workOrderReferenceDocuments"
@@ -82,11 +80,9 @@
         stripedRows
       >
         <template #empty>
-          <div class="no-data">
-            No hi ha instruccions de treball disponibles
-          </div>
+          <div class="no-data">{{ $t("plant.no-hi-ha-instruccions-de-treball-disponibles") }}</div>
         </template>
-        <Column field="originalName" header="Nom">
+        <Column field="originalName" :header='$t("plant.nom")'>
           <template #body="slotProps">
             <div class="drawer-document-item">
               <div class="document-name">

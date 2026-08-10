@@ -36,6 +36,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { onMounted, ref, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
@@ -133,7 +136,7 @@ const onDeleteReason = async (id: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Motiu eliminat correctament",
+      summary: pt("Motiu eliminat correctament"),
       life: 4000,
     });
   }

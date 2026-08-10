@@ -3,6 +3,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { Tax } from "../types";
 import { useStore } from "../../../store";
@@ -20,6 +21,7 @@ const route = useRoute();
 const router = useRouter();
 const taxes = useTaxesStore();
 const { tax } = storeToRefs(taxes);
+const { t } = useI18n();
 
 const loadView = async () => {
   await taxes.fetchOne(route.params.id as string);
@@ -29,10 +31,10 @@ const loadView = async () => {
   if (!tax.value) {
     formMode.value = FormActionMode.CREATE;
     taxes.setNew(route.params.id as string);
-    pageTitle = "Alta d'impost";
+    pageTitle = t("shared.taxes.pageTitles.create");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Impost ${tax.value.name}`;
+    pageTitle = t("shared.taxes.pageTitles.edit", { name: tax.value.name });
   }
 
   store.setMenuItem({
@@ -54,10 +56,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await taxes.create(data);
-    message = "Impost creat correctament";
+    message = t("shared.taxes.messages.created");
   } else {
     result = await taxes.update(data.id, data);
-    message = "Impost actualizat correctament";
+    message = t("shared.taxes.messages.updated");
   }
 
   if (result) {

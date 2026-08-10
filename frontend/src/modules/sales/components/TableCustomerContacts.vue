@@ -16,7 +16,7 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-l text-900 font-bold">Contactes</span>
+          <span class="text-l text-900 font-bold">{{ t('sales.components.contactes') }}</span>
           <div>
             <Button
               :icon="PrimeIcons.PLUS"
@@ -26,15 +26,15 @@
           </div>
         </div>
       </template>
-      <Column header="Nom" style="width: 25%">
+      <Column :header="t('sales.components.nom')" style="width: 25%">
         <template #body="slotProps">
           {{ slotProps.data.firstName }} {{ slotProps.data.lastName }}
         </template>
       </Column>
-      <Column header="Càrrec" field="charge" style="width: 25%"></Column>
-      <Column header="Correu" field="email" style="width: 25%"></Column>
-      <Column header="Ext." field="extension" style="width: 5%"></Column>
-      <Column header="Telèfon" field="phoneNumber" style="width: 20%"></Column>
+      <Column :header="t('sales.components.carrec')" field="charge" style="width: 25%"></Column>
+      <Column :header="t('sales.components.correu')" field="email" style="width: 25%"></Column>
+      <Column :header="t('sales.components.ext')" field="extension" style="width: 5%"></Column>
+      <Column :header="t('sales.components.telefon')" field="phoneNumber" style="width: 20%"></Column>
       <Column>
         <template #body="slotProps">
           <i
@@ -48,6 +48,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { getNewUuid } from "../../../utils/functions";
 import CustomerContactForm from "./FormCustomerContact.vue";
@@ -59,6 +60,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useCustomersStore } from "../store/customers";
 
+const { t } = useI18n();
 const confirm = useConfirm();
 const customerStore = useCustomersStore();
 const { customer } = storeToRefs(customerStore);
@@ -112,7 +114,7 @@ const submitForm = () => {
 const deleteContact = (event: any, contact: CustomerContact) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el contacte?`,
+    message: t("sales.componentMessages.deleteContact"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

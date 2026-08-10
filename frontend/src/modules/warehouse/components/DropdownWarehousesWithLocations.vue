@@ -7,7 +7,7 @@
       showClear
       filter
       :options="groupedWarehouseLocations"
-      :placeholder="placeholder || 'Selecciona una ubicació'"
+      :placeholder="placeholder || t('warehouse.placeholders.selectLocation')"
       optionLabel="label"
       optionValue="value"
       optionGroupLabel="label"
@@ -21,7 +21,7 @@
         <div v-if="slotProps.value" class="flex align-items-center">
           <span>{{ getSelectedLocationDisplay(slotProps.value) }}</span>
         </div>
-        <span v-else>{{ placeholder || "Selecciona una ubicació" }}</span>
+        <span v-else>{{ placeholder || t("warehouse.placeholders.selectLocation") }}</span>
       </template>
       <template #optiongroup="slotProps">
         <div class="flex align-items-center">
@@ -40,9 +40,11 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useWarehouseStore } from "../store/warehouse";
 
 const warehouseStore = useWarehouseStore();
+const { t } = useI18n();
 
 onMounted(() => {
   if (!warehouseStore.warehousesHaveLocations)

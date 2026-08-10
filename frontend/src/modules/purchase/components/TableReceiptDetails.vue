@@ -11,10 +11,10 @@
     <template #header>
       <slot name="header"></slot>
     </template>
-    <Column field="quantity" header="Quantitat" style="width: 7.5%" />
+    <Column field="quantity" :header="t('purchase.receiptDetail.columns.quantity')" style="width: 7.5%" />
     <Column
       sortable
-      header="Referència"
+      :header="t('purchase.receiptDetail.columns.reference')"
       field="reference.code"
       style="width: 20%"
     >
@@ -22,18 +22,18 @@
         <LinkReference :id="data.referenceId" :full-name="true" />
       </template>
     </Column>
-    <Column field="description" header="Descripció" style="width: 20%"></Column>
-    <Column field="width" header="Amplada" style="width: 7.5%"></Column>
-    <Column field="height" header="Alçada" style="width: 7.5%"></Column>
-    <Column field="lenght" header="Longitud" style="width: 7.5%"></Column>
-    <Column field="thickness" header="Gruix" style="width: 7.5%"></Column>
-    <Column field="diameter" header="Diàmetre" style="width: 7.5%"></Column>
-    <Column field="totalWeight" header="Pes" style="width: 7.5%">
+    <Column field="description" :header="t('purchase.receiptDetail.columns.description')" style="width: 20%"></Column>
+    <Column field="width" :header="t('purchase.receiptDetail.columns.width')" style="width: 7.5%"></Column>
+    <Column field="height" :header="t('purchase.receiptDetail.columns.height')" style="width: 7.5%"></Column>
+    <Column field="lenght" :header="t('purchase.receiptDetail.columns.length')" style="width: 7.5%"></Column>
+    <Column field="thickness" :header="t('purchase.receiptDetail.columns.thickness')" style="width: 7.5%"></Column>
+    <Column field="diameter" :header="t('purchase.receiptDetail.columns.diameter')" style="width: 7.5%"></Column>
+    <Column field="totalWeight" :header="t('purchase.receiptDetail.columns.weight')" style="width: 7.5%">
       <template #body="slotProps">
         {{ slotProps.data.totalWeight }} KG</template
       >
     </Column>
-    <Column field="amount" header="Preu" style="width: 7.5%">
+    <Column field="amount" :header="t('purchase.receiptDetail.columns.price')" style="width: 7.5%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}
       </template>
@@ -43,6 +43,7 @@
         <i
           v-if="slotProps.data.stockMovementId === null"
           :class="PrimeIcons.TIMES"
+          :aria-label="t('purchase.receipt.actions.deleteLine')"
           class="grid_delete_column_button"
           @click="onDeleteRow($event, slotProps.data)"
         />
@@ -53,9 +54,12 @@
 <script setup lang="ts">
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
+import { useI18n } from "vue-i18n";
 import { ReceiptDetail } from "../types";
 import { formatCurrency } from "../../../utils/functions";
 import LinkReference from "../../shared/components/LinkReference.vue";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   details: Array<ReceiptDetail> | undefined;

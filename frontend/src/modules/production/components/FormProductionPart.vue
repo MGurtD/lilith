@@ -2,7 +2,7 @@
   <form v-if="productionPart">
     <section class="three-columns mt-2">
       <div>
-        <label class="block text-900 mb-2">Màquina</label>
+        <label class="block text-900 mb-2">{{ t("production.components.maquina") }}</label>
         <Select
           v-model="productionPart.workcenterId"
           :filter="true"
@@ -18,7 +18,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Operari</label>
+        <label class="block text-900 mb-2">{{ t("production.components.operari") }}</label>
         <Select
           v-model="productionPart.operatorId"
           :filter="true"
@@ -39,14 +39,14 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Data Tíquet</label>
+        <label class="block text-900 mb-2">{{ t("production.components.dataTiquet") }}</label>
         <DatePicker v-model="productionPart.date" dateFormat="dd/mm/yy" />
       </div>
     </section>
     <section class="mt-2">
       <div>
         <label class="block text-900 mb-2"
-          >Ordre Fabricació | Fase | Activitat</label
+          >{{ t("production.components.ordreFabricacioFaseActivitat") }}</label
         >
         <Select
           v-model="selectedDetailedWorkOrder"
@@ -81,7 +81,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat"
+          :label="t('production.components.quantitat')"
           id="quantity"
           v-model="productionPart.quantity"
         />
@@ -89,7 +89,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Temps centre de treball (minuts)"
+          :label="t('production.components.tempsCentreDeTreballMinuts')"
           id="time"
           v-model="productionPart.workcenterTime"
         />
@@ -97,7 +97,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Temps operari (minuts)"
+          :label="t('production.components.tempsOperariMinuts')"
           id="time"
           v-model="productionPart.operatorTime"
         />
@@ -105,11 +105,14 @@
     </section>
     <br />
     <div class="flex-right">
-      <Button label="Guardar" size="small" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" size="small" @click="submitForm" />
     </div>
   </form>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import { ProductionPart } from "../types";
 import { useToast } from "primevue/usetoast";
@@ -150,19 +153,19 @@ const setWorkOrderDetail = () => {
 };
 
 const schema = Yup.object().shape({
-  operatorId: Yup.string().required("Escull un operari"),
-  workcenterId: Yup.string().required("Escull una màquina"),
-  workOrderId: Yup.string().required("Escull una ordre de fabricació"),
-  workOrderPhaseId: Yup.string().required("Escull una fase"),
-  workOrderPhaseDetailId: Yup.string().required("Escull una activitat"),
+  operatorId: Yup.string().required(t("production.validation.escullUnOperari")),
+  workcenterId: Yup.string().required(t("production.validation.escullUnaMaquina")),
+  workOrderId: Yup.string().required(t("production.validation.escullUnaOrdreDeFabricacio")),
+  workOrderPhaseId: Yup.string().required(t("production.validation.escullUnaFase")),
+  workOrderPhaseDetailId: Yup.string().required(t("production.validation.escullUnaActivitat")),
   quantity: Yup.number()
-    .required("Has d'introduir una quantitat entera (pot ser 0)")
+    .required(t("production.validation.hasDIntroduirUnaQuantitatEnteraPotSer0"))
     .integer(),
   workcenterTime: Yup.number()
-    .required("Has d'introduir el temps i ha de ser major que 0")
+    .required(t("production.validation.hasDIntroduirElTempsIHaDeSerMajorQue0"))
     .integer(),
   operatorTime: Yup.number()
-    .required("Has d'introduir el temps i ha de ser major que 0")
+    .required(t("production.validation.hasDIntroduirElTempsIHaDeSerMajorQue0"))
     .integer(),
 });
 const validation = ref({
@@ -193,7 +196,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

@@ -3,7 +3,7 @@
     <div class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('purchase.fields.name')"
         id="name"
         v-model="expenseType.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('purchase.fields.description')"
         id="description"
         v-model="expenseType.description"
         :class="{
@@ -20,7 +20,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivada</label>
+        <label class="block text-900 mb-2">{{ t("purchase.fields.disabled") }}</label>
         <Checkbox
           v-model="expenseType.disabled"
           class="w-full"
@@ -30,7 +30,7 @@
     </div>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('purchase.actions.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -45,6 +45,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   expenseType: ExpenseType;
@@ -56,14 +57,15 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(() => t("purchase.validation.nameRequired"))
+    .max(250, () => t("purchase.validation.nameMaxLength")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció no pot superar els 250 carácters"),
+    .required(() => t("purchase.validation.descriptionRequired"))
+    .max(250, () => t("purchase.validation.descriptionMaxLength")),
 });
 const validation = ref({
   result: false,
@@ -86,7 +88,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

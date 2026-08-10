@@ -80,7 +80,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
-    title: "Fitxatge Operador",
+    title: t("plant.fitxatge-operador"),
   });
 });
 

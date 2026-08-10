@@ -26,13 +26,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ t("purchase.phaseToOrder.filters.period") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.phaseToOrder.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -42,7 +42,7 @@
         <template #append>
           <Button
             :size="'small'"
-            label="Crear comandes"
+            :label="t('purchase.phaseToOrder.actions.createOrders')"
             rounded
             @click="sendData"
           />
@@ -50,21 +50,21 @@
       </TableFilter>
     </template>
     <!--    <Column selectionMode="multiple" headerStyle="width: 1rem"></Column>-->
-    <Column field="workOrder.code" header="Ordre de fabricació"></Column>
-    <Column field="description" header="Fase" style="width: 15%"></Column>
-    <Column header="Referència">
+    <Column field="workOrder.code" :header="t('purchase.phaseToOrder.columns.workOrder')"></Column>
+    <Column field="description" :header="t('purchase.phaseToOrder.columns.phase')" style="width: 15%"></Column>
+    <Column :header="t('purchase.phaseToOrder.columns.reference')">
       <template #body="slotProps">
         {{ getName(slotProps.data.serviceReferenceId) }}
       </template>
     </Column>
-    <Column field="workOrder.plannedQuantity" header="Quantitat planificada">
+    <Column field="workOrder.plannedQuantity" :header="t('purchase.phaseToOrder.columns.plannedQuantity')">
     </Column>
-    <Column header="Proveïdor">
+    <Column :header="t('purchase.phaseToOrder.columns.supplier')">
       <template #body="slotProps">
         <Select
           v-model="selectedSuppliers[slotProps.data.id]"
           :options="suppliersByReference[slotProps.data.id]"
-          placeholder="Selecciona..."
+          :placeholder="t('purchase.phaseToOrder.placeholders.selectSupplier')"
           optionValue="id"
           optionLabel="comercialName"
           @show="() => onSupplierDropdownShow(slotProps.data)"
@@ -95,6 +95,7 @@ import { useUserFilterStore } from "../../../store/userfilter";
 import { formatDateForQueryParameter } from "../../../utils/functions";
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
@@ -105,6 +106,7 @@ const referenceStore = useReferenceStore();
 const sharedStore = useSharedDataStore();
 const orderStore = useOrderStore();
 const userFilterStore = useUserFilterStore();
+const { t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "33%", tablet: "50%" };
 
@@ -177,7 +179,10 @@ const fetchWorkOrderPhases = async () => {
     filter.value.dates.length < 2 ||
     !filter.value.dates[1]
   ) {
-    mostrarToastInfo("Filtre Invàlid", "Seleccioni un perióde");
+    mostrarToastInfo(
+      t("purchase.messages.invalidFilter"),
+      t("purchase.phaseToOrder.messages.selectPeriod"),
+    );
     return;
   }
   const [startTime, endTime] = obtenirDates();
@@ -191,7 +196,7 @@ const fetchWorkOrderPhases = async () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.SHOPPING_CART,
-    title: "Generació de comandes de compra",
+    title: t("purchase.phaseToOrder.title"),
   });
   await sharedStore.fetchMasterData();
   await referenceStore.fetchReferences();
@@ -265,14 +270,14 @@ const cleanFilter = () => {
 };
 
 const getName = (id: string) => {
-  return referenceStore.getFullNameById(id) || "Desconeguda";
+  return referenceStore.getFullNameById(id) || t("purchase.phaseToOrder.messages.unknownReference");
 };
 
 const sendData = async () => {
   if (selectedPhases.value.length == 0) {
     mostrarToastInfo(
-      "OFs no seleccionades",
-      "Has de seleccionar una OF com a mínim",
+      t("purchase.phaseToOrder.messages.noWorkOrdersSelected"),
+      t("purchase.phaseToOrder.messages.selectAtLeastOneWorkOrder"),
     );
     return;
   }
@@ -294,15 +299,15 @@ const sendData = async () => {
   if (!result.result) {
     toast.add({
       severity: "error",
-      summary: "Error creació",
-      detail: "Error al crear la comanda",
+      summary: t("purchase.phaseToOrder.messages.creationError"),
+      detail: t("purchase.phaseToOrder.messages.orderCreationError"),
       life: 5000,
     });
   } else {
     toast.add({
       severity: "success",
-      summary: "Creació comandes",
-      detail: "Comandes creades correctament",
+      summary: t("purchase.phaseToOrder.messages.ordersCreated"),
+      detail: t("purchase.phaseToOrder.messages.ordersCreatedSuccessfully"),
       life: 5000,
     });
     router.push("/purchase-orders");

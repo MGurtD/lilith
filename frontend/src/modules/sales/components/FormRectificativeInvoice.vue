@@ -9,13 +9,13 @@
             inputId="createCorrectionInvoice"
           />
           <label for="createCorrectionInvoice"
-            >Crear factura amb import corregit</label
+            >{{ t('sales.components.crearFacturaAmbImportCorregit') }}</label
           >
         </div>
       </div>
       <div v-if="rectificativeInvoice.createCorrectionInvoice" class="mt-3">
         <BaseInput
-          label="Import a facturar sense IVA"
+          :label="t('sales.components.importAFacturarSenseIVA')"
           v-model="rectificativeInvoice.quantity"
           :decimals="2"
           :type="BaseInputType.CURRENCY"
@@ -24,7 +24,7 @@
     </section>
 
     <Button
-      label="Crear"
+      :label="t('sales.components.crear')"
       @click="submitForm"
       style="float: right"
       :size="'small'"
@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { CreateRectificativeInvoiceRequest } from "../types";
 import * as Yup from "yup";
@@ -45,6 +46,7 @@ import { useToast } from "primevue/usetoast";
 import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
 
+const { t } = useI18n();
 const props = defineProps<{
   rectificativeInvoice: CreateRectificativeInvoiceRequest;
   maximumQuantity: number;
@@ -60,7 +62,7 @@ const toast = useToast();
 const correctionSchema = Yup.object().shape({
   quantity: Yup.number()
     .min(1, "La quantitat ha de ser superior a 1")
-    .required("La quantitat és obligatòria"),
+    .required(t("sales.validation.quantityRequired")),
 });
 const validation = ref({
   result: false,
@@ -79,7 +81,7 @@ const submitForm = async () => {
       });
       toast.add({
         severity: "warn",
-        summary: "Formulari invàlid",
+        summary: t('sales.components.formulariInvalid'),
         detail: errors,
         life: 5000,
       });
@@ -89,9 +91,9 @@ const submitForm = async () => {
     if (props.rectificativeInvoice.quantity > props.maximumQuantity) {
       toast.add({
         severity: "warn",
-        summary: "Formulari invàlid",
+        summary: t('sales.components.formulariInvalid'),
         detail:
-          "La quantitat introduïda no pot ser superior a la quantitat de la factura",
+          t('sales.components.laQuantitatIntroduidaNoPotSerSuperiorALaQuantitatDeLaFactura'),
         life: 5000,
       });
       return;

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Translate Frontend View"
-  short_description: "Translate a complete Lilith frontend screen"
-  default_prompt: "Translate the requested Lilith frontend screen, including its owned child components, using the current Vue i18n utilities and validate all three locales."

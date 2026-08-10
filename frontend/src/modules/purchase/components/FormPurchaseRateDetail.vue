@@ -1,13 +1,13 @@
 <template>
   <form v-if="model">
     <section class="mb-2">
-      <label class="block text-900 mb-2">Referència</label>
+      <label class="block text-900 mb-2">{{ t("purchase.purchaseRateDetail.fields.reference") }}</label>
       <Select
         v-model="model.referenceId"
         :options="referenceStore.references"
         optionLabel="code"
         optionValue="id"
-        placeholder="Selecciona una referència"
+        :placeholder="t('purchase.purchaseRateDetail.placeholders.selectReference')"
         filter
         class="w-full"
         :virtualScrollerOptions="{ itemSize: 38 }"
@@ -22,7 +22,7 @@
     </section>
 
     <section class="mb-2">
-      <label class="block text-900 mb-2">Tipus de càlcul</label>
+      <label class="block text-900 mb-2">{{ t("purchase.purchaseRateDetail.fields.calculationType") }}</label>
       <Select
         v-model="model.calculationType"
         :options="calculationTypes"
@@ -34,7 +34,7 @@
 
     <section class="two-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Des de</label>
+        <label class="block text-900 mb-2">{{ t("purchase.purchaseRateDetail.fields.from") }}</label>
         <InputNumber
           v-model="model.from"
           class="w-full"
@@ -43,7 +43,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Fins a</label>
+        <label class="block text-900 mb-2">{{ t("purchase.purchaseRateDetail.fields.to") }}</label>
         <InputNumber
           v-model="model.to"
           class="w-full"
@@ -54,7 +54,7 @@
     </section>
 
     <section class="mb-2">
-      <label class="block text-900 mb-2">Preu (€)</label>
+      <label class="block text-900 mb-2">{{ t("purchase.purchaseRateDetail.fields.price") }}</label>
       <InputNumber
         v-model="model.price"
         class="w-full"
@@ -64,7 +64,7 @@
     </section>
 
     <div class="mt-2 text-right">
-      <Button label="Guardar" icon="pi pi-save" @click="submitForm" />
+      <Button :label="t('purchase.purchaseRateDetail.actions.save')" icon="pi pi-save" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -73,6 +73,7 @@
 import { ref, onMounted } from "vue";
 import { PurchaseRateDetail, CalculationType } from "../types";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   detail: PurchaseRateDetail;
@@ -84,11 +85,12 @@ const emit = defineEmits<{
 
 const referenceStore = useReferenceStore();
 const model = ref<PurchaseRateDetail>({ ...props.detail });
+const { t } = useI18n();
 
 const calculationTypes = [
-  { label: "Unitats", value: CalculationType.Units },
-  { label: "Volum", value: CalculationType.Volume },
-  { label: "Pes", value: CalculationType.Weight },
+  { label: t("purchase.purchaseRateDetail.calculationTypes.units"), value: CalculationType.Units },
+  { label: t("purchase.purchaseRateDetail.calculationTypes.volume"), value: CalculationType.Volume },
+  { label: t("purchase.purchaseRateDetail.calculationTypes.weight"), value: CalculationType.Weight },
 ];
 
 onMounted(async () => {

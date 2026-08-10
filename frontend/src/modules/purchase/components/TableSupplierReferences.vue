@@ -43,7 +43,7 @@
       </template>
       <Column
         v-if="supplierId"
-        header="Referència"
+        :header="t('purchase.supplierReference.columns.reference')"
         field="referenceId"
         style="width: 25%"
       >
@@ -53,7 +53,7 @@
       </Column>
       <Column
         v-if="referenceId"
-        header="Proveïdor"
+        :header="t('purchase.supplierReference.columns.supplier')"
         field="supplierId"
         style="width: 25%"
         sortable
@@ -63,25 +63,25 @@
         </template>
       </Column>
       <Column
-        header="Codi proveïdor"
+        :header="t('purchase.supplierReference.columns.supplierCode')"
         field="supplierCode"
         style="width: 20%"
         sortable
       >
       </Column>
       <Column
-        header="Descripció"
+        :header="t('purchase.supplierReference.columns.description')"
         field="supplierDescription"
         style="width: 25%"
         sortable
       ></Column>
-      <Column header="Preu" field="supplierPrice" style="width: 20%" sortable>
+      <Column :header="t('purchase.supplierReference.columns.price')" field="supplierPrice" style="width: 20%" sortable>
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.supplierPrice) }}
         </template>
       </Column>
       <Column
-        header="Dies submin."
+        :header="t('purchase.supplierReference.columns.supplyDays')"
         field="supplyDays"
         style="width: 20%"
         sortable
@@ -110,12 +110,14 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useToast } from "primevue/usetoast";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const confirm = useConfirm();
 const referenceStore = useReferenceStore();
 const supplierStore = useSuppliersStore();
 const formMode = ref(FormActionMode.CREATE);
+const { t } = useI18n();
 
 const props = defineProps<{
   title: string;
@@ -170,8 +172,8 @@ const submitForm = () => {
     if (exists) {
       toast.add({
         severity: "warn",
-        summary: "Creació de referència",
-        detail: "La referència ja existeix",
+        summary: t("purchase.supplierReference.messages.creation"),
+        detail: t("purchase.supplierReference.messages.alreadyExists"),
       });
       return;
     }
@@ -188,7 +190,7 @@ const submitForm = () => {
 const deleteReferences = (event: any, contact: SupplierReference) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la referència?`,
+    message: t("purchase.supplierReference.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -9,32 +9,32 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Ubicacions</span>
+          <span class="text-900 font-bold">{{ t("warehouse.locations.title") }}</span>
           <div class="flex align-items-center gap-2">
             <Select
               v-model="selectedTypeFilter"
               :options="typeFilterOptions"
               optionLabel="label"
               optionValue="value"
-              placeholder="Tots els tipus"
+              :placeholder="t('warehouse.placeholders.allLocationTypes')"
               style="width: 14rem"
             />
             <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
           </div>
         </div>
       </template>
-      <Column field="name" header="Nom" style="width: 20%"></Column>
+      <Column field="name" :header="t('warehouse.fields.name')" style="width: 20%"></Column>
       <Column
         field="description"
-        header="Descripció"
+        :header="t('common.description')"
         style="width: 40%"
       ></Column>
-      <Column header="Tipus" style="width: 15%">
+      <Column :header="t('common.type')" style="width: 15%">
         <template #body="slotProps">
-          {{ getLocationTypeLabel(slotProps.data.locationType) }}
+          {{ getLocationTypeLabel(slotProps.data.locationType, t) }}
         </template>
       </Column>
-      <Column header="Desactivada" style="width: 10%">
+      <Column :header="t('warehouse.fields.disabled')" style="width: 10%">
         <template #body="slotProps">
           <BooleanColumn :value="slotProps.data.disabled"></BooleanColumn>
         </template>
@@ -72,12 +72,13 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   Warehouse,
   Location,
-  LOCATION_TYPE_OPTIONS,
+  getLocationTypeOptions,
   getLocationTypeLabel,
 } from "../types";
 import { getNewUuid } from "../../../utils/functions";
 import { useConfirm } from "primevue/useconfirm";
 import { computed, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import FormLocation from "./FormLocation.vue";
 
@@ -85,6 +86,7 @@ const props = defineProps<{
   warehouse: Warehouse;
   locations: Array<Location>;
 }>();
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: "add", location: Location): void;
@@ -100,10 +102,10 @@ interface TypeFilterOption {
   label: string;
 }
 
-const typeFilterOptions: TypeFilterOption[] = [
-  { value: null, label: "Tots" },
-  ...LOCATION_TYPE_OPTIONS,
-];
+const typeFilterOptions = computed<TypeFilterOption[]>(() => [
+  { value: null, label: t("warehouse.actions.all") },
+  ...getLocationTypeOptions(t),
+]);
 
 const filteredLocations = computed(() => {
   if (!selectedTypeFilter.value) return props.locations;
@@ -115,7 +117,7 @@ const filteredLocations = computed(() => {
 // ── Diàleg ───────────────────────────────────────────────────────────────────
 const dialogOptions = reactive({
   visible: false,
-  title: "Ubicació",
+  title: "",
   closable: true,
   position: "center",
   modal: true,
@@ -148,7 +150,9 @@ const openDialog = (action: FormActionMode, location: Location) => {
   selectedLocation.value = location;
   dialogOptions.visible = true;
   dialogOptions.title =
-    action === FormActionMode.CREATE ? "Crear ubicació" : "Actualitzar";
+    action === FormActionMode.CREATE
+      ? t("warehouse.locations.createTitle")
+      : t("warehouse.locations.updateTitle");
 };
 const onLocationSubmit = (location: Location) => {
   if (formAction.value === FormActionMode.CREATE) {
@@ -166,7 +170,7 @@ const dialogClosed = () => {
 const onDeleteRow = (event: any, location: Location) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la ubicació '${location.name}'?`,
+    message: t("warehouse.messages.confirmDeleteLocation", { name: location.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -10,7 +10,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Estats de màquina</span>
+        <span class="text-900 font-bold">{{ pt("Estats de màquina") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -19,44 +19,44 @@
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 40%"></Column>
-    <Column header="Color" style="width: 5%">
+    <Column field="name" :header="pt('Nom')" style="width: 25%"></Column>
+    <Column field="description" :header="pt('Descripció')" style="width: 40%"></Column>
+    <Column :header="pt('Color')" style="width: 5%">
       <template #body="slotProps">
         <ColorColumn :value="slotProps.data.color" />
       </template>
     </Column>
-    <Column header="Icona" style="width: 5%">
+    <Column :header="pt('Icona')" style="width: 5%">
       <template #body="slotProps">
         <IconColumn :value="slotProps.data.icon" />
       </template>
     </Column>
-    <Column header="Aturada" style="width: 2%">
+    <Column :header="pt('Aturada')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.stopped" />
       </template>
     </Column>
-    <Column header="Operaris" style="width: 2%">
+    <Column :header="pt('Operaris')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.operatorsAllowed" />
       </template>
     </Column>
-    <Column header="Tancada" style="width: 2%">
+    <Column :header="pt('Tancada')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.closed" />
       </template>
     </Column>
-    <Column header="Preferit" style="width: 2%">
+    <Column :header="pt('Preferit')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.preferred" />
       </template>
     </Column>
-    <Column header="Permet OF" style="width: 2%">
+    <Column :header="pt('Permet OF')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.workOrderAllowed" />
       </template>
     </Column>
-    <Column header="Desactivat" style="width: 2%">
+    <Column :header="pt('Desactivat')" style="width: 2%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -73,6 +73,9 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -129,7 +132,7 @@ const deleteButton = (event: any, machineStatus: MachineStatus) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchMachineStatuses();

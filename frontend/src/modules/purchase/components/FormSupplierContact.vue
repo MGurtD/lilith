@@ -2,7 +2,7 @@
   <form v-if="contact">
     <section class="three-columns">
       <BaseInput
-        label="Nom"
+        :label="t('purchase.supplierContact.fields.firstName')"
         id="firstName"
         v-model="contact.firstName"
         class="mb-2"
@@ -11,7 +11,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Cognoms"
+        :label="t('purchase.supplierContact.fields.lastName')"
         id="lastName"
         v-model="contact.lastName"
         class="mb-2"
@@ -20,7 +20,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Càrrec"
+        :label="t('purchase.supplierContact.fields.charge')"
         id="charge"
         v-model="contact.charge"
         class="mb-2"
@@ -32,7 +32,7 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Correu electrònic"
+        :label="t('purchase.supplierContact.fields.email')"
         id="email"
         v-model="contact.email"
         :class="{
@@ -41,7 +41,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Telèfon"
+        :label="t('purchase.supplierContact.fields.phone')"
         id="phone"
         v-model="contact.phone"
         :class="{
@@ -49,18 +49,18 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Predeterminat</label>
+        <label class="block text-900 mb-2">{{ t("purchase.supplierContact.fields.default") }}</label>
         <Checkbox v-model="contact.default" class="w-full" :binary="true" />
       </div>
     </section>
     <div>
-      <label class="block text-900 mb-2">Observacions</label>
+      <label class="block text-900 mb-2">{{ t("purchase.supplierContact.fields.observations") }}</label>
       <Textarea v-model="contact.observations" class="w-full" />
     </div>
 
     <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="cancel" />
+      <Button :label="t('purchase.supplierContact.actions.save')" @click="submitForm" />
+      <Button :label="t('purchase.supplierContact.actions.cancel')" severity="secondary" @click="cancel" />
     </div>
   </form>
 </template>
@@ -74,6 +74,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   contact: SupplierContact;
@@ -85,21 +86,22 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
   firstName: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(() => t("purchase.supplierContact.validation.firstNameRequired"))
+    .max(250, () => t("purchase.supplierContact.validation.firstNameMaxLength")),
   lastName: Yup.string()
-    .required("Els cognoms són obligatoris")
-    .max(250, "Els cognoms no poden superar els 250 carácters"),
+    .required(() => t("purchase.supplierContact.validation.lastNameRequired"))
+    .max(250, () => t("purchase.supplierContact.validation.lastNameMaxLength")),
   charge: Yup.string(),
   email: Yup.string()
-    .required("El correu és obligatori")
-    .email("Correu electrònic invàlid"),
+    .required(() => t("purchase.supplierContact.validation.emailRequired"))
+    .email(() => t("purchase.supplierContact.validation.emailInvalid")),
   phone: Yup.string()
-    .required("El telèfon és obligatori")
-    .max(15, "Ha superat la longitud màxima del telèfon"),
+    .required(() => t("purchase.supplierContact.validation.phoneRequired"))
+    .max(15, () => t("purchase.supplierContact.validation.phoneMaxLength")),
   phoneExtension: Yup.string(),
   observations: Yup.string(),
   disabled: Yup.boolean().required(),
@@ -126,7 +128,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.supplierContact.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

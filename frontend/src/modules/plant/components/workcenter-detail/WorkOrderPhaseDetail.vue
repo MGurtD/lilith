@@ -14,11 +14,11 @@
 
       <div class="phase-details">
         <div class="detail-row">
-          <span class="detail-label">Ref :</span>
+          <span class="detail-label">{{ $t("plant.ref") }}</span>
           <span class="detail-value">{{ reference }}</span>
         </div>
         <div v-if="phaseCode" class="detail-row">
-          <span class="detail-label">Fase:</span>
+          <span class="detail-label">{{ $t("plant.fase-2") }}</span>
           <span class="detail-value">
             <span class="phase-code">{{ phaseCode }}</span>
             <span v-if="phaseDescription" class="phase-description">

@@ -19,12 +19,14 @@ import { FormActionMode } from "../../../types/component";
 import router from "../../../router";
 import FormEnterprise from "../components/FormEnterprise.vue";
 import { usePlantModelStore } from "../store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const { enterprise } = storeToRefs(plantmodelStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await plantmodelStore.fetchEnterprise(route.params.id as string);
@@ -32,10 +34,10 @@ const loadView = async () => {
   if (!enterprise.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewEnterprise(route.params.id as string);
-    pageTitle = "Alta d'empresa";
+    pageTitle = t("production.detail.createEnterprise");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Empresa ${enterprise.value.name}`;
+    pageTitle = t("production.detail.enterpriseTitle", { name: enterprise.value.name });
   }
 
   store.setMenuItem({
@@ -57,10 +59,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await plantmodelStore.createEnterprise(data);
-    message = "Empresa creada correctament";
+    message = t("production.detail.createdEnterprise");
   } else {
     result = await plantmodelStore.updateEnterprise(data.id, data);
-    message = "Empresa actualizada correctament";
+    message = t("production.detail.updatedEnterprise");
   }
 
   if (result) {

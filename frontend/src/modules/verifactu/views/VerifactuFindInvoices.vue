@@ -31,7 +31,9 @@ import { useVerifactuStore } from "../store/verifactu";
 import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useUserFilterStore } from "../../../store/userfilter";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const toast = useToast();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
@@ -55,36 +57,31 @@ const yearOptions = Array.from({ length: currentYear - 2023 }, (_, i) => ({
 }));
 
 // Month options
-const monthOptions = [
-  { value: 1, label: "Gener" },
-  { value: 2, label: "Febrer" },
-  { value: 3, label: "Març" },
-  { value: 4, label: "Abril" },
-  { value: 5, label: "Maig" },
-  { value: 6, label: "Juny" },
-  { value: 7, label: "Juliol" },
-  { value: 8, label: "Agost" },
-  { value: 9, label: "Setembre" },
-  { value: 10, label: "Octubre" },
-  { value: 11, label: "Novembre" },
-  { value: 12, label: "Desembre" },
-];
+const monthOptions = computed(() =>
+  [
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
+  ].map((month, index) => ({
+    value: index + 1,
+    label: t(`verifactu.findInvoices.months.${month}`),
+  })),
+);
 
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "year",
-    label: "Any",
+    label: t("verifactu.findInvoices.filters.year"),
     type: "select",
     options: yearOptions,
-    placeholder: "Selecciona un any",
+    placeholder: t("verifactu.findInvoices.filters.yearPlaceholder"),
     size: "md",
   },
   {
     key: "month",
-    label: "Mes",
+    label: t("verifactu.findInvoices.filters.month"),
     type: "select",
-    options: monthOptions,
-    placeholder: "Selecciona un mes",
+    options: monthOptions.value,
+    placeholder: t("verifactu.findInvoices.filters.monthPlaceholder"),
     size: "md",
   },
 ]);
@@ -95,7 +92,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.SHIELD,
-    title: "Verifactu - Consulta de factures enviades",
+    title: t("verifactu.findInvoices.title"),
   });
 });
 
@@ -123,8 +120,8 @@ const searchInvoices = async () => {
   if (!filter.value.year || !filter.value.month) {
     toast.add({
       severity: "warn",
-      summary: "Filtre incomplet",
-      detail: "Si us plau, selecciona any i mes",
+      summary: t("verifactu.findInvoices.messages.incompleteFilter"),
+      detail: t("verifactu.findInvoices.messages.selectYearAndMonth"),
       life: 3000,
     });
     return;
@@ -139,8 +136,8 @@ const searchInvoices = async () => {
     if (response && response.invoices.length === 0) {
       toast.add({
         severity: "info",
-        summary: "Sense resultats",
-        detail: "No s'han trobat factures per al període seleccionat",
+        summary: t("verifactu.findInvoices.messages.noResults"),
+        detail: t("verifactu.findInvoices.table.empty"),
         life: 3000,
       });
     }
@@ -154,8 +151,8 @@ const searchInvoices = async () => {
   } catch (error) {
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "Error en la cerca de factures",
+      summary: t("common.error"),
+      detail: t("verifactu.findInvoices.messages.searchError"),
       life: 5000,
     });
   }

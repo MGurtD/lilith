@@ -25,6 +25,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { computed, ref, watch } from "vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useWorkMasterStore } from "../store/workmaster";

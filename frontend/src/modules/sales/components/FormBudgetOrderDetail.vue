@@ -1,8 +1,8 @@
 <template>
   <Tabs v-model:value="activeTab">
     <TabList>
-      <Tab value="0">Referència</Tab>
-      <Tab value="1">Marges</Tab>
+      <Tab value="0">{{ t('sales.components.referencia') }}</Tab>
+      <Tab value="1">{{ t('sales.components.marges') }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -10,7 +10,7 @@
           <section class="three-columns">
             <div class="mb-2">
               <DropdownReference
-                label="Referència"
+                :label="t('sales.components.referencia')"
                 v-model="detail.referenceId"
                 :customerId="header.customerId"
                 :fullName="true"
@@ -20,7 +20,7 @@
             <div>
               <BaseInput
                 class="mb-2"
-                label="Preu"
+                :label="t('sales.components.preu')"
                 v-model="referencePrice"
                 :type="BaseInputType.CURRENCY"
                 disabled
@@ -28,7 +28,7 @@
             </div>
             <div class="mb-2">
               <DropdownWorkmasters
-                label="Ruta de fabricació"
+                :label="t('sales.components.rutaDeFabricacio')"
                 v-model="detail.workMasterId"
                 :referenceId="detail.referenceId"
                 :activeByReference="true"
@@ -42,7 +42,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Producció"
+                :label="t('sales.components.costProduccio')"
                 v-model="detail.productionCost"
                 :type="BaseInputType.CURRENCY"
                 disabled
@@ -51,7 +51,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="% Benefici Producció"
+                :label="t('sales.components.beneficiProduccio')"
                 v-model="detail.productionProfit"
                 :type="BaseInputType.NUMERIC"
                 :decimals="2"
@@ -64,7 +64,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Material"
+                :label="t('sales.components.costMaterial')"
                 v-model="detail.materialCost"
                 :type="BaseInputType.CURRENCY"
                 disabled
@@ -73,7 +73,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="% Benefici Material"
+                :label="t('sales.components.beneficiMaterial')"
                 v-model="detail.materialProfit"
                 :type="BaseInputType.NUMERIC"
                 :decimals="2"
@@ -86,7 +86,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Servei"
+                :label="t('sales.components.costServei')"
                 v-model="detail.serviceCost"
                 :type="BaseInputType.CURRENCY"
                 @update:modelValue="updateCosts()"
@@ -96,7 +96,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Transport "
+                :label="t('sales.components.costTransport')"
                 v-model="detail.transportCost"
                 :type="BaseInputType.CURRENCY"
                 @update:modelValue="updateCosts()"
@@ -106,7 +106,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="% Benefici Externs"
+                :label="t('sales.components.beneficiExterns')"
                 v-model="detail.externalProfit"
                 :type="BaseInputType.NUMERIC"
                 :decimals="2"
@@ -121,7 +121,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Quantitat"
+                :label="t('sales.components.quantitat')"
                 v-model="detail.quantity"
                 :type="BaseInputType.NUMERIC"
                 :class="{
@@ -133,7 +133,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Unitari"
+                :label="t('sales.components.costUnitari')"
                 v-model="detail.unitCost"
                 :type="BaseInputType.CURRENCY"
                 disabled
@@ -142,7 +142,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Cost Total"
+                :label="t('sales.components.costTotal')"
                 v-model="detail.totalCost"
                 :type="BaseInputType.CURRENCY"
                 disabled
@@ -151,7 +151,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="% Benefici"
+                :label="t('sales.components.benefici')"
                 v-model="detail.profit"
                 :type="BaseInputType.NUMERIC"
                 :class="{
@@ -163,7 +163,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="% Descompte"
+                :label="t('sales.components.descompte')"
                 v-model="detail.discount"
                 :type="BaseInputType.NUMERIC"
                 :decimals="2"
@@ -175,7 +175,7 @@
             </div>
             <BaseInput
               class="mb-2 budgetordercostinput"
-              label="Preu Unitari"
+              :label="t('sales.components.preuUnitari')"
               v-model="detail.unitPrice"
               :type="BaseInputType.CURRENCY"
               @update:modelValue="updateUnitPrice()"
@@ -183,7 +183,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Total"
+                :label="t('sales.components.total')"
                 v-model="detail.amount"
                 disabled
                 :type="BaseInputType.CURRENCY"
@@ -198,7 +198,7 @@
             <div>
               <BaseInput
                 class="mb-2 budgetordercostinput"
-                label="Descripció"
+                :label="t('sales.components.descripcio')"
                 v-model="detail.description"
                 :type="BaseInputType.TEXT"
                 :class="{
@@ -209,11 +209,11 @@
           </section>
           <section class="mt-2">
             <div>
-              <label class="block text-900 mb-2">Notes Internes</label>
+              <label class="block text-900 mb-2">{{ t('sales.components.notesInternes') }}</label>
               <Textarea
                 class="w-full"
                 rows="3"
-                placeholder="Notes internes"
+                :placeholder="t('sales.components.notesInternes')"
                 v-model="detail.userNotes"
               />
             </div>
@@ -237,6 +237,7 @@
   </Tabs>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { computed, ref, toRefs, onMounted } from "vue";
 import {
@@ -260,6 +261,7 @@ import DropdownWorkmasters from "../../production/components/DropdownWorkmasters
 import TableWorkmasterProfit from "./TableWorkmasterProfit.vue";
 import type { WorkmastersOptionsLoadedPayload } from "../../production/types";
 
+const { t } = useI18n();
 const workmasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
 const toast = useToast();
@@ -522,14 +524,14 @@ const updateUnitPrice = () => {
 
 const schema = Yup.object().shape({
   quantity: Yup.number()
-    .required("La quantitat és obligatoria")
+    .required(t("sales.validation.quantityRequired"))
     .min(1, "La quantitat ha de ser un número positiu"),
   amount: Yup.number()
-    .required("El total és obligatori")
+    .required(t("sales.validation.totalRequired"))
     .min(0, "El total ha de ser un número igual o major que 0"),
-  profit: Yup.number().required("El benefici és obligatori"),
-  discount: Yup.number().required("El descompte és obligatori"),
-  unitPrice: Yup.number().required("El preu unitari és obligatori"),
+  profit: Yup.number().required(t("sales.validation.profitRequired")),
+  discount: Yup.number().required(t("sales.validation.discountRequired")),
+  unitPrice: Yup.number().required(t("sales.validation.unitPriceRequired")),
 });
 const validation = ref({
   result: false,
@@ -552,7 +554,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

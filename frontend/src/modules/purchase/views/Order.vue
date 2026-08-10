@@ -1,7 +1,7 @@
 <template>
   <main v-if="order">
     <SplitButton
-      label="Guardar"
+      :label="t('purchase.order.actions.save')"
       @click="submitForm"
       :model="items"
       :size="'small'"
@@ -20,7 +20,7 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Detall de la comanda</span>
+          <span class="text-900 font-bold">{{ t("purchase.orderDetail.title") }}</span>
           <div>
             <Button
               :size="'small'"
@@ -46,7 +46,7 @@
       />
     </Dialog>
   </main>
-  <main v-else>Carregant comanda ...</main>
+  <main v-else>{{ t("purchase.order.messages.loading") }}</main>
 </template>
 <script setup lang="ts">
 import FormOrder from "../components/FormOrder.vue";
@@ -76,6 +76,7 @@ import { useSuppliersStore } from "../store/suppliers";
 import { useExerciseStore } from "../../shared/store/exercise";
 import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const route = useRoute();
@@ -88,16 +89,17 @@ const orderStore = useOrderStore();
 const suppliersStore = useSuppliersStore();
 const exerciseStore = useExerciseStore();
 const lifecycleStore = useLifecyclesStore();
+const { t } = useI18n();
 const { order } = storeToRefs(orderStore);
 
 const items = [
   {
-    label: "Descarregar",
+    label: t("purchase.order.actions.download"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(),
   },
   {
-    label: "Imprimir PDF",
+    label: t("purchase.order.actions.printPdf"),
     icon: PrimeIcons.FILE_PDF,
     command: () => printPdf(),
   },
@@ -115,7 +117,7 @@ const loadView = async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
-    title: `Comanda de compra ${order.value?.number}`,
+    title: t("purchase.order.title", { number: order.value?.number }),
     backButtonVisible: true,
   });
 };
@@ -130,8 +132,8 @@ const submitForm = async () => {
   if (!order.value?.date) {
     toast.add({
       severity: "error",
-      summary: "Error al crear la comanda ",
-      detail: "La data no pot estar buida",
+      summary: t("purchase.order.messages.saveError"),
+      detail: t("purchase.order.validation.dateRequired"),
       life: 5000,
     });
     return false;
@@ -146,7 +148,7 @@ const onOrderSubmit = async () => {
   let message = "";
   if (order.value) {
     result = await orderStore.update(order.value.id, order.value);
-    message = "Comanda actualizada correctament";
+    message = t("purchase.order.messages.updated");
 
     if (result) {
       toast.add({
@@ -161,7 +163,7 @@ const onOrderSubmit = async () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Linea",
+  title: t("purchase.orderDetail.title"),
   closable: true,
   position: "center",
   modal: true,
@@ -185,7 +187,7 @@ const openCreateDetailForm = () => {
     disabled: false,
   } as PurchaseOrderDetail;
 
-  dialogOptions.title = "Crear línia";
+  dialogOptions.title = t("purchase.orderDetail.dialogs.create");
   dialogOptions.visible = true;
 };
 
@@ -194,7 +196,7 @@ const openEditDetailForm = (detail: PurchaseOrderDetail) => {
   selectedDetail.value = detail;
   referenceStore.setNewReference(getNewUuid(), ReferenceCategoryEnum.MATERIAL);
 
-  dialogOptions.title = "Modificar línia";
+  dialogOptions.title = t("purchase.orderDetail.dialogs.edit");
   dialogOptions.visible = true;
 };
 
@@ -222,7 +224,7 @@ const editDetail = async (detail: PurchaseOrderDetail) => {
 
 const removeDetail = async (detail: PurchaseOrderDetail) => {
   confirm.require({
-    message: `Está segur que vols la línia?`,
+    message: t("purchase.orderDetail.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -262,8 +264,8 @@ const printInvoice = async () => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("purchase.order.messages.reportError"),
+        detail: t("purchase.order.messages.reportGenerationError"),
       });
     }
   }

@@ -23,19 +23,19 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Període</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
         <DatePicker
           v-model="filter.dates"
           selectionMode="range"
           dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
+          :placeholder="t('sales.list.periodPlaceholder')"
           showIcon
           class="w-full"
           size="small"
         />
       </div>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.customer") }}</label>
         <DropdownCustomers label="" v-model="filter.customerId" />
       </div>
     </template>
@@ -44,7 +44,7 @@
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.deliveryNotes.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
@@ -61,7 +61,8 @@ import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
@@ -86,30 +87,33 @@ const store = useStore();
 const deliveryNoteStore = useDeliveryNoteStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
-const columns = ref<Column[]>([
-  { field: "number", header: "Número", sortable: true, style: "width: 15%" },
-  { field: "createdOn", header: "Data Creació", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
-  { field: "deliveryDate", header: "Data Entrega", columnType: ColumnType.Date, sortable: true, style: "width: 15%" },
+const columns = computed<Column[]>(() => [
+  { field: "number", header: t("common.number"), sortable: true, style: "width: 15%" },
+  { field: "createdOn", header: t("sales.list.columns.createdOn"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "deliveryDate", header: t("sales.list.columns.deliveryDate"), columnType: ColumnType.Date, sortable: true, style: "width: 15%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
     style: "width: 30%",
   },
   {
     field: "statusId",
-    header: "Estat",
+    header: t("common.status"),
     columnType: ColumnType.Lookup,
     resolver: lifecycleStore.getStatusNameById,
     style: "width: 30%",
   },
 ]);
 
-const filterMetadata = createSalesTableViewFilterMetadata(columns.value);
+const filterMetadata = computed(() =>
+  createSalesTableViewFilterMetadata(columns.value),
+);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -117,7 +121,6 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear albarà",
   closable: true,
   position: "center",
   modal: true,
@@ -138,11 +141,14 @@ onMounted(async () => {
   setCurrentYear();
   await filterData();
 
-  store.setMenuItem({
-    icon: PrimeIcons.APPLE,
-    title: "Albarans d'entrega",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.APPLE, title: t("sales.deliveryNotes.title") });
+};
+
+watch(locale, setMenuItem);
 
 onUnmounted(() => {
   deliveryNoteStore.deliveryNotes = undefined;
@@ -185,8 +191,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -197,10 +203,10 @@ const createDeliveryNote = async () => {
   if (!response?.result) {
     toast.add({
       severity: "warn",
-      summary: "Error al crear l'albarà",
+      summary: t("sales.deliveryNotes.messages.createError"),
       detail:
         response?.errors?.[0] ??
-        "Error desconegut, contacte amb l'administrador.",
+        t("sales.list.messages.unknownError"),
       life: 10000,
     });
     return;
@@ -215,7 +221,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteDeliveryNote = async (order: SalesOrderHeader) => {
   confirm.require({
-    message: `Està segur que vol eliminar l'albarà?`,
+    message: t("sales.deliveryNotes.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -224,7 +230,7 @@ const deleteDeliveryNote = async (order: SalesOrderHeader) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
 

@@ -4,13 +4,11 @@
     :modal="true"
     :draggable="false"
     :style="{ width: '92vw', maxWidth: '1080px' }"
-    header="Estoc disponible"
+    :header='$t("plant.estoc-disponible")'
   >
     <div class="stock-dialog">
       <div class="stock-dialog-header">
-        <span class="stock-dialog-caption">
-          Selecciona la quantitat i l'acció a realitzar sobre l'estoc.
-        </span>
+        <span class="stock-dialog-caption">{{ $t("plant.selecciona-la-quantitat-i-l-accio-a-realitzar-sobre-l-estoc") }}</span>
       </div>
 
       <BomMaterialHeader
@@ -27,7 +25,7 @@
 
       <div v-if="stockItems.length === 0" class="stock-empty">
         <i class="pi pi-exclamation-circle"></i>
-        <span>Sense estoc disponible</span>
+        <span>{{ $t("plant.sense-estoc-disponible") }}</span>
       </div>
 
       <template v-else>
@@ -35,7 +33,7 @@
         <div v-if="supplyStockItems.length > 0" class="stock-group">
           <div class="stock-group-header stock-group-header--supply">
             <i class="pi pi-box"></i>
-            <span>Estoc aprovisionat</span>
+            <span>{{ $t("plant.estoc-aprovisionat") }}</span>
           </div>
           <DataTable
             :value="supplyStockItems"
@@ -43,7 +41,7 @@
             scrollable
             class="stock-table"
           >
-            <Column header="Ubicació" style="min-width: 180px">
+            <Column :header='$t("plant.ubicacio")' style="min-width: 180px">
               <template #body="slotProps">
                 <div class="stock-location-cell">
                   <span class="font-semibold">{{ slotProps.data.locationName }}</span>
@@ -53,7 +51,7 @@
                 </div>
               </template>
             </Column>
-            <Column header="Mesures" style="min-width: 260px">
+            <Column :header='$t("plant.mesures")' style="min-width: 260px">
               <template #body="slotProps">
                 <div class="stock-measures">
                   <span
@@ -68,14 +66,14 @@
             </Column>
             <Column
               field="quantity"
-              header="Disponible"
+              :header='$t("plant.disponible")'
               style="width: 110px; text-align: right"
             >
               <template #body="slotProps">
                 <span class="font-semibold">{{ slotProps.data.quantity }}</span>
               </template>
             </Column>
-            <Column header="Quantitat" style="width: 140px">
+            <Column :header='$t("plant.quantitat")' style="width: 140px">
               <template #body="slotProps">
                 <InputNumber
                   v-model="moveQuantities[slotProps.data.stockId]"
@@ -91,7 +89,7 @@
                 />
               </template>
             </Column>
-            <Column header="Retornar" style="width: 90px; text-align: center">
+            <Column :header='$t("plant.retornar")' style="width: 90px; text-align: center">
               <template #body="slotProps">
                 <Button
                   icon="pi pi-arrow-left"
@@ -101,7 +99,7 @@
                   :loading="movingStockId === slotProps.data.stockId"
                   :disabled="movingStockId !== null || !isValidQuantity(slotProps.data.stockId, slotProps.data.quantity)"
                   @click="handleReturnStock(slotProps.data)"
-                  v-tooltip.top="'Retornar a ubicació per defecte'"
+                  v-tooltip.top="$t('plant.tooltips.returnToDefaultLocation')"
                 />
               </template>
             </Column>
@@ -112,7 +110,7 @@
         <div v-if="otherStockItems.length > 0" class="stock-group">
           <div class="stock-group-header stock-group-header--available">
             <i class="pi pi-warehouse"></i>
-            <span>Estoc disponible</span>
+            <span>{{ $t("plant.estoc-disponible") }}</span>
           </div>
           <DataTable
             :value="otherStockItems"
@@ -120,7 +118,7 @@
             scrollable
             class="stock-table"
           >
-            <Column header="Ubicació" style="min-width: 180px">
+            <Column :header='$t("plant.ubicacio")' style="min-width: 180px">
               <template #body="slotProps">
                 <div class="stock-location-cell">
                   <span class="font-semibold">{{ slotProps.data.locationName }}</span>
@@ -130,7 +128,7 @@
                 </div>
               </template>
             </Column>
-            <Column header="Mesures" style="min-width: 260px">
+            <Column :header='$t("plant.mesures")' style="min-width: 260px">
               <template #body="slotProps">
                 <div class="stock-measures">
                   <span
@@ -145,14 +143,14 @@
             </Column>
             <Column
               field="quantity"
-              header="Disponible"
+              :header='$t("plant.disponible")'
               style="width: 110px; text-align: right"
             >
               <template #body="slotProps">
                 <span class="font-semibold">{{ slotProps.data.quantity }}</span>
               </template>
             </Column>
-            <Column header="Quantitat" style="width: 140px">
+            <Column :header='$t("plant.quantitat")' style="width: 140px">
               <template #body="slotProps">
                 <InputNumber
                   v-model="moveQuantities[slotProps.data.stockId]"
@@ -168,7 +166,7 @@
                 />
               </template>
             </Column>
-            <Column header="Moure" style="width: 90px; text-align: center">
+            <Column :header='$t("plant.moure")' style="width: 90px; text-align: center">
               <template #body="slotProps">
                 <Button
                   icon="pi pi-arrow-right"
@@ -178,7 +176,7 @@
                   :loading="movingStockId === slotProps.data.stockId"
                   :disabled="movingStockId !== null || !isValidQuantity(slotProps.data.stockId, slotProps.data.quantity)"
                   @click="handleMoveStock(slotProps.data)"
-                  v-tooltip.top="'Moure a ubicació d\'aprovisionament'"
+                  v-tooltip.top="$t('plant.tooltips.moveToSupplyLocation')"
                 />
               </template>
             </Column>

@@ -8,12 +8,12 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Transicions</span>
+        <span class="text-900 font-bold">{{ $t('shared.statusTransitions.title') }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAdd" />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column header="Transició" style="width: 50%">
+    <Column field="name" :header="$t('shared.statusTransitions.columns.name')" style="width: 25%"></Column>
+    <Column :header="$t('shared.statusTransitions.columns.transition')" style="width: 50%">
       <template #body="slotProps">
         {{ getTransitionDescription(slotProps.data) }}
       </template>

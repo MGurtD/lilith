@@ -3,7 +3,7 @@
     <section class="three-columns">
       <div>
         <DropdownReference
-          label="Referència de compra"
+          :label="t('purchase.orderDetail.fields.purchaseReference')"
           v-model="detail.referenceId"
           :fullName="true"
           :disabled="detail.receivedQuantity > 0"
@@ -12,15 +12,15 @@
       </div>
       <div>
         <DropdownLifecycleStatusTransitions
-          label="Estat"
+          :label="t('purchase.order.fields.status')"
           :statusId="detail.statusId"
           v-model="detail.statusId"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Data prevista</label>
+        <label class="block text-900 mb-2">{{ t("purchase.orderDetail.fields.expectedReceiptDate") }}</label>
         <DatePicker
-          label="Data prevista"
+          :label="t('purchase.orderDetail.fields.expectedReceiptDate')"
           v-model="detail.expectedReceiptDate"
           dateFormat="dd/mm/yy"
         />
@@ -30,7 +30,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.TEXT"
-          label="Descripció"
+          :label="t('purchase.orderDetail.fields.description')"
           id="description"
           v-model="detail.description"
         />
@@ -42,7 +42,7 @@
         <BaseInput
           :disabled="detail.receivedQuantity > 0"
           :type="BaseInputType.NUMERIC"
-          label="Quantitat"
+          :label="t('purchase.orderDetail.fields.quantity')"
           v-model="detail.quantity"
           @input="calculateAmount"
         />
@@ -50,7 +50,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu"
+          :label="t('purchase.orderDetail.fields.price')"
           v-model="detail.amount"
           :disabled="detail.receivedQuantity > 0"
         />
@@ -58,7 +58,7 @@
     </section>
 
     <Button
-      label="Crear"
+      :label="t('purchase.order.actions.create')"
       @click="submitForm"
       style="float: right"
       :size="'small'"
@@ -78,6 +78,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
 import PurchaseServices from "../services";
@@ -95,11 +96,12 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
-  quantity: Yup.number().min(1).required("La quantitat ha de ser superior a 1"),
-  referenceId: Yup.string().required("La referencia és obligatoria"),
-  description: Yup.string().required("La descripció és obligatoria"),
+  quantity: Yup.number().min(1).required(t("purchase.orderDetail.validation.quantityMinimum")),
+  referenceId: Yup.string().required(t("purchase.orderDetail.validation.referenceRequired")),
+  description: Yup.string().required(t("purchase.orderDetail.validation.descriptionRequired")),
 });
 const validation = ref({
   result: false,
@@ -176,7 +178,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

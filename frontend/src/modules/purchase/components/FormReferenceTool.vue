@@ -1,7 +1,7 @@
 <template>
   <section class="three-columns">
     <div class="mt-1">
-      <label class="block text-900 mb-2">Impost</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.tax") }}</label>
       <Select
         v-model="reference.taxId"
         :options="taxesStore.taxes"
@@ -11,7 +11,7 @@
       />
     </div>
     <div class="mt-1">
-      <label class="block text-900 mb-2">Àrea de producció</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.productionArea") }}</label>
       <Select
         v-model="reference.areaId"
         :options="plantModelStore.areas"
@@ -27,6 +27,7 @@ import { Reference } from "../../shared/types";
 import { useTaxesStore } from "../../shared/store/tax";
 import { onMounted } from "vue";
 import { usePlantModelStore } from "../../production/store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   reference: Reference;
@@ -34,6 +35,7 @@ const props = defineProps<{
 
 const taxesStore = useTaxesStore();
 const plantModelStore = usePlantModelStore();
+const { t } = useI18n();
 
 onMounted(async () => {
   if (!taxesStore.taxes) await taxesStore.fetchAll();

@@ -30,11 +30,11 @@ const emitDateSelected = () =>
     v-model="store.exercisePicker.exercise"
     :options="exercises"
     optionLabel="name"
-    placeholder="Any"
+    :placeholder="$t('ui.exercise')"
     @change="setExerciseDates"
   />
   <DatePicker
-    placeholder="Període"
+    :placeholder="$t('ui.period')"
     v-model="store.exercisePicker.dates"
     selectionMode="range"
     dateFormat="dd/mm/yy"

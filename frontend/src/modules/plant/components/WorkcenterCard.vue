@@ -16,7 +16,7 @@
       <div class="workcenter-card__stat">
         <div class="stat__label">
           <i class="pi pi-hashtag"></i>
-          <span>Ordre</span>
+          <span>{{ $t("plant.ordre") }}</span>
         </div>
         <div class="stat__value">
           {{ currentWorkOrder?.workOrderCode || "-" }}
@@ -26,7 +26,7 @@
       <div class="workcenter-card__stat">
         <div class="stat__label">
           <i class="pi pi-cog"></i>
-          <span>Fase</span>
+          <span>{{ $t("plant.fase") }}</span>
         </div>
         <div class="stat__value stat__value--phase">
           {{ formattedPhase }}
@@ -36,7 +36,7 @@
       <div class="workcenter-card__stat">
         <div class="stat__label">
           <i class="pi pi-tag"></i>
-          <span>Referència</span>
+          <span>{{ $t("plant.referencia") }}</span>
         </div>
         <div class="stat__value stat__value--reference">
           {{ formattedReference }}
@@ -46,7 +46,7 @@
       <div class="workcenter-card__stat">
         <div class="stat__label">
           <i :class="PrimeIcons.CLOCK"></i>
-          <span>Temps</span>
+          <span>{{ $t("plant.temps") }}</span>
         </div>
         <div class="stat__value stat__value--time">
           {{ formattedTime }}

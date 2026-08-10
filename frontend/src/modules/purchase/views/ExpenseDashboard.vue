@@ -14,12 +14,12 @@
       >
         <template #prepend>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Període</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.period") }}</label>
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.placeholders.selectPeriod')"
               showIcon
               size="small"
               class="w-full"
@@ -30,7 +30,7 @@
     </div>
     <div class="dashboard-kpis">
       <div class="kpi-card">
-        <div class="kpi-label">Total despesa</div>
+        <div class="kpi-label">{{ t("purchase.dashboard.totalExpense") }}</div>
         <div class="kpi-value text-primary">
           {{ formatCurrency(totalAmount) }}
         </div>
@@ -42,11 +42,11 @@
     <TabList>
       <Tab value="0">
         <i :class="PrimeIcons.CHART_BAR" class="mr-2"></i>
-        <span>Gràfics</span>
+        <span>{{ t("purchase.dashboard.charts") }}</span>
       </Tab>
       <Tab value="1">
         <i :class="PrimeIcons.LIST" class="mr-2"></i>
-        <span>Llistat</span>
+        <span>{{ t("purchase.dashboard.list") }}</span>
       </Tab>
     </TabList>
     <TabPanels>
@@ -54,7 +54,7 @@
         <div class="dashboard-container">
           <section class="dashboard-item">
             <header class="dashboard-item-header">
-              Agrupat despeses mensual
+              {{ t("purchase.dashboard.monthlyExpenses") }}
             </header>
             <div class="dashboard-item-chart">
               <Chart
@@ -67,7 +67,7 @@
           </section>
           <section class="dashboard-item">
             <header class="dashboard-item-header">
-              Gràfic de despeses per tipologia
+              {{ t("purchase.dashboard.expensesByType") }}
             </header>
             <div class="dashboard-item-chart">
               <Chart
@@ -92,6 +92,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import Chart from "primevue/chart";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "../../../store";
@@ -112,6 +113,7 @@ import { ChartOptions } from "../../../types/component";
 
 const store = useStore();
 const sharedDataStore = useSharedDataStore();
+const { t, locale } = useI18n();
 const selectedTabIndex = ref("0");
 
 const currentYear = new Date().getFullYear();
@@ -126,24 +128,24 @@ const filter = ref({
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "type",
-    label: "Tipus",
+    label: t("purchase.fields.type"),
     type: "select",
     options: [
-      { label: "Compra", value: "Compra" },
-      { label: "Despesa", value: "Despesa" },
+      { label: t("purchase.dashboard.purchase"), value: "Compra" },
+      { label: t("purchase.dashboard.expense"), value: "Despesa" },
     ],
-    placeholder: "Selecciona tipus",
+    placeholder: t("purchase.placeholders.selectType"),
     size: "md",
   },
   {
     key: "typeDetail",
-    label: "Detall",
+    label: t("purchase.dashboard.detail"),
     type: "select",
     options: (pieChartData.value?.labels ?? []).map((label) => ({
       label,
       value: label,
     })),
-    placeholder: "Selecciona detall",
+    placeholder: t("purchase.placeholders.selectDetail"),
     size: "md",
   },
 ]);
@@ -188,11 +190,15 @@ watch(
   },
 );
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Dashboard despeses",
+    title: t("purchase.dashboard.title"),
   });
+};
+
+onMounted(async () => {
+  setMenuTitle();
 
   await sharedDataStore.fetchMasterData();
   expenseTypes.value = await ExpenseServices.ExpenseType.getAll();
@@ -265,14 +271,14 @@ const transformConsolidatedExpensesToChartOptions = (
 
   const groupedData = _.groupBy(expenses, fieldToGroup);
   const sortedKeys = Object.keys(groupedData).sort((a, b) =>
-    a.localeCompare(b, "ca", { sensitivity: "base" }),
+    a.localeCompare(b, locale.value, { sensitivity: "base" }),
   );
   options.labels = sortedKeys;
 
   const chartColors = getChartColors(options.labels.length);
   options.datasets = [
     {
-      label: "Despeses",
+      label: t("purchase.dashboard.expenses"),
       data: [],
       backgroundColor: chartColors,
       borderColor: chartColors,
@@ -291,6 +297,18 @@ const transformConsolidatedExpensesToChartOptions = (
 
   return options;
 };
+
+watch(locale, () => {
+  setMenuTitle();
+  chartData.value = transformConsolidatedExpensesToChartOptions(
+    consolidatedExpenses.value,
+    "monthPaymentKey",
+  );
+  pieChartData.value = transformConsolidatedExpensesToChartOptions(
+    consolidatedExpenses.value,
+    "typeDetail",
+  );
+});
 
 const getChartColors = (numberOfColors: number): Array<string> => {
   const documentStyle = getComputedStyle(document.body);

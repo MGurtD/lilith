@@ -24,11 +24,11 @@
       >
         <template #prepend>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Magatzem</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.warehouse") }}</label>
             <DropdownWarehouses label="" v-model="filter.warehouseId" />
           </div>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Referència</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.reference") }}</label>
             <DropdownReference
               label=""
               :fullName="true"
@@ -39,20 +39,21 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 28%" />
-    <Column field="warehouseName" header="Magatzem" style="width: 16%" />
-    <Column field="locationName" header="Ubicació" style="width: 16%" />
-    <Column field="quantity" header="Uds." style="width: 12%" />
-    <Column field="width" header="Ample (x) mm" style="width: 12%" />
-    <Column field="length" header="Llarg (y) mm" style="width: 12%" />
-    <Column field="height" header="Alt (z) mm" style="width: 12%" />
-    <Column field="diameter" header="Diàmetre mm" style="width: 12%" />
-    <Column field="thickness" header="Gruix mm" style="width: 12%" />
+    <Column field="referenceDisplay" :header="t('warehouse.fields.reference')" :sortable="true" style="width: 28%" />
+    <Column field="warehouseName" :header="t('warehouse.fields.warehouse')" style="width: 16%" />
+    <Column field="locationName" :header="t('warehouse.fields.location')" style="width: 16%" />
+    <Column field="quantity" :header="t('warehouse.fields.units')" style="width: 12%" />
+    <Column field="width" :header="t('warehouse.fields.widthMmAxis')" style="width: 12%" />
+    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')" style="width: 12%" />
+    <Column field="height" :header="t('warehouse.fields.heightMmAxis')" style="width: 12%" />
+    <Column field="diameter" :header="t('warehouse.fields.diameterMm')" style="width: 12%" />
+    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')" style="width: 12%" />
   </DataTable>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import TableFilter, {
   type FilterBodyWidth,
@@ -64,6 +65,7 @@ import { useStockStore } from "../store/stock";
 import { useWarehouseStore } from "../store/warehouse";
 
 const store = useStore();
+const { t } = useI18n();
 const stockStore = useStockStore();
 const warehouseStore = useWarehouseStore();
 
@@ -103,7 +105,7 @@ const cleanFilter = () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Gestió de magatzems - Estocs",
+    title: t("warehouse.stocks.title"),
   });
 
   await stockStore.fetchStocks();

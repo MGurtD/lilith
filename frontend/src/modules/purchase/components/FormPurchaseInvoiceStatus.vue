@@ -4,7 +4,7 @@
             <BaseInput
                 name="name"
                 class="mb-2"
-                label="Nom de l'estat"
+                :label="t('purchase.purchaseInvoiceStatus.fields.name')"
                 id="name"
                 v-model="purchaseInvoiceStatus.name"
                 :class="{
@@ -14,7 +14,7 @@
             <BaseInput
                 name="description"
                 class="mb-2"
-                label="Descripció"
+                :label="t('common.description')"
                 id="description"
                 v-model="purchaseInvoiceStatus.description"
                 :class="{
@@ -22,7 +22,7 @@
                 }"
             ></BaseInput>
             <div>
-              <label class="block text-900 mb-2">Desactivat</label>
+              <label class="block text-900 mb-2">{{ t("purchase.purchaseInvoiceStatus.fields.disabled") }}</label>
               <Checkbox
                 v-model="purchaseInvoiceStatus.disabled"
                 class="w-full"
@@ -31,7 +31,7 @@
             </div>
         </div>
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('common.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -45,6 +45,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   purchaseInvoiceStatus: PurchaseInvoiceStatus;
@@ -56,14 +57,15 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
     name: Yup.string()
-        .required("El nom de l'estat és obligatori")
-        .max(50, "El nom de l'estat no pot superar els 50 caràcters"),
+        .required(t("purchase.purchaseInvoiceStatus.validation.nameRequired"))
+        .max(50, t("purchase.purchaseInvoiceStatus.validation.nameMaxLength")),
     description: Yup.string()
-        .required("La descripció de l'estat és obligatòri")
-        .max(250, "La descripció de l'estat no pot superar els 50 caràcters"),
+        .required(t("purchase.purchaseInvoiceStatus.validation.descriptionRequired"))
+        .max(250, t("purchase.purchaseInvoiceStatus.validation.descriptionMaxLength")),
 });
 const validation = ref({
   result: false,
@@ -86,7 +88,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

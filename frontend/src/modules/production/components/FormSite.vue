@@ -2,7 +2,7 @@
   <form v-if="site">
     <section class="three-columns mb-2">
       <BaseInput
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="site.name"
         :class="{
@@ -10,7 +10,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="site.description"
         :class="{
@@ -28,7 +28,7 @@
     </section>
     <section class="three-columns mb-2">
       <BaseInput
-        label="Telèfon"
+        :label="t('production.components.telefon')"
         id="phone"
         v-model="site.phoneNumber"
         :class="{
@@ -36,7 +36,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Email general"
+        :label="t('production.components.emailGeneral')"
         id="email"
         v-model="site.email"
         :class="{
@@ -44,7 +44,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Email compres"
+        :label="t('production.components.emailCompres')"
         id="emailPurchase"
         v-model="site.emailPurchase"
         :class="{
@@ -54,7 +54,7 @@
     </section>
     <section class="three-columns mb-2">
       <BaseInput
-        label="Email ventes"
+        :label="t('production.components.emailVentes')"
         id="emailSales"
         v-model="site.emailSales"
         :class="{
@@ -62,7 +62,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Empresa</label>
+        <label class="block text-900 mb-2">{{ t("production.components.empresa") }}</label>
         <Select
           v-model="site.enterpriseId"
           :options="siteStore.enterprises"
@@ -75,7 +75,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="site.disabled" class="w-full" :binary="true" />
       </div>
     </section>
@@ -86,12 +86,15 @@
     />
 
     <div class="flex justify-content-end">
-      <Button label="Guardar" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import LocationFields from "@/components/LocationFields.vue";
@@ -123,21 +126,21 @@ const siteStore = usePlantModelStore();
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 caràcters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatòria")
-    .max(250, "La descripció no pot superar els 250 caràcters"),
+    .required(t("production.validation.laDescripcioEsObligatoria"))
+    .max(250, t("production.validation.laDescripcioNoPotSuperarEls250Caracters")),
   email: Yup.string()
-    .email("El correu electrònic no és vàlid")
-    .required("El correu electrònic és obligatori"),
+    .email(t("production.validation.elCorreuElectronicNoEsValid"))
+    .required(t("production.validation.elCorreuElectronicEsObligatori")),
   emailSales: Yup.string()
-    .email("El correu electrònic de ventes no és vàlid")
-    .required("El correu electrònic de ventes és obligatori"),
+    .email(t("production.validation.elCorreuElectronicDeVentesNoEsValid"))
+    .required(t("production.validation.elCorreuElectronicDeVentesEsObligatori")),
   emailPurchase: Yup.string()
-    .email("El correu electrònic de compres no és vàlid")
-    .required("El correu electrònic de compres és obligatori"),
-  enterpriseId: Yup.string().required("L'empresa és obligatòria"),
+    .email(t("production.validation.elCorreuElectronicDeCompresNoEsValid"))
+    .required(t("production.validation.elCorreuElectronicDeCompresEsObligatori")),
+  enterpriseId: Yup.string().required(t("production.validation.lEmpresaEsObligatoria")),
 });
 const validation = ref({
   result: false,
@@ -160,7 +163,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

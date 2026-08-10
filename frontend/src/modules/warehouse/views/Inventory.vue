@@ -20,7 +20,7 @@
       >
         <template #prepend>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Ubicació</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.location") }}</label>
             <DropdownWarehousesWithLocations
               label=""
               v-model="filter.locationId"
@@ -29,21 +29,21 @@
         </template>
         <template #append>
           <Button
-            label="Guardar"
+            :label="t('common.save')"
             icon="pi pi-save"
             size="small"
             rounded
-            aria-label="Guardar moviments"
+            :aria-label="t('warehouse.inventory.saveMovementsAria')"
             @click="saveMovement"
           />
         </template>
       </TableFilter>
     </template>
-    <Column field="referenceName" header="Referència" style="width: 28%">
+    <Column field="referenceName" :header="t('warehouse.fields.reference')" style="width: 28%">
     </Column>
-    <Column field="locationName" header="Ubicació"></Column>
-    <Column field="oldQuantity" header="Uds."></Column>
-    <Column header="Recompte" style="width: 12%">
+    <Column field="locationName" :header="t('warehouse.fields.location')"></Column>
+    <Column field="oldQuantity" :header="t('warehouse.fields.units')"></Column>
+    <Column :header="t('warehouse.inventory.count')" style="width: 12%">
       <template #body="slotProps">
         <BaseInput
           label=""
@@ -52,11 +52,11 @@
         ></BaseInput>
       </template>
     </Column>
-    <Column field="width" header="Ample (x) mm"></Column>
-    <Column field="length" header="Llarg (y) mm"></Column>
-    <Column field="height" header="Alt (z) mm"></Column>
-    <Column field="diameter" header="Diàmetre mm"></Column>
-    <Column field="thickness" header="Gruix mm"></Column>
+    <Column field="width" :header="t('warehouse.fields.widthMmAxis')"></Column>
+    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')"></Column>
+    <Column field="height" :header="t('warehouse.fields.heightMmAxis')"></Column>
+    <Column field="diameter" :header="t('warehouse.fields.diameterMm')"></Column>
+    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')"></Column>
   </DataTable>
   <Dialog :closable="true" v-model:visible="isDialogVisible" :modal="true">
     <FormInventoryNewMovements
@@ -76,7 +76,8 @@ import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
 
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
@@ -87,6 +88,7 @@ import { getNewUuid } from "../../../utils/functions";
 
 const store = useStore();
 const toast = useToast();
+const { t, locale } = useI18n();
 
 const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
@@ -98,27 +100,32 @@ const filter = ref({
   locationId: undefined as string | undefined,
 });
 
-const filterConfig: Array<FilterConfig> = [
+const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "referenceName",
-    label: "Referència",
+    label: t("warehouse.fields.reference"),
     type: "text",
-    placeholder: "Referència",
+    placeholder: t("warehouse.fields.reference"),
     size: "md",
     row: 0,
   },
-];
+]);
 
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "55%",
   tablet: "70%",
 };
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Inventari",
+    title: t("warehouse.inventory.title"),
   });
+};
+
+watch(locale, setMenuTitle, { immediate: true });
+
+onMounted(async () => {
 
   await refreshData();
 });
@@ -233,7 +240,7 @@ const saveMovement = async () => {
   if (results.filter((p) => p === true).length === promises.length) {
     toast.add({
       severity: "success",
-      summary: "Inventari creat correctament",
+      summary: t("warehouse.messages.inventoryCreated"),
       life: 5000,
     });
 
@@ -241,7 +248,7 @@ const saveMovement = async () => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al crear el moviment d'inventari",
+      summary: t("warehouse.messages.inventoryMovementError"),
       life: 5000,
     });
   }

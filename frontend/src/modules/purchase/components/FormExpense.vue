@@ -2,7 +2,7 @@
   <form v-if="expense">
     <section class="four-columns">
       <div class="mt-2">
-        <label class="block text-900 mb-2">Tipus</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.type") }}</label>
         <Select
           v-model="expense.expenseTypeId"
           :options="expenseStore.expenseTypes"
@@ -15,7 +15,7 @@
         />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Data Alta</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.creationDate") }}</label>
         <DatePicker
           id="creationDate"
           v-model="expense.creationDate"
@@ -25,7 +25,7 @@
         />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Data Pagament</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.paymentDate") }}</label>
         <DatePicker
           id="paymentDate"
           v-model="expense.paymentDate"
@@ -36,7 +36,7 @@
       </div>
       <div class="mt-2">
         <BaseInput
-          label="Import"
+          :label="$t('purchase.fields.amount')"
           id="amount"
           v-model="expense.amount"
           :type="BaseInputType.CURRENCY"
@@ -48,11 +48,11 @@
     </section>
     <section class="four-columns">
       <div class="mt-2">
-        <label class="block text-900 mb-2">Recurrent</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.recurring") }}</label>
         <Checkbox v-model="expense.recurring" class="w-full" :binary="true" />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Freqüència</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.frequency") }}</label>
         <Select
           v-model="expense.frecuency"
           :disabled="!expense.recurring"
@@ -67,14 +67,14 @@
       </div>
       <div class="mt-2">
         <BaseInput
-          label="Dia de pagament"
+          :label="$t('purchase.fields.paymentDay')"
           id="paymentDay"
           v-model="expense.paymentDay"
           :disabled="!expense.recurring"
         />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Data fi</label>
+        <label class="block text-900 mb-2">{{ $t("purchase.fields.endDate") }}</label>
         <DatePicker
           id="endDate"
           v-model="expense.endDate"
@@ -83,16 +83,16 @@
       </div>
     </section>
     <div>
-      <label class="block text-900 mb-2">Descripció</label>
+      <label class="block text-900 mb-2">{{ $t("purchase.fields.description") }}</label>
       <Textarea v-model="expense.description" class="w-full" />
     </div>
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="$t('common.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { useExpenseStore } from "../store/expense";
 import { Expense } from "../types";
@@ -105,6 +105,7 @@ import { useToast } from "primevue/usetoast";
 import { storeToRefs } from "pinia";
 import { BaseInputType } from "../../../types/component";
 import { convertDateTimeToJSON } from "../../../utils/functions";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   expense: Expense;
@@ -118,21 +119,22 @@ const emit = defineEmits<{
 onMounted(() => {});
 
 const expenseStore = useExpenseStore();
+const { t } = useI18n();
 const { expense } = storeToRefs(expenseStore);
 
-const frecuencies = ref([
-  { id: 1, name: "Mensual" },
-  { id: 2, name: "Bimensual" },
-  { id: 3, name: "Trimestral" },
-  { id: 6, name: "Semestral" },
-  { id: 12, name: "Anual" },
+const frecuencies = computed(() => [
+  { id: 1, name: t("purchase.frequency.monthly") },
+  { id: 2, name: t("purchase.frequency.bimonthly") },
+  { id: 3, name: t("purchase.frequency.quarterly") },
+  { id: 6, name: t("purchase.frequency.halfYearly") },
+  { id: 12, name: t("purchase.frequency.yearly") },
 ]);
 
 const schema = Yup.object().shape({
-  expenseTypeId: Yup.string().required("El tipus de despesa es obligatoria"),
-  creationDate: Yup.string().required("La data de creació es obligatoria"),
-  paymentDate: Yup.string().required("La data de pagament es obligatoria"),
-  amount: Yup.string().required("L'import es obligatori"),
+  expenseTypeId: Yup.string().required(t("purchase.validation.expenseTypeRequired")),
+  creationDate: Yup.string().required(t("purchase.validation.creationDateRequired")),
+  paymentDate: Yup.string().required(t("purchase.validation.paymentDateRequired")),
+  amount: Yup.string().required(t("purchase.validation.amountRequired")),
 });
 
 const validation = ref({
@@ -165,7 +167,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

@@ -29,14 +29,14 @@
           </div>
         </slot>
       </template>
-      <Column header="Nom" style="width: 25%">
+      <Column :header="t('purchase.supplierContact.columns.name')" style="width: 25%">
         <template #body="slotProps">
           {{ slotProps.data.firstName }} {{ slotProps.data.lastName }}
         </template>
       </Column>
-      <Column header="Càrrec" field="charge" style="width: 25%"></Column>
-      <Column header="Correu" field="email" style="width: 25%"></Column>
-      <Column header="Telèfon" field="phone" style="width: 25%"></Column>
+      <Column :header="t('purchase.supplierContact.columns.charge')" field="charge" style="width: 25%"></Column>
+      <Column :header="t('purchase.supplierContact.columns.email')" field="email" style="width: 25%"></Column>
+      <Column :header="t('purchase.supplierContact.columns.phone')" field="phone" style="width: 25%"></Column>
       <Column>
         <template #body="slotProps">
           <i
@@ -60,11 +60,13 @@ import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { getNewUuid } from "@/utils/functions";
+import { useI18n } from "vue-i18n";
 
 const confirm = useConfirm();
 const supplierStore = useSuppliersStore();
 const { supplier } = storeToRefs(supplierStore);
 const formMode = ref(FormActionMode.CREATE);
+const { t } = useI18n();
 
 const props = defineProps<{
   title: string;
@@ -121,7 +123,7 @@ const submitForm = () => {
 const deleteContact = (event: any, contact: SupplierContact) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el contacte?`,
+    message: t("purchase.supplierContact.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

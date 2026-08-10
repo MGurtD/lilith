@@ -3,7 +3,7 @@
     <div class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="$t('shared.paymentMethods.form.name')"
         id="name"
         v-model="paymentMethod.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="$t('shared.paymentMethods.form.description')"
         id="description"
         v-model="paymentMethod.description"
         :class="{
@@ -22,32 +22,32 @@
     </div>
     <div class="two-columns">
       <div>
-        <label class="block text-900 mb-2">Dies venciment</label>
+        <label class="block text-900 mb-2">{{ $t('shared.paymentMethods.form.dueDays') }}</label>
         <InputNumber v-model="paymentMethod.dueDays" class="w-full mb-2" />
       </div>
       <div>
-        <label class="block text-900 mb-2">Dia de pagament</label>
+        <label class="block text-900 mb-2">{{ $t('shared.paymentMethods.form.paymentDay') }}</label>
         <InputNumber v-model="paymentMethod.paymentDay" class="w-full mb-2" />
       </div>
     </div>
 
     <div class="two-columns">
       <div>
-        <label class="block text-900 mb-2">Número de pagaments</label>
+        <label class="block text-900 mb-2">{{ $t('shared.paymentMethods.form.numberOfPayments') }}</label>
         <InputNumber
           v-model="paymentMethod.numberOfPayments"
           class="w-full mb-2"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Freqüència</label>
+        <label class="block text-900 mb-2">{{ $t('shared.paymentMethods.form.frequency') }}</label>
         <InputNumber v-model="paymentMethod.frequency" class="w-full mb-2" />
       </div>
     </div>
 
     <div>
       <div>
-        <label class="block text-900 mb-2">Desactivada</label>
+        <label class="block text-900 mb-2">{{ $t('shared.paymentMethods.form.disabled') }}</label>
         <Checkbox
           v-model="paymentMethod.disabled"
           class="w-full"
@@ -57,13 +57,14 @@
     </div>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="$t('shared.paymentMethods.form.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { PaymentMethod } from "../types";
 import * as Yup from "yup";
@@ -72,6 +73,8 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   paymentMethod: PaymentMethod;
@@ -119,7 +122,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

@@ -1,7 +1,7 @@
 <template>
   <div>
     <Button
-      label="Guardar"
+      :label="t('sales.components.guardar')"
       class="grid_add_row_button"
       size="small"
       @click="submitForm"
@@ -14,7 +14,7 @@
       <div class="mt-1">
         <BaseInput
           class="mb-2"
-          label="Codi"
+          :label="t('sales.components.codi')"
           id="code"
           v-model="reference.code"
           :class="{
@@ -25,7 +25,7 @@
       <div class="mt-1">
         <BaseInput
           class="mb-2"
-          label="Descripció"
+          :label="t('sales.components.descripcio')"
           id="description"
           v-model="reference.description"
           :class="{
@@ -34,25 +34,25 @@
         ></BaseInput>
       </div>
       <div class="mt-1">        
-        <DropdownReferenceType label="Tipus de material" v-model="reference.referenceTypeId" />
+        <DropdownReferenceType :label="t('sales.components.tipusDeMaterial')" v-model="reference.referenceTypeId" />
       </div>
       <div class="mt-1">
         <BaseInput
           :type="BaseInputType.TEXT"
-          label="Versió"
+          :label="t('sales.components.versio')"
           id="version"
           v-model="reference.version"
         />
       </div>
       <div class="mt-1">
-        <DropdownCustomers label="Client" v-model="reference.customerId" />
+        <DropdownCustomers :label="t('sales.components.client')" v-model="reference.customerId" />
       </div>
     </section>
     <section class="five-columns">
       <div class="mt-1">
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost Teóric Fabricació"
+          :label="t('sales.components.costTeoricFabricacio')"
           id="workMasterCost"
           v-model="reference.workMasterCost"
           disabled
@@ -61,7 +61,7 @@
       <div class="mt-1">
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost Última Fabricació"
+          :label="t('sales.components.costUltimaFabricacio')"
           id="lastCost"
           v-model="reference.lastCost"
           disabled
@@ -70,13 +70,13 @@
       <div class="mt-1">
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu unitari"
+          :label="t('sales.components.preuUnitari')"
           id="price"
           v-model="reference.price"
         />
       </div>
       <div class="mt-1">
-        <label class="block text-900 mb-2">Impost</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.impost') }}</label>
         <Select
           v-model="reference.taxId"
           :options="taxesStore.taxes"
@@ -89,13 +89,14 @@
         />
       </div>
       <div class="mt-1">
-        <label class="block text-900 mb-2">Servei</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.servei') }}</label>
         <Checkbox v-model="reference.isService" class="w-full" :binary="true" />
       </div>
     </section>
   </form>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Reference } from "../../../modules/shared/types";
@@ -111,6 +112,7 @@ import { useTaxesStore } from "../../shared/store/tax";
 import FormReferenceType from "@/modules/shared/components/FormReferenceType.vue";
 import DropdownReferenceType from "@/modules/shared/components/DropdownReferenceType.vue";
 
+const { t } = useI18n();
 const props = defineProps<{
   reference: Reference;
   defaultCustomerId?: string;
@@ -133,17 +135,17 @@ onMounted(() => {
 
 const schema = Yup.object().shape({
   code: Yup.string()
-    .required("El codi és obligatori")
+    .required(t("sales.validation.codeRequired"))
     .max(50, "El codi no pot superar els 50 carácters"),
   description: Yup.string()
-    .required("La descripció és obligatori")
+    .required(t("sales.validation.descriptionRequired"))
     .max(250, "La descripció pot superar els 250 carácters"),
   version: Yup.string()
-    .required("La versió és obligatoria")
+    .required(t("sales.validation.versionRequired"))
     .max(20, "La versió pot superar els 20 carácters"),
-  cost: Yup.number().required("El cost es obligatori"),
-  price: Yup.number().required("El preu es obligatori"),
-  taxId: Yup.string().required("El tipus d'iva es obligatori"),
+  cost: Yup.number().required(t("sales.validation.costRequired")),
+  price: Yup.number().required(t("sales.validation.priceRequired")),
+  taxId: Yup.string().required(t("sales.validation.taxRequired")),
 });
 const validation = ref({
   result: false,
@@ -166,7 +168,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

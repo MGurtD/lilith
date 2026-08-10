@@ -1,277 +1,89 @@
-# AGENTS.md - Lilith Frontend
+# Lilith Frontend Agent Guide
 
-Guidelines for AI coding agents working in this Vue 3 ERP frontend codebase.
+Canonical rules for work under `frontend/`. When OpenCode starts from this directory, also read `../AGENTS.md` for repository-wide safety and backend/frontend contracts.
 
-## Quick Reference
+## Stack And Commands
 
-| Item            | Value                                                |
-| --------------- | ---------------------------------------------------- |
-| Stack           | Vue 3 + TypeScript + Vite + Pinia + PrimeVue + Axios |
-| Package Manager | pnpm v10+ (required)                                 |
-| Dev Server      | `pnpm run dev` (port 8100)                           |
-| Type Check      | `pnpm run typecheck`                                 |
-| Build           | `pnpm run build`                                     |
-| Tests           | Not configured                                       |
-| Linting         | Not configured (Prettier installed)                  |
+- Vue 3.5 with Composition API and `<script setup>`.
+- TypeScript 6 in strict mode.
+- Vite 8, Pinia 2, PrimeVue 4, Axios, and Vue i18n 11.
+- pnpm `10.28.0` is required.
 
-## Build & Development Commands
+Run from `frontend/`:
 
 ```bash
-pnpm install              # Install dependencies (use pnpm, not npm/yarn)
-pnpm run dev              # Start dev server at http://localhost:8100
-pnpm run typecheck        # Type check without building (vue-tsc --noEmit)
-pnpm run build            # Production build: typecheck + vite build to dist/
-pnpm run build-development # Dev mode build to dist-test/
-pnpm run preview          # Preview production build
+pnpm run dev              # localhost:8100
+pnpm run i18n:check       # locale parity and placeholder validation
+pnpm run i18n:audit       # full localization audit
+pnpm run typecheck
+pnpm run build
+pnpm run build-development
+pnpm run build-preprod
+pnpm run smoke
+pnpm run smoke:e2e
 ```
 
-**No test framework configured** - there are no test scripts or test files in this project.
+There is no frontend unit/component test framework and no lint script. Smoke and Playwright E2E checks are available.
 
-## Project Structure
+## Structure
 
-```
-src/
-  api/                 # Axios clients & BaseService<T>
-  components/          # Global reusable components
-  modules/             # Domain modules (sales, production, warehouse, etc.)
-    <domain>/
-      routes.ts        # RouteRecordRaw[] with lazy-loaded views
-      components/      # Domain components
-      services/        # API services extending BaseService<T>
-      store/           # Pinia stores
-      types/           # TypeScript interfaces
-      views/           # Page components
-  services/            # Global services (user, auth, reports)
-  store/               # Global Pinia stores
-  types/               # Shared TypeScript interfaces
-  utils/               # Utility functions
-  views/               # Top-level pages
-```
+- `src/api/`: API client and generic `BaseService<T>`.
+- `src/components/`: shared application components.
+- `src/modules/<domain>/`: routes, views, components, services, stores, and types owned by a domain.
+- `src/services/` and `src/store/`: cross-domain services and stores.
+- `src/i18n/`: Vue i18n setup and `ca`, `es`, `en` dictionaries.
+- `src/utils/`: shared utilities; inspect before adding another helper.
 
-## Code Style Guidelines
+## Vue And TypeScript
 
-### TypeScript
+- Use Composition API with `<script setup>` for Vue components.
+- Keep component filenames and imports in PascalCase.
+- Type props, emits, service responses, and event payloads. Prefer `unknown` plus narrowing over new `any` usage.
+- Use `@/` for shared or cross-module imports. Relative imports are acceptable for tightly owned neighboring files.
+- Extract components when it improves ownership or readability; do not enforce an arbitrary line limit.
+- Preserve established direct `storeToRefs` form editing where the surrounding feature uses it. Do not introduce a new state architecture incidentally.
 
-- **Strict mode enabled** - no implicit `any`
-- Use explicit types over inference for function parameters and return types
-- Prefer `Type | undefined` over optional chaining for nullable types
-- Avoid `any` - use `unknown` if type is truly unknown
-- Path alias: `@/` maps to `./src/`
+## Services And Stores
 
-### Vue Components
+- Use `BaseService<T>` for conventional entity CRUD when it fits the endpoint contract.
+- Specialized APIs such as authentication, reports, language, and custom operations may use dedicated clients.
+- Do not invent BaseService helpers. Inspect `src/api/base.service.ts` and a current service in the same domain.
+- Stores own shared state and orchestrate service calls. Refresh state after writes only when the screen contract requires it.
+- Clone records before editing in a dialog when cancelling must leave source state unchanged.
+- Keep numeric defaults aligned with the backend model and the nearest analogous form.
 
-- **Always use Composition API with `<script setup>`**
-- PascalCase for component file names: `WorkOrderDetail.vue`
-- Keep components under ~200 lines; extract subcomponents when larger
-- Type emitted events explicitly:
+## Localization
 
-```typescript
-const emit = defineEmits<{
-  (e: "saved", entity: MyEntity): void;
-  (e: "cancelled"): void;
-}>();
-```
+- Add user-facing text through Vue i18n. Every new key must exist in `ca.ts`, `es.ts`, and `en.ts` with matching placeholders.
+- Catalan is the source/default locale, not a reason to hardcode visible Catalan text.
+- Use stable semantic keys in the existing feature namespace. Reuse `common.*` only when meaning matches exactly.
+- Keep translated titles and option labels reactive to locale changes; use template calls or computed values.
+- PrimeVue built-in strings come from the configured PrimeVue locale.
+- Use the localization audit skill for screen-level audits and translations.
 
-### Naming Conventions
+## Dates
 
-| Type           | Convention         | Example                           |
-| -------------- | ------------------ | --------------------------------- |
-| Vue components | PascalCase         | `WorkOrderDetail.vue`             |
-| Utility files  | kebab-case         | `form-validator.ts`               |
-| Pinia stores   | `use<Entity>Store` | `useWorkOrderStore`               |
-| Services       | `<Entity>Service`  | `WorkOrderService`                |
-| Interfaces     | PascalCase         | `WorkOrder`, `PhaseDetail`        |
-| Functions      | camelCase          | `fetchWorkOrders`, `handleSubmit` |
+- PrimeVue DatePicker models must be native `Date` values, not display-formatted strings.
+- Convert API date strings to `Date` at the store or feature boundary used by the analogous flow.
+- Native `Date` values in request bodies are serialized by the existing `Date.prototype.toJSON` override. Do not mutate reactive date fields solely to serialize them.
+- Use `formatDate()` only for display.
+- Use `formatDateForQueryParameter()` for date query parameters.
+- `convertDateTimeToJSON()` remains for explicit non-reactive payload construction; do not apply it mechanically.
 
-### Imports
+## UI And Routing
 
-- Use path alias `@/` for all src imports: `import { useStore } from "@/store"`
-- Lazy-load all route views: `() => import('./views/MyView.vue')`
-- Group imports: Vue/external libs first, then internal modules
+- Prefer shared components such as `Table.vue` when they preserve required behavior. Audit unsupported table features before replacing raw PrimeVue `DataTable`.
+- PrimeVue components are globally registered unless the local code demonstrates otherwise.
+- Use PrimeVue components rather than raw controls when an established equivalent exists.
+- Lazy-load route views. Follow the route naming, metadata, and authorization pattern of the current domain.
+- Keep HTTP URLs in services and environment configuration, never in components.
+- Validate forms with the established Yup/FormValidation or VeeValidate pattern used by that feature; do not mix validation frameworks inside one flow.
 
-### Error Handling
+## Verification
 
-- Validate before API calls using Yup schemas + `FormValidation` class
-- Display errors via PrimeVue toast with severity levels
-- All user-facing messages in **Catalan**
-- Use early returns for validation failures
+- Translation-only change: scoped i18n audit, `pnpm run i18n:check`, and `pnpm run typecheck`.
+- Component/store/service change: `pnpm run typecheck` and the relevant smoke check when practical.
+- Route, build configuration, shared component, or broad refactor: `pnpm run build`.
+- Review warnings from the localization auditor manually; heuristic hardcoded-text findings may include domain or technical values.
 
-```typescript
-const validation = new FormValidation(schema).validate(model);
-if (!validation.result) {
-  toast.add({
-    severity: "warn",
-    summary: Object.values(validation.errors).flat().join("\n"),
-  });
-  return;
-}
-```
-
-### State Management (Pinia)
-
-- Stores manage state + orchestrate service calls
-- **Mutate state only in actions**
-- After create/update/delete: re-fetch to sync UI
-- Use `setNew(id?)` action to initialize blank entities with `getNewUuid()`
-
-```typescript
-// Standard store pattern
-async create(model: Entity) {
-  const result = await Services.Entity.create(model);
-  if (result) await this.fetchOne(model.id);
-  return result;
-}
-```
-
-### Service Layer
-
-- All HTTP via service classes extending `BaseService<T>`
-- Inherited CRUD: `getAll()`, `getById(id)`, `create()`, `update()`, `delete()`
-- Add custom queries as needed: `GetBetweenDates()`, `GetByStatus()`
-
-```typescript
-export class WorkOrderService extends BaseService<WorkOrder> {
-  constructor() {
-    super("workorder");
-  }
-}
-```
-
-### Date Handling
-
-`Date.prototype.toJSON` is globally overridden in `utils/functions.ts` to adjust timezone before serialization. This means `JSON.stringify` (used by Axios) automatically converts any `Date` object to ISO format. **This only works for native `Date` objects, not strings.**
-
-**The correct pattern for dates with PrimeVue DatePicker:**
-
-1. **Store `GetById`**: Convert API date strings to `Date` objects immediately after fetching:
-
-```typescript
-async GetById(id: string) {
-  const data = await Service.getById(id);
-  if (data) {
-    if (data.date) data.date = new Date(data.date) as any;
-  }
-  this.entity = data;
-}
-```
-
-2. **Component `onMounted`**: Do NOT re-format dates. The store already provides `Date` objects that PrimeVue DatePicker accepts natively.
-
-3. **Component save/update**: Send the entity directly to the store. `Date.prototype.toJSON` handles serialization automatically. No need to call `convertDateTimeToJSON()`.
-
-```typescript
-// ✅ Correct — Date objects serialize automatically
-const updated = await store.Update(entity.value);
-
-// ❌ WRONG — formatDate() converts Date to string "dd/MM/yyyy",
-//    breaking both DatePicker binding and JSON serialization
-entity.value.date = formatDate(entity.value.date);
-
-// ❌ WRONG — mutating a reactive ref triggers re-render race conditions
-entity.value.date = convertDateTimeToJSON(entity.value.date);
-```
-
-**Key rules:**
-- `formatDate()` returns a **string** — use it only for display (columns, labels), never to set DatePicker model values
-- `convertDateTimeToJSON()` is for non-reactive contexts only (e.g., building query parameters on a local variable)
-- Never mutate date fields on a `storeToRefs` reactive ref before navigation — it triggers re-renders that race with `router.back()` and cause DOM crashes (`Cannot read properties of null (reading 'parentNode')`)
-- Use `formatDateForQueryParameter()` for URL query strings in list view filters
-
-### UI Conventions
-
-- PrimeVue components are globally registered
-- Use PrimeVue `FileUpload` instead of raw `<input type="file">` for future file uploads
-- Toast messages in Catalan with appropriate severity and life duration
-- Clone objects before editing in dialogs to prevent premature state mutation
-- Numeric defaults should be `0`, not `undefined`
-
-### Contextual Help Documentation
-
-- When adding or updating contextual help, first analyze the real behavior of the view instead of documenting from route names alone
-- Keep help content in Catalan and align terminology with the business flow: `pressupost`, `comanda`, `albara`, `factura`, `client`, `referencia`
-- Use the mandatory section order defined in `frontend/docs/help-module.md`: purpose, actions, typical flow, important notes, common errors, and basic Mermaid process
-- If a new help document raises the quality bar, review sibling help files in the same module for consistency
-
-## Utilities (utils/functions.ts)
-
-Use these instead of reimplementing:
-
-- `getNewUuid()` - Generate client-side UUIDs
-- `convertDateTimeToJSON(date)` - Normalize dates for API
-- `formatDateForQueryParameter(date)` - Format for URL queries
-- `createBlobAndDownloadFile(name, blob)` - Download files
-- `formatCurrency(value)` - Currency formatting
-
-## Table Attachments
-
-`Table.vue` supports an optional read-only attachment column through `attachmentConfig`:
-
-```vue
-<Table
-  :attachment-config="{
-    entity: 'SalesOrder',
-    formats: ['.pdf', '.jpg', '.jpeg', '.png'],
-    title: 'Adjunts de la comanda',
-    titleField: 'number',
-  }"
-/>
-```
-
-It reuses `FileService.GetEntityFiles` and `FileViewer`; keep uploads and deletion in the detail view's `FileEntityPicker`. When `formats` is omitted, only PDF and image formats supported by `FileViewer` are shown. `titleField` identifies the opened row in the dialog title.
-## Anti-Patterns to Avoid
-
-- Hard-coding API URLs (use service layer)
-- Duplicating validation logic across components
-- Mixing languages in UI (maintain Catalan)
-- Mutating store state outside actions
-- Using `any` type
-- Forgetting to re-fetch after nested entity changes
-- Creating new utility functions that already exist
-- Using `formatDate()` to set DatePicker model values (use `new Date()` in store `GetById` instead)
-- Mutating reactive ref date fields before `router.back()` (causes DOM unmount crashes)
-
-## Route Pattern
-
-```typescript
-// modules/<domain>/routes.ts
-export default [
-  {
-    path: "/workorder",
-    name: "Workorders",
-    component: () => import("./views/Workorders.vue"),
-  },
-  {
-    path: "/workorder/:id",
-    name: "workorder",
-    component: () => import("./views/Workorder.vue"),
-    props: true,
-  },
-] as Array<RouteRecordRaw>;
-```
-
-## Adding New Features
-
-1. Find analogous entity module and mirror patterns
-2. Create service extending `BaseService<T>`
-3. Create Pinia store with CRUD actions
-4. Add routes with lazy-loaded views
-5. Use `getNewUuid()` for client IDs
-6. Provide Catalan messages & toasts
-7. Register routes in `src/router.ts`
-
-## Environment Variables
-
-Use `.env` files with `VITE_` prefix:
-
-- `VITE_API_BASE_URL` - Main backend URL
-- `VITE_REPORTS_BASE_URL` - Reports microservice URL
-
-## Additional Documentation
-
-See `.github/copilot-instructions.md` for comprehensive patterns including:
-
-- Detailed service layer examples
-- Dialog CRUD patterns for nested entities
-- Report download patterns
-- Exercise picker usage
-- Authentication flow
+Environment variables are documented in `.env.example`. Never commit secrets or local `.env` values.

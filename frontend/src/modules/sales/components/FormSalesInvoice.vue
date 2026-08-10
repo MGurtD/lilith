@@ -4,23 +4,23 @@
       <div class="mt-2">
         <BaseInput
           v-model="invoice.invoiceNumber"
-          label="Número"
+          :label="t('sales.components.numero')"
           :disabled="true"
         />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Data Factura</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.dataFactura') }}</label>
         <DatePicker v-model="invoice.invoiceDate" dateFormat="dd/mm/yy" />
       </div>
       <div class="mt-2">
         <DropdownLifecycleStatusTransitions
-          label="Estat"
+          :label="t('sales.components.estat')"
           :statusId="invoice.statusId"
           v-model="invoice.statusId"
         />
       </div>
       <div class="mt-2">
-        <label class="block text-900 mb-2">Métode Pagament</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.metodePagament') }}</label>
         <Select
           v-model="invoice.paymentMethodId"
           :options="sharedData.paymentMethods"
@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { SalesInvoice } from "../types";
 import * as Yup from "yup";
@@ -45,6 +46,7 @@ import { useToast } from "primevue/usetoast";
 import { useSharedDataStore } from "../../shared/store/masterData";
 import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
 
+const { t } = useI18n();
 const props = defineProps<{
   invoice: SalesInvoice;
 }>();
@@ -58,8 +60,8 @@ const toast = useToast();
 const sharedData = useSharedDataStore();
 
 const schema = Yup.object().shape({
-  invoiceDate: Yup.string().required("La data és obligatoria"),
-  paymentMethodId: Yup.string().required("El métode de pagament és obligatori"),
+  invoiceDate: Yup.string().required(t("sales.validation.invoiceDateRequired")),
+  paymentMethodId: Yup.string().required(t("sales.validation.paymentMethodRequired")),
 });
 const validation = ref({
   result: false,
@@ -82,7 +84,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });
