@@ -52,7 +52,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ruta de fabricació`;
+  pageTitle = t("production.detail.workmasterTitle");
   if (workmaster.value) {
     pageTitle = `${pageTitle} ${referenceStore.getFullName(
       workmaster.value.reference!,
@@ -97,7 +97,7 @@ const calculateCostSubmit = async (workmaster: WorkMaster) => {
       detail:
         response.errors.length > 0
           ? response.errors[0]
-          : "Errors detectats durant el cálcul",
+          : t("production.messages.workmasterCalculationErrors"),
       life: 10000,
     });
   }
@@ -118,7 +118,10 @@ const deleteWorkMasterPhase = async (phase: WorkMasterPhase) => {
     toast.add({
       severity: "success",
       summary: pt("Fase eliminada"),
-      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
       life: 5000,
     });
   }

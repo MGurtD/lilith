@@ -70,6 +70,7 @@ export const useMenusStore = defineStore("menus", {
         parentId: parentId ?? null,
         sortOrder: 0,
         disabled: false,
+        translations: [],
       } as MenuItemFlat;
     },
     async create(payload: CreateMenuItemRequest) {

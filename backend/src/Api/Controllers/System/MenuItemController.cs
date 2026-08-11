@@ -1,5 +1,4 @@
 using Application.Contracts;
-using Domain.Entities.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers.Auth;
@@ -24,7 +23,7 @@ public class MenuItemController(IMenuItemService service) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(MenuItem item)
+    public async Task<IActionResult> Create(CreateMenuItemRequest item)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState.ValidationState);
         var resp = await service.Create(item);
@@ -32,8 +31,23 @@ public class MenuItemController(IMenuItemService service) : ControllerBase
         return Ok(resp.Content);
     }
 
+    [HttpGet("translations")]
+    public async Task<IActionResult> GetTranslationMatrix()
+    {
+        var resp = await service.GetTranslationMatrix();
+        return Ok(resp.Content);
+    }
+
+    [HttpPatch("translations")]
+    public async Task<IActionResult> UpdateTranslations(UpdateMenuItemTranslationsRequest request)
+    {
+        var resp = await service.UpdateTranslations(request);
+        if (!resp.Result) return BadRequest(resp);
+        return Ok(resp.Content);
+    }
+
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, MenuItem item)
+    public async Task<IActionResult> Update(Guid id, UpdateMenuItemRequest item)
     {
         if (id != item.Id) return BadRequest();
         var resp = await service.Update(item);

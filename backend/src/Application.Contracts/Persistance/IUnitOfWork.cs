@@ -22,6 +22,7 @@ namespace Application.Contracts
         IRepository<UserTableView, Guid> UserTableViews { get; }
         IRepository<Profile, Guid> Profiles { get; }
         IRepository<MenuItem, Guid> MenuItems { get; }
+        IRepository<MenuItemTranslation, Guid> MenuItemTranslations { get; }
         IRepository<ProfileMenuItem, Guid> ProfileMenuItems { get; }
 
         // Shared

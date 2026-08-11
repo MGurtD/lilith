@@ -104,11 +104,12 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ruta de fabricació`;
+  pageTitle = t("production.detail.workmasterTitle");
   if (workmaster.value && workmasterPhase.value) {
-    pageTitle = `${pageTitle} ${referenceStore.getFullName(
-      workmaster.value.reference!,
-    )} - Fase ${workmasterPhase.value.code}`;
+    pageTitle = t("production.detail.workmasterPhaseTitle", {
+      name: referenceStore.getFullName(workmaster.value.reference!),
+      code: workmasterPhase.value.code,
+    });
   }
 
   store.setMenuItem({
@@ -151,14 +152,14 @@ const onAddDetail = (detail: WorkMasterPhaseDetail) => {
   formAction.value = FormActionMode.CREATE;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Afegir pas de fabricació";
+  dialogOptions.title = t("production.detail.createPhaseStep");
   dialogOptions.visible = true;
 };
 const onEditDetail = (detail: WorkMasterPhaseDetail) => {
   formAction.value = FormActionMode.EDIT;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Modificar pas de fabricació";
+  dialogOptions.title = t("production.detail.editPhaseStep");
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkMasterPhaseDetail) => {
@@ -192,14 +193,14 @@ const onAddBomItem = (bomItem: WorkMasterPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.CREATE;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Afegir material";
+  dialogOptions.title = t("production.detail.createMaterial");
   dialogOptions.visible = true;
 };
 const onEditBomItem = (bomItem: WorkMasterPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.EDIT;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Modificar material";
+  dialogOptions.title = t("production.detail.editMaterial");
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkMasterPhaseBillOfMaterials) => {

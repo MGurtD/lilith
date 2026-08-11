@@ -88,7 +88,9 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, entity: WorkcenterType) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'empresa ${entity.name}?`,
+    message: t("production.messages.confirmDeleteWorkcenterType", {
+      name: entity.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

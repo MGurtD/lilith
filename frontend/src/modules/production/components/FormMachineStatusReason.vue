@@ -78,7 +78,7 @@ const schema = Yup.object().shape({
     .max(20, t("production.validation.elCodiNoPotSuperarEls20Caracters"))
     .test(
       "unique-code",
-      "Ja existeix un motiu amb aquest codi per aquest estat de màquina",
+      t("production.validation.machineStatusReasonCodeAlreadyExists"),
       function (value) {
         if (!value) return true;
         const isDuplicate = props.existingReasons.some(
