@@ -31,6 +31,7 @@ Errors:
 
 Warnings requiring review:
 
+- Translation keys that do not use camelCase. This check is non-blocking because legacy debt remains; the report's `invalidKeyNames` field contains the complete list. English naming is a mandatory review rule but is not inferred automatically.
 - Literal translation fallback.
 - Likely hardcoded template text, visible attribute, toast, dialog, or message property.
 - Globally unused static key; dynamic key construction can be a false positive.

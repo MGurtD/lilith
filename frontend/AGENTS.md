@@ -55,6 +55,7 @@ There is no frontend unit/component test framework and no lint script. Smoke and
 ## Localization
 
 - Add user-facing text through Vue i18n. Every new key must exist in `ca.ts`, `es.ts`, and `en.ts` with matching placeholders.
+- Write every new translation key in English, with camelCase for each namespace segment.
 - Catalan is the source/default locale, not a reason to hardcode visible Catalan text.
 - Use stable semantic keys in the existing feature namespace. Reuse `common.*` only when meaning matches exactly.
 - Keep translated titles and option labels reactive to locale changes; use template calls or computed values.

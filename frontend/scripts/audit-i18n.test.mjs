@@ -8,11 +8,11 @@ import { runAudit } from "./audit-i18n.mjs";
 const TYPESCRIPT_SOURCE = path.resolve("node_modules", "typescript");
 
 function localeSource(locale, entries) {
-  const lines = Object.entries(entries).map(([key, value]) => "    " + key + ": " + JSON.stringify(value) + ",");
+  const lines = Object.entries(entries).map(([key, value]) => "    " + JSON.stringify(key) + ": " + JSON.stringify(value) + ",");
   return "const " + locale + " = { screen: {\n" + lines.join("\n") + "\n  } };\nexport default " + locale + ";\n";
 }
 
-function createFixture({ locales, view, script }) {
+function createFixture({ locales, view, script, primevue }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lilith-i18n-audit-"));
   const i18n = path.join(root, "frontend", "src", "i18n");
   const views = path.join(root, "frontend", "src", "views");
@@ -20,6 +20,13 @@ function createFixture({ locales, view, script }) {
   fs.mkdirSync(views, { recursive: true });
   for (const locale of ["ca", "es", "en"]) {
     fs.writeFileSync(path.join(i18n, locale + ".ts"), localeSource(locale, locales[locale]), "utf8");
+  }
+  if (primevue) {
+    const primevueRoot = path.join(i18n, "primevue");
+    fs.mkdirSync(primevueRoot, { recursive: true });
+    for (const [name, source] of Object.entries(primevue)) {
+      fs.writeFileSync(path.join(primevueRoot, name + ".ts"), source, "utf8");
+    }
   }
   fs.writeFileSync(path.join(views, "Fixture.vue"), view, "utf8");
   if (script) fs.writeFileSync(path.join(views, "fixture.ts"), script, "utf8");
@@ -70,12 +77,42 @@ test("reports incompatible placeholders", () => {
   assert.ok(report.errors.some((item) => item.code === "PLACEHOLDER_MISMATCH"));
 });
 
+test("reports incompatible PrimeVue locale structures", () => {
+  const source = (days) => `export default { clear: "Clear", dayNames: ${JSON.stringify(days)}, firstDayOfWeek: 1 };`;
+  const report = auditFixture({
+    locales: validLocales,
+    view: "<template><span>{{ $t('screen.title') }}</span></template>",
+    primevue: {
+      catalan: source(["Diumenge", "Dilluns"]),
+      spanish: source(["Domingo"]),
+      english: source(["Sunday", "Monday"]),
+    },
+  });
+  assert.ok(report.errors.some((item) => item.code === "PRIMEVUE_STRUCTURE_MISMATCH"));
+});
+
 test("reports a missing static reference", () => {
   const report = auditFixture({
     locales: validLocales,
     view: "<template><span>{{ $t(\"screen.unknown\") }}</span></template>",
   });
   assert.ok(report.errors.some((item) => item.code === "MISSING_TRANSLATION_KEY"));
+});
+
+test("warns about translation keys that are not camelCase", () => {
+  const locales = {
+    ca: { ...validLocales.ca, "desa-canvis": "Desa els canvis" },
+    es: { ...validLocales.es, "desa-canvis": "Guarda los cambios" },
+    en: { ...validLocales.en, "desa-canvis": "Save changes" },
+  };
+  const report = auditFixture({
+    locales,
+    view: "<template><span>{{ $t(\"screen.desa-canvis\") }}</span></template>",
+  });
+  const warning = report.warnings.find((item) => item.code === "INVALID_TRANSLATION_KEY_CASE");
+  assert.equal(report.errors.length, 0);
+  assert.equal(warning.key, "screen");
+  assert.deepEqual(report.invalidKeyNames, ["screen.desa-canvis"]);
 });
 
 test("warns about literal fallbacks and hardcoded UI text", () => {
