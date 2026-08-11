@@ -20,7 +20,7 @@ const store = useStore();
 
 const id = route.params.id as string;
 const isNew = ref(false);
-const formData = ref<Partial<MenuItemFlat>>({ sortOrder: 0 });
+const formData = ref<Partial<MenuItemFlat>>({ sortOrder: 0, translations: [] });
 const submitting = ref(false);
 const { t } = useI18n();
 
@@ -33,13 +33,13 @@ const load = async () => {
     } else {
       // 404 - menu item does not exist yet
       isNew.value = true;
-      formData.value = { id, sortOrder: 0 };
+      formData.value = { id, sortOrder: 0, translations: [] };
     }
   } catch (error: unknown) {
     // Network or unexpected error
     console.error("Failed to load menu item:", error);
     isNew.value = true;
-    formData.value = { id, sortOrder: 0 };
+    formData.value = { id, sortOrder: 0, translations: [] };
   }
 };
 
@@ -50,11 +50,11 @@ const save = async () => {
       const created = await createMenuItem({
         id,
         key: formData.value.key!,
-        title: formData.value.title!,
         icon: formData.value.icon || undefined,
         route: formData.value.route || undefined,
         parentId: formData.value.parentId || undefined,
         sortOrder: formData.value.sortOrder as number,
+        translations: formData.value.translations!,
       });
       toast.add({
         severity: "success",
@@ -67,11 +67,11 @@ const save = async () => {
       await updateMenuItem(formData.value.id!, {
         id: formData.value.id!,
         key: formData.value.key!,
-        title: formData.value.title!,
         icon: formData.value.icon || undefined,
         route: formData.value.route || undefined,
         parentId: formData.value.parentId || undefined,
         sortOrder: formData.value.sortOrder as number,
+        translations: formData.value.translations!,
       });
       toast.add({
         severity: "success",

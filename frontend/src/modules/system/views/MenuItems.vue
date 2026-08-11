@@ -13,6 +13,7 @@ import TableFilter, {
   type FilterConfig,
   type FilterBodyWidth,
 } from "@/components/tables/TableFilter.vue";
+import MenuItemTranslationMatrixDialog from "@/modules/system/components/MenuItemTranslationMatrixDialog.vue";
 
 const router = useRouter();
 const appStore = useStore();
@@ -100,6 +101,7 @@ const treeData = computed<TreeNodeLocal[]>(() =>
 
 // PrimeVue TreeTable single selection requires selectionKeys binding for node-select to fire reliably
 const selectionKeys = ref<any>(null);
+const translationMatrixVisible = ref(false);
 
 // Combined loading flag
 const loading = computed(
@@ -107,6 +109,10 @@ const loading = computed(
 );
 
 const createNew = () => router.push({ path: `/menuitem/${getNewUuid()}` });
+
+const translationsSaved = async () => {
+  await menusStore.fetchHierarchy(true);
+};
 
 const clearFilter = () => {
   filter.value.search = "";
@@ -174,7 +180,19 @@ onMounted(async () => {
           embedded
           @clear="clearFilter"
           @create="createNew"
-        />
+        >
+          <template #action-prepend>
+            <Button
+              icon="pi pi-language"
+              size="small"
+              rounded
+              severity="secondary"
+              :aria-label="t('menuItems.matrix.open')"
+              v-tooltip.top="t('menuItems.matrix.open')"
+              @click="translationMatrixVisible = true"
+            />
+          </template>
+        </TableFilter>
       </template>
       <Column
         expander
@@ -215,5 +233,9 @@ onMounted(async () => {
         </template>
       </Column>
     </TreeTable>
+    <MenuItemTranslationMatrixDialog
+      v-model:visible="translationMatrixVisible"
+      @saved="translationsSaved"
+    />
   </div>
 </template>

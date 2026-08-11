@@ -104,7 +104,7 @@ const updateOrder = async () => {
     toast.add({
       severity: "success",
       summary: pt("Ordres de fabricació actualitzades"),
-      detail: "L'ordre de les ordres de fabricació s'ha actualitzat.",
+      detail: t("production.messages.updatedWorkorderPlanning"),
       life: 3000,
     });
   } else {

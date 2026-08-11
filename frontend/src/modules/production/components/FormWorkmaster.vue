@@ -2,7 +2,7 @@
   <form v-if="workmaster">
     <div class="grid_add_row_button">
       <Button :label="t('production.components.calcularCost')" size="small" @click="calculateCost" />
-      {{ t("production.components.nbsp") }}
+      &nbsp;
       <Button :label="t('production.components.guardar')" size="small" @click="submitForm" />
       <br />
     </div>

@@ -234,7 +234,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ordre de fabricació`;
+  pageTitle = t("production.detail.workorderTitle");
   if (workorder.value) {
     pageTitle = `${pageTitle} ${workorder.value.code}`;
   }
@@ -287,7 +287,7 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al actualitzar l'ordre de fabricació",
+      summary: t("production.messages.updateWorkorderError"),
       detail: pt("Revisi el log per a més informació"),
       life: 10000,
     });
@@ -317,7 +317,10 @@ const deleteWorkOrderPhase = async (phase: WorkOrderPhase) => {
     toast.add({
       severity: "success",
       summary: pt("Fase eliminada"),
-      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
       life: 5000,
     });
   }
@@ -380,7 +383,7 @@ const printReport = async () => {
       toast.add({
         severity: "warn",
         summary: pt("Error"),
-        detail: "No s'ha pugut generar l'informe de l'ordre de fabricació",
+        detail: t("production.messages.workorderReportError"),
       });
     }
   }

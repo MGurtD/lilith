@@ -554,6 +554,7 @@ public class BrandingServiceTests
         public IRepository<UserTableView, Guid> UserTableViews => UnusedRepository<UserTableView>.Instance;
         public IRepository<Profile, Guid> Profiles => UnusedRepository<Profile>.Instance;
         public IRepository<MenuItem, Guid> MenuItems => UnusedRepository<MenuItem>.Instance;
+        public IRepository<MenuItemTranslation, Guid> MenuItemTranslations => UnusedRepository<MenuItemTranslation>.Instance;
         public IRepository<ProfileMenuItem, Guid> ProfileMenuItems => UnusedRepository<ProfileMenuItem>.Instance;
         public IRepository<Domain.Entities.File, Guid> Files => FilesStore;
         public IRepository<Parameter, Guid> Parameters => UnusedRepository<Parameter>.Instance;

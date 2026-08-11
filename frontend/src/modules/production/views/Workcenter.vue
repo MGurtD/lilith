@@ -79,10 +79,12 @@ const loadView = async () => {
   if (!workcenter.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewWorkcenter(route.params.id as string);
-    pageTitle = "Alta de màquina";
+    pageTitle = t("production.detail.createWorkcenter");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Màquina: ${workcenter.value.name}`;
+    pageTitle = t("production.detail.workcenterTitle", {
+      name: workcenter.value.name,
+    });
   }
   await plantmodelStore.fetchWorkcenterProfitPercentagesByWorkcenterId(
     route.params.id as string,
@@ -148,7 +150,7 @@ const addWorkcenterProfitPercentage = async (
     toast.add({
       severity: "success",
       summary: pt("Percentatge creat"),
-      detail: "El percentatge de profit s'ha creat correctament",
+      detail: t("production.detail.createdProfitPercentage"),
       life: 5000,
     });
     await loadView();
@@ -174,7 +176,7 @@ const addWorkcenterLocation = async (locationId: string) => {
     toast.add({
       severity: "success",
       summary: pt("Ubicació afegida"),
-      detail: "La ubicació s'ha assignat correctament a la màquina.",
+      detail: t("production.detail.locationAssigned"),
       life: 5000,
     });
     await loadView();

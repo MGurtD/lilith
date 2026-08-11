@@ -502,9 +502,9 @@ const onCreateSubmit = async () => {
 const deleteButton = (event: any, workmaster: WorkMaster) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la ruta ${
-      workmaster.reference!.description
-    }?`,
+    message: t("production.messages.confirmDeleteWorkmaster", {
+      name: workmaster.reference!.description,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

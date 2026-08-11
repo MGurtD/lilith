@@ -3,6 +3,9 @@ import type {
   CreateMenuItemRequest,
   MenuItemFlat,
   MenuItemNode,
+  MenuItemTranslationMatrix,
+  UpdateMenuItemTranslationsRequest,
+  UpdateMenuItemTranslationsResult,
   UpdateMenuItemRequest,
 } from "@/modules/system/types/menuitem";
 
@@ -48,4 +51,21 @@ export const updateMenuItem = async (
 
 export const deleteMenuItem = async (id: string): Promise<void> => {
   await apiClient.delete(`${baseUrl}/${id}`);
+};
+
+export const getMenuItemTranslationMatrix = async (): Promise<MenuItemTranslationMatrix> => {
+  const { data } = await apiClient.get<MenuItemTranslationMatrix>(
+    `${baseUrl}/translations`,
+  );
+  return data;
+};
+
+export const updateMenuItemTranslations = async (
+  payload: UpdateMenuItemTranslationsRequest,
+): Promise<UpdateMenuItemTranslationsResult> => {
+  const { data } = await apiClient.patch<UpdateMenuItemTranslationsResult>(
+    `${baseUrl}/translations`,
+    payload,
+  );
+  return data;
 };

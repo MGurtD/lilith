@@ -105,7 +105,7 @@ const { shift, shiftdetail } = storeToRefs(shiftStore);
 const openShift = () => {
   shiftStore.setNewShift(getNewUuid());
   dialogOptions.visible = true;
-  dialogOptions.title = "Alta de torns";
+  dialogOptions.title = t("production.detail.createShift");
 };
 
 const openShiftDetail = () => {

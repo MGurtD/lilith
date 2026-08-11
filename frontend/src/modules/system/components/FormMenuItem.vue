@@ -7,6 +7,8 @@ import IconPicker from "@/components/IconPicker.vue";
 import type { MenuItemFlat, MenuItemNode } from "@/modules/system/types/menuitem";
 import { getMenuItemsHierarchy } from "@/modules/system/services/menuitem.service";
 import { BaseInputType } from "@/types/component";
+import LanguageService from "@/services/language.service";
+import type { Language } from "@/types";
 
 const props = defineProps<{
   modelValue: Partial<MenuItemFlat>;
@@ -21,9 +23,6 @@ const { t } = useI18n();
 
 const schema = yup.object({
   key: yup.string().required(() => t("menuItems.form.validation.keyRequired")),
-  title: yup
-    .string()
-    .required(() => t("menuItems.form.validation.titleRequired")),
   sortOrder: yup
     .number()
     .required(() => t("menuItems.form.validation.orderRequired"))
@@ -34,6 +33,19 @@ const validator = new FormValidation(schema as any);
 const form = ref<Partial<MenuItemFlat>>({ ...props.modelValue });
 const errors = ref<Record<string, string[]>>({});
 const hierarchy = ref<MenuItemNode[]>([]);
+const languages = ref<Language[]>([]);
+const languageService = new LanguageService();
+const withActiveLanguages = (value: Partial<MenuItemFlat>) => ({
+  ...value,
+  translations: languages.value.map((language) => ({
+    languageCode: language.code.toLowerCase(),
+    title:
+      value.translations?.find(
+        (translation) =>
+          translation.languageCode.toLowerCase() === language.code.toLowerCase(),
+      )?.title ?? "",
+  })),
+});
 const parentFlat = computed<MenuItemFlat[]>(() => {
   const list: MenuItemFlat[] = [];
   const walk = (nodes: MenuItemNode[], depth = 0) => {
@@ -52,7 +64,7 @@ const parentFlat = computed<MenuItemFlat[]>(() => {
 watch(
   () => props.modelValue,
   (v) => {
-    form.value = { ...v };
+    form.value = languages.value.length ? withActiveLanguages(v) : { ...v };
   },
   { immediate: true },
 );
@@ -60,7 +72,22 @@ watch(
 const validate = () => {
   const r = validator.validate(form.value);
   errors.value = r.errors;
-  return r.result;
+  let valid = r.result;
+  if (!languages.value.length) {
+    errors.value.translations = [
+      t("menuItems.form.validation.languagesRequired"),
+    ];
+    valid = false;
+  }
+  for (const translation of form.value.translations ?? []) {
+    if (!translation.title.trim()) {
+      errors.value[`translation-${translation.languageCode}`] = [
+        t("menuItems.form.validation.titleRequired"),
+      ];
+      valid = false;
+    }
+  }
+  return valid && form.value.translations?.length === languages.value.length;
 };
 
 const submit = () => {
@@ -74,7 +101,16 @@ const loadHierarchy = async () => {
   hierarchy.value = await getMenuItemsHierarchy();
 };
 
-onMounted(loadHierarchy);
+const loadLanguages = async () => {
+  languages.value = ((await languageService.GetAll()) ?? []).sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+  form.value = withActiveLanguages(form.value);
+};
+
+onMounted(async () => {
+  await Promise.all([loadHierarchy(), loadLanguages()]);
+});
 </script>
 <template>
   <div class="form-menu-item">
@@ -83,11 +119,6 @@ onMounted(loadHierarchy);
         <label class="block mb-2">{{ t("menuItems.form.key") }}</label>
         <BaseInput v-model="form.key" />
         <small class="p-error" v-if="errors.key">{{ errors.key[0] }}</small>
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.title") }}</label>
-        <BaseInput v-model="form.title" />
-        <small class="p-error" v-if="errors.title">{{ errors.title[0] }}</small>
       </div>
       <div class="field col-12 md:col-4">
         <label class="block mb-2">{{ t("menuItems.form.route") }}</label>
@@ -120,6 +151,32 @@ onMounted(loadHierarchy);
         <label class="block mb-2">{{ t("menuItems.form.icon") }}</label>
         <IconPicker v-model="form.icon" />
       </div>
+      <div
+        v-for="translation in form.translations"
+        :key="translation.languageCode"
+        class="field col-12 md:col-4"
+      >
+        <label class="block mb-2">
+          {{
+            t("menuItems.form.titleForLanguage", {
+              language:
+                languages.find(
+                  (language) => language.code === translation.languageCode,
+                )?.name ?? translation.languageCode,
+            })
+          }}
+        </label>
+        <BaseInput v-model="translation.title" />
+        <small
+          class="p-error"
+          v-if="errors[`translation-${translation.languageCode}`]"
+        >
+          {{ errors[`translation-${translation.languageCode}`][0] }}
+        </small>
+      </div>
+      <small class="p-error col-12" v-if="errors.translations">
+        {{ errors.translations[0] }}
+      </small>
     </div>
     <div class="flex gap-2 mt-3">
       <Button

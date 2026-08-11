@@ -16,6 +16,7 @@ public sealed class ApplicationBrandingMenuBackfill(
     {
         using var scope = serviceProvider.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var languageCatalog = scope.ServiceProvider.GetRequiredService<ILanguageCatalog>();
 
         try
         {
@@ -29,6 +30,9 @@ public sealed class ApplicationBrandingMenuBackfill(
                 "pi pi-palette",
                 "/system/application-branding",
                 root.Id);
+            var languages = await languageCatalog.GetAllAsync();
+            await EnsureTranslations(unitOfWork, root.Id, languages, "Sistema", "Sistema", "System");
+            await EnsureTranslations(unitOfWork, branding.Id, languages, "Branding", "Marca", "Branding");
 
             var profiles = (await unitOfWork.Profiles.GetAll()).ToDictionary(profile => profile.Name);
             var defaultProfile = await EnsureProfile(unitOfWork, profiles, DefaultProfileName, "System default profile");
@@ -63,7 +67,6 @@ public sealed class ApplicationBrandingMenuBackfill(
         var item = new MenuItem
         {
             Key = key,
-            Title = title,
             Icon = icon,
             Route = route,
             ParentId = parentId,
@@ -73,6 +76,35 @@ public sealed class ApplicationBrandingMenuBackfill(
         await unitOfWork.MenuItems.Add(item);
         menuItems[key] = item;
         return item;
+    }
+
+    private static async Task EnsureTranslations(
+        IUnitOfWork unitOfWork,
+        Guid menuItemId,
+        IEnumerable<LanguageDto> languages,
+        string catalan,
+        string spanish,
+        string english)
+    {
+        var existingCodes = (await unitOfWork.MenuItemTranslations.FindAsync(t => t.MenuItemId == menuItemId))
+            .Select(t => t.LanguageCode)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var language in languages.Where(l => !existingCodes.Contains(l.Code)))
+        {
+            var title = language.Code.ToLowerInvariant() switch
+            {
+                "es" => spanish,
+                "en" => english,
+                _ => catalan
+            };
+            await unitOfWork.MenuItemTranslations.Add(new MenuItemTranslation
+            {
+                MenuItemId = menuItemId,
+                LanguageCode = language.Code.ToLowerInvariant(),
+                Title = title
+            });
+        }
     }
 
     private static async Task<Profile> EnsureProfile(

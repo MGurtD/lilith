@@ -141,7 +141,9 @@ const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols desvincular la ubicació '${entity.location?.name || entity.locationId}'?`,
+    message: t("production.messages.confirmUnlinkLocation", {
+      name: entity.location?.name || entity.locationId,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

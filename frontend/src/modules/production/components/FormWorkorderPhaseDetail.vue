@@ -101,7 +101,7 @@ const toast = useToast();
 const schema = Yup.object().shape({
   order: Yup.number()
     .required(t("production.validation.lOrdreEsObligatori"))
-    .positive("L'ordre ha de ser positiu"),
+    .positive(t("production.validation.orderMustBePositive")),
   estimatedTime: Yup.number().required(t("production.validation.elTempsEstimatEsObligatori")),
 });
 const validation = ref({

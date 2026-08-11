@@ -9,6 +9,7 @@
   import { onMounted, ref } from "vue";
   import { useRoute } from "vue-router";
   import { PrimeIcons } from "@primevue/core/api";
+  import { useI18n } from "vue-i18n";
   
   import { storeToRefs } from "pinia";
   import { WorkcenterType } from "../types";
@@ -19,7 +20,7 @@
   import router from "../../../router";
   import FormWorkcenterType from "../components/FormWorkcenterType.vue";
   import { usePlantModelStore } from "../store/plantmodel";
-  
+  const { t } = useI18n();
   const formMode = ref(FormActionMode.EDIT);
   const route = useRoute();
   const store = useStore();
@@ -32,10 +33,12 @@
     if (!workcenterType.value) {
       formMode.value = FormActionMode.CREATE;
       plantmodelStore.setNewWorkcenterType(route.params.id as string);
-      pageTitle = "Alta de tipus de màquina";
+      pageTitle = t("production.detail.createWorkcenterType");
     } else {
       formMode.value = FormActionMode.EDIT;
-      pageTitle = `Tipus de màquina: ${workcenterType.value.name}`;
+      pageTitle = t("production.detail.workcenterTypeTitle", {
+        name: workcenterType.value.name,
+      });
     }
   
     store.setMenuItem({
@@ -58,10 +61,10 @@
   
     if (formMode.value === FormActionMode.CREATE) {
       result = await plantmodelStore.createWorkcenterType(data);
-      message = "Tipus de màquina creat correctament";
+      message = t("production.detail.createdWorkcenterType");
     } else {
       result = await plantmodelStore.updateWorkcenterType(data.id, data);
-      message = "Tipus de màquina actualizat correctament";
+      message = t("production.detail.updatedWorkcenterType");
     }
   
     if (result) {
@@ -74,4 +77,3 @@
     }
   };
   </script>
-  

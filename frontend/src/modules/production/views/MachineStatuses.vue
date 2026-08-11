@@ -100,7 +100,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'estats de màquina",
+    title: t("production.detail.machineStatusesTitle"),
   });
 });
 
@@ -120,7 +120,9 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, machineStatus: MachineStatus) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'estat de màquina ${machineStatus.name}?`,
+    message: t("production.messages.confirmDeleteMachineStatus", {
+      name: machineStatus.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

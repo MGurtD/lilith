@@ -80,7 +80,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'operaris",
+    title: t("production.detail.operatorsTitle"),
   });
 });
 
@@ -101,7 +101,9 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, operator: Operator) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'operari ${operator.surname}, ${operator.name}?`,
+    message: t("production.messages.confirmDeleteOperator", {
+      name: `${operator.surname}, ${operator.name}`,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
