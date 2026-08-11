@@ -129,6 +129,10 @@ function parseObjectLiteral(node, ts, sourceFile, prefix, flattened, errors) {
   }
 }
 
+function invalidKeySegments(key) {
+  return key.split(".").filter((segment) => !/^[a-z][A-Za-z0-9]*$/.test(segment));
+}
+
 function parseLocaleFile(filePath, ts) {
   const sourceText = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
   const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -149,6 +153,74 @@ function parseLocaleFile(filePath, ts) {
   const values = new Map();
   parseObjectLiteral(declarations.get(exportedName), ts, sourceFile, "", values, errors);
   return { values, errors };
+}
+
+function parseStructuredLocaleFile(filePath, ts) {
+  const sourceText = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const declarations = new Map();
+  let root;
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && declaration.initializer && ts.isObjectLiteralExpression(declaration.initializer)) {
+          declarations.set(declaration.name.text, declaration.initializer);
+        }
+      }
+    }
+    if (ts.isExportAssignment(statement)) {
+      if (ts.isObjectLiteralExpression(statement.expression)) root = statement.expression;
+      if (ts.isIdentifier(statement.expression)) root = declarations.get(statement.expression.text);
+    }
+  }
+  if (!root) throw new Error("Could not resolve the default localization object in " + filePath);
+
+  const shapes = new Map();
+  const errors = [];
+  const walk = (node, prefix) => {
+    const seen = new Set();
+    for (const property of node.properties) {
+      const line = sourceFile.getLineAndCharacterOfPosition(property.getStart()).line + 1;
+      if (!ts.isPropertyAssignment(property)) {
+        errors.push(finding("error", "UNSUPPORTED_PRIMEVUE_PROPERTY", "PrimeVue dictionaries may only contain explicit property assignments", filePath, line));
+        continue;
+      }
+      let name;
+      try {
+        name = propertyName(property.name, ts);
+      } catch (error) {
+        errors.push(finding("error", "UNSUPPORTED_PRIMEVUE_PROPERTY", error.message, filePath, line));
+        continue;
+      }
+      const key = prefix ? prefix + "." + name : name;
+      if (seen.has(name)) {
+        errors.push(finding("error", "DUPLICATE_PRIMEVUE_KEY", "Duplicate PrimeVue localization key: " + key, filePath, line, key));
+        continue;
+      }
+      seen.add(name);
+      const value = property.initializer;
+      if (ts.isObjectLiteralExpression(value)) {
+        walk(value, key);
+      } else if (ts.isArrayLiteralExpression(value)) {
+        const elementKinds = [...new Set(value.elements.map((element) => {
+          if (ts.isStringLiteral(element) || ts.isNoSubstitutionTemplateLiteral(element)) return "string";
+          if (ts.isNumericLiteral(element)) return "number";
+          return "unsupported";
+        }))].sort();
+        shapes.set(key, "array:" + elementKinds.join("|") + ":" + value.elements.length);
+      } else if (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) {
+        shapes.set(key, "string");
+      } else if (ts.isNumericLiteral(value)) {
+        shapes.set(key, "number");
+      } else if (value.kind === ts.SyntaxKind.TrueKeyword || value.kind === ts.SyntaxKind.FalseKeyword) {
+        shapes.set(key, "boolean");
+      } else {
+        errors.push(finding("error", "UNSUPPORTED_PRIMEVUE_VALUE", "Unsupported PrimeVue localization value: " + key, filePath, line, key));
+      }
+    }
+  };
+  walk(root, "");
+  return { shapes, errors };
 }
 
 function placeholderSet(value) {
@@ -248,7 +320,53 @@ export function runAudit({ repoRoot: requestedRoot, scopes = [], typescriptPath 
     errors.push(...parsed.errors);
   }
 
+  const primeVueNames = { ca: "catalan", es: "spanish", en: "english" };
+  const primeVueRoot = path.join(repoRoot, "frontend", "src", "i18n", "primevue");
+  if (fs.existsSync(primeVueRoot)) {
+    const primeVueDictionaries = {};
+    for (const locale of LOCALES) {
+      const filePath = path.join(primeVueRoot, primeVueNames[locale] + ".ts");
+      if (!fs.existsSync(filePath)) {
+        errors.push(finding("error", "PRIMEVUE_LOCALE_MISSING", "Missing PrimeVue locale file for " + locale, filePath));
+        continue;
+      }
+      const parsed = parseStructuredLocaleFile(filePath, ts);
+      primeVueDictionaries[locale] = parsed.shapes;
+      errors.push(...parsed.errors);
+    }
+    const primeVueKeys = [...new Set(LOCALES.flatMap((locale) => [...(primeVueDictionaries[locale]?.keys() ?? [])]))].sort();
+    for (const key of primeVueKeys) {
+      const available = LOCALES.filter((locale) => primeVueDictionaries[locale]?.has(key));
+      if (available.length !== LOCALES.length) {
+        for (const locale of LOCALES.filter((candidate) => !available.includes(candidate))) {
+          errors.push(finding("error", "PRIMEVUE_KEY_MISSING", "PrimeVue key is missing from locale " + locale + ": " + key, path.join(primeVueRoot, primeVueNames[locale] + ".ts"), undefined, key));
+        }
+        continue;
+      }
+      const shapes = Object.fromEntries(LOCALES.map((locale) => [locale, primeVueDictionaries[locale].get(key)]));
+      if (new Set(Object.values(shapes)).size > 1) {
+        errors.push(finding("error", "PRIMEVUE_STRUCTURE_MISMATCH", "PrimeVue structure mismatch for " + key + ": " + JSON.stringify(shapes), undefined, undefined, key));
+      }
+    }
+  }
+
   const allKeys = [...new Set(LOCALES.flatMap((locale) => [...dictionaries[locale].keys()]))].sort();
+  const invalidKeyNames = allKeys.filter((key) => invalidKeySegments(key).length > 0);
+  const invalidKeysByNamespace = new Map();
+  for (const key of invalidKeyNames) {
+    const namespace = key.split(".")[0];
+    invalidKeysByNamespace.set(namespace, [...(invalidKeysByNamespace.get(namespace) ?? []), key]);
+  }
+  for (const [namespace, keys] of invalidKeysByNamespace) {
+    warnings.push(finding(
+      "warning",
+      "INVALID_TRANSLATION_KEY_CASE",
+      `Translation keys must use English camelCase segments; namespace ${namespace} contains ${keys.length} non-camelCase keys`,
+      path.join(repoRoot, "frontend", "src", "i18n", "ca.ts"),
+      undefined,
+      namespace,
+    ));
+  }
   for (const key of allKeys) {
     for (const locale of LOCALES) {
       if (!dictionaries[locale].has(key)) {
@@ -301,6 +419,7 @@ export function runAudit({ repoRoot: requestedRoot, scopes = [], typescriptPath 
     localeCounts: Object.fromEntries(LOCALES.map((locale) => [locale, dictionaries[locale].size])),
     scannedFiles: sourceFiles.length,
     staticReferences: usages.length,
+    invalidKeyNames,
     errors: errors.map((item) => relativeFinding(item, repoRoot)),
     warnings: warnings.map((item) => relativeFinding(item, repoRoot)),
   };
