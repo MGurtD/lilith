@@ -8,6 +8,7 @@ namespace Application.Contracts
         IRepository<BudgetTransport, Guid> Transports { get; }  
         IRepository<BudgetExternalServices, Guid> ExternalServices { get; }
         IRepository<BudgetExternalServiceDetail, Guid> ExternalServiceDetails { get; }
+        IRepository<BudgetDetailPhaseProfit, Guid> DetailPhaseProfits { get; }
     
     }
 }

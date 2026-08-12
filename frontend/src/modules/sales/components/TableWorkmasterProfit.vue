@@ -79,6 +79,8 @@ import { BaseInputType } from "../../../types/component";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { DataTableSortMeta } from "primevue/datatable";
 import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
+import { DetailPhaseProfit } from "../types";
+import { getNewUuid } from "../../../utils/functions";
 
 interface ProcessedPhase {
   id: string;
@@ -95,6 +97,7 @@ const { t } = useI18n();
 const props = defineProps<{
   workMasterId: string | null;
   quantity: number;
+  phaseProfits: DetailPhaseProfit[];
 }>();
 
 const sortingFields = ref([
@@ -115,7 +118,7 @@ const profitAverage = ref(0);
 
 const stepProfitPercentages = reactive<{ [key: string]: number }>({});
 
-const emit = defineEmits(["updateProfitAverage"]);
+const emit = defineEmits(["updateProfitAverage", "update:phaseProfits"]);
 
 const processPhases = (
   phases: WorkMasterPhase[],
@@ -123,10 +126,14 @@ const processPhases = (
 ): ProcessedPhase[] => {
   return phases.flatMap((phase) =>
     phase.details!.map((detail) => {
-      const key = `${phase.code}-${detail.order}-${phase.workcenterTypeId}`;
-      // Inicializar profitPercentage a nivel de paso si no está definido
+      // Persist per-step profit keyed by the stable WorkMasterPhaseDetail id.
+      const key = detail.id;
       if (!(key in stepProfitPercentages)) {
-        stepProfitPercentages[key] = phase.profitPercentage ?? 0;
+        const persisted = props.phaseProfits?.find(
+          (p) => p.workMasterPhaseDetailId === key
+        );
+        stepProfitPercentages[key] =
+          persisted?.profitPercentage ?? phase.profitPercentage ?? 0;
       }
       return {
         id: detail.id,
@@ -170,7 +177,7 @@ const totalTime = computed(() => {
 // initialization). onMounted/watch callbacks are deferred, so they are safe
 // regardless of declaration order, but watchEffect is not.
 const createUniqueKey = (phase: ProcessedPhase) => {
-  return `${phase.code}-${phase.order}-${phase.workcenterTypeId}`;
+  return phase.id;
 };
 
 const calculateWeightedProfit = () => {
@@ -190,6 +197,21 @@ const calculateWeightedProfit = () => {
     !isNaN(totalTime) && totalTime > 0 && !isNaN(weightedSum)
       ? Number((weightedSum / totalTime).toFixed(2))
       : 0;
+};
+
+// Rebuild the persisted per-step profit list from current steps and notify the parent.
+const syncPhaseProfits = () => {
+  const profits: DetailPhaseProfit[] = processedPhases.value.map((phase) => {
+    const existing = props.phaseProfits?.find(
+      (p) => p.workMasterPhaseDetailId === phase.id
+    );
+    return {
+      id: existing?.id ?? getNewUuid(),
+      workMasterPhaseDetailId: phase.id,
+      profitPercentage: stepProfitPercentages[phase.id] ?? 0,
+    };
+  });
+  emit("update:phaseProfits", profits);
 };
 
 onMounted(async () => {
@@ -221,6 +243,17 @@ watchEffect(async () => {
   calculateWeightedProfit();
 });
 
+watch(
+  () => props.workMasterId,
+  () => {
+    // A different route invalidates any per-step profits kept for the previous one.
+    Object.keys(stepProfitPercentages).forEach(
+      (k) => delete stepProfitPercentages[k]
+    );
+    emit("update:phaseProfits", []);
+  }
+);
+
 const getWorkcenterType = (workcenterTypeId: string | undefined) => {
   const workcenterType = workcenterTypes.value?.find(
     (p) => p.id === workcenterTypeId
@@ -246,6 +279,7 @@ const updateProfitPercentage = (phase: ProcessedPhase, value: number) => {
     phase.profitPercentage = value;
     tableProfitPercentages[key] = value;
     calculateWeightedProfit();
+    syncPhaseProfits();
   } else {
     console.error(
       "Attempted to set a non-number value for profit percentage:",

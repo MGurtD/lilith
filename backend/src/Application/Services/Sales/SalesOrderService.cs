@@ -83,6 +83,14 @@ namespace Application.Services.Sales
                 {
                     SalesOrderHeaderId = salesOrder.Id
                 };
+                salesOrderDetail.PhaseProfits = detail.PhaseProfits
+                    .Select(pp => new SalesOrderDetailPhaseProfit
+                    {
+                        Id = Guid.NewGuid(),
+                        WorkMasterPhaseDetailId = pp.WorkMasterPhaseDetailId,
+                        ProfitPercentage = pp.ProfitPercentage,
+                    })
+                    .ToList();
                 await AddDetail(salesOrderDetail, skipExternalServices: true);
                 detailMap[detail.Id] = salesOrderDetail.Id;
             }
@@ -474,6 +482,9 @@ namespace Application.Services.Sales
 
         private async Task<GenericResponse> AddDetail(SalesOrderDetail salesOrderDetail, bool skipExternalServices)
         {
+            var phaseProfits = salesOrderDetail.PhaseProfits?.ToList() ?? new List<SalesOrderDetailPhaseProfit>();
+            salesOrderDetail.PhaseProfits = new List<SalesOrderDetailPhaseProfit>();
+
             await unitOfWork.SalesOrderHeaders.AddDetail(salesOrderDetail);
 
             // Afegir serveis externs si té WorkMaster (no quan ve de CreateFromBudget, ja que es copien directament)
@@ -486,10 +497,14 @@ namespace Application.Services.Sales
                 }
             }
 
+            await SavePhaseProfits(salesOrderDetail.Id, phaseProfits, replaceExisting: false);
             return new GenericResponse(true);
         }
         public async Task<GenericResponse> UpdateDetail(SalesOrderDetail salesOrderDetail)
         {
+            var phaseProfits = salesOrderDetail.PhaseProfits?.ToList() ?? new List<SalesOrderDetailPhaseProfit>();
+            salesOrderDetail.PhaseProfits = new List<SalesOrderDetailPhaseProfit>();
+
             // Recuperar el detall antic per obtenir la quantitat anterior
             var oldDetail = unitOfWork.SalesOrderDetails.Find(d => d.Id == salesOrderDetail.Id).FirstOrDefault();
             var oldQuantity = oldDetail?.Quantity ?? 0;
@@ -544,7 +559,38 @@ namespace Application.Services.Sales
             salesOrderDetail.SalesOrderHeader = null;
 
             await unitOfWork.SalesOrderHeaders.UpdateDetail(salesOrderDetail);
+            await SavePhaseProfits(salesOrderDetail.Id, phaseProfits, replaceExisting: true);
             return new GenericResponse(true);
+        }
+
+        private async Task SavePhaseProfits(Guid salesOrderDetailId, IEnumerable<SalesOrderDetailPhaseProfit> phaseProfits, bool replaceExisting)
+        {
+            if (replaceExisting)
+            {
+                var existing = unitOfWork.SalesOrderHeaders.DetailPhaseProfits
+                    .Find(p => p.SalesOrderDetailId == salesOrderDetailId)
+                    .ToList();
+                if (existing.Count > 0)
+                {
+                    await unitOfWork.SalesOrderHeaders.DetailPhaseProfits.RemoveRange(existing);
+                }
+            }
+
+            var rows = phaseProfits
+                .Where(p => p != null)
+                .Select(p => new SalesOrderDetailPhaseProfit
+                {
+                    Id = p.Id == Guid.Empty ? Guid.NewGuid() : p.Id,
+                    SalesOrderDetailId = salesOrderDetailId,
+                    WorkMasterPhaseDetailId = p.WorkMasterPhaseDetailId,
+                    ProfitPercentage = p.ProfitPercentage,
+                })
+                .ToList();
+
+            if (rows.Count > 0)
+            {
+                await unitOfWork.SalesOrderHeaders.DetailPhaseProfits.AddRange(rows);
+            }
         }
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
