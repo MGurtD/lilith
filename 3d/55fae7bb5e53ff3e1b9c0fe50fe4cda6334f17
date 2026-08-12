@@ -1,0 +1,153 @@
+backend/src/Api/Controllers/Warehouse/LotController.cs
+  s_087e79f7f5148b::t_20994863ca002b 1-77
+backend/src/Api/Controllers/Warehouse/LotTraceabilityController.cs
+  s_087e79f7f5148b::t_1a654e6e4d7c04 1-37
+backend/src/Api/Resources/LocalizationService/ca.json
+  s_087e79f7f5148b::t_b46ec4b849c2f6 121-122
+backend/src/Api/Resources/LocalizationService/en.json
+  s_087e79f7f5148b::t_f247683729bd65 121-122
+backend/src/Api/Resources/LocalizationService/es.json
+  s_087e79f7f5148b::t_d111e596ad2b9c 121-122
+backend/src/Application.Contracts/Contracts/Production/CreateWorkOrderDto.cs
+  s_087e79f7f5148b::t_d25bab58614c16 9-11
+backend/src/Application.Contracts/Contracts/Warehouse/LotTraceabilityDto.cs
+  s_087e79f7f5148b::t_834016fd4e9e39 1-104
+backend/src/Application.Contracts/Contracts/Warehouse/StockListItemResponse.cs
+  s_087e79f7f5148b::t_903ff7e70e1fa7 22-26
+backend/src/Application.Contracts/Contracts/Warehouse/StockResponse.cs
+  s_087e79f7f5148b::t_1014b45b6e9db4 37-40
+backend/src/Application.Contracts/Persistance/Repositories/Warehouse/ILotRepository.cs
+  s_087e79f7f5148b::t_a160f5219bb8cb 1-33
+backend/src/Application.Contracts/Services/Warehouse/ILotService.cs
+  s_087e79f7f5148b::t_1036a226ae1ca7 1-18
+backend/src/Application.Contracts/Services/Warehouse/ILotTraceabilityService.cs
+  s_087e79f7f5148b::t_999993880888f4 1-8
+backend/src/Application.Contracts/Services/Warehouse/IStockService.cs
+  s_087e79f7f5148b::t_2c604638a78bae 12
+backend/src/Application/Services/Production/WorkOrderPhaseService.cs
+  s_087e79f7f5148b::t_294179ce4fc1dc 184
+backend/src/Application/Services/Production/WorkOrderService.cs
+  s_087e79f7f5148b::t_df6b464227c80b 7,11,230-235,246-247
+backend/src/Application/Services/Production/WorkOrderStockService.cs
+  s_087e79f7f5148b::t_220e3a25432a82 12-13,71-72,79-80,112,124,143,163,178-181,231-232,239-240,277,296,316,331-334,366,382-384,397,418-419,426-427,443,461,508-511,518-519,532,549,569,590-595,627-639,644,653,656-671
+backend/src/Application/Services/Sales/DeliveryNoteService.cs
+  s_087e79f7f5148b::t_b3d93ae5c32d1b 24,228-237,245,252-253,263-266,274,284-307
+backend/src/Application/Services/Warehouse/StockMovementService.cs
+  s_087e79f7f5148b::t_8f08d75b9ead94 45,48,59-66,81,94-96,107-116,125,146-148,176,184-186,191,200-201,204-219
+backend/src/Application/Services/Warehouse/StockService.cs
+  s_087e79f7f5148b::t_be9e3de822465c 34,43-44,70,74-75
+backend/src/Domain/Entities/Production/WorkOrder.cs
+  s_087e79f7f5148b::t_ac6cc357043040 31-34
+backend/src/Domain/Entities/Purchase/ReceiptDetail.cs
+  s_087e79f7f5148b::t_bde9f9b8f772b7 15-17
+backend/src/Domain/Entities/Sales/DeliveryNoteDetail.cs
+  s_087e79f7f5148b::t_5528335b99369b 14-15
+backend/src/Domain/Entities/Warehouse/Stock.cs
+  s_087e79f7f5148b::t_e5f26d4a2868a7 11-12
+backend/src/Domain/Entities/Warehouse/StockMovements.cs
+  s_087e79f7f5148b::t_9108a3b9c2eb8a 23-24,40
+backend/src/Infrastructure/Migrations/20260805111049_AddLotTraceability.Designer.cs
+  s_087e79f7f5148b::t_01e6da6106fe8c 1-7946
+backend/src/Infrastructure/Migrations/20260805111351_SeedProductionAutoBatchParameter.Designer.cs
+  s_087e79f7f5148b::t_1969375c83133c 1-7946
+backend/src/Infrastructure/Migrations/ApplicationDbContextModelSnapshot.cs
+  s_087e79f7f5148b::t_f18cc944f992d4 2082-2084,2162-2163,3391-3393,3436-3437,4496-4498,4530-4531,6039-6097,6128-6130,6153-6154,6159-6160,6206-6208,6247-6248,6583-6587,6612-6613,7062-7066,7083-7084,7308-7312,7325-7326,7665-7675,7684-7688,7697-7698,7708-7712,7727-7728
+backend/src/Infrastructure/Persistance/EntityConfiguration/Production/WorkOrderBuilder.cs
+  s_087e79f7f5148b::t_cf5c8c27f9b355 88-93
+backend/src/Infrastructure/Persistance/EntityConfiguration/Purchase/ReceiptDetailBuilder.cs
+  s_087e79f7f5148b::t_625a08370338fa 83-88
+backend/src/Infrastructure/Persistance/EntityConfiguration/Sales/DeliveryNoteDetailBuilder.cs
+  s_087e79f7f5148b::t_a039340a162b17 54-59
+backend/src/Infrastructure/Persistance/EntityConfiguration/Warehouse/StockBuilder.cs
+  s_087e79f7f5148b::t_13b340143d8ffe 46-51,56
+backend/src/Infrastructure/Persistance/EntityConfiguration/Warehouse/StockMovementBuilder.cs
+  s_087e79f7f5148b::t_2b66fe34486a0b 66-71,79
+backend/src/Infrastructure/Persistance/Repositories/Warehouse/WarehouseRespository.cs
+  s_087e79f7f5148b::t_a8a1291c5b731d 53-55,77-80,103-106,124-126,153-155
+frontend/src/modules/shared/components/FormSupportRequest.vue
+  s_087e79f7f5148b::t_263a05ce4ad8f3 127
+frontend/src/modules/warehouse/services/lotTraceability.service.ts
+  s_087e79f7f5148b::t_3a2b4c2b2a9663 1-31
+frontend/src/modules/warehouse/services/stockMovement.service.ts
+  s_087e79f7f5148b::t_ff09a53e98c3cb 4,7-9,13-16,19
+frontend/src/modules/warehouse/services/warehouse.service.ts
+  s_087e79f7f5148b::t_b470f2c0a4ce4d 3-10,77-91
+frontend/src/modules/warehouse/store/lotTraceability.ts
+  s_087e79f7f5148b::t_bad946b5f2e3df 1-44
+frontend/src/modules/warehouse/store/stockMovement.ts
+  s_087e79f7f5148b::t_2da4fae8446fc0 3,14-16,18-20
+frontend/src/modules/warehouse/views/Inventory.vue
+  s_087e79f7f5148b::t_8ff49ac18e5d9f 2-3,10-41,45-49,73-79,84,88,102-121,144-145,157-180,199-200,213,226,243,245,254-256,260-261
+frontend/src/views/Home.vue
+  s_087e79f7f5148b::t_5203e09e0a40b9 4-5
+backend/src/Api/Controllers/Shared/ParameterController.cs
+  s_087e79f7f5148b::t_2b96d237c97dec 1-60
+backend/src/Api/Setup/ApplicationServicesSetup.cs
+  s_087e79f7f5148b::t_9246f9c9ca08c7 61,63,88
+backend/src/Application.Contracts/Contracts/Purchase/AddReceptionsRequest.cs
+  s_087e79f7f5148b::t_27993fdf55bb71 25-27
+backend/src/Application.Contracts/Persistance/IUnitOfWork.cs
+  s_087e79f7f5148b::t_95a4b2dafce82e 93
+backend/src/Application.Contracts/Services/Shared/IParameterService.cs
+  s_087e79f7f5148b::t_ad8cdd1bce7597 1-15
+backend/src/Application/Services/Purchase/ReceiptService.cs
+  s_087e79f7f5148b::t_d531802b308030 15,156-158,171-173,179-199,316,318-320
+backend/src/Application/Services/Shared/ParameterService.cs
+  s_087e79f7f5148b::t_f47a5ed9cad17f 1-57
+backend/src/Application/Services/Warehouse/LotService.cs
+  s_087e79f7f5148b::t_30a3d3fbb15f76 1-80
+backend/src/Application/Services/Warehouse/LotTraceabilityService.cs
+  s_087e79f7f5148b::t_65d2721faff06c 1-235
+backend/src/Domain/Entities/Warehouse/Lot.cs
+  s_087e79f7f5148b::t_658ba8cb8adfb4 1-16
+backend/src/Infrastructure/Migrations/20260805111049_AddLotTraceability.cs
+  s_087e79f7f5148b::t_a18f6cb270fd25 1-247
+backend/src/Infrastructure/Migrations/20260805111351_SeedProductionAutoBatchParameter.cs
+  s_087e79f7f5148b::t_28ae514265741f 1-24
+backend/src/Infrastructure/Persistance/EntityConfiguration/Warehouse/LotBuilder.cs
+  s_087e79f7f5148b::t_776624da0e8c1c 1-47
+backend/src/Infrastructure/Persistance/Repositories/Warehouse/LotRepository.cs
+  s_087e79f7f5148b::t_c777ad1e61a687 1-149
+backend/src/Infrastructure/Persistance/UnitOfWork.cs
+  s_087e79f7f5148b::t_c4f381a71bb26c 102
+frontend/src/modules/purchase/components/FormReceiptDetail.vue
+  s_087e79f7f5148b::t_26265a902341fa 42-51,169,271-272
+frontend/src/modules/purchase/components/SelectorOrdersDetailsToReceipt.vue
+  s_087e79f7f5148b::t_dbc768f0670894 35,43-53,115,246-247,257-258
+frontend/src/modules/purchase/components/TableReceiptDetails.vue
+  s_087e79f7f5148b::t_0fd518b1964f96 25-36,41,46-63,82,106-113
+frontend/src/modules/purchase/types/index.ts
+  s_087e79f7f5148b::t_5e2acc6cee4dd0 253-254,285-286,297-298
+frontend/src/modules/warehouse/components/FormInventoryNewMovements.vue
+  s_087e79f7f5148b::t_c8af0450200d1a 14-21,88
+frontend/src/modules/warehouse/components/SelectorLot.vue
+  s_087e79f7f5148b::t_6f3ef365f3cbf1 1-147
+frontend/src/modules/warehouse/routes.ts
+  s_087e79f7f5148b::t_5a21a05f1dd347 8,41-46
+frontend/src/modules/warehouse/services/index.ts
+  s_087e79f7f5148b::t_981b7bfd861575 2-3,9-10
+frontend/src/modules/warehouse/types/index.ts
+  s_087e79f7f5148b::t_5f209400b1dc1f 58-162,173,194-195
+frontend/src/modules/warehouse/views/LotTraceability.vue
+  s_087e79f7f5148b::t_7a80ae4842243a 1-392
+frontend/src/modules/warehouse/views/StockMovements.vue
+  s_087e79f7f5148b::t_53e4d2d8608077 1-12,49-109,116-118,122-124,130-134,138-139,149-159,177-211,219-231
+frontend/src/modules/warehouse/views/Stocks.vue
+  s_087e79f7f5148b::t_b8d94b1a2b17f0 42-76,82,94,131-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3d55fae7bb5e53ff3e1b9c0fe50fe4cda6334f17",
+  "prompts": {},
+  "sessions": {
+    "s_087e79f7f5148b": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "3849b7bc-a384-457b-81b1-6254d6dbef17",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
