@@ -1,0 +1,57 @@
+backend/src/Infrastructure/Migrations/20260812081241_AddDetailPhaseProfits.Designer.cs
+  s_1ac2a14bbb9fa3::t_ef4270d36745c3 1-8002
+backend/src/Infrastructure/Migrations/20260812081241_AddDetailPhaseProfits.cs
+  s_1ac2a14bbb9fa3::t_b25266daa364a0 1-81
+backend/src/Infrastructure/Migrations/ApplicationDbContextModelSnapshot.cs
+  s_1ac2a14bbb9fa3::t_635e649cf5131d 3998-4034,5138-5174,7241-7251,7540-7550,7906-7910,7939-7943
+backend/src/Application.Contracts/Persistance/Repositories/Sales/IBudgetRepository.cs
+  s_1ac2a14bbb9fa3::t_b76541fa94a7c7 11
+backend/src/Application.Contracts/Persistance/Repositories/Sales/ISalesOrderHeaderRepository.cs
+  s_1ac2a14bbb9fa3::t_b92da897f03c2d 10
+backend/src/Application/Services/Sales/BudgetService.cs
+  s_1ac2a14bbb9fa3::t_443ca2ebb5cc17 133-135,177,181,187-189,268,271-301
+backend/src/Application/Services/Sales/SalesOrderService.cs
+  s_1ac2a14bbb9fa3::t_cff0c04a22c5da 86-93,485-487,500,505-507,562,565-594
+backend/src/Domain/Entities/Sales/BudgetDetail.cs
+  s_1ac2a14bbb9fa3::t_4f1af88de91b39 32-33
+backend/src/Domain/Entities/Sales/BudgetDetailPhaseProfit.cs
+  s_1ac2a14bbb9fa3::t_ffe3d5ce0dc856 1-11
+backend/src/Domain/Entities/Sales/SalesOrderDetail.cs
+  s_1ac2a14bbb9fa3::t_99162246a99e9c 40-41
+backend/src/Domain/Entities/Sales/SalesOrderDetailPhaseProfit.cs
+  s_1ac2a14bbb9fa3::t_785e3ebfa82d4a 1-11
+backend/src/Infrastructure/Persistance/EntityConfiguration/Sales/BudgetDetailPhaseProfitBuilder.cs
+  s_1ac2a14bbb9fa3::t_c4285214984919 1-35
+backend/src/Infrastructure/Persistance/EntityConfiguration/Sales/SalesOrderDetailPhaseProfitBuilder.cs
+  s_1ac2a14bbb9fa3::t_22d3067887e913 1-35
+backend/src/Infrastructure/Persistance/Repositories/Sales/BudgetRepository.cs
+  s_1ac2a14bbb9fa3::t_6f300f27766666 14,22,30-31
+backend/src/Infrastructure/Persistance/Repositories/Sales/SalesOrderHeaderRepository.cs
+  s_1ac2a14bbb9fa3::t_c280012d3f0694 14,22,30
+frontend/src/modules/sales/components/FormBudgetOrderDetail.vue
+  s_1ac2a14bbb9fa3::t_27050825dab57b 233,235,248,284-287
+frontend/src/modules/sales/components/TableWorkmasterProfit.vue
+  s_1ac2a14bbb9fa3::t_845eb112bc3338 82-83,100,121,129-130,132-136,180,202-216,246-256,282
+frontend/src/modules/sales/types/index.ts
+  s_1ac2a14bbb9fa3::t_b524328c1bbe8b 114-119,141,243
+frontend/src/modules/sales/views/Budget.vue
+  s_1ac2a14bbb9fa3::t_e864c1628332c2 445-446
+frontend/src/modules/sales/views/SalesOrder.vue
+  s_1ac2a14bbb9fa3::t_0ce2a80b3acf4e 467
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5dcebaad175fc8306f28c248eaf023518c0f0c82",
+  "prompts": {},
+  "sessions": {
+    "s_1ac2a14bbb9fa3": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "edff1ead-fb23-4993-b246-fdf5469ab151",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
