@@ -442,6 +442,8 @@ const openBudgetDetailDialog = (
       amount: 0,
       budgetId: budget.value!.id,
       description: "",
+      userNotes: "",
+      phaseProfits: [],
     } as BudgetDetail;
   }
 

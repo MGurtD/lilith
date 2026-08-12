@@ -230,7 +230,9 @@
         <TableWorkmasterProfit
           :workMasterId="detail.workMasterId"
           :quantity="detail.quantity"
+          :phaseProfits="detail.phaseProfits || []"
           @updateProfitAverage="copyProfitAverage"
+          @update:phaseProfits="onPhaseProfitsUpdate"
         />
       </TabPanel>
     </TabPanels>
@@ -243,6 +245,7 @@ import { computed, ref, toRefs, onMounted } from "vue";
 import {
   Budget,
   BudgetDetail,
+  DetailPhaseProfit,
   SalesOrderDetail,
   SalesOrderHeader,
 } from "../types";
@@ -277,6 +280,10 @@ const copyProfitAverage = (profitAverage: number) => {
   updateImports();
 
   activeTab.value = "0";
+};
+
+const onPhaseProfitsUpdate = (profits: DetailPhaseProfit[]) => {
+  props.detail.phaseProfits = profits;
 };
 const activeTab = ref("0");
 

@@ -130,6 +130,9 @@ namespace Application.Services.Sales
 
         public async Task<GenericResponse> AddDetail(BudgetDetail detail)
         {
+            var phaseProfits = detail.PhaseProfits?.ToList() ?? new List<BudgetDetailPhaseProfit>();
+            detail.PhaseProfits = new List<BudgetDetailPhaseProfit>();
+
             // Recuperar el workmaster
             if (detail.WorkMasterId != null)
             {
@@ -171,14 +174,19 @@ namespace Application.Services.Sales
                 // per satisfer la FK constraint BudgetDetailId
                 await unitOfWork.Budgets.Details.Add(detail);
                 await AddExternalServicesFromWorkmaster(workmaster, detail);
+                await SavePhaseProfits(detail.Id, phaseProfits, replaceExisting: false);
                 return new GenericResponse(true, detail);
             }
             await unitOfWork.Budgets.Details.Add(detail);
+            await SavePhaseProfits(detail.Id, phaseProfits, replaceExisting: false);
             return new GenericResponse(true, detail);
         }
         
         public async Task<GenericResponse> UpdateDetail(BudgetDetail detail)
         {
+            var phaseProfits = detail.PhaseProfits?.ToList() ?? new List<BudgetDetailPhaseProfit>();
+            detail.PhaseProfits = new List<BudgetDetailPhaseProfit>();
+
             // Recuperar el detall antic per obtenir la quantitat anterior
             var oldDetail = unitOfWork.Budgets.Details.Find(d => d.Id == detail.Id).FirstOrDefault();
             var oldQuantity = oldDetail?.Quantity ?? 0;
@@ -257,8 +265,40 @@ namespace Application.Services.Sales
             detail.WorkMaster = null;
 
             await unitOfWork.Budgets.Details.Update(detail);
+            await SavePhaseProfits(detail.Id, phaseProfits, replaceExisting: true);
             return new GenericResponse(true, detail);
         }
+
+        private async Task SavePhaseProfits(Guid budgetDetailId, IEnumerable<BudgetDetailPhaseProfit> phaseProfits, bool replaceExisting)
+        {
+            if (replaceExisting)
+            {
+                var existing = unitOfWork.Budgets.DetailPhaseProfits
+                    .Find(p => p.BudgetDetailId == budgetDetailId)
+                    .ToList();
+                if (existing.Count > 0)
+                {
+                    await unitOfWork.Budgets.DetailPhaseProfits.RemoveRange(existing);
+                }
+            }
+
+            var rows = phaseProfits
+                .Where(p => p != null)
+                .Select(p => new BudgetDetailPhaseProfit
+                {
+                    Id = p.Id == Guid.Empty ? Guid.NewGuid() : p.Id,
+                    BudgetDetailId = budgetDetailId,
+                    WorkMasterPhaseDetailId = p.WorkMasterPhaseDetailId,
+                    ProfitPercentage = p.ProfitPercentage,
+                })
+                .ToList();
+
+            if (rows.Count > 0)
+            {
+                await unitOfWork.Budgets.DetailPhaseProfits.AddRange(rows);
+            }
+        }
+
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
             var detail = unitOfWork.Budgets.Details.Find(d => d.Id == id).FirstOrDefault();

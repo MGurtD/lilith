@@ -464,6 +464,7 @@ const openOrderDetailDialog = (
       workMasterId: null,
       workOrderId: null,
       userNotes: "",
+      phaseProfits: [],
     } as SalesOrderDetail;
   }
 
