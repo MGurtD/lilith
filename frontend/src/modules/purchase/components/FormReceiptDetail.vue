@@ -39,6 +39,16 @@
       </div>
     </section>
 
+    <section>
+      <div class="mt-2">
+        <SelectorLot
+          :reference-id="detail.referenceId"
+          v-model="detail.lotId"
+          @update:lotCode="(code) => (detail.lotCode = code)"
+        />
+      </div>
+    </section>
+
     <section class="three-columns mt-2">
       <div>
         <BaseInput
@@ -156,6 +166,7 @@
 
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
+import SelectorLot from "../../warehouse/components/SelectorLot.vue";
 import { onMounted, ref } from "vue";
 import { Receipt, ReceiptDetail } from "../types";
 import * as Yup from "yup";
@@ -257,6 +268,8 @@ const restartInputs = async () => {
   props.detail.unitPrice = 0;
   props.detail.unitWeight = 0;
   props.detail.amount = 0;
+  props.detail.lotId = null;
+  props.detail.lotCode = "";
 };
 
 const isDisabled = (field: string) => {

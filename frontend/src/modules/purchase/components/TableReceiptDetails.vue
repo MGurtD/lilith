@@ -22,20 +22,43 @@
         <LinkReference :id="data.referenceId" :full-name="true" />
       </template>
     </Column>
-    <Column field="description" header="Descripció" style="width: 20%"></Column>
-    <Column field="width" header="Amplada" style="width: 7.5%"></Column>
-    <Column field="height" header="Alçada" style="width: 7.5%"></Column>
-    <Column field="lenght" header="Longitud" style="width: 7.5%"></Column>
-    <Column field="thickness" header="Gruix" style="width: 7.5%"></Column>
-    <Column field="diameter" header="Diàmetre" style="width: 7.5%"></Column>
-    <Column field="totalWeight" header="Pes" style="width: 7.5%">
+    <Column field="description" header="Descripció" style="width: 18%"></Column>
+    <Column field="width" header="Amplada" style="width: 7%"></Column>
+    <Column field="height" header="Alçada" style="width: 7%"></Column>
+    <Column field="lenght" header="Longitud" style="width: 7%"></Column>
+    <Column field="thickness" header="Gruix" style="width: 7%"></Column>
+    <Column field="diameter" header="Diàmetre" style="width: 7%"></Column>
+    <Column header="Lot" style="width: 8%">
+      <template #body="{ data }">
+        {{ data.lotCode || "—" }}
+      </template>
+    </Column>
+    <Column field="totalWeight" header="Pes" style="width: 7%">
       <template #body="slotProps">
         {{ slotProps.data.totalWeight }} KG</template
       >
     </Column>
-    <Column field="amount" header="Preu" style="width: 7.5%">
+    <Column field="amount" header="Preu" style="width: 7%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}
+      </template>
+    </Column>
+    <Column style="width: 5%">
+      <template #body="slotProps">
+        <Button
+          icon="pi pi-sitemap"
+          text
+          rounded
+          size="small"
+          :disabled="!slotProps.data.lotId"
+          v-tooltip.top="'Veure traçabilitat del lot'"
+          @click.stop="
+            goToLotTraceability(
+              slotProps.data.referenceId,
+              slotProps.data.lotId,
+            )
+          "
+        />
       </template>
     </Column>
     <Column style="width: 5%">
@@ -56,6 +79,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { ReceiptDetail } from "../types";
 import { formatCurrency } from "../../../utils/functions";
 import LinkReference from "../../shared/components/LinkReference.vue";
+import router from "../../../router";
 
 const props = defineProps<{
   details: Array<ReceiptDetail> | undefined;
@@ -78,5 +102,13 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 
 const onDeleteRow = (event: any, detail: ReceiptDetail) => {
   emit("delete", detail);
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
 };
 </script>

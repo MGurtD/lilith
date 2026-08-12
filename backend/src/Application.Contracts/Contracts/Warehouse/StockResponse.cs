@@ -34,5 +34,9 @@ namespace Application.Contracts
         public decimal Height { get; set; }
         public decimal Diameter { get; set; }
         public decimal Thickness { get; set; }
+
+        // Lot Info (traçabilitat)
+        public Guid? LotId { get; set; }
+        public DateTime? LotCreatedOn { get; set; }
     }
 }

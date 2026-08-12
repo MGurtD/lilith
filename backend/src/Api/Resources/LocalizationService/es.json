@@ -118,6 +118,8 @@
     "StockInsufficientQuantity": "Cantidad insuficiente de stock disponible",
     "QuantityMustBeGreaterThanZero": "La cantidad debe ser superior a 0",
     "StockDefaultLocationNotDefined": "No hay una ubicación por defecto definida en el proyecto",
+    "LotClosed": "El lote ya está cerrado y no se puede reabrir",
+    "LotReferenceMismatch": "El lote seleccionado no pertenece a esta referencia",
     "StockDefaultLocationNotFound": "No hay una ubicación por defecto",
     "WorkcenterSupplyLocationNotFound": "No se ha encontrado la ubicación de aprovisionamiento para el centro de trabajo",
     "ReferenceNotExistent": "Referencia no existente",

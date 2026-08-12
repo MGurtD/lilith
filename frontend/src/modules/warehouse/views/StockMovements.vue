@@ -56,6 +56,11 @@
           {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
         </template></Column
       >
+      <Column header="Lot" style="width: 8%">
+        <template #body="slotProps">
+          {{ getLotCode(slotProps.data.lotId) }}
+        </template>
+      </Column>
       <Column header="Ubicació" style="width: 10%">
         <template #body="slotProps">
           {{ slotProps.data.location?.name }}
@@ -69,7 +74,7 @@
       <Column
         field="description"
         header="Descripció"
-        style="width: 25%"
+        style="width: 20%"
       ></Column>
       <Column
         header="Tipus de moviment"
@@ -80,7 +85,25 @@
           <TagMovementType :movementType="slotProps.data.movementType" />
         </template>
       </Column>
-      <Column field="quantity" header="Quantitat" style="width: 10%"></Column>
+      <Column field="quantity" header="Quantitat" style="width: 8%"></Column>
+      <Column header="" style="width: 4%">
+        <template #body="slotProps">
+          <Button
+            icon="pi pi-sitemap"
+            text
+            rounded
+            size="small"
+            :disabled="!slotProps.data.lotId"
+            v-tooltip.top="'Veure traçabilitat del lot'"
+            @click="
+              goToLotTraceability(
+                slotProps.data.referenceId,
+                slotProps.data.lotId,
+              )
+            "
+          />
+        </template>
+      </Column>
     </DataTable>
   </div>
 </template>
@@ -91,11 +114,14 @@ import TableFilter, {
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
 import TagMovementType from "../../../components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
+import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useStockMovementStore } from "../store/stockMovement";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useExerciseStore } from "../../shared/store/exercise";
-import { onMounted, ref } from "vue";
+import Services from "../services";
+import { Lot } from "../types";
+import { onMounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
   formatDateForQueryParameter,
@@ -103,10 +129,13 @@ import {
 } from "../../../utils/functions";
 
 const toast = useToast();
+const router = useRouter();
 const store = useStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
+
+const lotsById = ref<Record<string, Lot>>({});
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -144,6 +173,41 @@ const cleanFilter = () => {
   filter.value.dates = undefined;
   filter.value.locationId = undefined;
 };
+
+const getLotCode = (lotId?: string | null) => {
+  if (!lotId) return "—";
+  return lotsById.value[lotId]?.code ?? "—";
+};
+
+const resolveLotCodes = async () => {
+  const lotIds = Array.from(
+    new Set(
+      (stockMovementStore.stockMovements ?? [])
+        .map((movement) => movement.lotId)
+        .filter((id): id is string => !!id && !lotsById.value[id]),
+    ),
+  );
+
+  await Promise.all(
+    lotIds.map(async (lotId) => {
+      const lot = await Services.Lot.getById(lotId);
+      if (lot) lotsById.value[lotId] = lot;
+    }),
+  );
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
+};
+
+watch(
+  () => stockMovementStore.stockMovements,
+  () => resolveLotCodes(),
+);
 
 const filterMovements = async () => {
   if (filter.value.dates && filter.value.dates[1]) {

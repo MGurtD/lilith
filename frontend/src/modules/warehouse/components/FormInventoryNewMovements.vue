@@ -11,6 +11,14 @@
         ></DropdownReference>
       </div>
 
+    <div class="mt-2">
+      <SelectorLot
+        :reference-id="newMovement.referenceId"
+        v-model="newMovement.lotId"
+        @update:lotCode="(code) => (newMovement.lotCode = code)"
+      />
+    </div>
+
     <section class="three-columns">      
       <div>
         <BaseInput
@@ -77,6 +85,7 @@
 
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
+import SelectorLot from "./SelectorLot.vue";
 import { onMounted, ref } from "vue";
 import { Inventory } from "../types";
 import * as Yup from "yup";

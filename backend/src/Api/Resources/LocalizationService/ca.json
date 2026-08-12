@@ -118,6 +118,8 @@
     "StockInsufficientQuantity": "Quantitat insuficient d'stock disponible",
     "QuantityMustBeGreaterThanZero": "La quantitat ha de ser superior a 0",
     "StockDefaultLocationNotDefined": "No hi ha una ubicació per defecte definida al projecte",
+    "LotClosed": "El lot ja està tancat i no es pot reobrir",
+    "LotReferenceMismatch": "El lot seleccionat no pertany a aquesta referència",
     "StockDefaultLocationNotFound": "No hi ha una ubicació per defecte",
     "WorkcenterSupplyLocationNotFound": "No s'ha trobat la ubicació d'aprovisionament per al centre de treball",
     "ReferenceNotExistent": "Referència no existent",

@@ -50,6 +50,9 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             on st.LocationId equals l.Id
                         join w in context.Set<Domain.Entities.Warehouse.Warehouse>()
                             on l.WarehouseId equals w.Id
+                        join lot in context.Set<Lot>()
+                            on st.LotId equals lot.Id into lotGroup
+                        from lot in lotGroup.DefaultIfEmpty()
                         where st.Quantity > 0
                             && !r.Disabled
                             && !l.Disabled
@@ -71,7 +74,10 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             st.Length,
                             st.Height,
                             st.Diameter,
-                            st.Thickness
+                            st.Thickness,
+                            st.LotId,
+                            LotCode = lot != null ? lot.Code : "",
+                            LotClosedDate = lot != null ? lot.ClosedDate : (DateTime?)null
                         } into stockGroup
                         select new StockListItemResponse
                         {
@@ -94,7 +100,10 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             Length = stockGroup.Key.Length,
                             Height = stockGroup.Key.Height,
                             Diameter = stockGroup.Key.Diameter,
-                            Thickness = stockGroup.Key.Thickness
+                            Thickness = stockGroup.Key.Thickness,
+                            LotId = stockGroup.Key.LotId,
+                            LotCode = stockGroup.Key.LotCode,
+                            LotClosedDate = stockGroup.Key.LotClosedDate
                         };
 
             return await query.AsNoTracking().ToListAsync();
@@ -112,6 +121,9 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             on st.LocationId equals l.Id
                         join w in context.Set<Domain.Entities.Warehouse.Warehouse>()
                             on l.WarehouseId equals w.Id
+                        join lot in context.Set<Lot>()
+                            on st.LotId equals lot.Id into lotGroup
+                        from lot in lotGroup.DefaultIfEmpty()
                         where r.Id == referenceId
                             && !r.Disabled
                             && (rf == null || !rf.Disabled)
@@ -138,7 +150,9 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             Length = st.Length,
                             Height = st.Height,
                             Diameter = st.Diameter,
-                            Thickness = st.Thickness
+                            Thickness = st.Thickness,
+                            LotId = st.LotId,
+                            LotCreatedOn = lot != null ? lot.CreatedOn : (DateTime?)null
                         };
 
             return await query.ToListAsync();

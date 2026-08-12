@@ -86,6 +86,12 @@ public class WorkOrderBuilder : IEntityTypeConfiguration<WorkOrder>
                           ApplicationDbContextConstants.DECIMAL_SCALE);
 
         builder
+            .HasOne(b => b.DefaultProducedLot)
+            .WithMany()
+            .HasForeignKey(b => b.DefaultProducedLotId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
             .HasKey(b => b.Id)
             .HasName($"PK_{TABLE_NAME}");
         builder

@@ -39,20 +39,47 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 28%" />
-    <Column field="warehouseName" header="Magatzem" style="width: 16%" />
-    <Column field="locationName" header="Ubicació" style="width: 16%" />
-    <Column field="quantity" header="Uds." style="width: 12%" />
-    <Column field="width" header="Ample (x) mm" style="width: 12%" />
-    <Column field="length" header="Llarg (y) mm" style="width: 12%" />
-    <Column field="height" header="Alt (z) mm" style="width: 12%" />
-    <Column field="diameter" header="Diàmetre mm" style="width: 12%" />
-    <Column field="thickness" header="Gruix mm" style="width: 12%" />
+    <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 24%" />
+    <Column header="Lot" style="width: 12%">
+      <template #body="slotProps">
+        <span class="flex align-items-center gap-2">
+          {{ slotProps.data.lotCode || "—" }}
+          <Tag
+            v-if="slotProps.data.lotClosedDate"
+            severity="secondary"
+            value="Tancat"
+            v-tooltip.top="'Lot tancat'"
+          />
+        </span>
+      </template>
+    </Column>
+    <Column field="warehouseName" header="Magatzem" style="width: 14%" />
+    <Column field="locationName" header="Ubicació" style="width: 14%" />
+    <Column field="quantity" header="Uds." style="width: 10%" />
+    <Column field="width" header="Ample (x) mm" style="width: 10%" />
+    <Column field="length" header="Llarg (y) mm" style="width: 10%" />
+    <Column field="height" header="Alt (z) mm" style="width: 10%" />
+    <Column field="diameter" header="Diàmetre mm" style="width: 10%" />
+    <Column field="thickness" header="Gruix mm" style="width: 10%" />
+    <Column header="" style="width: 6%">
+      <template #body="slotProps">
+        <Button
+          icon="pi pi-sitemap"
+          text
+          rounded
+          size="small"
+          :disabled="!slotProps.data.lotId"
+          v-tooltip.top="'Veure traçabilitat del lot'"
+          @click="goToLotTraceability(slotProps.data.referenceId, slotProps.data.lotId)"
+        />
+      </template>
+    </Column>
   </DataTable>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import TableFilter, {
   type FilterBodyWidth,
@@ -64,6 +91,7 @@ import { useStockStore } from "../store/stock";
 import { useWarehouseStore } from "../store/warehouse";
 
 const store = useStore();
+const router = useRouter();
 const stockStore = useStockStore();
 const warehouseStore = useWarehouseStore();
 
@@ -98,6 +126,14 @@ const filteredStocks = computed(() => {
 const cleanFilter = () => {
   filter.value.referenceId = undefined;
   filter.value.warehouseId = undefined;
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
 };
 
 onMounted(async () => {

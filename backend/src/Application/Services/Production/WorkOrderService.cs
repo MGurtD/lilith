@@ -4,10 +4,11 @@ using Application.Contracts;
 using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
 using Domain.Entities.Sales;
+using Domain.Entities.Warehouse;
 
 namespace Application.Services.Production
 {
-    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService, IMetricsService metricsService) : IWorkOrderService
+    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService, IMetricsService metricsService, IParameterService parameterService, ILotService lotService) : IWorkOrderService
     {
         public async Task<WorkOrder?> GetById(Guid id)
         {
@@ -226,6 +227,12 @@ namespace Application.Services.Production
             if (initialStatusId is null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterNoInitialStatus"));
 
+            // Lot de sortida (Fase 4: traçabilitat). Sempre s'assigna un lot (buit o autogenerat), mai es deixa null.
+            var autoBatch = await parameterService.GetBool("Production.AutoBatch", true);
+            var producedLotCode = autoBatch ? code : (dto.LotCode ?? string.Empty);
+            var producedLotResponse = await lotService.ResolveOrCreateLot(workMaster.ReferenceId, producedLotCode, null, null);
+            var producedLot = producedLotResponse.Content as Lot;
+
             // Crear ordre de fabricació
             var workOrder = new WorkOrder()
             {
@@ -236,7 +243,8 @@ namespace Application.Services.Production
                 PlannedDate = dto.PlannedDate,
                 PlannedQuantity = dto.PlannedQuantity,
                 StatusId = initialStatusId.Value,
-                Comment = dto.Comment
+                Comment = dto.Comment,
+                DefaultProducedLotId = producedLot?.Id
             };
 
             foreach (var workMasterPhase in workMaster.Phases)

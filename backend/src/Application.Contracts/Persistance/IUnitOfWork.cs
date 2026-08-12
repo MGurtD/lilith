@@ -90,6 +90,7 @@ namespace Application.Contracts
         IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
+        ILotRepository Lots { get; }
         IStockMovementRepository StockMovements { get; }
 
         Task<int> CompleteAsync();

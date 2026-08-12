@@ -42,6 +42,11 @@
     <Column field="referenceName" header="Referència" style="width: 28%">
     </Column>
     <Column field="locationName" header="Ubicació"></Column>
+    <Column header="Lot">
+      <template #body="slotProps">
+        {{ slotProps.data.lotCode || "—" }}
+      </template>
+    </Column>
     <Column field="oldQuantity" header="Uds."></Column>
     <Column header="Recompte" style="width: 12%">
       <template #body="slotProps">
@@ -80,6 +85,7 @@ import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
@@ -135,6 +141,8 @@ const refreshData = async () => {
       locationName: stock.locationName,
       referenceId: stock.referenceId,
       referenceName: stock.referenceDisplay,
+      lotId: stock.lotId,
+      lotCode: stock.lotCode,
       oldQuantity: stock.quantity,
       newQuantity: stock.quantity,
       width: stock.width,
@@ -188,6 +196,8 @@ const newMovement = () => {
     movementType: "",
     locationId: null,
     referenceId: "",
+    lotId: null,
+    lotCode: "",
     oldQuantity: 0,
     newQuantity: 0,
     width: 0,
@@ -200,7 +210,7 @@ const newMovement = () => {
 };
 
 const saveMovement = async () => {
-  const promises = [] as Array<Promise<boolean>>;
+  const promises = [] as Array<Promise<GenericResponse<StockMovement>>>;
 
   inventoryStore.inventories
     ?.filter((el) => el.newQuantity != el.oldQuantity)
@@ -213,6 +223,7 @@ const saveMovement = async () => {
         locationId: m.locationId || null,
         location: null,
         referenceId: m.referenceId,
+        lotId: m.lotId,
         quantity: m.newQuantity - m.oldQuantity,
         width: m.width,
         length: m.length,
@@ -229,8 +240,9 @@ const saveMovement = async () => {
     });
 
   const results = await Promise.all(promises);
+  const failed = results.filter((r) => !r.result);
   // Check if all promises resolved successfully
-  if (results.filter((p) => p === true).length === promises.length) {
+  if (failed.length === 0) {
     toast.add({
       severity: "success",
       summary: "Inventari creat correctament",
@@ -239,10 +251,14 @@ const saveMovement = async () => {
 
     refreshData();
   } else {
+    const detail = Array.from(
+      new Set(failed.flatMap((r) => r.errors ?? []))
+    ).join(" ");
     toast.add({
       severity: "error",
       summary: "Error al crear el moviment d'inventari",
-      life: 5000,
+      detail: detail || undefined,
+      life: 7000,
     });
   }
 };

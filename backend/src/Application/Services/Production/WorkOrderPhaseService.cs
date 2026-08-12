@@ -181,7 +181,7 @@ public class WorkOrderPhaseService(
         phase.EndTime = DateTime.Now;
         await unitOfWork.WorkOrders.Phases.Update(phase);
 
-        // Delegate WorkOrder status update
+        // Delegate WorkOrder status update (no hi ha canvi de LotId aquí: el material torna amb el mateix lot, no hi ha producció en una fase externa)
         return await workOrderService.UpdateExternalWorkOrderStatus(phase.WorkOrderId, phaseId);
     }
 

@@ -1,8 +1,8 @@
 <template>
   <main class="home">
     <img
-      src="../assets/images/logo.jpg"
-      alt="Logo Temges"
+      src="../assets/images/logo.png"
+      alt="Logo RawCraft Software"
       class="home__logo"
     />
   </main>

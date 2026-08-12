@@ -9,7 +9,8 @@ public class WorkOrderStockService(
     IWorkcenterLocationService workcenterLocationService,
     IWarehouseService warehouseService,
     IStockMovementService stockMovementService,
-    IStockService stockService) : IWorkOrderStockService
+    IStockService stockService,
+    ILotService lotService) : IWorkOrderStockService
 {
     /// <summary>
     /// Resolves the WorkOrder.Code from a WorkOrderPhaseId.
@@ -67,15 +68,16 @@ public class WorkOrderStockService(
         var outputDescription = localizationService.GetLocalizedString("Movement.SupplyOutputDescription", supplyLocation.Name, woCode);
         var inputDescription = localizationService.GetLocalizedString("Movement.SupplyInputDescription", sourceLocationName, woCode);
 
-        // 5. Check if stock with same dimensions already exists at supply location
-        var existingDestinationStock = stockService.GetByDimensions(
+        // 5. Check if stock with same dimensions and lot already exists at supply location
+        var existingDestinationStock = stockService.GetByDimensionsAndLot(
             supplyLocation.Id,
             sourceStock.ReferenceId,
             sourceStock.Width,
             sourceStock.Length,
             sourceStock.Height,
             sourceStock.Diameter,
-            sourceStock.Thickness);
+            sourceStock.Thickness,
+            sourceStock.LotId);
 
         Guid destinationStockId;
 
@@ -107,7 +109,7 @@ public class WorkOrderStockService(
 
             if (existingDestinationStock != null)
             {
-                // Merge into existing stock at supply location
+                // Merge into existing stock at supply location (mateix lot, ja garantit per GetByDimensionsAndLot)
                 existingDestinationStock.Quantity += request.Quantity;
                 await unitOfWork.Stocks.Update(existingDestinationStock);
                 destinationStockId = existingDestinationStock.Id;
@@ -119,6 +121,7 @@ public class WorkOrderStockService(
                 {
                     ReferenceId = sourceStock.ReferenceId,
                     LocationId = supplyLocation.Id,
+                    LotId = sourceStock.LotId,
                     Quantity = request.Quantity,
                     Width = sourceStock.Width,
                     Length = sourceStock.Length,
@@ -137,6 +140,7 @@ public class WorkOrderStockService(
             StockId = sourceStockId,
             LocationId = sourceLocationId,
             ReferenceId = sourceStock.ReferenceId,
+            LotId = sourceStock.LotId,
             MovementType = StockMovementType.OUTPUT,
             Quantity = request.Quantity * -1,
             Width = sourceStock.Width,
@@ -156,6 +160,7 @@ public class WorkOrderStockService(
             StockId = destinationStockId,
             LocationId = supplyLocation.Id,
             ReferenceId = sourceStock.ReferenceId,
+            LotId = sourceStock.LotId,
             MovementType = StockMovementType.INPUT,
             Quantity = request.Quantity,
             Width = sourceStock.Width,
@@ -170,6 +175,10 @@ public class WorkOrderStockService(
         };
 
         await unitOfWork.StockMovements.AddRange([outputMovement, inputMovement]);
+
+        if (sourceStock.LotId.HasValue)
+            await UpdateLotRemainingQuantityAsync(sourceStock.LotId.Value);
+
         return new GenericResponse(true);
     }
 
@@ -219,15 +228,16 @@ public class WorkOrderStockService(
         var outputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyOutputDescription", supplyLocationName, woCode);
         var inputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyInputDescription", defaultLocation.Name, woCode);
 
-        // 6. Check if stock with same dimensions already exists at default location
-        var existingDestinationStock = stockService.GetByDimensions(
+        // 6. Check if stock with same dimensions and lot already exists at default location
+        var existingDestinationStock = stockService.GetByDimensionsAndLot(
             defaultLocation.Id,
             sourceStock.ReferenceId,
             sourceStock.Width,
             sourceStock.Length,
             sourceStock.Height,
             sourceStock.Diameter,
-            sourceStock.Thickness);
+            sourceStock.Thickness,
+            sourceStock.LotId);
 
         Guid destinationStockId;
 
@@ -264,6 +274,7 @@ public class WorkOrderStockService(
                 {
                     ReferenceId = sourceStock.ReferenceId,
                     LocationId = defaultLocation.Id,
+                    LotId = sourceStock.LotId,
                     Quantity = request.Quantity,
                     Width = sourceStock.Width,
                     Length = sourceStock.Length,
@@ -282,6 +293,7 @@ public class WorkOrderStockService(
             StockId = sourceStockId,
             LocationId = supplyLocationId,
             ReferenceId = sourceStock.ReferenceId,
+            LotId = sourceStock.LotId,
             MovementType = StockMovementType.OUTPUT,
             Quantity = request.Quantity * -1,
             Width = sourceStock.Width,
@@ -301,6 +313,7 @@ public class WorkOrderStockService(
             StockId = destinationStockId,
             LocationId = defaultLocation.Id,
             ReferenceId = sourceStock.ReferenceId,
+            LotId = sourceStock.LotId,
             MovementType = StockMovementType.INPUT,
             Quantity = request.Quantity,
             Width = sourceStock.Width,
@@ -315,6 +328,10 @@ public class WorkOrderStockService(
         };
 
         await unitOfWork.StockMovements.AddRange([outputMovement, inputMovement]);
+
+        if (sourceStock.LotId.HasValue)
+            await UpdateLotRemainingQuantityAsync(sourceStock.LotId.Value);
+
         return new GenericResponse(true);
     }
 
@@ -346,6 +363,7 @@ public class WorkOrderStockService(
         var residueReturnDescription = localizationService.GetLocalizedString("Movement.ResidueReturnDescription", defaultLocation.Name, woCode);
 
         var allMovements = new List<StockMovement>();
+        var touchedLotIds = new HashSet<Guid>();
 
         // 4. Process each stock entry
         foreach (var entry in request.Entries)
@@ -361,6 +379,9 @@ public class WorkOrderStockService(
             var sourceLocationId = sourceStock.LocationId;
             var sourceQuantity = sourceStock.Quantity;
 
+            if (sourceStock.LotId.HasValue)
+                touchedLotIds.Add(sourceStock.LotId.Value);
+
             // 4a. Always consume the FULL source stock quantity.
             //     The entire provisioned material enters the production process.
             //     Remaining pieces (if any) will be returned as new/residue stock.
@@ -373,6 +394,7 @@ public class WorkOrderStockService(
                 StockId = sourceStock.Id,
                 LocationId = sourceLocationId,
                 ReferenceId = sourceStock.ReferenceId,
+                LotId = sourceStock.LotId,
                 MovementType = StockMovementType.CONSUMPTION,
                 Quantity = sourceQuantity * -1,
                 Width = sourceStock.Width,
@@ -393,15 +415,16 @@ public class WorkOrderStockService(
                 {
                     if (piece.Quantity <= 0) continue;
 
-                    // Find or create stock at default location with the piece's dimensions
-                    var existingStock = stockService.GetByDimensions(
+                    // Find or create stock at default location with the piece's dimensions and same lot as the source
+                    var existingStock = stockService.GetByDimensionsAndLot(
                         defaultLocation.Id,
                         sourceStock.ReferenceId,
                         piece.Width,
                         piece.Length,
                         piece.Height,
                         piece.Diameter,
-                        piece.Thickness);
+                        piece.Thickness,
+                        sourceStock.LotId);
 
                     Guid destinationStockId;
 
@@ -417,6 +440,7 @@ public class WorkOrderStockService(
                         {
                             ReferenceId = sourceStock.ReferenceId,
                             LocationId = defaultLocation.Id,
+                            LotId = sourceStock.LotId,
                             Quantity = piece.Quantity,
                             Width = piece.Width,
                             Length = piece.Length,
@@ -434,6 +458,7 @@ public class WorkOrderStockService(
                         StockId = destinationStockId,
                         LocationId = defaultLocation.Id,
                         ReferenceId = sourceStock.ReferenceId,
+                        LotId = sourceStock.LotId,
                         MovementType = StockMovementType.CONSUMPTION,
                         Quantity = piece.Quantity,
                         Width = piece.Width,
@@ -480,14 +505,18 @@ public class WorkOrderStockService(
             var autoReturnOutputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyOutputDescription", returnSupplyLocationName, woCode);
             var autoReturnInputDescription = localizationService.GetLocalizedString("Movement.ReturnFromSupplyInputDescription", defaultLocation.Name, woCode);
 
-            var existingDestinationStock = stockService.GetByDimensions(
+            if (remainingStock.LotId.HasValue)
+                touchedLotIds.Add(remainingStock.LotId.Value);
+
+            var existingDestinationStock = stockService.GetByDimensionsAndLot(
                 defaultLocation.Id,
                 remainingStock.ReferenceId,
                 remainingStock.Width,
                 remainingStock.Length,
                 remainingStock.Height,
                 remainingStock.Diameter,
-                remainingStock.Thickness);
+                remainingStock.Thickness,
+                remainingStock.LotId);
 
             Guid returnDestinationStockId;
 
@@ -500,7 +529,7 @@ public class WorkOrderStockService(
             }
             else
             {
-                // Merge into existing stock at default location
+                // Merge into existing stock at default location (mateix lot, ja garantit per GetByDimensionsAndLot)
                 existingDestinationStock.Quantity += returnQuantity;
                 await unitOfWork.Stocks.Update(existingDestinationStock);
                 returnDestinationStockId = existingDestinationStock.Id;
@@ -517,6 +546,7 @@ public class WorkOrderStockService(
                 StockId = remainingStock.Id,
                 LocationId = returnSourceLocationId,
                 ReferenceId = remainingStock.ReferenceId,
+                LotId = remainingStock.LotId,
                 MovementType = StockMovementType.OUTPUT,
                 Quantity = returnQuantity * -1,
                 Width = remainingStock.Width,
@@ -536,6 +566,7 @@ public class WorkOrderStockService(
                 StockId = returnDestinationStockId,
                 LocationId = defaultLocation.Id,
                 ReferenceId = remainingStock.ReferenceId,
+                LotId = remainingStock.LotId,
                 MovementType = StockMovementType.INPUT,
                 Quantity = returnQuantity,
                 Width = remainingStock.Width,
@@ -554,6 +585,12 @@ public class WorkOrderStockService(
         if (allMovements.Count > 0)
         {
             await unitOfWork.StockMovements.AddRange(allMovements);
+        }
+
+        // 7. Recalculate Lot.RemainingQuantity for every lot touched by this consumption
+        foreach (var lotId in touchedLotIds)
+        {
+            await UpdateLotRemainingQuantityAsync(lotId);
         }
 
         return new GenericResponse(true);
@@ -587,11 +624,24 @@ public class WorkOrderStockService(
         if (defaultLocationId == null)
             return new GenericResponse(false, localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
 
-        // 4. Build the PRODUCTION stock movement
+        // 4. Resolve the produced lot (defensive fallback per OF antigues sense migrar: crea/reutilitza el lot buit)
+        if (workOrder.DefaultProducedLotId == null)
+        {
+            var producedLotResponse = await lotService.ResolveOrCreateLot(workOrder.ReferenceId, string.Empty, null, null);
+            var producedLot = producedLotResponse.Content as Lot;
+            if (producedLot != null)
+            {
+                workOrder.DefaultProducedLotId = producedLot.Id;
+                await unitOfWork.WorkOrders.Update(workOrder);
+            }
+        }
+
+        // 5. Build the PRODUCTION stock movement
         var stockMovement = new StockMovement
         {
             ReferenceId = workOrder.ReferenceId,
             LocationId = defaultLocationId,
+            LotId = workOrder.DefaultProducedLotId,
             MovementType = StockMovementType.PRODUCTION,
             Quantity = request.Quantity,
             MovementDate = DateTime.Now,
@@ -600,7 +650,23 @@ public class WorkOrderStockService(
             EntityId = workOrder.Id
         };
 
-        // 5. Create stock movement (creates/updates Stock record and records the movement)
+        // 6. Create stock movement (creates/updates Stock record and records the movement)
         return await stockMovementService.CreateProductionMovement(stockMovement);
+    }
+
+    // Recalcula Lot.RemainingQuantity sumant tot l'estoc del lot a totes les ubicacions; el tanca si arriba a 0 (mai el reobre).
+    private async Task UpdateLotRemainingQuantityAsync(Guid lotId)
+    {
+        var lot = await unitOfWork.Lots.Get(lotId);
+        if (lot == null) return;
+
+        var lotStocks = await unitOfWork.Stocks.FindAsync(s => s.LotId == lotId);
+        var total = lotStocks.Sum(s => s.Quantity);
+
+        lot.RemainingQuantity = total;
+        if (total == 0 && lot.ClosedDate == null)
+            lot.ClosedDate = DateTime.Now;
+
+        await unitOfWork.Lots.Update(lot);
     }
 }

@@ -55,6 +55,111 @@ export interface StockListItem extends Stock {
   warehouseId: string;
   warehouseName: string;
   warehouseDescription: string;
+  lotId?: string | null;
+  lotCode?: string;
+  lotClosedDate?: string | null;
+}
+
+// Matèria primera: lot de traçabilitat associat a una referència
+export interface Lot {
+  id: string;
+  referenceId: string;
+  code: string;
+  supplierLotCode?: string | null;
+  expirationDate?: any;
+  closedDate?: any;
+  remainingQuantity: number;
+  comment?: string | null;
+}
+
+// Traçabilitat de lots: origen de compra d'una fulla de l'arbre "cap enrere"
+export interface PurchaseOrigin {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  supplierId: string;
+  supplierName: string;
+  receiptId: string;
+  receiptNumber: string;
+  receiptDate: any;
+}
+
+// Traçabilitat de lots: destí de venda d'una fulla de l'arbre "cap endavant"
+export interface SalesDestination {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  customerId: string;
+  customerName: string;
+  deliveryNoteId: string;
+  deliveryNoteNumber: string;
+  deliveryDate: any;
+}
+
+// Node recursiu de l'arbre de traçabilitat (backward i forward comparteixen forma)
+export interface LotTraceabilityNode {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  children?: LotTraceabilityNode[];
+  purchaseOrigins?: PurchaseOrigin[];
+  salesDestinations?: SalesDestination[];
+}
+
+export interface LotBackwardTraceability {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  root: LotTraceabilityNode;
+}
+
+export interface LotForwardTraceability {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  root: LotTraceabilityNode;
+}
+
+export interface RecallDeliveryNote {
+  deliveryNoteId: string;
+  deliveryNoteNumber: string;
+  deliveryDate: any;
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+}
+
+export interface RecallCustomer {
+  customerId: string;
+  customerName: string;
+  deliveryNotes: RecallDeliveryNote[];
+}
+
+export interface RecallReport {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  totalAffectedDeliveryNotes: number;
+  totalAffectedQuantity: number;
+  affectedCustomers: RecallCustomer[];
 }
 
 export interface StockMovement {
@@ -65,6 +170,7 @@ export interface StockMovement {
   location: Location | null;
   referenceId: string;
   reference?: { id: string; code: string; description: string } | null;
+  lotId?: string | null;
   quantity: number;
   width: number;
   length: number;
@@ -85,6 +191,8 @@ export interface Inventory {
   locationName?: string; // Optional for UI purposes
   referenceId: string;
   referenceName?: string; // Optional for UI purposes
+  lotId?: string | null;
+  lotCode?: string;
   oldQuantity: number;
   newQuantity: number;
   width: number;

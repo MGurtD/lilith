@@ -44,9 +44,16 @@ namespace Infrastructure.Persistance.EntityConfiguration.Warehouse
                 .HasPrecision(ApplicationDbContextConstants.DECIMAL_PRECISION,
                               ApplicationDbContextConstants.DECIMAL_SCALE);
             builder
+                .HasOne(b => b.Lot)
+                .WithMany()
+                .HasForeignKey(b => b.LotId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName("PK_Stocks");
             builder.HasIndex(builder => new { builder.LocationId, builder.ReferenceId }, "idx_Location_Reference");
+            builder.HasIndex(builder => new { builder.LocationId, builder.ReferenceId, builder.LotId }, "idx_Location_Reference_Lot");
 
             builder.ToTable("Stocks");
 
