@@ -1,0 +1,31 @@
+backend/src/Api/Setup/ApplicationServicesSetup.cs
+  s_23a53f7fe112f9::t_bab16c3ada31b4 55
+backend/src/Application.Contracts/Contracts/Warehouse/LotTraceabilityDto.cs
+  s_23a53f7fe112f9::t_f7dbfa4cae998a 20-35
+backend/src/Application.Contracts/Persistance/Repositories/Warehouse/IStockMovementRepository.cs
+  s_23a53f7fe112f9::t_0d291e537e9cf0 9
+backend/src/Application/Services/Warehouse/LotTraceabilityService.cs
+  s_23a53f7fe112f9::t_93319d18ae6522 15,41,237-281
+backend/src/Infrastructure/Persistance/Repositories/Warehouse/StockMovementRepository.cs
+  s_23a53f7fe112f9::t_af0d810902cdf6 39-52
+backend/tests/Application.Tests/Services/Production/BrandingServiceTests.cs
+  s_23a53f7fe112f9::t_70d07c67a05283 617
+backend/tests/Application.Tests/Services/Sales/CustomerServiceTests.cs
+  s_23a53f7fe112f9::t_6a1a3de74c44ba 284
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1bf25ae529c91eb68331ed0d336a163bef4c6d1c",
+  "prompts": {},
+  "sessions": {
+    "s_23a53f7fe112f9": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a42d2ee4-66dd-4d6a-bc26-311739145846",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
