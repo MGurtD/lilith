@@ -281,14 +281,18 @@ namespace Application.Services.Sales
             return new GenericResponse(true);
         }
 
-        // Resol el lot a assignar al moviment de sortida: explícit al detall, lot per defecte de l'OF que l'ha produït, o un lot buit resolt/creat
-        private async Task<Guid> ResolveOutputLotId(DeliveryNoteDetail detail)
+        // Resol el lot del moviment de sortida: explícit al detall, lot per defecte de l'OF, o (si la ref és loteada) un lot resolt/creat; null si no és loteada
+        private async Task<Guid?> ResolveOutputLotId(DeliveryNoteDetail detail)
         {
             if (detail.LotId.HasValue) return detail.LotId.Value;
 
             var workOrder = ResolveWorkOrderForDetail(detail);
             if (workOrder?.DefaultProducedLotId != null)
                 return workOrder.DefaultProducedLotId.Value;
+
+            var reference = await unitOfWork.References.Get(detail.ReferenceId);
+            if (reference is { RequiresLot: false })
+                return null;
 
             var lotResponse = await lotService.ResolveOrCreateLot(detail.ReferenceId, string.Empty, null, null);
             return ((Lot)lotResponse.Content!).Id;

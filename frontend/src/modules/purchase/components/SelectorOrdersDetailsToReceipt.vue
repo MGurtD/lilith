@@ -43,7 +43,7 @@
     </Column>
     <Column header="" field="lotId" style="width: 25%">
       <template #body="{ data }">
-        <div>
+        <div v-if="referenceRequiresLot(data.reference.id)">
           <SelectorLot
             :reference-id="data.reference.id"
             v-model="data.lotId"
@@ -129,6 +129,10 @@ const referenceStore = useReferenceStore();
 const expandedRows = ref({});
 const filterReference = ref("");
 const selectedOrderDetails = ref([] as Array<ReceiptOrderDetail>);
+
+const referenceRequiresLot = (referenceId: string) =>
+  referenceStore.references?.find((r) => r.id === referenceId)?.requiresLot ??
+  false;
 
 const props = defineProps<{
   receipt: Receipt;

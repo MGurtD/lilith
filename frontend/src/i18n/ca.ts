@@ -246,6 +246,7 @@ const ca = {
         cognom: "Cognom",
         color: "Color",
         comentariFabriacio: "Comentari de fabricació",
+        codiLot: "Codi de lot",
         comentariFabricacio: "Comentari fabricació",
         confirmar: "Confirmar",
         consum: "Consum",
@@ -1631,6 +1632,7 @@ const ca = {
         purchase: "Compres",
         production: "Producció",
         service: "Servei",
+        requiresLot: "Requereix lot",
       },
       sales: {
         savePvp: "Guardar PVP",

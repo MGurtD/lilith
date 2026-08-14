@@ -246,6 +246,7 @@ const es = {
         cognom: "Apellido",
         color: "Color",
         comentariFabriacio: "Comentario de fabricación",
+        codiLot: "Código de lote",
         comentariFabricacio: "Comentario de fabricación",
         confirmar: "Confirmar",
         consum: "Consumo",
@@ -1574,6 +1575,7 @@ const es = {
         purchase: "Compras",
         production: "Producción",
         service: "Servicio",
+        requiresLot: "Requiere lote",
       },
       sales: {
         savePvp: "Guardar PVP",

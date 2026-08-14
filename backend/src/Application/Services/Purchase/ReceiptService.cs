@@ -176,7 +176,7 @@ namespace Application.Services.Purchase
             return new GenericResponse(true);
         }
 
-        // Resol el LotId del detall: valida el lot explicit contra la referencia, o el resol/crea per codi (buit per defecte)
+        // Resol el LotId del detall: valida el lot explicit contra la referencia, o el resol/crea per codi segons RequiresLot
         private async Task<GenericResponse> ResolveDetailLot(ReceiptDetail detail, string? lotCode = null)
         {
             if (detail.LotId.HasValue)
@@ -188,6 +188,13 @@ namespace Application.Services.Purchase
                     return new GenericResponse(false, localizationService.GetLocalizedString("LotReferenceMismatch"));
 
                 return new GenericResponse(true, lot);
+            }
+
+            var reference = await unitOfWork.References.Get(detail.ReferenceId);
+            if (reference is { RequiresLot: false })
+            {
+                detail.LotId = null;
+                return new GenericResponse(true);
             }
 
             var response = await lotService.ResolveOrCreateLot(detail.ReferenceId, code: lotCode, supplierLotCode: null, expirationDate: null);

@@ -75,6 +75,7 @@
     "WorkOrderPhaseWithId": "Work order phase with ID {0}",
     "WorkOrderWithId": "Work order with ID {0}",
     "WorkMasterNotFound": "Work master not found",
+    "WorkOrderLotCodeRequired": "A lot code is required for the work order",
     "WorkMasterAlreadyExists": "Work master already exists",
     "WorkMasterPhaseNotFound": "Work master phase not found",
     "WorkMasterPhaseAlreadyExists": "Work master phase already exists",

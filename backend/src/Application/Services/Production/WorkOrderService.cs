@@ -227,11 +227,27 @@ namespace Application.Services.Production
             if (initialStatusId is null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterNoInitialStatus"));
 
-            // Lot de sortida (Fase 4: traçabilitat). Sempre s'assigna un lot (buit o autogenerat), mai es deixa null.
-            var autoBatch = await parameterService.GetBool("Production.AutoBatch", true);
-            var producedLotCode = autoBatch ? code : (dto.LotCode ?? string.Empty);
-            var producedLotResponse = await lotService.ResolveOrCreateLot(workMaster.ReferenceId, producedLotCode, null, null);
-            var producedLot = producedLotResponse.Content as Lot;
+            // Lot de sortida (Fase 4: traçabilitat). Segons RequiresLot de la referència; null si no és loteada.
+            var reference = await unitOfWork.References.Get(workMaster.ReferenceId);
+            Guid? producedLotId = null;
+            if (reference is { RequiresLot: true })
+            {
+                var autoBatch = await parameterService.GetBool("Production.AutoBatch", true);
+                string? producedLotCode;
+                if (autoBatch)
+                {
+                    producedLotCode = code;
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(dto.LotCode))
+                        return new GenericResponse(false, localizationService.GetLocalizedString("WorkOrderLotCodeRequired"));
+                    producedLotCode = dto.LotCode;
+                }
+
+                var producedLotResponse = await lotService.ResolveOrCreateLot(workMaster.ReferenceId, producedLotCode, null, null);
+                producedLotId = (producedLotResponse.Content as Lot)?.Id;
+            }
 
             // Crear ordre de fabricació
             var workOrder = new WorkOrder()
@@ -244,7 +260,7 @@ namespace Application.Services.Production
                 PlannedQuantity = dto.PlannedQuantity,
                 StatusId = initialStatusId.Value,
                 Comment = dto.Comment,
-                DefaultProducedLotId = producedLot?.Id
+                DefaultProducedLotId = producedLotId
             };
 
             foreach (var workMasterPhase in workMaster.Phases)

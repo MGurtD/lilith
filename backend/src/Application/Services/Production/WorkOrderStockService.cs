@@ -624,15 +624,19 @@ public class WorkOrderStockService(
         if (defaultLocationId == null)
             return new GenericResponse(false, localizationService.GetLocalizedString("StockDefaultLocationNotFound"));
 
-        // 4. Resolve the produced lot (defensive fallback per OF antigues sense migrar: crea/reutilitza el lot buit)
+        // 4. Resol el lot produït (fallback per OF antigues): només si la referència és loteada
         if (workOrder.DefaultProducedLotId == null)
         {
-            var producedLotResponse = await lotService.ResolveOrCreateLot(workOrder.ReferenceId, string.Empty, null, null);
-            var producedLot = producedLotResponse.Content as Lot;
-            if (producedLot != null)
+            var reference = await unitOfWork.References.Get(workOrder.ReferenceId);
+            if (reference is { RequiresLot: true })
             {
-                workOrder.DefaultProducedLotId = producedLot.Id;
-                await unitOfWork.WorkOrders.Update(workOrder);
+                var producedLotResponse = await lotService.ResolveOrCreateLot(workOrder.ReferenceId, string.Empty, null, null);
+                var producedLot = producedLotResponse.Content as Lot;
+                if (producedLot != null)
+                {
+                    workOrder.DefaultProducedLotId = producedLot.Id;
+                    await unitOfWork.WorkOrders.Update(workOrder);
+                }
             }
         }
 

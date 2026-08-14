@@ -246,6 +246,7 @@ const en = {
         cognom: "Surname",
         color: "Color",
         comentariFabriacio: "Manufacturing comment",
+        codiLot: "Lot code",
         comentariFabricacio: "Manufacturing comment",
         confirmar: "Confirm",
         consum: "Consumption",
@@ -1605,6 +1606,7 @@ const en = {
         purchase: "Purchases",
         production: "Production",
         service: "Service",
+        requiresLot: "Requires lot",
       },
       sales: {
         savePvp: "Save RRP",

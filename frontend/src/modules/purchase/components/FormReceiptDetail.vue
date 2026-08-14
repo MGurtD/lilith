@@ -39,7 +39,7 @@
       </div>
     </section>
 
-    <section>
+    <section v-if="referenceRequiresLot">
       <div class="mt-2">
         <SelectorLot
           :reference-id="detail.referenceId"
@@ -167,7 +167,7 @@
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import SelectorLot from "../../warehouse/components/SelectorLot.vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Receipt, ReceiptDetail } from "../types";
 import * as Yup from "yup";
 import {
@@ -200,6 +200,12 @@ const receiptStore = useReceiptsStore();
 const referenceStore = useReferenceStore();
 const referenceService = new ReferenceService("/reference");
 const format = ref<string>("");
+
+const referenceRequiresLot = computed(
+  () =>
+    referenceStore.references?.find((r) => r.id === props.detail.referenceId)
+      ?.requiresLot ?? false,
+);
 
 const getPrice = async (id: string | null) => {
   if (id == null || props.receipt.supplierId == "") {

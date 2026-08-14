@@ -75,6 +75,7 @@
     "WorkOrderPhaseWithId": "Fase de ordre de fabricació amb ID {0}",
     "WorkOrderWithId": "Ordre de fabricació amb ID {0}",
     "WorkMasterNotFound": "Ruta de fabricació inexistent",
+    "WorkOrderLotCodeRequired": "Cal indicar un codi de lot per a l'ordre de fabricació",
     "WorkMasterAlreadyExists": "Ruta de fabricació existent",
     "WorkMasterPhaseNotFound": "Fase de la ruta de fabricació inexistent",
     "WorkMasterPhaseAlreadyExists": "Fase de la ruta de fabricació existent",
