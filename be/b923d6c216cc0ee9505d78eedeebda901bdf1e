@@ -1,0 +1,61 @@
+backend/src/Api/Resources/LocalizationService/ca.json
+  s_23a53f7fe112f9::t_6647556467f9ef 78
+backend/src/Api/Resources/LocalizationService/en.json
+  s_23a53f7fe112f9::t_6242456d71df51 78
+backend/src/Api/Resources/LocalizationService/es.json
+  s_23a53f7fe112f9::t_19d9edcd87bf98 78
+backend/src/Application/Services/Production/WorkOrderService.cs
+  s_23a53f7fe112f9::t_9b551a6338799f 230-250,263
+backend/src/Application/Services/Production/WorkOrderStockService.cs
+  s_23a53f7fe112f9::t_33de774e4a6600 627,630-631,633-639
+backend/src/Application/Services/Purchase/ReceiptService.cs
+  s_23a53f7fe112f9::t_b959db836a56ca 179,193-199
+backend/src/Application/Services/Sales/DeliveryNoteService.cs
+  s_23a53f7fe112f9::t_0cf717b1886ccd 284-285,293-296
+backend/src/Domain/Entities/Shared/Reference.cs
+  s_23a53f7fe112f9::t_fc01d536f1d609 36
+backend/src/Infrastructure/Migrations/20260814103839_AddRequiredLotToReference.Designer.cs
+  s_23a53f7fe112f9::t_92d0e5b5484d5c 1-8139
+backend/src/Infrastructure/Migrations/20260814103839_AddRequiredLotToReference.cs
+  s_23a53f7fe112f9::t_bfd40e112dab3f 1-29
+backend/src/Infrastructure/Migrations/ApplicationDbContextModelSnapshot.cs
+  s_23a53f7fe112f9::t_9e4a54d6b71512 20,5725-5729
+backend/src/Infrastructure/Persistance/EntityConfiguration/Shared/ReferenceBuilder.cs
+  s_23a53f7fe112f9::t_8786c2606018e2 79-84
+frontend/src/i18n/ca.ts
+  s_23a53f7fe112f9::t_19805dbf7d5bc8 249,1635
+frontend/src/i18n/en.ts
+  s_23a53f7fe112f9::t_92eb962d35a472 249,1609
+frontend/src/i18n/es.ts
+  s_23a53f7fe112f9::t_9b3d7a9b767437 249,1578
+frontend/src/modules/production/components/FormCreateWorkorder.vue
+  s_23a53f7fe112f9::t_a5ef6028ca5bdd 39-46,58,85-102
+frontend/src/modules/production/types/index.ts
+  s_23a53f7fe112f9::t_c3248469759e80 310
+frontend/src/modules/purchase/components/FormReceiptDetail.vue
+  s_23a53f7fe112f9::t_4a619a4eb2d1f6 42,170,204-209
+frontend/src/modules/purchase/components/SelectorOrdersDetailsToReceipt.vue
+  s_23a53f7fe112f9::t_e159e706401b82 46,133-136
+frontend/src/modules/shared/store/reference.ts
+  s_23a53f7fe112f9::t_4de4c64b637c38 89
+frontend/src/modules/shared/types/index.ts
+  s_23a53f7fe112f9::t_20308a51814077 128
+frontend/src/modules/shared/views/ReferenceManagement.vue
+  s_23a53f7fe112f9::t_bb4d96b39c8b42 144-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "beb923d6c216cc0ee9505d78eedeebda901bdf1e",
+  "prompts": {},
+  "sessions": {
+    "s_23a53f7fe112f9": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "a42d2ee4-66dd-4d6a-bc26-311739145846",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
