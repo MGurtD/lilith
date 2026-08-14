@@ -24,11 +24,11 @@
       >
         <template #prepend>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Magatzem</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.warehouse") }}</label>
             <DropdownWarehouses label="" v-model="filter.warehouseId" />
           </div>
           <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Referència</label>
+            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.reference") }}</label>
             <DropdownReference
               label=""
               :fullName="true"
@@ -39,7 +39,7 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 24%" />
+    <Column field="referenceDisplay" :header="t('warehouse.fields.reference')" :sortable="true" style="width: 24%" />
     <Column header="Lot" style="width: 12%">
       <template #body="slotProps">
         <span class="flex align-items-center gap-2">
@@ -53,14 +53,14 @@
         </span>
       </template>
     </Column>
-    <Column field="warehouseName" header="Magatzem" style="width: 14%" />
-    <Column field="locationName" header="Ubicació" style="width: 14%" />
-    <Column field="quantity" header="Uds." style="width: 10%" />
-    <Column field="width" header="Ample (x) mm" style="width: 10%" />
-    <Column field="length" header="Llarg (y) mm" style="width: 10%" />
-    <Column field="height" header="Alt (z) mm" style="width: 10%" />
-    <Column field="diameter" header="Diàmetre mm" style="width: 10%" />
-    <Column field="thickness" header="Gruix mm" style="width: 10%" />
+    <Column field="warehouseName" :header="t('warehouse.fields.warehouse')" style="width: 14%" />
+    <Column field="locationName" :header="t('warehouse.fields.location')" style="width: 14%" />
+    <Column field="quantity" :header="t('warehouse.fields.units')" style="width: 10%" />
+    <Column field="width" :header="t('warehouse.fields.widthMmAxis')" style="width: 10%" />
+    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')" style="width: 10%" />
+    <Column field="height" :header="t('warehouse.fields.heightMmAxis')" style="width: 10%" />
+    <Column field="diameter" :header="t('warehouse.fields.diameterMm')" style="width: 10%" />
+    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')" style="width: 10%" />
     <Column header="" style="width: 6%">
       <template #body="slotProps">
         <Button
@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import TableFilter, {
@@ -92,6 +93,7 @@ import { useWarehouseStore } from "../store/warehouse";
 
 const store = useStore();
 const router = useRouter();
+const { t } = useI18n();
 const stockStore = useStockStore();
 const warehouseStore = useWarehouseStore();
 
@@ -139,7 +141,7 @@ const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Gestió de magatzems - Estocs",
+    title: t("warehouse.stocks.title"),
   });
 
   await stockStore.fetchStocks();

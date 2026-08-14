@@ -24,13 +24,13 @@
         class="table-filter-prepend-field table-filter-prepend-field--md"
       >
         <label class="filter-label table-filter-prepend-label"
-          >Període</label
+          >{{ t("common.period") }}</label
         >
         <DatePicker
           v-model="filter.dates"
           selectionMode="range"
           dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
+          :placeholder="t('sales.list.periodPlaceholder')"
           showIcon
           class="w-full"
           size="small"
@@ -40,20 +40,20 @@
         class="table-filter-prepend-field table-filter-prepend-field--md"
       >
         <label class="filter-label table-filter-prepend-label"
-          >Client</label
+          >{{ t("common.customer") }}</label
         >
         <DropdownCustomers label="" v-model="filter.customerId" />
       </div>
       <div
         class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <label class="filter-label table-filter-prepend-label">Estat</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.status") }}</label>
         <MultiSelect
           v-model="statusIds"
           :options="lifecycleStore.lifecycle?.statuses || []"
           optionLabel="name"
           optionValue="id"
-          placeholder="Selecciona estats"
+          :placeholder="t('sales.list.statusesPlaceholder')"
           display="chip"
           :showToggleAll="false"
           class="w-full"
@@ -65,7 +65,7 @@
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.budgets.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
@@ -84,7 +84,8 @@ import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
 import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "@/store";
@@ -108,26 +109,27 @@ const store = useStore();
 const budgetStore = useBudgetStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
-const columns = ref<Column[]>([
-  { field: "number", header: "Número" },
-  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date },
+const columns = computed<Column[]>(() => [
+  { field: "number", header: t("common.number") },
+  { field: "date", header: t("common.date"), sortable: true, columnType: ColumnType.Date },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
   },
   {
     field: "statusId",
-    header: "Estat",
+    header: t("common.status"),
     columnType: ColumnType.Lookup,
     resolver: lifecycleStore.getStatusNameById,
   },
-  { field: "acceptanceDate", header: "Data d'acceptació", columnType: ColumnType.Date },
-  { field: "deliveryDays", header: "Dies d'entrega" },
+  { field: "acceptanceDate", header: t("sales.budgets.columns.acceptanceDate"), columnType: ColumnType.Date },
+  { field: "deliveryDays", header: t("sales.budgets.columns.deliveryDays") },
 ]);
 
 const filter = ref({
@@ -138,7 +140,6 @@ const statusIds = ref<Array<string>>([]);
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear pressupost",
   closable: true,
   position: "center",
   modal: true,
@@ -159,14 +160,17 @@ onMounted(async () => {
   setCurrentYear();
   await filterBudget();
 
-  store.setMenuItem({
-    icon: PrimeIcons.APPLE,
-    title: "Pressupostos",
-  });
+  setMenuItem();
 });
 onUnmounted(() => {
   budgetStore.budgets = undefined;
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.APPLE, title: t("sales.budgets.title") });
+};
+
+watch(locale, setMenuItem);
 
 const cleanFilter = () => {
   filter.value.customerId = undefined;
@@ -208,8 +212,8 @@ const filterBudget = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -220,8 +224,8 @@ const createOrder = async () => {
   if (!response) {
     toast.add({
       severity: "warn",
-      summary: "Error al crear el pressupost",
-      detail: "Error desconegut, contacte amb l'administrador.",
+      summary: t("sales.budgets.messages.createError"),
+      detail: t("sales.list.messages.unknownError"),
       life: 10000,
     });
     return;
@@ -240,15 +244,15 @@ const deleteBudget = async (budget: Budget) => {
   if (budgetStore.order) {
     toast.add({
       severity: "warn",
-      summary: "No es pot eliminar",
-      detail: `El pressupost té la comanda ${budgetStore.order.number} associada`,
+      summary: t("sales.budgets.messages.cannotDelete"),
+      detail: t("sales.budgets.messages.associatedOrder", { number: budgetStore.order.number }),
       life: 5000,
     });
     return;
   }
 
   confirm.require({
-    message: `Està segur que vol eliminar el pressupost?`,
+    message: t("sales.budgets.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -257,7 +261,7 @@ const deleteBudget = async (budget: Budget) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
 

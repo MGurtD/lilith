@@ -2,7 +2,7 @@
   <form>
     <BaseInput
       class="mb-2"
-      label="Nom"
+      :label="$t('shared.statusTransitions.form.name')"
       v-model="transition.name"
       :class="{
         'p-invalid': validation.errors.name,
@@ -10,7 +10,7 @@
     ></BaseInput>
     <section class="two-columns">
       <div>
-        <label class="block text-900 mb-2">Origen</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statusTransitions.form.origin') }}</label>
         <Select
           v-model="transition.statusId"
           :options="statuses"
@@ -19,7 +19,7 @@
         />
       </div>
       <div class="mb-4">
-        <label class="block text-900 mb-2">Destí</label>
+        <label class="block text-900 mb-2">{{ $t('shared.statusTransitions.form.destination') }}</label>
         <Select
           v-model="transition.statusToId"
           :options="statuses"
@@ -29,12 +29,13 @@
       </div>
     </section>
 
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
+    <Button :label="$t('shared.statusTransitions.form.confirm')" @click="submitForm" style="float: right" />
   </form>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { Status, StatusTransition } from "../types";
 import * as Yup from "yup";
 import {
@@ -44,6 +45,7 @@ import {
 import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
 
+const { t } = useI18n();
 const toast = useToast();
 
 const props = defineProps<{
@@ -73,8 +75,8 @@ const submitForm = async () => {
   if (props.transition.statusId === props.transition.statusToId) {
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
-      detail: "Els estats d'origen i destí han de ser diferents",
+      summary: t("shared.common.invalidForm"),
+      detail: t("shared.statusTransitions.form.sameStatusError"),
       life: 5000,
     });
     return;
@@ -90,7 +92,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

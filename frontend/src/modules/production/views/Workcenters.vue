@@ -23,13 +23,13 @@
           <div
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
-            <label class="filter-label table-filter-prepend-label">Tipus</label>
+            <label class="filter-label table-filter-prepend-label">{{ pt("Tipus") }}</label>
             <Select
               v-model="filter.workcenterTypeId"
               :options="plantmodelStore.workcenterTypes"
               optionValue="id"
               optionLabel="name"
-              placeholder="Tots"
+              :placeholder="pt('Tots')"
               :showClear="true"
               class="w-full"
               size="small"
@@ -38,13 +38,13 @@
           <div
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
-            <label class="filter-label table-filter-prepend-label">Àrea</label>
+            <label class="filter-label table-filter-prepend-label">{{ pt("Àrea") }}</label>
             <Select
               v-model="filter.areaId"
               :options="plantmodelStore.areas"
               optionValue="id"
               optionLabel="name"
-              placeholder="Totes"
+              :placeholder="pt('Totes')"
               :showClear="true"
               class="w-full"
               size="small"
@@ -53,19 +53,19 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 40%"></Column>
-    <Column header="Tipus" style="width: 15%">
+    <Column field="name" :header="pt('Nom')" style="width: 20%"></Column>
+    <Column field="description" :header="pt('Descripció')" style="width: 40%"></Column>
+    <Column :header="pt('Tipus')" style="width: 15%">
       <template #body="slotProps">
         {{ getWorkcenterTypeNameById(slotProps.data.workcenterTypeId) }}
       </template>
     </Column>
-    <Column header="Area" style="width: 15%">
+    <Column :header="pt('Area')" style="width: 15%">
       <template #body="slotProps">
         {{ getAreaNameById(slotProps.data.areaId) }}
       </template>
     </Column>
-    <Column header="Desactivat" style="width: 10%">
+    <Column :header="pt('Desactivat')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -75,6 +75,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('production.actions.delete')"
+          :title="t('production.actions.delete')"
           @click="deleteButton($event, slotProps.data)"
         />
       </template>
@@ -82,6 +84,9 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { getNewUuid } from "../../../utils/functions";
@@ -113,7 +118,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de màquines",
+    title: pt("Gestió de màquines"),
   });
 });
 
@@ -172,7 +177,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, entity: Workcenter) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la màquina ${entity.name}?`,
+    message: pt("Confirmar l'eliminació de la màquina"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -182,7 +187,7 @@ const deleteButton = (event: any, entity: Workcenter) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenters();

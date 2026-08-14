@@ -10,7 +10,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Tipus de màquina</span>
+        <span class="text-900 font-bold">{{ pt("Tipus de màquina") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -19,14 +19,14 @@
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column field="profitPercentage" header="% Benefici" style="width: 10%">
+    <Column field="name" :header="pt('Nom')" style="width: 25%"></Column>
+    <Column field="description" :header="pt('Descripció')" style="width: 50%"></Column>
+    <Column field="profitPercentage" :header="pt('% Benefici')" style="width: 10%">
       <template #body="slotProps">
         {{ slotProps.data.profitPercentage }} %
       </template>
     </Column>
-    <Column header="Desactivat" style="width: 10%">
+    <Column :header="pt('Desactivat')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -43,6 +43,9 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -65,7 +68,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de tipus de màquina",
+    title: pt("Gestió de tipus de màquina"),
   });
 });
 
@@ -85,7 +88,9 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, entity: WorkcenterType) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'empresa ${entity.name}?`,
+    message: t("production.messages.confirmDeleteWorkcenterType", {
+      name: entity.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -95,7 +100,7 @@ const deleteButton = (event: any, entity: WorkcenterType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenterTypes();

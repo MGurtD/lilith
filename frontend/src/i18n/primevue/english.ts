@@ -4,7 +4,7 @@ export default {
   notContains: "Does not contain",
   endsWith: "Ends with",
   equals: "Equals",
-  notEquals: "Not equals",
+  notEquals: "Not equal",
   noFilter: "No Filter",
   lt: "Less than",
   lte: "Less than or equal",

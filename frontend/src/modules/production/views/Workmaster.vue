@@ -19,6 +19,9 @@
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkmaster from "../components/FormWorkmaster.vue";
 import TableWorkmasterPhases from "../components/TableWorkmasterPhases.vue";
 
@@ -49,7 +52,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ruta de fabricació`;
+  pageTitle = t("production.detail.workmasterTitle");
   if (workmaster.value) {
     pageTitle = `${pageTitle} ${referenceStore.getFullName(
       workmaster.value.reference!,
@@ -81,8 +84,8 @@ const calculateCostSubmit = async (workmaster: WorkMaster) => {
   if (updated && response.result) {
     toast.add({
       severity: "success",
-      summary: "Cálcul de cost",
-      detail: `${formatCurrency(response.content!)}`,
+      summary: pt("Cálcul de cost"),
+      detail: formatCurrency(response.content!),
       life: 10000,
     });
 
@@ -90,11 +93,11 @@ const calculateCostSubmit = async (workmaster: WorkMaster) => {
   } else {
     toast.add({
       severity: "warn",
-      summary: "Cálcul de cost",
+      summary: pt("Cálcul de cost"),
       detail:
         response.errors.length > 0
           ? response.errors[0]
-          : "Errors detectats durant el cálcul",
+          : t("production.messages.workmasterCalculationErrors"),
       life: 10000,
     });
   }
@@ -114,8 +117,11 @@ const deleteWorkMasterPhase = async (phase: WorkMasterPhase) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Fase eliminada",
-      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      summary: pt("Fase eliminada"),
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
       life: 5000,
     });
   }

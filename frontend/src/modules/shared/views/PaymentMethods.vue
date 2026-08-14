@@ -17,15 +17,15 @@
         @create="createButtonClick"
       />
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 20%"></Column>
-    <Column field="dueDays" header="Dies venciment" style="width: 20%"></Column>
+    <Column field="name" :header="$t('shared.paymentMethods.columns.name')" style="width: 20%"></Column>
+    <Column field="description" :header="$t('shared.paymentMethods.columns.description')" style="width: 20%"></Column>
+    <Column field="dueDays" :header="$t('shared.paymentMethods.columns.dueDays')" style="width: 20%"></Column>
     <Column
       field="paymentDay"
-      header="Dia pagament"
+      :header="$t('shared.paymentMethods.columns.paymentDay')"
       style="width: 20%"
     ></Column>
-    <Column header="Desactivada" style="width: 20%">
+    <Column :header="$t('shared.paymentMethods.columns.disabled')" style="width: 20%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
       </template>
@@ -38,6 +38,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { PaymentMethod } from "../types";
@@ -52,6 +53,7 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const paymentMethodStore = usePaymentMethodStore();
+const { t } = useI18n();
 
 const filter = ref({
   search: "",
@@ -60,9 +62,9 @@ const filter = ref({
 const filterConfig: Array<FilterConfig> = [
   {
     key: "search",
-    label: "Cercar",
+    label: t("shared.paymentMethods.filters.searchLabel"),
     type: "text",
-    placeholder: "Nom o descripció",
+    placeholder: t("shared.paymentMethods.filters.searchPlaceholder"),
     size: "sm",
     row: 0,
   },
@@ -87,7 +89,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
-    title: "Gestió de formes de pagament",
+    title: t("shared.paymentMethods.menuTitle"),
   });
 });
 
@@ -112,7 +114,7 @@ const editPaymentMethod = (row: DataTableRowClickEvent) => {
 const deletePaymentMethod = (event: any, model: PaymentMethod) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la forma de pagament ${model.name}?`,
+    message: t("shared.paymentMethods.messages.confirmDelete", { name: model.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -121,7 +123,7 @@ const deletePaymentMethod = (event: any, model: PaymentMethod) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("shared.paymentMethods.messages.deleted"),
           life: 3000,
         });
       }

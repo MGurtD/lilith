@@ -246,6 +246,13 @@
     "ProfileNameExists": "Profile name {0} already exists",
     "MenuItemKeyExists": "Menu item key {0} already exists",
     "InvalidMenuHierarchy": "Invalid menu hierarchy detected",
+    "MenuItemTranslationsInvalid": "A title is required for every active language",
+    "MenuItemTranslationBatchEmpty": "At least one translation is required",
+    "MenuItemTranslationBatchDuplicateMenu": "The request contains duplicate menu items",
+    "MenuItemTranslationBatchEmptyRow": "Each menu item must contain at least one translation",
+    "MenuItemTranslationBatchDuplicateCell": "The request contains duplicate translations",
+    "MenuItemTranslationLanguageInvalid": "Language {0} is not active",
+    "MenuItemTranslationTitleInvalid": "The title for language {0} is required and cannot exceed 250 characters",
     "DefaultMenuItemNotInProfile": "Default menu item is not assigned to profile",
     "UserProfileAssigned": "Profile assigned to user",
     "ProfileDeleteForbidden": "System profile cannot be deleted",
@@ -282,6 +289,14 @@
     "TableViewDeleted": "View deleted successfully",
     "TableViewNotFound": "View not found",
     "CannotDeleteDefaultView": "Cannot delete the default view",
-    "DefaultViewSet": "Default view set"
+    "DefaultViewSet": "Default view set",
+    "EnterpriseActiveAlreadyExists": "An enabled Enterprise already exists. Disable it before enabling another one.",
+    "BrandingEnterpriseUnavailable": "No enabled Enterprise is available for branding management.",
+    "BrandingLogoRequired": "A logo file must be selected.",
+    "BrandingLogoInvalidSize": "The logo size must be between 1 byte and 2 MB.",
+    "BrandingLogoInvalidFormat": "The logo must be a valid PNG, JPEG, or WebP file.",
+    "BrandingLogoUploadFailed": "The logo could not be stored.",
+    "BrandingNameInvalid": "The brand name cannot exceed 60 characters.",
+    "BrandingPaletteInvalid": "The selected color palette is invalid."
   }
 }

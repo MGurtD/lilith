@@ -51,6 +51,8 @@ try
             builder.Services.AddHostedService<DatabaseMigrationService>();
         }
 
+        builder.Services.AddHostedService<ApplicationBrandingMenuBackfill>();
+
         builder.Services.AddControllers(options =>
                         {
                             // Global authorization filter: all endpoints require authentication by default.
@@ -62,7 +64,18 @@ try
                         })
                         .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
-        builder.Services.AddAuthorization();
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy(AuthorizationPolicies.BrandingWrite, policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(context =>
+                    context.User.IsInRole("admin") ||
+                    context.User.Claims.Any(claim =>
+                        claim.Type.Equals("scope", StringComparison.OrdinalIgnoreCase) &&
+                        claim.Value.Equals("branding.write", StringComparison.OrdinalIgnoreCase)));
+            });
+        });
     }
 
     var app = builder.Build();

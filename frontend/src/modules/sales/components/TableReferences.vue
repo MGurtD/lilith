@@ -11,7 +11,7 @@
     page="References"
     :attachment-config="{
       entity: 'referenceMaps',
-      title: 'Adjunts de la referència',
+      title: t('sales.components.adjuntsDeLaReferencia'),
       titleField: 'code',
     }"
     showDeleteColumn
@@ -23,11 +23,11 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
+        <label class="filter-label table-filter-prepend-label">{{ t('sales.components.client') }}</label>
         <DropdownCustomers label="" v-model="filter.customerId" />
       </div>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Data creació</label>
+        <label class="filter-label table-filter-prepend-label">{{ t('sales.components.dataCreacio') }}</label>
         <DatePicker
           v-model="filter.dates"
           selectionMode="range"
@@ -35,7 +35,7 @@
           :showIcon="true"
           class="w-full"
           size="small"
-          placeholder="Selecciona periode"
+          :placeholder="t('sales.components.seleccionaPeriode')"
         />
       </div>
     </template>
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
@@ -57,6 +58,7 @@ import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency } from "../../../utils/functions";
 import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
+const { t } = useI18n();
 const customerStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
@@ -64,39 +66,39 @@ const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
 const filterConfig: FilterConfig[] = [
   {
     key: "code",
-    label: "Codi",
+    label: t('sales.components.codi'),
     type: "text",
-    placeholder: "Codi",
+    placeholder: t('sales.components.codi'),
     size: "sm",
   },
   {
     key: "description",
-    label: "Descripció",
+    label: t('sales.components.descripcio'),
     type: "text",
-    placeholder: "Descripció",
+    placeholder: t('sales.components.descripcio'),
     size: "md",
   },
 ];
 
 const columns = ref<Column[]>([
-  { field: "code", header: "Codi", style: "width: 10%" },
-  { field: "description", header: "Descripció", style: "width: 30%" },
-  { field: "version", header: "Versió", style: "width: 8%" },
+  { field: "code", header: t('sales.components.codi'), style: "width: 10%" },
+  { field: "description", header: t('sales.components.descripcio'), style: "width: 30%" },
+  { field: "version", header: t('sales.components.versio'), style: "width: 8%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t('sales.components.client'),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
     style: "width: 18%",
   },
-  { field: "createdOn", header: "Data creació", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
-  { field: "price", header: "Preu", columnType: ColumnType.Currency, style: "width: 8%" },
-  { field: "cost", header: "Cost", style: "width: 8%" },
-  { field: "isService", header: "Servei", columnType: ColumnType.Boolean, style: "width: 5%" },
+  { field: "createdOn", header: t('sales.components.dataCreacio'), sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "price", header: t('sales.components.preu'), columnType: ColumnType.Currency, style: "width: 8%" },
+  { field: "cost", header: t('sales.components.cost'), style: "width: 8%" },
+  { field: "isService", header: t('sales.components.servei'), columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
 
 const filterMetadata = createSalesTableViewFilterMetadata(columns.value, {
-  dateLabel: "Data creació",
+  dateLabel: t('sales.components.dataCreacio'),
 });
 
 const filter = ref({

@@ -3,14 +3,14 @@
     <section class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Codi"
+        :label="t('production.components.codi')"
         id="code"
         v-model="reason.code"
         :class="{ 'p-invalid': validation.errors.code }"
       />
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="reason.name"
         :class="{ 'p-invalid': validation.errors.name }"
@@ -19,7 +19,7 @@
     <section class="one-column">
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="reason.description"
         :class="{ 'p-invalid': validation.errors.description }"
@@ -27,7 +27,7 @@
     </section>
     <section class="two-columns">
       <div>
-        <label class="block text-900 mb-2">Color</label>
+        <label class="block text-900 mb-2">{{ t("production.components.color") }}</label>
         <ColorPicker
           v-model="reason.color"
           class="mb-2"
@@ -35,17 +35,20 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Icona</label>
-        <IconPicker v-model="reason.icon" placeholder="Selecciona una icona" />
+        <label class="block text-900 mb-2">{{ t("production.components.icona") }}</label>
+        <IconPicker v-model="reason.icon" :placeholder="t('production.components.seleccionaUnaIcona')" />
       </div>
     </section>
     <section class="mt-2 flex justify-content-end">
-      <Button label="Guardar" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" @click="submitForm" />
     </section>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import IconPicker from "../../../components/IconPicker.vue";
@@ -71,11 +74,11 @@ const toast = useToast();
 
 const schema = Yup.object().shape({
   code: Yup.string()
-    .required("El codi és obligatori")
-    .max(20, "El codi no pot superar els 20 caràcters")
+    .required(t("production.validation.elCodiEsObligatori"))
+    .max(20, t("production.validation.elCodiNoPotSuperarEls20Caracters"))
     .test(
       "unique-code",
-      "Ja existeix un motiu amb aquest codi per aquest estat de màquina",
+      t("production.validation.machineStatusReasonCodeAlreadyExists"),
       function (value) {
         if (!value) return true;
         const isDuplicate = props.existingReasons.some(
@@ -87,10 +90,10 @@ const schema = Yup.object().shape({
       }
     ),
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(100, "El nom no pot superar els 100 caràcters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(100, t("production.validation.elNomNoPotSuperarEls100Caracters")),
   description: Yup.string(),
-  color: Yup.string().required("El color és obligatori"),
+  color: Yup.string().required(t("production.validation.elColorEsObligatori")),
 });
 
 const validation = ref({
@@ -114,7 +117,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

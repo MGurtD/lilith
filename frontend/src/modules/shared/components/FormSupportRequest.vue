@@ -3,7 +3,7 @@
     <div class="flex flex-column gap-3">
       <div>
         <BaseInput
-          label="Resum"
+          :label="$t('shared.supportRequest.form.summary')"
           id="resum"
           v-model="model.resum"
           :class="{ 'p-invalid': validation.errors.resum }"
@@ -15,16 +15,137 @@
 
       <div>
         <label class="block text-900 mb-2">
-          Descripció (Markdown)
+          {{ $t('shared.supportRequest.form.description') }}
           <i
             class="pi pi-question-circle md-help-icon"
             role="button"
             tabindex="0"
-            aria-label="Ajuda de sintaxi Markdown"
+            :aria-label="$t('shared.supportRequest.form.markdownHelpAria')"
             @click="markdownHelp?.toggle($event)"
             @keydown.enter="markdownHelp?.toggle($event)"
           ></i>
         </label>
+
+        <div
+          class="md-toolbar"
+          role="toolbar"
+          :aria-label="$t('shared.supportRequest.form.toolbarAria')"
+        >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--bold"
+            :aria-label="$t('shared.supportRequest.form.bold')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.bold')"
+            @click="applyMarkdown('bold')"
+            >B</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--italic"
+            :aria-label="$t('shared.supportRequest.form.italic')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.italic')"
+            @click="applyMarkdown('italic')"
+            >I</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--strike"
+            :aria-label="$t('shared.supportRequest.form.strikethrough')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.strikethrough')"
+            @click="applyMarkdown('strike')"
+            >S</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            :aria-label="$t('shared.supportRequest.form.heading')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.heading')"
+            @click="applyMarkdown('heading')"
+            >H</Button
+          >
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            :aria-label="$t('shared.supportRequest.form.quote')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.quote')"
+            @click="applyMarkdown('quote')"
+            >&#10078;</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-list"
+            :aria-label="$t('shared.supportRequest.form.bulletList')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.bulletList')"
+            @click="applyMarkdown('ulist')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            :aria-label="$t('shared.supportRequest.form.numberedList')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.numberedList')"
+            @click="applyMarkdown('olist')"
+            >1.</Button
+          >
+          <span class="md-toolbar__sep" aria-hidden="true"></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-link"
+            :aria-label="$t('shared.supportRequest.form.link')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.link')"
+            @click="applyMarkdown('link')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool"
+            icon="pi pi-code"
+            :aria-label="$t('shared.supportRequest.form.inlineCode')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.inlineCode')"
+            @click="applyMarkdown('code')"
+          />
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            class="md-tool md-tool--codeblock"
+            :aria-label="$t('shared.supportRequest.form.codeBlock')"
+            v-tooltip.bottom="$t('shared.supportRequest.form.codeBlock')"
+            @click="applyMarkdown('codeblock')"
+            >&#96;&#96;&#96;</Button
+          >
+        </div>
+
         <Textarea
           id="descripcio"
           v-model="model.descripcio"
@@ -36,52 +157,52 @@
 
         <Popover ref="markdownHelp">
           <div class="md-help">
-            <p class="md-help__title">Sintaxi Markdown bàsica</p>
+            <p class="md-help__title">{{ $t('shared.supportRequest.markdownHelp.title') }}</p>
             <table class="md-help__table">
               <tbody>
                 <tr>
                   <td><code># Títol</code></td>
-                  <td>Encapçalament (## , ###...)</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.heading') }}</td>
                 </tr>
                 <tr>
                   <td><code>**negreta**</code></td>
-                  <td>Text en <strong>negreta</strong></td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.boldExample') }} <strong>{{ $t('shared.supportRequest.markdownHelp.boldWord') }}</strong></td>
                 </tr>
                 <tr>
                   <td><code>*cursiva*</code></td>
-                  <td>Text en <em>cursiva</em></td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.italicExample') }} <em>{{ $t('shared.supportRequest.markdownHelp.italicWord') }}</em></td>
                 </tr>
                 <tr>
                   <td><code>~~ratllat~~</code></td>
-                  <td>Text ratllat</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.strikeExample') }}</td>
                 </tr>
                 <tr>
                   <td><code>- element</code></td>
-                  <td>Llista de punts</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.bulletList') }}</td>
                 </tr>
                 <tr>
                   <td><code>1. element</code></td>
-                  <td>Llista numerada</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.numberedList') }}</td>
                 </tr>
                 <tr>
                   <td><code>[text](url)</code></td>
-                  <td>Enllaç</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.link') }}</td>
                 </tr>
                 <tr>
                   <td><code>`codi`</code></td>
-                  <td>Codi en línia</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.inlineCode') }}</td>
                 </tr>
                 <tr>
                   <td><code>```codi```</code></td>
-                  <td>Bloc de codi</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.codeBlock') }}</td>
                 </tr>
                 <tr>
                   <td><code>&gt; cita</code></td>
-                  <td>Cita</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.quote') }}</td>
                 </tr>
                 <tr>
                   <td><code>- [ ] tasca</code></td>
-                  <td>Casella de verificació</td>
+                  <td>{{ $t('shared.supportRequest.markdownHelp.task') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -93,28 +214,28 @@
         </small>
 
         <div class="mt-3">
-          <label class="block text-600 text-sm mb-2">Vista prèvia</label>
+          <label class="block text-600 text-sm mb-2">{{ $t('shared.supportRequest.form.preview') }}</label>
           <MarkdownRenderer
             v-if="model.descripcio.trim()"
             :markdown="model.descripcio"
             class="support-preview"
           />
           <p v-else class="text-500 m-0 support-preview-empty">
-            No hi ha res a previsualitzar.
+            {{ $t('shared.supportRequest.form.noPreview') }}
           </p>
         </div>
       </div>
 
       <div class="flex justify-content-end gap-2 mt-2">
         <Button
-          label="Cancel·lar"
+          :label="$t('shared.supportRequest.form.cancel')"
           severity="secondary"
           type="button"
           @click="emit('close')"
           :disabled="store.isSubmitting"
         />
         <Button
-          label="Enviar"
+          :label="$t('shared.supportRequest.form.send')"
           type="submit"
           :loading="store.isSubmitting"
         />
@@ -124,7 +245,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { nextTick, reactive, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import type Popover from "primevue/popover";
 import * as Yup from "yup";
@@ -137,6 +259,7 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+const { t } = useI18n();
 const store = useSupportStore();
 const toast = useToast();
 
@@ -169,7 +292,7 @@ const submitForm = async () => {
       .join("   ");
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("shared.supportRequest.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });
@@ -181,15 +304,15 @@ const submitForm = async () => {
   if (result.ok) {
     toast.add({
       severity: "success",
-      summary: "Sol·licitud enviada",
-      detail: "La teva petició de suport s'ha registrat correctament.",
+      summary: t("shared.supportRequest.messages.sent"),
+      detail: t("shared.supportRequest.messages.sentDetail"),
       life: 5000,
     });
     emit("close");
   } else {
     toast.add({
       severity: "error",
-      summary: "Error en enviar la sol·licitud",
+      summary: t("shared.supportRequest.messages.error"),
       detail: result.error,
       life: 8000,
     });

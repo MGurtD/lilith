@@ -35,6 +35,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IBrandingService, BrandingService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
         services.AddScoped<IReferenceService, ReferenceService>();

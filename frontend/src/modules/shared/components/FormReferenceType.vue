@@ -3,7 +3,7 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="$t('shared.referenceTypes.form.name')"
         id="name"
         v-model="referenceType.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="$t('shared.referenceTypes.form.description')"
         id="description"
         v-model="referenceType.description"
         :class="{
@@ -24,7 +24,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Densitat g/cm^3"
+          :label="$t('shared.referenceTypes.form.density')"
           id="density"
           v-model="referenceType.density"
         />
@@ -33,11 +33,11 @@
 
     <section class="three-columns">
       <div>
-        <label class="block text-900 mb-2">Color Primari</label>
+        <label class="block text-900 mb-2">{{ $t('shared.referenceTypes.form.primaryColor') }}</label>
         <ColorPicker
           v-model="referenceType.primaryColor"
           class="mb-2"
-          label="Color"
+          :label="$t('shared.referenceTypes.form.colorLabel')"
           id="color"
           :class="{
             'p-invalid': validation.errors.color,
@@ -45,11 +45,11 @@
         ></ColorPicker>
       </div>
       <div>
-        <label class="block text-900 mb-2">Color Secundari</label>
+        <label class="block text-900 mb-2">{{ $t('shared.referenceTypes.form.secondaryColor') }}</label>
         <ColorPicker
           v-model="referenceType.secondaryColor"
           class="mb-2"
-          label="Color"
+          :label="$t('shared.referenceTypes.form.colorLabel')"
           id="color"
           :class="{
             'p-invalid': validation.errors.color,
@@ -57,7 +57,7 @@
         ></ColorPicker>
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ $t('shared.referenceTypes.form.disabled') }}</label>
         <Checkbox
           v-model="referenceType.disabled"
           class="w-full"
@@ -67,13 +67,14 @@
     </section>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="$t('shared.referenceTypes.form.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
 import { ReferenceType } from "../types";
@@ -84,6 +85,7 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 
+const { t } = useI18n();
 const toast = useToast();
 
 const props = defineProps<{
@@ -124,7 +126,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

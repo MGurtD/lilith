@@ -28,7 +28,7 @@
               class="table-filter-prepend-field table-filter-prepend-field--lg"
             >
               <label class="filter-label table-filter-prepend-label"
-                >Període</label
+                >{{ pt("Període") }}</label
               >
               <DatePicker
                 v-model="filter.dates"
@@ -42,75 +42,78 @@
           </template>
         </TableFilter>
       </template>
-      <Column field="workcenter" header="Centre de treball" sortable> </Column>
-      <Column field="operator" header="Operari" sortable> </Column>
-      <Column field="machineStatus" header="Estat del centre"></Column>
+      <Column field="workcenter" :header="pt('Centre de treball')" sortable> </Column>
+      <Column field="operator" :header="pt('Operari')" sortable> </Column>
+      <Column field="machineStatus" :header="pt('Estat del centre')"></Column>
 
-      <Column field="startTime" header="Inici" sortable>
+      <Column field="startTime" :header="pt('Inici')" sortable>
         <template #body="slotProps">
           {{ formatDateTimeUTCWithSeconds(slotProps.data.startTime) }}
         </template>
       </Column>
-      <Column field="endTime" header="Fi" sortable>
+      <Column field="endTime" :header="pt('Fi')" sortable>
         <template #body="slotProps">
           {{ formatDateTimeUTCWithSeconds(slotProps.data.endTime) }}
         </template>
       </Column>
-      <Column field="quantityOk" header="Quantitat OK" />
-      <Column field="quantityKo" header="Quantitat KO" />
-      <Column field="plannedQuantity" header="Quantitat Prevista" />
-      <Column field="operatorCost" header="Cost Operari">
+      <Column field="quantityOk" :header="pt('Quantitat OK')" />
+      <Column field="quantityKo" :header="pt('Quantitat KO')" />
+      <Column field="plannedQuantity" :header="pt('Quantitat Prevista')" />
+      <Column field="operatorCost" :header="pt('Cost Operari')">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.operatorCost) }}
         </template>
       </Column>
       <Column
         field="estimatedOperatorCost"
-        header="Cost operari estimat (per OF)"
+        :header="pt('Cost operari estimat (per OF)')"
       >
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.estimatedOperatorCost) }}
         </template>
       </Column>
-      <Column field="workcenterCost" header="Cost centre">
+      <Column field="workcenterCost" :header="pt('Cost centre')">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.workcenterCost) }}
         </template>
       </Column>
       <Column
         field="estimatedMachineCost"
-        header="Cost centre estimat (per OF)"
+        :header="pt('Cost centre estimat (per OF)')"
       >
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.estimatedMachineCost) }}
         </template>
       </Column>
-      <Column field="totalCost" header="Cost Tall">
+      <Column field="totalCost" :header="pt('Cost Tall')">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.totalCost) }}
         </template>
       </Column>
-      <Column field="totalHours" header="Hores">
+      <Column field="totalHours" :header="pt('Hores')">
         <template #body="slotProps">
           {{ slotProps.data.totalHours.toFixed(2) }}
         </template>
       </Column>
-      <Column field="workOrderCode" header="Ordre de treball" sortable></Column>
-      <Column field="workOrderPhaseCode" header="Fase" sortable></Column>
+      <Column field="workOrderCode" :header="pt('Ordre de treball')" sortable></Column>
+      <Column field="workOrderPhaseCode" :header="pt('Fase')" sortable></Column>
       <Column
         field="workOrderPhaseDescription"
-        header="Descripcio fase"
+        :header="pt('Descripcio fase')"
       ></Column>
-      <Column field="referenceCode" header="Referencia"></Column>
+      <Column field="referenceCode" :header="pt('Referencia')"></Column>
       <Column
         field="referenceDescription"
-        header="Descripcio referencia"
+        :header="pt('Descripcio referencia')"
       ></Column>
-      <Column field="customerComercialName" header="Client"></Column>
+      <Column field="customerComercialName" :header="pt('Client')"></Column>
     </DataTable>
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { ref, onMounted } from "vue";
 import { useWorkcenterShiftStore } from "../store/workcentershift";
 import type {
@@ -138,18 +141,18 @@ const workcenterShiftStore = useWorkcenterShiftStore();
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
 const groupByOptions = [
-  { label: "Operari", value: "Operator" },
-  { label: "Centre de treball", value: "Workcenter" },
-  { label: "Ordre de treball", value: "Workorder" },
-  { label: "Cap", value: "None" },
+  { label: pt("Operari"), value: "Operator" },
+  { label: pt("Centre de treball"), value: "Workcenter" },
+  { label: pt("Ordre de treball"), value: "Workorder" },
+  { label: pt("Cap"), value: "None" },
 ];
 
 const timeGroupByOptions = [
-  { label: "Dia", value: "Day" },
-  { label: "Setmana", value: "Week" },
-  { label: "Mes", value: "Month" },
-  { label: "Any", value: "Year" },
-  { label: "Cap", value: "None" },
+  { label: pt("Dia"), value: "Day" },
+  { label: pt("Setmana"), value: "Week" },
+  { label: pt("Mes"), value: "Month" },
+  { label: pt("Any"), value: "Year" },
+  { label: pt("Cap"), value: "None" },
 ];
 
 const filter = ref({
@@ -161,7 +164,7 @@ const filter = ref({
 const filterConfig: Array<FilterConfig> = [
   {
     key: "groupBy",
-    label: "Grup",
+    label: pt("Grup"),
     type: "select",
     options: groupByOptions,
     optionLabel: "label",
@@ -171,7 +174,7 @@ const filterConfig: Array<FilterConfig> = [
   },
   {
     key: "timeGroupBy",
-    label: "Grup per temps",
+    label: pt("Grup per temps"),
     type: "select",
     options: timeGroupByOptions,
     optionLabel: "label",
@@ -183,7 +186,7 @@ const filterConfig: Array<FilterConfig> = [
 
 onMounted(async () => {
   store.setMenuItem({
-    title: "Històric",
+    title: pt("Històric"),
     icon: "pi pi-fw pi-clock",
     backButtonVisible: false,
   });
@@ -208,8 +211,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: pt("Filtre invàlid"),
+      detail: pt("Seleccioni un període"),
       life: 5000,
     });
   }

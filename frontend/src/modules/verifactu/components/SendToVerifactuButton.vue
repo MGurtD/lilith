@@ -70,7 +70,9 @@ async function onClick() {
       });
       emit("sent");
     } else {
-      const msg = response?.errors?.[0] ?? "Integration failed";
+      const msg =
+        response?.errors?.[0] ??
+        t("verifactu.invoiceIntegration.messages.integrationFailed");
       throw new Error(msg);
     }
   } catch (err: any) {

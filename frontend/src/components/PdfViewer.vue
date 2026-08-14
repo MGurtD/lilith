@@ -10,7 +10,7 @@
             outlined
             :disabled="loading || zoomScale <= MIN_SCALE"
             @click="zoomOut"
-            v-tooltip.bottom="'Allunyar (Ctrl + -)'"
+            v-tooltip.bottom="$t('pdfViewer.zoomOutTooltip')"
             class="zoom-button"
           />
 
@@ -22,7 +22,7 @@
             outlined
             :disabled="loading || zoomScale >= MAX_SCALE"
             @click="zoomIn"
-            v-tooltip.bottom="'Apropar (Ctrl + +)'"
+            v-tooltip.bottom="$t('pdfViewer.zoomInTooltip')"
             class="zoom-button"
           />
 
@@ -32,7 +32,7 @@
             outlined
             :disabled="loading"
             @click="resetZoom"
-            v-tooltip.bottom="'Restablir zoom (Ctrl + 0)'"
+            v-tooltip.bottom="$t('pdfViewer.resetZoomTooltip')"
             class="zoom-button"
           />
         </div>
@@ -52,7 +52,7 @@
             :disabled="loading"
             @click="toggleFullscreen"
             v-tooltip.bottom="
-              isFullscreen ? 'Sortir de pantalla completa' : 'Pantalla completa'
+              isFullscreen ? $t('pdfViewer.exitFullscreen') : $t('pdfViewer.fullscreen')
             "
           />
 
@@ -63,7 +63,7 @@
             outlined
             :disabled="loading"
             @click="downloadFile"
-            v-tooltip.bottom="'Descarregar document'"
+            v-tooltip.bottom="$t('pdfViewer.download')"
           />
         </div>
       </template>
@@ -83,8 +83,8 @@
         severity="secondary"
         class="fullscreen-exit-button"
         @click="toggleFullscreen"
-        v-tooltip.left="'Sortir de pantalla completa (ESC)'"
-        aria-label="Sortir de pantalla completa"
+        v-tooltip.left="$t('pdfViewer.exitFullscreenTooltip')"
+        :aria-label="$t('pdfViewer.exitFullscreen')"
       />
 
       <!-- Fullscreen Zoom Controls -->
@@ -95,8 +95,8 @@
           severity="secondary"
           :disabled="zoomScale <= MIN_SCALE"
           @click="zoomOut"
-          v-tooltip.left="'Allunyar (Ctrl + -)'"
-          aria-label="Allunyar"
+          v-tooltip.left="$t('pdfViewer.zoomOutTooltip')"
+          :aria-label="$t('pdfViewer.zoomOut')"
         />
         <span class="fullscreen-zoom-indicator">{{ displayScale }}%</span>
         <Button
@@ -105,16 +105,16 @@
           severity="secondary"
           :disabled="zoomScale >= MAX_SCALE"
           @click="zoomIn"
-          v-tooltip.left="'Apropar (Ctrl + +)'"
-          aria-label="Apropar"
+          v-tooltip.left="$t('pdfViewer.zoomInTooltip')"
+          :aria-label="$t('pdfViewer.zoomIn')"
         />
         <Button
           :icon="PrimeIcons.REFRESH"
           rounded
           severity="secondary"
           @click="resetZoom"
-          v-tooltip.left="'Restablir zoom (Ctrl + 0)'"
-          aria-label="Restablir zoom"
+          v-tooltip.left="$t('pdfViewer.resetZoomTooltip')"
+          :aria-label="$t('pdfViewer.resetZoom')"
         />
       </div>
 
@@ -125,7 +125,7 @@
           strokeWidth="4"
           animationDuration="1s"
         />
-        <p class="loading-text">Carregant document...</p>
+        <p class="loading-text">{{ $t("pdfViewer.loading") }}</p>
       </div>
 
       <!-- Error State -->
@@ -136,7 +136,7 @@
         ></i>
         <p class="error-text">{{ error }}</p>
         <Button
-          label="Tornar a intentar"
+          :label="$t('pdfViewer.retry')"
           outlined
           size="small"
           @click="loadPdf"
@@ -160,7 +160,7 @@
           :class="PrimeIcons.FILE_PDF"
           style="font-size: 4rem; color: var(--p-surface-400)"
         ></i>
-        <p class="no-file-text">Selecciona un document per visualitzar</p>
+        <p class="no-file-text">{{ $t("pdfViewer.selectFile") }}</p>
       </div>
     </div>
   </div>
@@ -174,6 +174,7 @@ import VuePdfEmbed from "vue-pdf-embed";
 import { FileService } from "../services/file.service";
 import { createBlobAndDownloadFile } from "../utils/functions";
 import type { File } from "../types";
+import { useI18n } from "vue-i18n";
 
 // PrimeVue components
 import Toolbar from "primevue/toolbar";
@@ -185,6 +186,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 const toast = useToast();
 
 // Services
@@ -288,8 +290,8 @@ const toggleFullscreen = async () => {
   } catch (err) {
     toast.add({
       severity: "error",
-      summary: "Error de pantalla completa",
-      detail: "No s'ha pogut canviar el mode de pantalla",
+      summary: t("pdfViewer.fullscreenError"),
+      detail: t("pdfViewer.fullscreenErrorDetail"),
       life: 4000,
     });
   }
@@ -318,7 +320,7 @@ const loadPdf = async () => {
     const { blob } = await fileService.Download(props.file);
 
     if (!blob) {
-      throw new Error("No s'ha pogut descarregar el document");
+      throw new Error(t("pdfViewer.downloadErrorDetail"));
     }
 
     // Store blob and convert to ArrayBuffer
@@ -327,10 +329,10 @@ const loadPdf = async () => {
     pdfSource.value = arrayBuffer;
   } catch (err: any) {
     console.error("Error loading PDF:", err);
-    error.value = err?.message || "Error en carregar el document PDF";
+    error.value = err?.message || t("pdfViewer.loadErrorDetail");
     toast.add({
       severity: "error",
-      summary: "Error de càrrega",
+      summary: t("pdfViewer.loadError"),
       detail: error.value,
       life: 5000,
     });
@@ -349,7 +351,7 @@ const downloadFile = async () => {
       createBlobAndDownloadFile(props.file.originalName, blob, contentType);
       toast.add({
         severity: "success",
-        summary: "Descàrrega completada",
+        summary: t("pdfViewer.downloadSuccess"),
         detail: `${props.file.originalName}`,
         life: 3000,
       });
@@ -357,8 +359,8 @@ const downloadFile = async () => {
   } catch (err) {
     toast.add({
       severity: "error",
-      summary: "Error de descàrrega",
-      detail: "No s'ha pogut descarregar el document",
+      summary: t("pdfViewer.downloadError"),
+      detail: t("pdfViewer.downloadErrorDetail"),
       life: 4000,
     });
   }
@@ -379,11 +381,11 @@ const onLoaded = ({ numPages }: { numPages: number }) => {
 
 const onLoadingFailed = (err: any) => {
   console.error("PDF loading failed:", err);
-  error.value = "No s'ha pogut carregar el document PDF";
+  error.value = t("pdfViewer.loadErrorDetail");
   loading.value = false;
   toast.add({
     severity: "error",
-    summary: "Error de càrrega",
+    summary: t("pdfViewer.loadError"),
     detail: error.value,
     life: 5000,
   });

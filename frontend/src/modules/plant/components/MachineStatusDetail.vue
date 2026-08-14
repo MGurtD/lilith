@@ -22,7 +22,7 @@
         <i :class="reason.icon || PrimeIcons.TAG"></i>
       </div>
       <div class="reason-card__content">
-        <span class="reason-card__label">Motiu:</span>
+        <span class="reason-card__label">{{ $t("plant.motiu") }}</span>
         <span class="reason-card__name">{{ reason.name }}</span>
       </div>
     </div>

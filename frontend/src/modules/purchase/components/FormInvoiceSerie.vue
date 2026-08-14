@@ -4,7 +4,7 @@
       <BaseInput
         name="name"
         class="mb-2"
-        label="Nom de la sèrie"
+        :label="t('purchase.invoiceSeries.fields.name')"
         id="name"
         v-model="purchaseInvoiceSerie.name"
         :class="{
@@ -14,7 +14,7 @@
       <BaseInput
         name="description"
         class="mb-2"
-        label="Descripció"
+        :label="t('purchase.invoiceSeries.fields.description')"
         id="description"
         v-model="purchaseInvoiceSerie.description"
         :class="{
@@ -22,7 +22,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivada</label>
+        <label class="block text-900 mb-2">{{ t("purchase.invoiceSeries.fields.disabled") }}</label>
         <Checkbox
           v-model="purchaseInvoiceSerie.disabled"
           class="w-full"
@@ -34,7 +34,7 @@
       <BaseInput
         name="prefix"
         class="mb-2"
-        label="Prefix"
+        :label="t('purchase.invoiceSeries.fields.prefix')"
         id="prefix"
         v-model="purchaseInvoiceSerie.prefix"
         :class="{
@@ -44,7 +44,7 @@
       <BaseInput
         name="suffix"
         class="mb-2"
-        label="Sufix"
+        :label="t('purchase.invoiceSeries.fields.suffix')"
         id="suffix"
         v-model="purchaseInvoiceSerie.suffix"
         :class="{
@@ -54,7 +54,7 @@
       <BaseInput
         name="nextNumber"
         class="mb-2"
-        label="Següent número"
+        :label="t('purchase.invoiceSeries.fields.nextNumber')"
         id="nextNumber"
         :type="BaseInputType.NUMERIC"
         v-model.number="purchaseInvoiceSerie.nextNumber"
@@ -65,7 +65,7 @@
       <BaseInput
         name="length"
         class="mb-2"
-        label="Longitud"
+        :label="t('purchase.invoiceSeries.fields.length')"
         id="length"
         v-model.number="purchaseInvoiceSerie.length"
         :class="{
@@ -74,7 +74,7 @@
       ></BaseInput>
     </section>
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('purchase.actions.save')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -89,6 +89,7 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../../types/component";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   purchaseInvoiceSerie: InvoiceSerie;
@@ -100,26 +101,27 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom de la sèrie és obligatori")
-    .max(50, "El nom de la sèrie no pot superar els 50 caràcters"),
+    .required(t("purchase.invoiceSeries.validation.nameRequired"))
+    .max(50, t("purchase.invoiceSeries.validation.nameMaxLength")),
   description: Yup.string()
-    .required("La descripció de la sèrie és obligatòria")
-    .max(250, "La descripció de la sèrie no pot superar els 50 caràcters"),
-  prefix: Yup.string().max(10, "El prefix no pot superar els 10 caràcters"),
-  suffix: Yup.string().max(10, "El sufix no pot superar els 10 caràcters"),
+    .required(t("purchase.invoiceSeries.validation.descriptionRequired"))
+    .max(250, t("purchase.invoiceSeries.validation.descriptionMaxLength")),
+  prefix: Yup.string().max(10, t("purchase.invoiceSeries.validation.prefixMaxLength")),
+  suffix: Yup.string().max(10, t("purchase.invoiceSeries.validation.suffixMaxLength")),
   nextNumber: Yup.number()
-    .positive("El següent número ha de ser positiu")
-    .integer("El següent número ha de ser un número enter")
-    .required("El següent número és obligatori"),
+    .positive(t("purchase.invoiceSeries.validation.nextNumberPositive"))
+    .integer(t("purchase.invoiceSeries.validation.nextNumberInteger"))
+    .required(t("purchase.invoiceSeries.validation.nextNumberRequired")),
   length: Yup.number()
-    .positive("La longitud ha de ser positiva")
-    .integer("La longitud ha de ser un número enter")
-    .min(1, "La longitud ha de ser almenys 1")
-    .max(20, "La longitud no pot superar els 20 caràcters")
-    .required("La longitud és obligatòria"),
+    .positive(t("purchase.invoiceSeries.validation.lengthPositive"))
+    .integer(t("purchase.invoiceSeries.validation.lengthInteger"))
+    .min(1, t("purchase.invoiceSeries.validation.lengthMinimum"))
+    .max(20, t("purchase.invoiceSeries.validation.lengthMaxLength"))
+    .required(t("purchase.invoiceSeries.validation.lengthRequired")),
 });
 const validation = ref({
   result: false,
@@ -142,7 +144,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

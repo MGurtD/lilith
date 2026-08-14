@@ -3,7 +3,7 @@
     <div class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="$t('shared.taxes.form.name')"
         id="name"
         v-model="tax.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         :type="BaseInputType.NUMERIC"
-        label="Percentatge"
+        :label="$t('shared.taxes.form.percentage')"
         id="percentatge"
         v-model="tax.percentatge"
         :class="{
@@ -23,23 +23,24 @@
 
     <div class="two-columns mt-2">
       <div>
-        <label class="block text-900 mb-2">Inversió del subjecte passiu (ISP)</label>
+        <label class="block text-900 mb-2">{{ $t('shared.taxes.form.reverseCharge') }}</label>
         <Checkbox v-model="tax.isReverseCharge" class="w-full" :binary="true" />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivada</label>
+        <label class="block text-900 mb-2">{{ $t('shared.taxes.form.disabled') }}</label>
         <Checkbox v-model="tax.disabled" class="w-full" :binary="true" />
       </div>
     </div>
 
     <div class="mt-2">
-      <Button label="Guardar" @click="submitForm" />
+      <Button :label="$t('shared.taxes.form.save')" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Tax } from "../types";
 import * as Yup from "yup";
@@ -49,6 +50,8 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../../types/component";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   tax: Tax;
@@ -90,7 +93,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

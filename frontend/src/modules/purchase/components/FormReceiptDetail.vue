@@ -3,7 +3,7 @@
     <section class="three-columns-7525">
       <div>
         <DropdownReference
-          label="Referència de compra"
+          :label="t('purchase.receiptDetail.fields.purchaseReference')"
           v-model="detail.referenceId"
           :fullName="true"
           @update:modelValue="updateHandler"
@@ -12,7 +12,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.TEXT"
-          label="Format"
+          :label="t('purchase.receiptDetail.fields.format')"
           v-model="format"
           disabled
         />
@@ -20,7 +20,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu / Kilo"
+          :label="t('purchase.receiptDetail.fields.pricePerKilo')"
           highlightOnFocus
           v-model="detail.kilogramPrice"
           :disabled="isDisabled('kilogramprice')"
@@ -32,7 +32,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.TEXT"
-          label="Descripció"
+          :label="t('purchase.receiptDetail.fields.description')"
           highlightOnFocus
           v-model="detail.description"
         />
@@ -54,7 +54,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           highlightOnFocus
-          label="Amplada (mm)"
+          :label="t('purchase.receiptDetail.fields.width')"
           :decimals="2"
           v-model="detail.width"
           :disabled="isDisabled('width')"
@@ -65,7 +65,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Alçada (mm)"
+          :label="t('purchase.receiptDetail.fields.height')"
           highlightOnFocus
           v-model="detail.height"
           :disabled="isDisabled('height')"
@@ -76,7 +76,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Longitud (mm)"
+          :label="t('purchase.receiptDetail.fields.length')"
           highlightOnFocus
           v-model="detail.lenght"
           :disabled="isDisabled('length')"
@@ -90,7 +90,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Diàmetre (mm)"
+          :label="t('purchase.receiptDetail.fields.diameter')"
           highlightOnFocus
           v-model="detail.diameter"
           :disabled="isDisabled('diameter')"
@@ -101,7 +101,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Gruix (mm)"
+          :label="t('purchase.receiptDetail.fields.thickness')"
           highlightOnFocus
           v-model="detail.thickness"
           :disabled="isDisabled('thickness')"
@@ -112,7 +112,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Pes (kg)"
+          :label="t('purchase.receiptDetail.fields.weight')"
           v-model="detail.totalWeight"
           :disabled="isDisabled('totalweight')"
         />
@@ -123,7 +123,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat"
+          :label="t('purchase.receiptDetail.fields.quantity')"
           highlightOnFocus
           v-model="detail.quantity"
           @update:modelValue="calculate"
@@ -132,7 +132,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu unitari"
+          :label="t('purchase.receiptDetail.fields.unitPrice')"
           highlightOnFocus
           v-model="detail.unitPrice"
           @update:modelValue="calculate"
@@ -141,14 +141,14 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Preu"
+          :label="t('purchase.receiptDetail.fields.price')"
           v-model="detail.amount"
         />
       </div>
     </section>
 
     <Button
-      label="Crear"
+      :label="t('purchase.receiptDetail.actions.create')"
       @click="submitForm"
       style="float: right"
       :size="'small'"
@@ -175,6 +175,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { BaseInputType } from "../../../types/component";
 import { useReceiptsStore } from "../store/receipt";
@@ -194,6 +195,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 const receiptStore = useReceiptsStore();
 const referenceStore = useReferenceStore();
 const referenceService = new ReferenceService("/reference");
@@ -317,7 +319,7 @@ const calculate = async () => {
       props.detail.amount = response.content!.amount;
     } else {
       toast.add({
-        summary: "Calculadora de pes/preu",
+        summary: t("purchase.receiptDetail.messages.calculator"),
         detail: response.errors[0],
         severity: "warn",
         life: 6000,
@@ -339,7 +341,7 @@ const calculate = async () => {
       props.detail.amount = response.content!.amount;
     } else {
       toast.add({
-        summary: "Calculadora de pes/preu",
+        summary: t("purchase.receiptDetail.messages.calculator"),
         detail: response.errors[0],
         severity: "warn",
         life: 6000,
@@ -361,7 +363,7 @@ const calculate = async () => {
       props.detail.amount = response.content!.amount;
     } else {
       toast.add({
-        summary: "Calculadora de pes/preu",
+        summary: t("purchase.receiptDetail.messages.calculator"),
         detail: response.errors[0],
         severity: "warn",
         life: 6000,
@@ -374,8 +376,8 @@ const calculate = async () => {
 };
 
 const schema = Yup.object().shape({
-  quantity: Yup.number().min(1).required("La quantitat ha de ser superior a 1"),
-  referenceId: Yup.string().required("La referencia és obligatoria"),
+  quantity: Yup.number().min(1).required(t("purchase.receiptDetail.validation.quantityMinimum")),
+  referenceId: Yup.string().required(t("purchase.receiptDetail.validation.referenceRequired")),
 });
 const validation = ref({
   result: false,
@@ -398,7 +400,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.receiptDetail.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

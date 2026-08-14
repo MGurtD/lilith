@@ -3,7 +3,7 @@
     <div class="cards-row">
       <Card>
         <template #header>
-          <div class="card-title">Total Pressuposts</div>
+          <div class="card-title">{{ t('sales.components.totalPressuposts') }}</div>
         </template>
         <template #content>
           <div class="total-count">{{ totalBudgetCount }}</div>
@@ -12,19 +12,19 @@
 
       <Card>
         <template #header>
-          <div class="card-title">Pressuposts</div>
+          <div class="card-title">{{ t('sales.components.pressuposts') }}</div>
         </template>
         <template #content>
           <div class="budgets-summary">
             <div class="budget-stat">
-              <span class="budget-label">Acceptats</span>
+              <span class="budget-label">{{ t('sales.components.acceptats') }}</span>
               <span class="total-count-accepted">{{
                 acceptedBudgetCount
               }}</span>
             </div>
             <div class="budget-divider"></div>
             <div class="budget-stat">
-              <span class="budget-label">Rebutjats</span>
+              <span class="budget-label">{{ t('sales.components.rebutjats') }}</span>
               <span class="total-count-refused">{{ rejectedBudgetCount }}</span>
             </div>
           </div>
@@ -33,7 +33,7 @@
 
       <Card>
         <template #header>
-          <div class="card-title">Total Factures</div>
+          <div class="card-title">{{ t('sales.components.totalFactures') }}</div>
         </template>
         <template #content>
           <div class="total-count-accepted">{{ totalInvoicesCount }}</div>
@@ -42,7 +42,7 @@
 
       <Card>
         <template #header>
-          <div class="card-title">Total Facturat (s/ impostos)</div>
+          <div class="card-title">{{ t('sales.components.totalFacturatSImpostos') }}</div>
         </template>
         <template #content>
           <div class="total-count-accepted">
@@ -55,7 +55,7 @@
     <div class="chart-container">
       <Card class="chart-card">
         <template #header>
-          <div class="card-title">Facturació Mensual</div>
+          <div class="card-title">{{ t('sales.components.facturacioMensual') }}</div>
         </template>
         <template #content>
           <Chart type="line" :data="chartData" :options="chartOptions" />
@@ -66,10 +66,12 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed } from "vue";
 import type { Budget, SalesInvoice } from "../types";
 import { formatCurrency } from "../../../utils/functions";
 
+const { t } = useI18n();
 const props = defineProps<{
   budgets: Budget[];
   salesInvoices: SalesInvoice[];
@@ -104,7 +106,7 @@ const chartData = computed(() => ({
   labels: monthlyInvoicing.value.months,
   datasets: [
     {
-      label: "Facturació mensual (s/ impostos)",
+      label: t('sales.components.facturacioMensualSImpostos'),
       backgroundColor: "#42A5F5",
       data: monthlyInvoicing.value.amounts,
     },

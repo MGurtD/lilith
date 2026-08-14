@@ -9,7 +9,7 @@
       filter
       :filter-fields="['code', 'description']"
       :options="filteredReferences"
-      placeholder="Selecciona..."
+      :placeholder="$t('shared.dropdowns.selectPlaceholder')"
       optionValue="id"
       :optionLabel="(r) => getReferenceNameById(r.id)"
       class="w-full"

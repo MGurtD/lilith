@@ -50,7 +50,7 @@
       </template>
       <Column
         field="workcenterTypeName"
-        header="Tipus Centre Treball"
+        :header="pt('Tipus Centre Treball')"
         sortable
         style="width: 40%"
       >
@@ -63,7 +63,7 @@
       </Column>
       <Column
         field="totalEstimatedTime"
-        header="Temps Total Estimat"
+        :header="pt('Temps Total Estimat')"
         sortable
         style="width: 30%"
       >
@@ -71,7 +71,7 @@
           {{ formatTime(slotProps.data.totalEstimatedTime) }}
         </template>
       </Column>
-      <Column header="Detall" style="width: 30%">
+      <Column :header="pt('Detall')" style="width: 30%">
         <template #body="slotProps">
           <Button
             :icon="PrimeIcons.SEARCH"
@@ -79,7 +79,7 @@
             outlined
             severity="info"
             @click="showDetail(slotProps.data)"
-            label="Veure detall"
+            :label="pt('Veure detall')"
             size="small"
           />
         </template>
@@ -107,19 +107,19 @@
       >
         <Column
           field="workOrderCode"
-          header="Ordre Treball"
+          :header="pt('Ordre Treball')"
           sortable
           style="width: 12%"
         ></Column>
         <Column
           field="workOrderPriority"
-          header="Prioritat"
+          :header="pt('Prioritat')"
           sortable
           style="width: 8%"
         ></Column>
         <Column
           field="workOrderPlannedDate"
-          header="Data Plan."
+          :header="pt('Data Plan.')"
           sortable
           style="width: 12%"
         >
@@ -133,24 +133,24 @@
         </Column>
         <Column
           field="phaseCode"
-          header="Codi Fase"
+          :header="pt('Codi Fase')"
           sortable
           style="width: 8%"
         ></Column>
         <Column
           field="phaseDescription"
-          header="Descripció Fase"
+          :header="pt('Descripció Fase')"
           style="width: 25%"
         ></Column>
         <Column
           field="plannedQuantity"
-          header="Quantitat"
+          :header="pt('Quantitat')"
           sortable
           style="width: 10%"
         ></Column>
         <Column
           field="estimatedTime"
-          header="Temps Estimat"
+          :header="pt('Temps Estimat')"
           sortable
           style="width: 15%"
         >
@@ -164,6 +164,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { usePlantModelStore } from "../store/plantmodel";
 import { useExerciseStore } from "../../shared/store/exercise";
 import { useStore } from "../../../store";
@@ -283,8 +286,8 @@ const filterData = async () => {
   if (!store.exercisePicker.dates || store.exercisePicker.dates.length !== 2) {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Selecciona un període vàlid",
+      summary: pt("Filtre invàlid"),
+      detail: pt("Selecciona un període vàlid"),
       life: 3000,
     });
     return;
@@ -329,7 +332,7 @@ const setCurrentYear = () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CHART_BAR,
-    title: "Saturació Centres de Treball",
+    title: pt("Saturació Centres de Treball"),
   });
 
   // Load necessary data

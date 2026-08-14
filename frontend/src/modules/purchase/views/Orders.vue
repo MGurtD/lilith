@@ -27,13 +27,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ t("purchase.orders.filters.period") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.orders.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -43,7 +43,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Proveïdor</label
+              >{{ t("purchase.order.fields.supplier") }}</label
             >
             <DropdownSupplier label="" v-model="filter.supplierId" />
           </div>
@@ -52,21 +52,21 @@
     </template>
     <Column
       field="number"
-      header="Número"
+      :header="t('purchase.order.fields.number')"
       :sortable="true"
       style="width: 10%"
     ></Column>
-    <Column header="Data" field="date" sortable style="width: 10%">
+    <Column :header="t('purchase.order.fields.date')" field="date" sortable style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
     </Column>
-    <Column header="Proveïdor" style="width: 15%">
+    <Column :header="t('purchase.order.fields.supplier')" style="width: 15%">
       <template #body="slotProps">
         {{ getSupplierNameById(slotProps.data.supplierId) }}
       </template>
     </Column>
-    <Column header="Estat" style="width: 15%">
+    <Column :header="t('purchase.order.fields.status')" style="width: 15%">
       <template #body="slotProps">
         {{ getStatusNameById(slotProps.data.statusId) }}
       </template>
@@ -121,6 +121,7 @@ import {
 } from "../../../utils/functions";
 import { CreatePurchaseDocumentRequest, PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -129,6 +130,7 @@ const store = useStore();
 const suppliersStore = useSuppliersStore();
 const lifecycleStore = useLifecyclesStore();
 const ordersStore = useOrderStore();
+const { t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
@@ -138,7 +140,7 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear comanda",
+  title: t("purchase.orders.dialogs.create"),
   closable: true,
   position: "center",
   modal: true,
@@ -155,7 +157,7 @@ const setCurrentYear = () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Comandes de compra",
+    title: t("purchase.orders.title"),
   });
 
   suppliersStore.fetchSuppliers();
@@ -187,8 +189,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("purchase.messages.invalidFilter"),
+      detail: t("purchase.orders.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -238,7 +240,7 @@ const edit = (row: DataTableRowClickEvent) => {
 const remove = (event: any, invoice: PurchaseInvoice) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar la comanda ${invoice.number}?`,
+    message: t("purchase.orders.messages.confirmDelete", { number: invoice.number }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -247,7 +249,7 @@ const remove = (event: any, invoice: PurchaseInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await filterData();

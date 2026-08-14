@@ -1,7 +1,7 @@
 <template>
   <div class="grid_add_row_button">
     <SplitButton
-      label="Guardar"
+      :label="t('common.save')"
       :model="splitButtonItems"
       :size="'small'"
       @click="submitForm"
@@ -9,8 +9,8 @@
   </div>
   <Tabs value="0">
     <TabList>
-      <Tab value="0">Factura</Tab>
-      <Tab value="1">Fitxers</Tab>
+      <Tab value="0">{{ t("purchase.purchaseInvoice.tabs.invoice") }}</Tab>
+      <Tab value="1">{{ t("purchase.purchaseInvoice.tabs.files") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0" v-if="purchaseInvoice">
@@ -21,9 +21,9 @@
         />
         <Tabs value="0">
           <TabList>
-            <Tab value="0">Imports</Tab>
-            <Tab value="1">Venciments</Tab>
-            <Tab value="2">Albarans</Tab>
+            <Tab value="0">{{ t("purchase.purchaseInvoice.tabs.amounts") }}</Tab>
+            <Tab value="1">{{ t("purchase.purchaseInvoice.tabs.dueDates") }}</Tab>
+            <Tab value="2">{{ t("purchase.purchaseInvoice.tabs.receipts") }}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel value="0">
@@ -58,7 +58,7 @@
               >
                 <Column
                   field="dueDate"
-                  header="Venciment"
+                  :header="t('purchase.purchaseInvoice.columns.dueDate')"
                   style="width: 50%"
                   sortable
                 >
@@ -66,7 +66,11 @@
                     {{ formatDate(slotProps.data.dueDate) }}
                   </template>
                 </Column>
-                <Column field="amount" header="Import" style="width: 50%">
+                <Column
+                  field="amount"
+                  :header="t('purchase.purchaseInvoice.columns.amount')"
+                  style="width: 50%"
+                >
                   <template #body="slotProps">
                     <template v-if="isDueDateEditing">
                       <InputNumber
@@ -85,7 +89,7 @@
                     >
                       <div class="flex flex-column gap-1 text-left">
                         <div class="font-semibold">
-                          Total venciments:
+                          {{ t("purchase.purchaseInvoice.dueDates.total") }}:
                           {{ formatCurrency(editedDueDatesTotal) }}
                         </div>
                         <div
@@ -97,12 +101,13 @@
                               : 'text-red-500',
                           ]"
                         >
-                          Diferència: {{ formatCurrency(dueDatesDifference) }}
+                          {{ t("purchase.purchaseInvoice.dueDates.difference") }}:
+                          {{ formatCurrency(dueDatesDifference) }}
                         </div>
                       </div>
                       <div class="flex gap-2">
                         <Button
-                          label="Cancel·lar"
+                          :label="t('common.cancel')"
                           icon="pi pi-times"
                           severity="danger"
                           size="small"
@@ -110,7 +115,7 @@
                           @click="cancelEditDueDates"
                         />
                         <Button
-                          label="Guardar"
+                          :label="t('common.save')"
                           icon="pi pi-check"
                           severity="success"
                           size="small"
@@ -136,7 +141,7 @@
       <TabPanel value="1">
         <FileEntityPicker
           v-if="purchaseInvoice"
-          title="Factures"
+          :title="t('purchase.purchaseInvoice.filePickerTitle')"
           entity="PurchaseInvoice"
           :id="route.params.id as string"
         />
@@ -194,6 +199,7 @@ import { useToast } from "primevue/usetoast";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReceiptsStore } from "../store/receipt";
 import { cloneDeep, round } from "lodash";
+import { useI18n } from "vue-i18n";
 
 const purchaseInvoiceForm = ref();
 
@@ -206,15 +212,16 @@ const lifecycleStore = useLifecyclesStore();
 const purchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
+const { t } = useI18n();
 const { purchaseInvoice } = storeToRefs(purchaseInvoiceStore);
 
 const dialogTitle = computed(() => {
   if (receiptsStore.selectorReceipts) {
-    return "Selecció albarans";
+    return t("purchase.purchaseInvoice.dialogs.receiptSelection");
   } else {
     return formInvoiceMode.value === FormActionMode.CREATE
-      ? "Introducció import"
-      : "Modificació import";
+      ? t("purchase.purchaseInvoice.dialogs.createAmount")
+      : t("purchase.purchaseInvoice.dialogs.editAmount");
   }
 });
 const isDialogVisible = ref(false);
@@ -247,7 +254,7 @@ const splitButtonItems = computed<MenuItem[]>(() => {
     !isDueDateEditing.value
   ) {
     items.push({
-      label: "Editar venciments",
+      label: t("purchase.purchaseInvoice.actions.editDueDates"),
       icon: "pi pi-pencil",
       command: () => startEditDueDates(),
     });
@@ -264,12 +271,14 @@ const loadView = async () => {
   if (!purchaseInvoice.value) {
     formMode.value = FormActionMode.CREATE;
     purchaseInvoiceStore.setNewPurchaseInvoice(invoiceId);
-    pageTitle = "Alta de factures de compra";
+    pageTitle = t("purchase.purchaseInvoice.pageTitles.create");
 
     setDefaultValues();
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Factura de compra: ${purchaseInvoice.value.number}`;
+    pageTitle = t("purchase.purchaseInvoice.pageTitles.edit", {
+      number: purchaseInvoice.value.number,
+    });
 
     purchaseInvoice.value.purchaseInvoiceDate = new Date(
       purchaseInvoice.value.purchaseInvoiceDate,
@@ -338,10 +347,14 @@ const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await purchaseInvoiceStore.Create(invoice);
-    message = result ? "Factura creada" : "Error al crear la factura";
+    message = result
+      ? t("purchase.purchaseInvoice.messages.created")
+      : t("purchase.purchaseInvoice.messages.createError");
   } else {
     result = await purchaseInvoiceStore.Update(invoice);
-    message = result ? "Factura actualizada" : "Error al actualizar la factura";
+    message = result
+      ? t("purchase.purchaseInvoice.messages.updated")
+      : t("purchase.purchaseInvoice.messages.updateError");
   }
 
   toast.add({
@@ -447,8 +460,11 @@ const confirmEditDueDates = async () => {
   if (dueTotal !== 0 && dueTotal !== invoiceTotal) {
     toast.add({
       severity: "error",
-      summary: "Error de validació",
-      detail: `La suma (${dueTotal} €) no coincideix amb el total de la factura (${invoiceTotal} €)`,
+      summary: t("purchase.purchaseInvoice.messages.dueDatesValidationError"),
+      detail: t("purchase.purchaseInvoice.messages.dueDatesTotalMismatch", {
+        dueTotal,
+        invoiceTotal,
+      }),
       life: 5000,
     });
     return;
@@ -465,14 +481,14 @@ const confirmEditDueDates = async () => {
 
     toast.add({
       severity: "success",
-      summary: "Venciments actualitzats",
+      summary: t("purchase.purchaseInvoice.messages.dueDatesUpdated"),
       life: 4000,
     });
     isDueDateEditing.value = false;
   } catch (e: any) {
     toast.add({
       severity: "error",
-      summary: "Error guardant venciments",
+      summary: t("purchase.purchaseInvoice.messages.dueDatesSaveError"),
       detail: e?.message ?? "",
       life: 6000,
     });

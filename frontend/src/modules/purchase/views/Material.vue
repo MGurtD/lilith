@@ -6,7 +6,7 @@
   <section class="mt-4">
     <TableSupplierReferences
       v-if="reference && referenceStore.referenceSuppliers"
-      title="Proveïdors"
+      :title="t('purchase.materials.suppliersTitle')"
       :referenceId="reference.id"
       :supplier-references="referenceStore.referenceSuppliers"
       :formActionMode="formMode"
@@ -18,7 +18,7 @@
 </template>
 <script setup lang="ts">
 import TableSupplierReferences from "../components/TableSupplierReferences.vue";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { FormActionMode } from "../../../types/component";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
@@ -34,6 +34,7 @@ import {
 import { SupplierReference } from "../types";
 import { useSuppliersStore } from "../store/suppliers";
 import FormMaterial from "../components/FormMaterial.vue";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -41,6 +42,7 @@ const router = useRouter();
 const store = useStore();
 const supplierStore = useSuppliersStore();
 const referenceStore = useReferenceStore();
+const { t, locale } = useI18n();
 
 const { reference } = storeToRefs(referenceStore);
 const id = ref("");
@@ -60,18 +62,29 @@ const loadView = async () => {
   referenceStore.fetchReferenceSuppliers(id.value);
   await referenceStore.fetchReference(id.value);
 
-  let pageTitle = "";
   if (!reference.value) {
     formMode.value = FormActionMode.CREATE;
     referenceStore.setNewReference(
       id.value,
       category.value.code as ReferenceCategoryEnum,
     );
-    pageTitle = `Alta ${category.value.description}`;
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `${category.value.description} ${reference.value.code} - ${reference.value.description}`;
   }
+
+  setPageTitle();
+};
+
+const setPageTitle = () => {
+  const pageTitle = !reference.value
+    ? t("purchase.materials.createTitle", {
+        category: category.value.description,
+      })
+    : t("purchase.materials.detailTitle", {
+        category: category.value.description,
+        code: reference.value.code,
+        description: reference.value.description,
+      });
 
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
@@ -79,6 +92,8 @@ const loadView = async () => {
     title: pageTitle,
   });
 };
+
+watch(locale, setPageTitle);
 
 const toast = useToast();
 const submitForm = async () => {
@@ -97,11 +112,11 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await referenceStore.createReference(data);
-    if (result) message = "Material creat correctament";
-    else message = "El material ja existeix";
+    if (result) message = t("purchase.materials.messages.created");
+    else message = t("purchase.materials.messages.alreadyExists");
   } else {
     result = await referenceStore.updateReference(data.id, data);
-    message = "Material actualizada correctament";
+    message = t("purchase.materials.messages.updated");
   }
 
   toast.add({
@@ -124,7 +139,7 @@ const addSupplier = async (supplier: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència afegida",
+      summary: t("purchase.materials.messages.referenceAdded"),
       life: 5000,
     });
   }
@@ -135,7 +150,7 @@ const editSupplier = async (supplier: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència actualizada",
+      summary: t("purchase.materials.messages.referenceUpdated"),
       life: 5000,
     });
   }
@@ -146,7 +161,7 @@ const removeSupplier = async (supplier: SupplierReference) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Referència eliminada",
+      summary: t("purchase.materials.messages.referenceDeleted"),
       life: 5000,
     });
   }

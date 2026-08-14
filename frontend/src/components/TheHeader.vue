@@ -40,7 +40,7 @@
               </div>
               <div class="user-menu__username">
                 <i :class="PrimeIcons.USER" class="mr-1"></i>
-                Operari
+                {{ $t("ui.operator") }}
               </div>
             </div>
 
@@ -49,7 +49,7 @@
             <div class="user-menu__actions">
               <Button
                 :icon="PrimeIcons.SIGN_OUT"
-                label="Sortir"
+                :label="$t('ui.exit')"
                 class="w-full"
                 size="large"
                 @click="logoutOperator"
@@ -88,7 +88,7 @@
             <div class="divider" />
 
             <div class="user-menu__section">
-              <label class="user-menu__label">Idioma</label>
+              <label class="user-menu__label">{{ $t("ui.language") }}</label>
               <LanguageSwitcher
                 v-model="store.user.preferredLanguage"
                 :changeAppLanguage="true"
@@ -98,7 +98,7 @@
             <div class="user-menu__actions">
               <Button
                 :icon="PrimeIcons.SIGN_OUT"
-                label="Tancar sessió"
+                :label="$t('ui.signOut')"
                 class="w-full"
                 size="large"
                 @click="logoutClick"
@@ -139,7 +139,7 @@ const goBack = () => router.back();
 <style scoped>
 .title-bar {
   position: fixed;
-  background-color: var(--p-blue-900);
+  background-color: var(--p-primary-900);
   color: var(--p-surface-400);
   top: 0;
   left: var(--side-bar-width);

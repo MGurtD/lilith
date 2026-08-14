@@ -81,6 +81,7 @@ import { loadImage, createBlobAndDownloadFile } from "../utils/functions";
 import { useConfirm } from "primevue/useconfirm";
 import { DialogOptions, FileType } from "../types/component";
 import PdfViewer from "./PdfViewer.vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   title: string;
@@ -91,6 +92,7 @@ const props = defineProps<{
 
 const toast = useToast();
 const confirm = useConfirm();
+const { t } = useI18n();
 
 const service = new FileService();
 const files = ref(undefined as undefined | Array<File>);
@@ -99,7 +101,7 @@ const loading = ref(false);
 // Instancia para controlar el diálogo
 const dialogOptions = reactive({
   visible: false,
-  title: "Detalle del document",
+  title: t("fileEntityPicker.documentDetail"),
   closable: true,
   position: "center",
   modal: true,
@@ -117,7 +119,7 @@ const fetchData = async () => {
     console.error("Error fetching files:", error);
     toast.add({
       severity: "error",
-      detail: "Error al carregar els arxius",
+        detail: t("fileEntityPicker.loadFilesError"),
     });
   } finally {
     loading.value = false;
@@ -162,7 +164,7 @@ const uploadFile = async () => {
     if (!uploaded) {
       toast.add({
         severity: "error",
-        detail: "Error al carregar l'arxiu",
+        detail: t("fileEntityPicker.uploadFileError"),
       });
       return;
     }
@@ -177,7 +179,9 @@ const showFile = async (file: File) => {
 
   dialogOptions.isPdf = isPdf;
   dialogOptions.selectedFile = file;
-  dialogOptions.title = isPdf ? "Visualitzador de PDF" : "Detalle de la imatge";
+  dialogOptions.title = isPdf
+    ? t("fileEntityPicker.pdfViewer")
+    : t("fileEntityPicker.imageDetail");
   dialogOptions.visible = true;
 
   // Si es una imatge, carregar-la al contenidor
@@ -224,13 +228,13 @@ const getFileIcon = (file: File): string => {
 
 const deleteFile = async (file: File) => {
   confirm.require({
-    message: "Està segur que vol eliminar l'arxiu seleccionat",
+    message: t("fileEntityPicker.confirmDelete"),
     accept: async () => {
       var deleted = await service.Delete(file.id);
       if (!deleted) {
         toast.add({
           severity: "error",
-          detail: "Error al eliminar l'arxiu",
+          detail: t("fileEntityPicker.deleteFileError"),
         });
         return;
       }

@@ -26,13 +26,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ t("purchase.receipts.filters.period") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
+              :placeholder="t('purchase.receipts.placeholders.selectPeriod')"
               showIcon
               class="w-full"
               size="small"
@@ -42,7 +42,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Proveïdor</label
+              >{{ t("purchase.receipts.filters.supplier") }}</label
             >
             <DropdownSupplier label="" v-model="filter.supplierId" />
           </div>
@@ -51,26 +51,26 @@
     </template>
     <Column
       field="number"
-      header="Número"
+      :header="t('purchase.receipts.columns.number')"
       :sortable="true"
       style="width: 10%"
     ></Column>
-    <Column header="Data" field="date" sortable style="width: 10%">
+    <Column :header="t('purchase.receipts.columns.date')" field="date" sortable style="width: 10%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
     </Column>
-    <Column header="Proveïdor" style="width: 15%">
+    <Column :header="t('purchase.receipts.columns.supplier')" style="width: 15%">
       <template #body="slotProps">
         {{ getSupplierNameById(slotProps.data.supplierId) }}
       </template>
     </Column>
     <Column
-      header="Número Albarà"
+      :header="t('purchase.receipts.columns.supplierNumber')"
       style="width: 15%"
       field="supplierNumber"
     ></Column>
-    <Column header="Estat" style="width: 15%">
+    <Column :header="t('purchase.receipts.columns.status')" style="width: 15%">
       <template #body="slotProps">
         {{ getStatusNameById(slotProps.data.statusId) }}
       </template>
@@ -83,6 +83,7 @@
             slotProps.data.statusId
           "
           :class="PrimeIcons.TIMES"
+          :aria-label="t('purchase.receipts.actions.delete')"
           class="grid_delete_column_button"
           @click="deleteReceipt($event, slotProps.data)"
         />
@@ -115,7 +116,8 @@ import { useStore } from "../../../store";
 import { useReceiptsStore } from "../store/receipt";
 import { useSuppliersStore } from "../store/suppliers";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DialogOptions } from "../../../types/component";
 import {
@@ -127,6 +129,7 @@ import { CreatePurchaseDocumentRequest, PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 
 const toast = useToast();
+const { locale, t } = useI18n();
 const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
@@ -142,7 +145,7 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear albarà",
+  title: t("purchase.receipts.dialogs.create"),
   closable: true,
   position: "center",
   modal: true,
@@ -156,11 +159,15 @@ const setCurrentYear = () => {
   ];
 };
 
-onMounted(async () => {
+const setMenuItem = () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Albarans de compra",
+    title: t("purchase.receipts.title"),
   });
+};
+
+onMounted(async () => {
+  setMenuItem();
 
   suppliersStore.fetchSuppliers();
   lifecycleStore.fetchOneByName("Receipts");
@@ -168,6 +175,8 @@ onMounted(async () => {
 
   await filterReceipts();
 });
+
+watch(locale, setMenuItem);
 
 const cleanFilter = () => {
   filter.value.supplierId = undefined;
@@ -191,8 +200,8 @@ const filterReceipts = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("purchase.receipts.messages.invalidFilter"),
+      detail: t("purchase.receipts.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -241,7 +250,7 @@ const editReceipt = (row: DataTableRowClickEvent) => {
 const deleteReceipt = (event: any, invoice: PurchaseInvoice) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Està segur que vol eliminar l'albarà ${invoice.number}?`,
+    message: t("purchase.receipts.messages.confirmDelete", { number: invoice.number }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -250,7 +259,7 @@ const deleteReceipt = (event: any, invoice: PurchaseInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.receipts.messages.deleted"),
           life: 3000,
         });
         await filterReceipts();

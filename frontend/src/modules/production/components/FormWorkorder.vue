@@ -1,6 +1,6 @@
 <template>
   <SplitButton
-    label="Guardar"
+    :label="t('production.components.guardar')"
     @click="handleSubmit"
     :model="items"
     :size="'small'"
@@ -9,18 +9,18 @@
   <form v-if="workorder" class="pt-3">
     <section class="four-columns">
       <div>
-        <BaseInput label="Codi" v-model="workorder.code" disabled />
+        <BaseInput :label="t('production.components.codi')" v-model="workorder.code" disabled />
       </div>
       <div>
         <DropdownReference
-          label="Referència"
+          :label="t('production.components.referencia')"
           v-model="workorder.referenceId"
           :fullName="true"
           disabled
         ></DropdownReference>
       </div>
       <div>
-        <label class="block text-900 mb-2">Data prevista</label>
+        <label class="block text-900 mb-2">{{ t("production.components.dataPrevista") }}</label>
         <DatePicker
           v-model="workorder.plannedDate"
           dateFormat="dd/mm/yy"
@@ -35,7 +35,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat prevista"
+          :label="t('production.components.quantitatPrevista')"
           v-model="workorder.plannedQuantity"
           :class="{
             'p-invalid': validation.errors.plannedQuantity,
@@ -45,7 +45,7 @@
     </section>
     <section class="four-columns">
       <div>
-        <label class="block text-900 mb-2">Estat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.estat") }}</label>
         <DropdownLifecycleStatusTransitions
           ref="statusTransitionsDropdown"
           v-model="workorder.statusId"
@@ -58,7 +58,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Prioritat"
+          :label="t('production.components.prioritat')"
           v-model="workorder.order"
           :class="{
             'p-invalid': validation.errors.plannedorderQuantity,
@@ -66,7 +66,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Període execució</label>
+        <label class="block text-900 mb-2">{{ t("production.components.periodeExecucio") }}</label>
         <DatePicker
           v-model="dateRange"
           selectionMode="range"
@@ -80,20 +80,23 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat total"
+          :label="t('production.components.quantitatTotal')"
           v-model="workorder.totalQuantity"
           disabled
         />
       </div>
     </section>
     <div>
-      <label class="block text-900 mb-2">Comentari fabricació</label>
+      <label class="block text-900 mb-2">{{ t("production.components.comentariFabricacio") }}</label>
       <Textarea class="w-full" v-model="workorder.comment"></Textarea>
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { ref, computed } from "vue";
 import { WorkOrder } from "../types";
@@ -126,12 +129,12 @@ const statusTransitionsDropdown = ref<InstanceType<
 
 const items = [
   {
-    label: "Descarregar",
+    label: t("production.components.descarregar"),
     icon: PrimeIcons.FILE_WORD,
     command: () => emit("download"),
   },
   {
-    label: "Imprimir PDF",
+    label: t("production.components.imprimirPdf"),
     icon: PrimeIcons.FILE_PDF,
     command: () => emit("downloadPdf"),
   },
@@ -169,11 +172,11 @@ const dateRange = computed({
 
 const schema = Yup.object().shape({
   plannedQuantity: Yup.number()
-    .min(1, "La quantitat ha de ser superior a 0")
-    .required("La quanitat és obligatoria"),
-  referenceId: Yup.string().required("La referència és obligatoria"),
-  order: Yup.number().required("L'ordre és obligatori"),
-  plannedDate: Yup.string().required("La data prevista és obligatoria"),
+    .min(1, t("production.validation.laQuantitatHaDeSerSuperiorA0"))
+    .required(t("production.validation.laQuanitatEsObligatoria")),
+  referenceId: Yup.string().required(t("production.validation.laReferenciaEsObligatoria")),
+  order: Yup.number().required(t("production.validation.lOrdreEsObligatori")),
+  plannedDate: Yup.string().required(t("production.validation.laDataPrevistaEsObligatoria")),
 });
 const validation = ref({
   result: false,
@@ -196,7 +199,7 @@ const handleSubmit = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

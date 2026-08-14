@@ -18,26 +18,26 @@
     <section class="two-columns">
       <div class="mb-2">
         <label class="block text-900 mb-2"
-          >Proveïdor Logístic (Transportista)</label
+          >{{ t('sales.components.proveidorLogisticTransportista') }}</label
         >
         <Select
           v-model="localSupplierId"
           :options="logisticSuppliers"
           optionLabel="comercialName"
           optionValue="id"
-          placeholder="Selecciona transportista"
+          :placeholder="t('sales.components.seleccionaTransportista')"
           class="w-full"
           @change="onTransportSupplierChange"
         />
       </div>
       <div class="mb-2">
-        <label class="block text-900 mb-2">Tarifa de Transport</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.tarifaDeTransport') }}</label>
         <Select
           v-model="transport.transportRateDetailId"
           :options="compatibleTransportRates"
           optionLabel="label"
           optionValue="id"
-          placeholder="Selecciona tarifa"
+          :placeholder="t('sales.components.seleccionaTarifa')"
           class="w-full"
           :disabled="!localSupplierId"
           @change="onRateChange"
@@ -50,14 +50,14 @@
     <section class="mt-3" v-if="!isFinalCustomer">
       <div class="mb-2">
         <label class="block text-900 mb-2"
-          >Proveïdor de Destinació (Serveis externs, magatzem...)</label
+          >{{ t('sales.components.proveidorDeDestinacioServeisExternsMagatzem') }}</label
         >
         <Select
           v-model="destinationSupplierId"
           :options="allSuppliers"
           optionLabel="comercialName"
           optionValue="id"
-          placeholder="Selecciona proveïdor de destinació"
+          :placeholder="t('sales.components.seleccionaProveidorDeDestinacio')"
           class="w-full"
           @change="onDestinationSupplierChange"
         />
@@ -68,7 +68,7 @@
       <div>
         <BaseInput
           class="mb-2"
-          label="Pes (kg)"
+          :label="t('sales.components.pesKg')"
           v-model="transport.weight"
           :type="BaseInputType.NUMERIC"
           :decimals="2"
@@ -79,7 +79,7 @@
         <BaseInput
           disabled
           class="mb-2"
-          label="Volum (m³)"
+          :label="t('sales.components.volumM')"
           v-model="transport.volume"
           :type="BaseInputType.NUMERIC"
           :decimals="2"
@@ -90,7 +90,7 @@
         <BaseInput
           disabled
           class="mb-2"
-          label="Distància (km)"
+          :label="t('sales.components.distanciaKm')"
           v-model="transport.distance"
           :type="BaseInputType.NUMERIC"
           :decimals="2"
@@ -100,7 +100,7 @@
       <div>
         <BaseInput
           class="mb-2"
-          label="Preu"
+          :label="t('sales.components.preu')"
           v-model="transport.price"
           :type="BaseInputType.CURRENCY"
           :class="{ 'p-invalid': validation.errors.price }"
@@ -110,7 +110,7 @@
 
     <section class="mt-3">
       <div class="mb-2">
-        <label class="block text-900 mb-2">Descripció</label>
+        <label class="block text-900 mb-2">{{ t('sales.components.descripcio') }}</label>
         <BaseInput
           class="w-full"
           v-model="transport.description"
@@ -130,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, ref, toRefs, onMounted } from "vue";
 import { Budget, BudgetTransport } from "../types";
 import * as Yup from "yup";
@@ -143,6 +144,7 @@ import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { useTransportRateStore } from "../../purchase/store/transportRate";
 import { useCustomersStore } from "../store/customers";
 
+const { t } = useI18n();
 const toast = useToast();
 const props = defineProps<{
   formAction: FormActionMode;
@@ -389,13 +391,13 @@ const onDestinationSupplierChange = () => {
 };
 
 const schema = Yup.object().shape({
-  transportRateDetailId: Yup.string().required("La tarifa és obligatòria"),
+  transportRateDetailId: Yup.string().required(t("sales.validation.transportRateRequired")),
   weight: Yup.number().min(0, "El pes no pot ser negatiu"),
   volume: Yup.number().min(0, "El volum no pot ser negatiu"),
   distance: Yup.number().min(0, "La distància no pot ser negativa"),
   price: Yup.number()
     .min(0, "El preu no pot ser negatiu")
-    .required("El preu és obligatori"),
+    .required(t("sales.validation.priceRequired")),
 });
 
 const validation = ref({
@@ -419,7 +421,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t('sales.components.formulariInvalid'),
       detail: errors,
       life: 5000,
     });

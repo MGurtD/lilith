@@ -3,7 +3,7 @@
     <section class="four-columns mb-2">
       <BaseInput
         name="comercialName"
-        label="Nom Comercial"
+        :label="t('purchase.supplier.fields.commercialName')"
         id="comercialName"
         v-model="supplier.comercialName"
         :class="{
@@ -11,7 +11,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Nom Fiscal"
+        :label="t('purchase.supplier.fields.taxName')"
         id="taxName"
         v-model="supplier.taxName"
         :class="{
@@ -19,7 +19,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="CIF"
+        :label="t('purchase.supplier.fields.vatNumber')"
         id="vatNumber"
         v-model="supplier.vatNumber"
         :class="{
@@ -27,7 +27,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Tipus Proveïdor</label>
+        <label class="block text-900 mb-2">{{ t("purchase.supplier.fields.supplierType") }}</label>
         <Select
           v-model="supplier.supplierTypeId"
           :options="supplierStore.supplierTypes"
@@ -49,7 +49,7 @@
 
     <section class="three-columns mb-2">
       <BaseInput
-        label="Telèfon"
+        :label="t('purchase.supplier.fields.phone')"
         id="phone"
         v-model="supplier.phone"
         :class="{
@@ -57,7 +57,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Forma de pagament</label>
+        <label class="block text-900 mb-2">{{ t("purchase.supplier.fields.paymentMethod") }}</label>
         <Select
           v-model="supplier.paymentMethodId"
           :options="paymentMethodStore.paymentMethods"
@@ -70,7 +70,7 @@
         />
       </div>
       <BaseInput
-        label="Número de compte"
+        :label="t('purchase.supplier.fields.accountNumber')"
         id="accountNumber"
         v-model="supplier.accountNumber"
         :class="{
@@ -80,20 +80,20 @@
     </section>
 
     <div class="mt-2">
-      <label class="block text-900 mb-2">Observacions</label>
+      <label class="block text-900 mb-2">{{ t("purchase.supplier.fields.observations") }}</label>
       <Textarea v-model="supplier.observations" class="w-full" />
     </div>
 
     <div class="mt-2">
       <label class="block text-900 mb-2"
-        >Notes per les comandes de compra</label
+        >{{ t("purchase.supplier.fields.purchaseOrderNotes") }}</label
       >
       <Textarea v-model="supplier.notes" class="w-full" />
     </div>
 
     <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-      <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
+      <Button :label="t('purchase.supplier.actions.save')" @click="submitForm" />
+      <Button :label="t('purchase.supplier.actions.cancel')" severity="secondary" @click="emit('cancel')" />
     </div>
   </form>
 </template>
@@ -111,6 +111,7 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { usePaymentMethodStore } from "../../shared/store/paymentMethod";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   supplier: Supplier;
@@ -124,6 +125,7 @@ const emit = defineEmits<{
 const supplierStore = useSuppliersStore();
 const paymentMethodStore = usePaymentMethodStore();
 const toast = useToast();
+const { t } = useI18n();
 
 onMounted(async () => {
   await paymentMethodStore.fetchAll();
@@ -131,22 +133,22 @@ onMounted(async () => {
 
 const schema = Yup.object().shape({
   comercialName: Yup.string()
-    .required("El nom comercial és obligatori")
-    .max(250, "El nom comercial no pot superar els 250 caràcters"),
+    .required(() => t("purchase.supplier.validation.commercialNameRequired"))
+    .max(250, () => t("purchase.supplier.validation.commercialNameMaxLength")),
   vatNumber: Yup.string()
-    .required("El CIF és obligatori")
-    .max(15, "El CIF no pot superar els 15 caràcters"),
-  taxName: Yup.string().required("El nom fiscal és obligatori"),
-  region: Yup.string().required("La província és obligatòria"),
-  city: Yup.string().required("El municipi és obligatori"),
-  postalCode: Yup.string().required("El codi postal és obligatori"),
-  address: Yup.string().required("La direcció és obligatòria"),
-  phone: Yup.string().required("El telèfon és obligatori"),
+    .required(() => t("purchase.supplier.validation.vatNumberRequired"))
+    .max(15, () => t("purchase.supplier.validation.vatNumberMaxLength")),
+  taxName: Yup.string().required(() => t("purchase.supplier.validation.taxNameRequired")),
+  region: Yup.string().required(() => t("purchase.supplier.validation.regionRequired")),
+  city: Yup.string().required(() => t("purchase.supplier.validation.cityRequired")),
+  postalCode: Yup.string().required(() => t("purchase.supplier.validation.postalCodeRequired")),
+  address: Yup.string().required(() => t("purchase.supplier.validation.addressRequired")),
+  phone: Yup.string().required(() => t("purchase.supplier.validation.phoneRequired")),
   accountNumber: Yup.string()
-    .required("El número de compte és obligatori")
-    .max(35, "El número de compte no pot superar el 35 dígits"),
-  supplierTypeId: Yup.string().required("El tipus de proveïdor és obligatori"),
-  paymentMethodId: Yup.string().required("La forma de pagament és obligatòria"),
+    .required(() => t("purchase.supplier.validation.accountNumberRequired"))
+    .max(35, () => t("purchase.supplier.validation.accountNumberMaxLength")),
+  supplierTypeId: Yup.string().required(() => t("purchase.supplier.validation.supplierTypeRequired")),
+  paymentMethodId: Yup.string().required(() => t("purchase.supplier.validation.paymentMethodRequired")),
 });
 const validation = ref({
   result: false,
@@ -169,7 +171,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("purchase.supplier.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

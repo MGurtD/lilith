@@ -5,7 +5,7 @@
     }}</label>
     <Select
       :options="referenceStore.referenceCategories"
-      placeholder="Selecciona..."
+      :placeholder="$t('shared.dropdowns.selectPlaceholder')"
       optionValue="code"
       optionLabel="description"
       class="w-full"

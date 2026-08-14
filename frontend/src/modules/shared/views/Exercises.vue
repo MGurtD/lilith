@@ -9,7 +9,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Exercicis</span>
+        <span class="text-900 font-bold">{{ $t('shared.exercises.title') }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -19,19 +19,19 @@
       </div>
     </template>
 
-    <Column field="name" header="Nom" style="width: 15%"></Column>
-    <Column field="description" header="Descripció" style="width: 25%"></Column>
-    <Column header="Data d'inici" style="width: 20%">
+    <Column field="name" :header="$t('shared.exercises.columns.name')" style="width: 15%"></Column>
+    <Column field="description" :header="$t('shared.exercises.columns.description')" style="width: 25%"></Column>
+    <Column :header="$t('shared.exercises.columns.startDate')" style="width: 20%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.startDate) }}
       </template>
     </Column>
-    <Column header="Dia de fi" style="width: 20%">
+    <Column :header="$t('shared.exercises.columns.endDate')" style="width: 20%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.endDate) }}
       </template>
     </Column>
-    <Column header="Desactivat" style="width: 10%">
+    <Column :header="$t('shared.exercises.columns.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
       </template>
@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { storeToRefs } from "pinia";
@@ -52,13 +53,14 @@ const router = useRouter();
 const store = useStore();
 const exerciseStore = useExerciseStore();
 const { exercises } = storeToRefs(exerciseStore);
+const { t } = useI18n();
 
 onMounted(async () => {
   await exerciseStore.fetchAll();
 
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
-    title: "Gestió d'exercicis",
+    title: t("shared.exercises.menuTitle"),
   });
 });
 

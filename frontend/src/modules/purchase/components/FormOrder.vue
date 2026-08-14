@@ -4,14 +4,14 @@
       <div class="mt-1">
         <BaseInput
           :type="BaseInputType.TEXT"
-          label="Número"
+          :label="t('purchase.order.fields.number')"
           id="number"
           v-model="order.number"
           disabled
         />
       </div>
       <div class="mt-1">
-        <label class="block text-900 mb-2">Exercici</label>
+        <label class="block text-900 mb-2">{{ t("purchase.order.fields.exercise") }}</label>
         <Select
           v-model="order.exerciseId"
           :options="exerciseStore.exercises"
@@ -24,20 +24,20 @@
         />
       </div>
       <div class="mt-1">
-        <label class="block text-900 mb-2">Data Comanda</label>
+        <label class="block text-900 mb-2">{{ t("purchase.order.fields.orderDate") }}</label>
         <DatePicker v-model="order.date" dateFormat="dd/mm/yy" />
       </div>
     </section>
     <section class="three-columns">
       <div class="mt-1">
         <DropdownLifecycleStatusTransitions
-          label="Estat"
+          :label="t('purchase.order.fields.status')"
           :statusId="order.statusId"
           v-model="order.statusId"
         />
       </div>
       <div class="mt-1">
-        <label class="block text-900 mb-2">Proveïdor</label>
+        <label class="block text-900 mb-2">{{ t("purchase.order.fields.supplier") }}</label>
         <Select
           v-model="order.supplierId"
           :options="suppliersStore.suppliers"
@@ -65,6 +65,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { BaseInputType } from "../../../types/component";
 import { convertDateTimeToJSON, formatDate } from "../../../utils/functions";
@@ -79,13 +80,14 @@ const orderStore = useOrderStore();
 const suppliersStore = useSuppliersStore();
 const exerciseStore = useExerciseStore();
 const toast = useToast();
+const { t } = useI18n();
 
 const { order } = storeToRefs(orderStore);
 
 const schema = Yup.object().shape({
-  supplierId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
+  supplierId: Yup.string().required(t("purchase.order.validation.supplierRequired")),
+  statusId: Yup.string().required(t("purchase.order.validation.statusRequired")),
+  exerciseId: Yup.string().required(t("purchase.order.validation.exerciseRequired")),
 });
 const validation = ref({
   result: false,
@@ -109,7 +111,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

@@ -6,7 +6,7 @@
     <Select
       showClear
       :options="lifecycle?.statuses"
-      placeholder="Selecciona..."
+      :placeholder="$t('shared.dropdowns.selectPlaceholder')"
       optionValue="id"
       optionLabel="name"
       class="w-full"

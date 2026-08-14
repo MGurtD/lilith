@@ -9,6 +9,7 @@
 import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
+import { useI18n } from "vue-i18n";
 
 import { storeToRefs } from "pinia";
 import { WorkcenterCost } from "../types";
@@ -20,6 +21,7 @@ import router from "../../../router";
 import FormWorkcenterCost from "../components/FormWorkcenterCost.vue";
 import { usePlantModelStore } from "../store/plantmodel";
 
+const { t } = useI18n();
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
@@ -32,10 +34,10 @@ const loadView = async () => {
   if (!workcentercost.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewWorkcenterCost(route.params.id as string);
-    pageTitle = "Alta de cost per màquina";
+    pageTitle = t("production.detail.createWorkcenterCost");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Editar cost per màquina`;
+    pageTitle = t("production.detail.editWorkcenterCost");
   }
 
   store.setMenuItem({
@@ -57,10 +59,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await plantmodelStore.createWorkcenterCost(data);
-    message = "Cost per màquina creat correctament";
+    message = t("production.detail.createdWorkcenterCost");
   } else {
     result = await plantmodelStore.updateWorkcenterCost(data.id, data);
-    message = "Cost per màquina actualizat correctament";
+    message = t("production.detail.updatedWorkcenterCost");
   }
 
   if (result) {

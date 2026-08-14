@@ -16,7 +16,7 @@
     <template #header>
       <header class="selector-filter">
         <div class="selector-filter-field">
-          <label for="">Comanda</label> &nbsp;
+          <label>{{ t('sales.components.comanda') }}</label>
           <InputText
             style="width: 150px; height: 35px"
             v-model="selectedOrder"
@@ -42,20 +42,22 @@
       </div>
     </template>
 
-    <Column header="Quantitat" field="quantity" style="width: 10%"></Column>
-    <Column header="Descripció" field="description" style="width: 50%"></Column>
-    <Column header="Preu" field="amount" style="width: 10%">
+    <Column :header="t('sales.components.quantitat')" field="quantity" style="width: 10%"></Column>
+    <Column :header="t('sales.components.descripcio')" field="description" style="width: 50%"></Column>
+    <Column :header="t('sales.components.preu')" field="amount" style="width: 10%">
       <template #body="slotProps"> {{ slotProps.data.amount }} € </template>
     </Column>
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, ref } from "vue";
 import { InvoiceableOrderDetail, SalesOrderDetail } from "../types";
 import { formatDate } from "../../../utils/functions";
 import _ from "lodash";
 import { PrimeIcons } from "@primevue/core/api";
 
+const { t } = useI18n();
 const selectedDetails = ref([] as Array<InvoiceableOrderDetail>);
 
 const props = defineProps<{

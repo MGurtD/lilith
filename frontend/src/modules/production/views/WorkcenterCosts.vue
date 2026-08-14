@@ -27,7 +27,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Màquina</label
+              >{{ pt("Màquina") }}</label
             >
             <Select
               v-model="filter.workcenterId"
@@ -43,7 +43,7 @@
             class="table-filter-prepend-field table-filter-prepend-field--sm"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Cost 0</label
+              >{{ pt("Cost 0") }}</label
             >
             <div class="table-filter-checkbox-field">
               <Checkbox :binary="true" v-model="filter.zerocost" />
@@ -52,20 +52,20 @@
         </template>
       </TableFilter>
     </template>
-    <Column field="workcenterName" header="Màquina" style="width: 30%" sortable>
+    <Column field="workcenterName" :header="pt('Màquina')" style="width: 30%" sortable>
     </Column>
     <Column
       field="machineStatusName"
-      header="Estat de màquina"
+      :header="pt('Estat de màquina')"
       style="width: 30%"
     >
     </Column>
-    <Column field="cost" header="Cost" style="width: 30%">
+    <Column field="cost" :header="pt('Cost')" style="width: 30%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.cost) }}
       </template>
     </Column>
-    <Column header="Desactivada" style="width: 10%">
+    <Column :header="pt('Desactivada')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -83,6 +83,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useRouter } from "vue-router";
@@ -116,7 +119,7 @@ const getUserFilter = () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Costs per màquina",
+    title: pt("Costs per màquina"),
   });
 
   await plantmodelStore.fetchWorkcenterCosts();
@@ -200,7 +203,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el cost  ${workcentercost.id}?`,
+    message: pt("Confirmar l'eliminació del cost"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -212,7 +215,7 @@ const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenterCosts();

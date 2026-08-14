@@ -3,13 +3,13 @@
     <form v-if="purchaseInvoice">
       <section class="four-columns">
         <BaseInput
-          label="Num. Fra. Intern"
+          :label="$t('purchase.fields.internalInvoiceNumber')"
           id="number"
           v-model="purchaseInvoice.number"
           disabled
         />
         <div>
-          <label class="block text-900 mb-2">Exercici</label>
+          <label class="block text-900 mb-2">{{ $t("purchase.fields.exercise") }}</label>
           <Select
             v-model="purchaseInvoice.exerciceId"
             :options="purchaseMasterData.masterData.exercises"
@@ -22,7 +22,7 @@
           />
         </div>
         <div>
-          <label class="block text-900 mb-2">Sèrie</label>
+          <label class="block text-900 mb-2">{{ $t("purchase.fields.series") }}</label>
           <Select
             v-model="purchaseInvoice.purchaseInvoiceSerieId"
             :options="purchaseMasterData.masterData.series"
@@ -36,7 +36,7 @@
         </div>
         <div>
           <DropdownLifecycleStatusTransitions
-            label="Estat"
+            :label="$t('common.status')"
             :statusId="purchaseInvoice.statusId"
             v-model="purchaseInvoice.statusId"
             :class="{
@@ -48,7 +48,7 @@
 
       <section class="four-columns">
         <div class="mt-1">
-          <label class="block text-900 mb-2">Proveïdor</label>
+          <label class="block text-900 mb-2">{{ $t("purchase.fields.supplier") }}</label>
           <Select
             v-model="purchaseInvoice.supplierId"
             :options="purchaseMasterData.masterData.suppliers"
@@ -63,13 +63,13 @@
         </div>
         <div class="mt-1">
           <BaseInput
-            label="Num. Fra. Proveïdor"
+            :label="$t('purchase.fields.supplierInvoiceNumber')"
             id="supplierNumber"
             v-model="purchaseInvoice.supplierNumber"
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Data Factura</label>
+          <label class="block text-900 mb-2">{{ $t("purchase.fields.invoiceDate") }}</label>
           <DatePicker
             id="purchaseInvoiceDate"
             v-model="purchaseInvoice.purchaseInvoiceDate"
@@ -77,7 +77,7 @@
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Forma de pagament</label>
+          <label class="block text-900 mb-2">{{ $t("purchase.fields.paymentMethod") }}</label>
           <Select
             v-model="purchaseInvoice.paymentMethodId"
             :options="purchaseMasterData.masterData.paymentMethods"
@@ -96,7 +96,7 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.CURRENCY"
-            label="Ports"
+            :label="$t('purchase.fields.transportAmount')"
             id="transportAmount"
             v-model="purchaseInvoice.transportAmount"
             @update:modelValue="calcAmounts()"
@@ -105,7 +105,7 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.NUMERIC"
-            label="% IRPF"
+            :label="$t('purchase.fields.withholdingTax')"
             id="extraTaxPercentatge"
             v-model="purchaseInvoice.extraTaxPercentatge"
             @update:modelValue="calcAmounts()"
@@ -114,7 +114,7 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.NUMERIC"
-            label="% Dto."
+            :label="$t('purchase.fields.discount')"
             id="discountPercentage"
             v-model="purchaseInvoice.discountPercentage"
             @update:modelValue="calcAmounts()"
@@ -126,21 +126,21 @@
         <div class="cost-card">
           <div class="cost-card-icon"><i class="pi pi-file" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">Base</span>
+            <span class="cost-card-label">{{ $t("purchase.fields.base") }}</span>
             <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.baseAmount) }}</span>
           </div>
         </div>
         <div class="cost-card">
           <div class="cost-card-icon"><i class="pi pi-receipt" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">Impostos</span>
+            <span class="cost-card-label">{{ $t("purchase.fields.taxes") }}</span>
             <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.taxAmount) }}</span>
           </div>
         </div>
         <div class="cost-card cost-card-total">
           <div class="cost-card-icon"><i class="pi pi-calculator" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">Total</span>
+            <span class="cost-card-label">{{ $t("common.total") }}</span>
             <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.netAmount) }}</span>
           </div>
         </div>
@@ -161,12 +161,14 @@ import { useToast } from "primevue/usetoast";
 import { storeToRefs } from "pinia";
 import { BaseInputType } from "@/types/component";
 import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
+import { useI18n } from "vue-i18n";
 const emit = defineEmits<{
   (e: "submit", purchaseInvoice: PurchaseInvoice): void;
   (e: "cancel"): void;
 }>();
 
 const purchaseStore = usePurchaseInvoiceStore();
+const { t } = useI18n();
 const purchaseMasterData = usePurchaseMasterDataStore();
 const { purchaseInvoice } = storeToRefs(purchaseStore);
 
@@ -182,9 +184,9 @@ onMounted(() => {
 });
 
 const schema = Yup.object().shape({
-  exerciceId: Yup.string().required("L'exercici es obligatori"),
-  supplierId: Yup.string().required("El proveïdor es obligatori"),
-  statusId: Yup.string().required("L'estat és obligatori"),
+  exerciceId: Yup.string().required(t("purchase.validation.exerciseRequired")),
+  supplierId: Yup.string().required(t("purchase.validation.supplierRequired")),
+  statusId: Yup.string().required(t("purchase.validation.statusRequired")),
 });
 
 const validation = ref({
@@ -201,8 +203,8 @@ const validateImports = () => {
   if (purchaseInvoice.value?.purchaseInvoiceImports.length === 0) {
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
-      detail: "Ha d'introduir els imports de factura",
+      summary: t("purchase.messages.invalidForm"),
+      detail: t("purchase.validation.invoiceImportsRequired"),
       life: 5000,
     });
     return false;
@@ -231,7 +233,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

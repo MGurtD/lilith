@@ -111,6 +111,12 @@ export interface Budget {
   userNotes: string;
 }
 
+export interface DetailPhaseProfit {
+  id: string;
+  workMasterPhaseDetailId: string;
+  profitPercentage: number;
+}
+
 export interface BudgetDetail {
   id: string;
   budgetId: string;
@@ -132,6 +138,7 @@ export interface BudgetDetail {
   totalCost: number;
   amount: number;
   userNotes: string;
+  phaseProfits: Array<DetailPhaseProfit>;
 }
 
 export interface SalesOrderTransport {
@@ -233,6 +240,7 @@ export interface SalesOrderDetail {
   isDelivered: boolean;
   isInvoiced: boolean;
   userNotes: string;
+  phaseProfits: Array<DetailPhaseProfit>;
 }
 
 export interface CreateInvoiceDetailsFromOrderDetailsRequest {

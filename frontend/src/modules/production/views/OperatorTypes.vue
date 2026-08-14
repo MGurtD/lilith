@@ -10,18 +10,20 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Tipus d' operari</span>
+        <span class="text-900 font-bold">{{ t("production.operatorTypes.title") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
+          :aria-label="t('production.actions.create')"
+          :title="t('production.actions.create')"
           rounded
           raised
           @click="createButtonClick"
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Desactivat" style="width: 10%">
+    <Column field="name" :header="t('production.fields.name')" style="width: 25%"></Column>
+    <Column field="description" :header="t('common.description')" style="width: 50%"></Column>
+    <Column :header="t('production.fields.disabled')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -31,6 +33,8 @@
         <i
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
+          :aria-label="t('production.actions.delete')"
+          :title="t('production.actions.delete')"
           @click="deleteButton($event, slotProps.data)"
         />
       </template>
@@ -48,19 +52,21 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { OperatorType } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
 
 onMounted(async () => {
   await plantmodelStore.fetchOperatorTypes();
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de tipus d'operari",
+    title: t("production.operatorTypes.menuTitle"),
   });
 });
 
@@ -81,7 +87,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, operatorType: OperatorType) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el tipus d'operari: ${operatorType.name}?`,
+    message: t("production.messages.confirmDeleteOperatorType", { name: operatorType.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -91,7 +97,7 @@ const deleteButton = (event: any, operatorType: OperatorType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("production.messages.deleted"),
           life: 3000,
         });
         await plantmodelStore.fetchOperatorTypes();

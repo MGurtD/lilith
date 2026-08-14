@@ -8,7 +8,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Cicles de vida</span>
+        <span class="text-900 font-bold">{{ $t('shared.lifecycles.title') }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -17,9 +17,9 @@
         />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 25%"></Column>
-    <Column header="Estat Inicial" style="width: 25%">
+    <Column field="name" :header="$t('shared.lifecycles.columns.name')" style="width: 25%"></Column>
+    <Column field="description" :header="$t('shared.lifecycles.columns.description')" style="width: 25%"></Column>
+    <Column :header="$t('shared.lifecycles.columns.initialStatus')" style="width: 25%">
       <template #body="slotProps">
         {{ getInitialStatusName(slotProps.data) }}
       </template>
@@ -40,6 +40,7 @@
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useStore } from "../../../store";
@@ -51,13 +52,14 @@ const router = useRouter();
 const store = useStore();
 const lifecyclesStore = useLifecyclesStore();
 const resource = "lifecycle";
+const { t } = useI18n();
 
 onMounted(async () => {
   await lifecyclesStore.fetchAll();
 
   store.setMenuItem({
     icon: PrimeIcons.REFRESH,
-    title: "Gestió de cicles de vida",
+    title: t("shared.lifecycles.menuTitle"),
   });
 });
 
@@ -102,8 +104,8 @@ const onDeleteRow = async (event: any, lifecycle: Lifecycle) => {
     lifecyclesStore.transitions.length > 0
   ) {
     toast.add({
-      summary: "Eliminar cicle de vida",
-      detail: `El cicle de vida ${lifecyclesStore.lifecycle?.name} té dependencies`,
+      summary: t("shared.lifecycles.messages.deleteTitle"),
+      detail: t("shared.lifecycles.messages.deleteHasDependencies", { name: lifecyclesStore.lifecycle?.name }),
       severity: "warn",
       life: 5000,
     });

@@ -5,9 +5,21 @@
       "permission": {
         "task": {
           "*": "deny",
-          "backend": "allow",
-          "frontend": "allow",
-          "explore": "allow"
+          "explore": "allow",
+          "scout": "allow"
+        },
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "dotnet build*": "allow",
+          "dotnet test*": "allow",
+          "pnpm run i18n:check*": "allow",
+          "pnpm run i18n:audit*": "allow",
+          "pnpm run i18n:audit:test*": "allow",
+          "pnpm run typecheck*": "allow",
+          "pnpm run build*": "allow"
         }
       }
     }

@@ -36,6 +36,8 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
 import { onMounted, ref, reactive } from "vue";
 import { useRoute } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
@@ -65,10 +67,12 @@ const loadView = async () => {
   if (!machineStatus.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewMachineStatus(route.params.id as string);
-    pageTitle = "Alta d'estat de màquina";
+    pageTitle = t("production.detail.createMachineStatus");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Estat de màquina ${machineStatus.value.name}`;
+    pageTitle = t("production.detail.machineStatusTitle", {
+      name: machineStatus.value.name,
+    });
   }
 
   store.setMenuItem({
@@ -90,10 +94,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await plantmodelStore.createMachineStatus(data);
-    message = "Estat de màquina creat correctament";
+    message = t("production.detail.createdMachineStatus");
   } else {
     result = await plantmodelStore.updateMachineStatus(data.id, data);
-    message = "Estat de màquina actualizat correctament";
+    message = t("production.detail.updatedMachineStatus");
   }
 
   if (result) {
@@ -117,14 +121,14 @@ const dialogOptions = reactive({
 const onAddReason = (reason: MachineStatusReason) => {
   selectedReason.value = reason;
   reasonFormMode.value = FormActionMode.CREATE;
-  dialogOptions.title = "Afegir motiu d'estat";
+  dialogOptions.title = t("production.detail.createMachineStatusReason");
   dialogOptions.visible = true;
 };
 
 const onEditReason = (reason: MachineStatusReason) => {
   selectedReason.value = { ...reason }; // Clone to avoid direct mutation
   reasonFormMode.value = FormActionMode.EDIT;
-  dialogOptions.title = "Editar motiu d'estat";
+  dialogOptions.title = t("production.detail.editMachineStatusReason");
   dialogOptions.visible = true;
 };
 
@@ -133,7 +137,7 @@ const onDeleteReason = async (id: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Motiu eliminat correctament",
+      summary: t("production.detail.deletedMachineStatusReason"),
       life: 4000,
     });
   }
@@ -151,8 +155,8 @@ const onReasonSubmit = async (reason: MachineStatusReason) => {
       severity: "success",
       summary:
         reasonFormMode.value === FormActionMode.CREATE
-          ? "Motiu creat correctament"
-          : "Motiu actualitzat correctament",
+          ? t("production.detail.createdMachineStatusReason")
+          : t("production.detail.updatedMachineStatusReason"),
       life: 4000,
     });
   }

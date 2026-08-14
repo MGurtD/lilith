@@ -3,19 +3,19 @@
     <div class="mt-1">
       <BaseInput
         :type="BaseInputType.CURRENCY"
-        label="Preu servei"
+        :label="t('purchase.materials.fields.servicePrice')"
         v-model="reference.price"
       />
     </div>
     <div class="mt-1">
       <BaseInput
         :type="BaseInputType.CURRENCY"
-        label="Preu transport"
+        :label="t('purchase.materials.fields.transportPrice')"
         v-model="reference.transportAmount"
       />
     </div>
     <div class="mt-1">
-      <label class="block text-900 mb-2">Impost</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.tax") }}</label>
       <Select
         v-model="reference.taxId"
         :options="taxesStore.taxes"
@@ -25,7 +25,7 @@
       />
     </div>
     <div>
-      <label class="block text-900 mb-2">Desactivada</label>
+      <label class="block text-900 mb-2">{{ t("purchase.materials.fields.disabled") }}</label>
       <Checkbox v-model="reference.disabled" :binary="true" />
     </div>
   </section>
@@ -36,12 +36,14 @@ import { Reference } from "../../shared/types";
 import { BaseInputType } from "../../../types/component";
 import { useTaxesStore } from "../../shared/store/tax";
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   reference: Reference;
 }>();
 
 const taxesStore = useTaxesStore();
+const { t } = useI18n();
 
 onMounted(async () => {
   if (!taxesStore.taxes) await taxesStore.fetchAll();

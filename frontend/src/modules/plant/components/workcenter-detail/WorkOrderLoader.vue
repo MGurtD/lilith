@@ -16,20 +16,20 @@
             <i :class="PrimeIcons.COG" class="text-primary text-xl"></i>
           </div>
           <div class="flex flex-column">
-            <span class="font-bold text-lg text-900">Gestió de fases</span>
-            <span class="text-sm text-500">Carregar o crear una nova fase</span>
+            <span class="font-bold text-lg text-900">{{ $t("plant.gestio-de-fases") }}</span>
+            <span class="text-sm text-500">{{ $t("plant.carregar-o-crear-una-nova-fase") }}</span>
           </div>
         </div>
         <div class="flex gap-4 flex-wrap">
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold">Ordre</span>
+            <span class="text-xs text-500 uppercase font-semibold">{{ $t("plant.ordre") }}</span>
             <span class="font-medium text-900 text-lg">{{
               workOrderCode
             }}</span>
           </div>
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Referència</span
+              >{{ $t("plant.referencia") }}</span
             >
             <span class="font-medium text-900 text-lg">{{
               referenceCode
@@ -37,7 +37,7 @@
           </div>
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Quantitat</span
+              >{{ $t("plant.quantitat") }}</span
             >
             <span class="font-medium text-900 text-lg">{{ quantity }}</span>
           </div>
@@ -52,13 +52,9 @@
     >
       <TabList>
         <Tab value="load">
-          <i :class="PrimeIcons.COG" class="mr-2" />
-          Carregar fase
-        </Tab>
+          <i :class="PrimeIcons.COG" class="mr-2" />{{ $t("plant.carregar-fase") }}</Tab>
         <Tab value="create">
-          <i :class="PrimeIcons.COPY" class="mr-2" />
-          Nova des de plantilla
-        </Tab>
+          <i :class="PrimeIcons.COPY" class="mr-2" />{{ $t("plant.nova-des-de-plantilla") }}</Tab>
       </TabList>
 
       <TabPanels>
@@ -89,28 +85,28 @@
                     v-if="slotProps.data.workcenterTypeId === workcenterTypeId"
                     :class="PrimeIcons.CHECK_CIRCLE"
                     class="phase-compatible-icon"
-                    title="Compatible amb aquesta màquina"
+                    :title='$t("plant.compatible-amb-aquesta-maquina")'
                   />
                   <i
                     v-else
                     :class="PrimeIcons.LOCK"
                     class="phase-incompatible-icon"
-                    title="No compatible amb aquesta màquina"
+                    :title='$t("plant.no-compatible-amb-aquesta-maquina")'
                   />
                 </template>
               </Column>
               <Column
                 field="phaseCode"
-                header="Codi"
+                :header='$t("plant.codi")'
                 :sortable="true"
                 style="max-width: 50px"
               />
               <Column
                 field="phaseDescription"
-                header="Descripció"
+                :header='$t("plant.descripcio")'
                 style="min-width: 200px"
               />
-              <Column header="Estat" style="min-width: 150px">
+              <Column :header='$t("plant.estat")' style="min-width: 150px">
                 <template #body="slotProps">
                   <Tag
                     :value="slotProps.data.phaseStatus"
@@ -119,14 +115,14 @@
                   />
                 </template>
               </Column>
-              <Column header="Inici" style="min-width: 150px">
+              <Column :header='$t("plant.inici")' style="min-width: 150px">
                 <template #body="slotProps">
                   <span v-if="slotProps.data.startTime">
                     {{ formatDateTime(slotProps.data.startTime) }}
                   </span>
                 </template>
               </Column>
-              <Column header="Fi" style="min-width: 150px">
+              <Column :header='$t("plant.fi")' style="min-width: 150px">
                 <template #body="slotProps">
                   <span v-if="slotProps.data.endTime">
                     {{ formatDateTime(slotProps.data.endTime) }}
@@ -135,10 +131,10 @@
               </Column>
               <Column
                 field="preferredWorkcenterName"
-                header="Màquina Preferida"
+                :header='$t("plant.maquina-preferida")'
                 style="min-width: 180px"
               />
-              <Column header="Quant.">
+              <Column :header='$t("plant.quant")'>
                 <template #body="slotProps">
                   <span class="quantity-ok">{{
                     slotProps.data.quantityOk
@@ -152,7 +148,7 @@
               <template #empty>
                 <div class="no-data">
                   <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-                  <p>No s'han trobat fases per aquesta ordre de fabricació</p>
+                  <p>{{ $t("plant.no-s-han-trobat-fases-per-aquesta-ordre-de-fabricacio") }}</p>
                 </div>
               </template>
             </DataTable>
@@ -171,7 +167,7 @@
             <div class="bottom-panel" v-if="!hasLoadedWorkOrders">
               <div class="panel-content">
                 <div class="dropdown-container">
-                  <label class="dropdown-label">Activitat a carregar</label>
+                  <label class="dropdown-label">{{ $t("plant.activitat-a-carregar") }}</label>
                   <SelectWorkOrderPhaseDetail
                     v-model="selectedDetailId"
                     :details="selectedPhase?.details || []"
@@ -180,7 +176,7 @@
                 </div>
                 <Button
                   :icon="PrimeIcons.COG"
-                  label="Carregar"
+                  :label='$t("plant.carregar")'
                   severity="success"
                   :disabled="!selectedDetailId"
                   @click="onLoadActivity"
@@ -209,6 +205,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, watch, onMounted, computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { WorkOrderPhaseDetailed } from "../../../production/types";
@@ -218,6 +215,8 @@ import { formatDateTime } from "../../../../utils/functions";
 import { usePlantWorkcenterStore } from "../../store/workcenter.store";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 import PhaseTemplateLoader from "./PhaseTemplateLoader.vue";
+
+const { t } = useI18n();
 
 interface Props {
   visible: boolean;
@@ -305,7 +304,7 @@ const onLoadActivity = () => {
   if (!selectedPhase.value || !selectedDetailId.value) {
     toast.add({
       severity: "warn",
-      summary: "Selecciona una fase i una activitat",
+      summary: t("plant.selecciona-una-fase-i-una-activitat"),
       life: 4000,
     });
     return;
@@ -339,7 +338,7 @@ const loadPhases = async () => {
     console.error("Error loading work order phases:", error);
     toast.add({
       severity: "error",
-      summary: "Error al carregar les fases de l'ordre de fabricació",
+      summary: t("plant.messages.workOrderPhasesLoadError"),
       life: 4000,
     });
     phases.value = [];

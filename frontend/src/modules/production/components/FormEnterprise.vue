@@ -1,26 +1,22 @@
 <template>
-  <form v-if="enterprise">
+  <form v-if="enterprise" @submit.prevent="submitForm">
     <div class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="enterprise.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
+        :class="{ 'p-invalid': validation.errors.name }"
+      />
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="enterprise.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
+        :class="{ 'p-invalid': validation.errors.description }"
+      />
       <div>
-        <label class="block text-900 mb-2">Seu per defecte</label>
+        <label class="block text-900 mb-2">{{ t("production.components.seuPerDefecte") }}</label>
         <Select
           v-model="enterprise.defaultSiteId"
           :options="filteredSites"
@@ -30,34 +26,32 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="enterprise.disabled" class="w-full" :binary="true" />
       </div>
     </div>
 
-    <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+    <div class="mt-2 flex justify-content-end">
+      <Button type="submit" :label="t('production.components.guardar')" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
+import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import * as Yup from "yup";
+import { useToast } from "primevue/usetoast";
+
 import BaseInput from "../../../components/BaseInput.vue";
 import { Enterprise } from "../types";
-import * as Yup from "yup";
-import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { onMounted, computed } from "vue";
+import { FormValidation, FormValidationResult } from "../../../utils/form-validator";
 import { usePlantModelStore } from "../store/plantmodel";
-import { storeToRefs } from "pinia";
 
-const props = defineProps<{
-  enterprise: Enterprise;
-}>();
+const props = defineProps<{ enterprise: Enterprise }>();
 
 const emit = defineEmits<{
   (e: "submit", enterprise: Enterprise): void;
@@ -67,8 +61,9 @@ const emit = defineEmits<{
 const toast = useToast();
 const plantStore = usePlantModelStore();
 const { sites } = storeToRefs(plantStore);
+
 const filteredSites = computed(() =>
-  (sites.value || []).filter((s) => s.enterpriseId === props.enterprise.id),
+  (sites.value || []).filter((site) => site.enterpriseId === props.enterprise.id),
 );
 
 onMounted(async () => {
@@ -77,37 +72,33 @@ onMounted(async () => {
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
+    .required(t("production.validation.laDescripcioEsObligatoria"))
+    .max(250, t("production.validation.laDescripcioNoPotSuperarEls250Caracters")),
 });
+
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.enterprise);
-};
-
-const submitForm = async () => {
-  validate();
+const submitForm = () => {
+  validation.value = new FormValidation(schema).validate(props.enterprise);
   if (validation.value.result) {
     emit("submit", props.enterprise);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
+    return;
   }
+
+  const errors = Object.values(validation.value.errors)
+    .flat()
+    .join(". ");
+  toast.add({
+    severity: "warn",
+    summary: t("production.components.formulariInvalid"),
+    detail: errors,
+    life: 5000,
+  });
 };
 </script>

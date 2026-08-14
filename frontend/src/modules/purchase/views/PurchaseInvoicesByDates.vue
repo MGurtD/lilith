@@ -25,7 +25,7 @@
               class="table-filter-prepend-field table-filter-prepend-field--md"
             >
               <label class="filter-label table-filter-prepend-label"
-                >Període</label
+                >{{ t("purchase.purchaseInvoicesByDates.filters.period") }}</label
               >
               <DatePicker
                 v-model="filter.dates"
@@ -53,21 +53,21 @@
       <Column selectionMode="multiple" style="width: 2%"></Column>
       <Column
         field="number"
-        header="Número"
+        :header="t('purchase.purchaseInvoicesByDates.columns.number')"
         sortable
         style="width: 10%"
       ></Column>
-      <Column header="Proveïdor" style="width: 15%">
+      <Column :header="t('purchase.purchaseInvoicesByDates.columns.supplier')" style="width: 15%">
         <template #body="slotProps">
           {{ getSupplierNameById(slotProps.data.supplierId) }}
         </template>
       </Column>
       <Column
-        header="Num Fra. Proveïdor"
+        :header="t('purchase.purchaseInvoicesByDates.columns.supplierInvoiceNumber')"
         style="width: 12%"
         field="supplierNumber"
       ></Column>
-      <Column header="Estat" style="width: 15%">
+      <Column :header="t('purchase.purchaseInvoicesByDates.columns.status')" style="width: 15%">
         <template #body="slotProps">
           <span
             :class="{
@@ -79,7 +79,7 @@
         </template>
       </Column>
       <Column
-        header="Data"
+        :header="t('purchase.purchaseInvoicesByDates.columns.date')"
         field="purchaseInvoiceDate"
         sortable
         style="width: 15%"
@@ -88,12 +88,12 @@
           {{ formatDate(slotProps.data.purchaseInvoiceDate) }}
         </template>
       </Column>
-      <Column header="Venciment" style="width: 15%">
+      <Column :header="t('purchase.purchaseInvoicesByDates.columns.dueDate')" style="width: 15%">
         <template #body="slotProps">
           {{ getLastDueDate(slotProps.data) }}
         </template>
       </Column>
-      <Column field="baseAmount" header="Import Base" style="width: 15%">
+      <Column field="baseAmount" :header="t('purchase.purchaseInvoicesByDates.columns.baseAmount')" style="width: 15%">
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.baseAmount) }}
         </template>
@@ -129,12 +129,14 @@ import {
   formatDateForQueryParameter,
 } from "../../../utils/functions";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const store = useStore();
 const purchaseStore = usePurchaseMasterDataStore();
 const lifecycleStore = useLifecyclesStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
+const { t } = useI18n();
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -148,18 +150,18 @@ const filterBodyWidth: FilterBodyWidth = {
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "supplierId",
-    label: "Proveïdor",
+    label: t("purchase.purchaseInvoicesByDates.filters.supplier"),
     type: "select",
     options: (purchaseStore.masterData.suppliers ?? []).map((supplier) => ({
       label: supplier.comercialName,
       value: supplier.id,
     })),
-    placeholder: "Selecciona proveïdor",
+    placeholder: t("purchase.purchaseInvoicesByDates.placeholders.selectSupplier"),
     size: "lg",
   },
   {
     key: "showManaged",
-    label: "Gestionades",
+    label: t("purchase.purchaseInvoicesByDates.filters.showManaged"),
     type: "checkbox",
     size: "sm",
   },
@@ -175,7 +177,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.SERVER,
-    title: "Comptabilització de factures de compra",
+    title: t("purchase.purchaseInvoicesByDates.title"),
   });
 });
 
@@ -253,8 +255,8 @@ const filterInvoices = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("purchase.messages.invalidFilter"),
+      detail: t("purchase.purchaseInvoicesByDates.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -275,8 +277,10 @@ const updateSelectedInvoiceStatusToManaged = async () => {
     if (updated) {
       toast.add({
         severity: "success",
-        summary: "Comptabilització de factures",
-        detail: `Factures comptabilitzades: ${selectedInvoices.value.length}`,
+        summary: t("purchase.purchaseInvoicesByDates.messages.accountingCompleted"),
+        detail: t("purchase.purchaseInvoicesByDates.messages.accountedInvoices", {
+          count: selectedInvoices.value.length,
+        }),
         life: 5000,
       });
 

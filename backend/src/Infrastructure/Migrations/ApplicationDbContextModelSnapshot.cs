@@ -547,11 +547,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("varchar");
-
                     b.Property<DateTime>("UpdatedOn")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp without time zone")
@@ -565,6 +560,48 @@ namespace Infrastructure.Migrations
                     b.HasIndex(new[] { "Key" }, "UK_MenuItem_Key");
 
                     b.ToTable("MenuItems", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.Auth.MenuItemTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar");
+
+                    b.Property<Guid>("MenuItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_MenuItemTranslation");
+
+                    b.HasIndex(new[] { "MenuItemId", "LanguageCode" }, "UK_MenuItemTranslation_MenuItem_Language")
+                        .IsUnique();
+
+                    b.ToTable("MenuItemTranslations", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Auth.Profile", b =>
@@ -1180,6 +1217,10 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("BrandName")
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar");
+
                     b.Property<DateTime>("CreatedOn")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp without time zone")
@@ -1198,9 +1239,19 @@ namespace Infrastructure.Migrations
                         .HasColumnType("bool")
                         .HasDefaultValue(false);
 
+                    b.Property<Guid?>("LogoMainFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LogoSidebarFileId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(10)
+                        .HasColumnType("varchar");
+
+                    b.Property<string>("PrimaryColor")
+                        .HasMaxLength(7)
                         .HasColumnType("varchar");
 
                     b.Property<DateTime>("UpdatedOn")
@@ -1213,7 +1264,15 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("DefaultSiteId");
 
+                    b.HasIndex("LogoMainFileId");
+
+                    b.HasIndex("LogoSidebarFileId");
+
                     b.HasIndex(new[] { "Name" }, "UK_Enterprise_Name");
+
+                    b.HasIndex(new[] { "Disabled" }, "UK_Enterprise_SingleEnabled")
+                        .IsUnique()
+                        .HasFilter("\"Disabled\" = false");
 
                     b.ToTable("Enterprises", (string)null);
                 });
@@ -3946,6 +4005,43 @@ namespace Infrastructure.Migrations
                     b.ToTable("BudgetDetails", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetDetailPhaseProfit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BudgetDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("ProfitPercentage")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("WorkMasterPhaseDetailId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BudgetDetailId");
+
+                    b.ToTable("BudgetDetailPhaseProfits", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServiceDetail", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5052,6 +5148,43 @@ namespace Infrastructure.Migrations
                     b.HasIndex("WorkOrderId");
 
                     b.ToTable("SalesOrderDetail");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderDetailPhaseProfit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal>("ProfitPercentage")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal");
+
+                    b.Property<Guid>("SalesOrderDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("WorkMasterPhaseDetailId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesOrderDetailId");
+
+                    b.ToTable("SalesOrderDetailPhaseProfits", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
@@ -6313,6 +6446,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Auth.MenuItemTranslation", b =>
+                {
+                    b.HasOne("Domain.Entities.Auth.MenuItem", "MenuItem")
+                        .WithMany("Translations")
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MenuItem");
+                });
+
             modelBuilder.Entity("Domain.Entities.Auth.ProfileMenuItem", b =>
                 {
                     b.HasOne("Domain.Entities.Auth.MenuItem", "MenuItem")
@@ -6387,6 +6531,16 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Production.Site", "DefaultSite")
                         .WithMany()
                         .HasForeignKey("DefaultSiteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Domain.Entities.File", null)
+                        .WithMany()
+                        .HasForeignKey("LogoMainFileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Domain.Entities.File", null)
+                        .WithMany()
+                        .HasForeignKey("LogoSidebarFileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("DefaultSite");
@@ -7184,6 +7338,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkMaster");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetDetailPhaseProfit", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.BudgetDetail", "BudgetDetail")
+                        .WithMany("PhaseProfits")
+                        .HasForeignKey("BudgetDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BudgetDetail");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServiceDetail", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.BudgetDetail", "BudgetDetail")
@@ -7479,6 +7644,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("WorkOrder");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderDetailPhaseProfit", b =>
+                {
+                    b.HasOne("Domain.Entities.Sales.SalesOrderDetail", "SalesOrderDetail")
+                        .WithMany("PhaseProfits")
+                        .HasForeignKey("SalesOrderDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SalesOrderDetail");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServiceDetail", b =>
                 {
                     b.HasOne("Domain.Entities.Sales.SalesOrderDetail", "SalesOrderDetail")
@@ -7753,6 +7929,8 @@ namespace Infrastructure.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("ProfileMenuItems");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("Domain.Entities.Auth.Profile", b =>
@@ -7857,6 +8035,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("Transports");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sales.BudgetDetail", b =>
+                {
+                    b.Navigation("PhaseProfits");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sales.BudgetExternalServices", b =>
                 {
                     b.Navigation("Details");
@@ -7883,6 +8066,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("SalesInvoiceImports");
 
                     b.Navigation("VerifactuRequests");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sales.SalesOrderDetail", b =>
+                {
+                    b.Navigation("PhaseProfits");
                 });
 
             modelBuilder.Entity("Domain.Entities.Sales.SalesOrderExternalServices", b =>

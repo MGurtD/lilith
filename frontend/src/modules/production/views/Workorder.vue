@@ -13,10 +13,10 @@
     <div v-if="workorder !== undefined">
       <Tabs v-model:value="activeTab" :key="workorder.id">
         <TabList>
-          <Tab value="0">Fases</Tab>
-          <Tab value="1">Hores</Tab>
-          <Tab value="2">Costs</Tab>
-          <Tab value="3">Moviments</Tab>
+          <Tab value="0">{{ pt("Fases") }}</Tab>
+          <Tab value="1">{{ pt("Hores") }}</Tab>
+          <Tab value="2">{{ pt("Costs") }}</Tab>
+          <Tab value="3">{{ pt("Moviments") }}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="0">
@@ -39,7 +39,7 @@
                 <div
                   class="flex flex-wrap align-items-center justify-content-between gap-2"
                 >
-                  <span class="text-900 font-bold">Hores</span>
+                  <span class="text-900 font-bold">{{ pt("Hores") }}</span>
                   <Button
                     :icon="PrimeIcons.PLUS"
                     rounded
@@ -55,7 +55,7 @@
               <div class="costs-section">
                 <h4 class="costs-section-title">
                   <i class="pi pi-euro" />
-                  Costos
+                  {{ pt("Costos") }}
                 </h4>
                 <div class="costs-grid">
                   <div class="cost-card">
@@ -63,7 +63,7 @@
                       <i class="pi pi-user" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Operari</span>
+                      <span class="cost-card-label">{{ pt("Cost Operari") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.operatorCost)
                       }}</span>
@@ -74,7 +74,7 @@
                       <i class="pi pi-cog" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Màquina</span>
+                      <span class="cost-card-label">{{ pt("Cost Màquina") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.machineCost)
                       }}</span>
@@ -85,7 +85,7 @@
                       <i class="pi pi-box" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Material</span>
+                      <span class="cost-card-label">{{ pt("Cost Material") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.materialCost)
                       }}</span>
@@ -96,7 +96,7 @@
                       <i class="pi pi-calculator" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Total</span>
+                      <span class="cost-card-label">{{ pt("Cost Total") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(
                           workorder.machineCost +
@@ -112,7 +112,7 @@
               <div class="costs-section">
                 <h4 class="costs-section-title">
                   <i class="pi pi-clock" />
-                  Temps
+                  {{ pt("Temps") }}
                 </h4>
                 <div class="time-grid">
                   <div class="cost-card">
@@ -120,7 +120,7 @@
                       <i class="pi pi-user" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Temps Operari</span>
+                      <span class="cost-card-label">{{ pt("Temps Operari") }}</span>
                       <span class="cost-card-value"
                         >{{ workorder.operatorTime }} min</span
                       >
@@ -131,7 +131,7 @@
                       <i class="pi pi-cog" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Temps Màquina</span>
+                      <span class="cost-card-label">{{ pt("Temps Màquina") }}</span>
                       <span class="cost-card-value"
                         >{{ workorder.machineTime }} min</span
                       >
@@ -165,6 +165,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkOrderProductionPart from "../components/FormWorkOrderProductionPart.vue";
 import FormWorkorder from "../components/FormWorkorder.vue";
 import TableWorkorderPhases from "../components/TableWorkorderPhases.vue";
@@ -219,7 +222,7 @@ watch(activeTab, async (newTab) => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear tíquet de producció",
+  title: pt("Crear tíquet de producció"),
   closable: true,
   position: "center",
   modal: true,
@@ -231,7 +234,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ordre de fabricació`;
+  pageTitle = t("production.detail.workorderTitle");
   if (workorder.value) {
     pageTitle = `${pageTitle} ${workorder.value.code}`;
   }
@@ -275,7 +278,7 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Ordre de fabricació actualitzada",
+      summary: pt("Ordre de fabricació actualitzada"),
       life: 3000,
     });
 
@@ -284,8 +287,8 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al actualitzar l'ordre de fabricació",
-      detail: "Revisi el log per a més informació",
+      summary: t("production.messages.updateWorkorderError"),
+      detail: pt("Revisi el log per a més informació"),
       life: 10000,
     });
   }
@@ -299,8 +302,8 @@ const addWorkOrderPhase = async (phase: WorkOrderPhase) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al crear la fase",
-      detail: "Revisi el log per a més informació",
+      summary: pt("Error al crear la fase"),
+      detail: pt("Revisi el log per a més informació"),
       life: 10000,
     });
   }
@@ -313,8 +316,11 @@ const deleteWorkOrderPhase = async (phase: WorkOrderPhase) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Fase eliminada",
-      detail: `La fase ${phase.code} - ${phase.description} s'ha eliminat correctament`,
+      summary: pt("Fase eliminada"),
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
       life: 5000,
     });
   }
@@ -376,8 +382,8 @@ const printReport = async () => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar l'informe de l'ordre de fabricació",
+        summary: pt("Error"),
+        detail: t("production.messages.workorderReportError"),
       });
     }
   }

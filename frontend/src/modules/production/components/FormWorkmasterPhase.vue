@@ -2,7 +2,7 @@
   <form v-if="phase">
     <div>
       <Button
-        label="Guardar Fase"
+        :label="t('production.components.guardarFase')"
         class="grid_add_row_button"
         size="small"
         @click="submitForm"
@@ -11,15 +11,15 @@
     </div>
     <section class="two-columns-2575 mb-2">
       <div>
-        <BaseInput label="Codi de la fase" v-model="phase.code" />
+        <BaseInput :label="t('production.components.codiDeLaFase')" v-model="phase.code" />
       </div>
       <div>
-        <BaseInput label="Descripció" v-model="phase.description" />
+        <BaseInput :label="t('production.components.descripcio')" v-model="phase.description" />
       </div>
     </section>
     <section class="four-columns mb-2">
       <div>
-        <label class="block text-900 mb-2">Tipus de màquina</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipusDeMaquina") }}</label>
         <Select
           v-model="phase.workcenterTypeId"
           :options="plantModelStore.workcenterTypes"
@@ -33,7 +33,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Màquina preferida</label>
+        <label class="block text-900 mb-2">{{ t("production.components.maquinaPreferida") }}</label>
         <Select
           v-model="phase.preferredWorkcenterId"
           :options="preferredWorkcenters"
@@ -44,7 +44,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Marge de benefici</label>
+        <label class="block text-900 mb-2">{{ t("production.components.margeDeBenefici") }}</label>
         <Select
           v-if="workcenterProfitPercentages.length > 0"
           v-model="phase.profitPercentage"
@@ -52,7 +52,7 @@
           optionValue="profitPercentage"
           optionLabel="profitPercentage"
           class="w-full"
-          placeholder="Selecciona un percentatge"
+          :placeholder="t('production.components.seleccionaUnPercentatge')"
           @change="onProfitPercentageChanged"
         >
           <template #value="slotProps">
@@ -74,7 +74,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Tipus d'operari</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tipusDOperari") }}</label>
         <Select
           v-model="phase.operatorTypeId"
           :options="plantModelStore.operatorTypes"
@@ -89,7 +89,7 @@
     </section>
     <section class="four-columns mb-2">
       <div>
-        <label class="block text-900 mt-1 mb-1">Externa</label>
+        <label class="block text-900 mt-1 mb-1">{{ t("production.components.externa") }}</label>
         <Checkbox
           v-model="phase.isExternalWork"
           class="w-full"
@@ -98,7 +98,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Servei</label>
+        <label class="block text-900 mb-2">{{ t("production.components.servei") }}</label>
         <Select
           v-model="phase.serviceReferenceId"
           :options="serviceReferences"
@@ -112,7 +112,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost servei"
+          :label="t('production.components.costServei')"
           v-model="phase.externalWorkCost"
           :disabled="!phase.isExternalWork"
           :class="{
@@ -123,7 +123,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.CURRENCY"
-          label="Cost transport"
+          :label="t('production.components.costTransport')"
           v-model="phase.transportCost"
           :disabled="!phase.isExternalWork"
           :class="{
@@ -136,6 +136,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { computed, onMounted, ref } from "vue";
 import {
   WorkMaster,
@@ -274,7 +277,7 @@ const onServiceReferenceChanged = () => {
 };
 
 const schema = Yup.object().shape({
-  code: Yup.string().required("El codi és obligatori"),
+  code: Yup.string().required(t("production.validation.elCodiEsObligatori")),
   /*.test("unique-code", "El codi ja existeix", function (value) {
       const { phases } = props.workmaster || {}; // Accede a workmaster.phases
       if (!phases || !Array.isArray(phases)) return true; // Si no hay fases, no valida como duplicado
@@ -306,7 +309,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

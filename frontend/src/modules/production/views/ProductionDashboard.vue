@@ -18,21 +18,21 @@
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
         <label class="block text-900 text-xl font-semibold"
-          >Seguiment de marges i temps de producció</label
+          >{{ pt("Seguiment de marges i temps de producció") }}</label
         >
         <IconField iconPosition="left">
           <InputIcon class="pi pi-search" />
           <InputText
             v-model="filters['global'].value"
-            placeholder="Cercar OF o referència"
+            :placeholder="pt('Cercar OF o referència')"
           />
         </IconField>
       </div>
     </template>
-    <template #empty>Sense ordres de fabricació en producció.</template>
+    <template #empty>{{ pt("Sense ordres de fabricació en producció.") }}</template>
 
     <Column field="code" header="OF" sortable />
-    <Column header="Referència" sortable field="referenceCode">
+    <Column :header="pt('Referència')" sortable field="referenceCode">
       <template #body="{ data }">
         <div class="flex flex-column">
           <span class="font-medium">{{ data.referenceCode }}</span>
@@ -42,9 +42,9 @@
         </div>
       </template>
     </Column>
-    <Column field="plannedQuantity" header="Quantitat" sortable />
+    <Column field="plannedQuantity" :header="pt('Quantitat')" sortable />
     <Column
-      header="Avanç fases"
+      :header="pt('Avanç fases')"
       field="phaseProgressPercentage"
       sortable
       style="min-width: 13rem"
@@ -52,18 +52,19 @@
       <template #body="{ data }">
         <div class="flex align-items-center gap-2">
           <ProgressBar
-            :value="data.phaseProgressPercentage"
+            :value="Math.min(data.phaseProgressPercentage, 100)"
             :showValue="false"
+            :class="{ 'phase-overrun': data.phaseProgressPercentage > 100 }"
             style="height: 0.75rem; flex: 1"
           />
-          <span class="text-sm white-space-nowrap"
-            >{{ data.phaseProgressPercentage }}%</span
-          >
+          <span class="text-sm white-space-nowrap">
+            {{ data.phaseProgressPercentage }}%
+          </span>
         </div>
       </template>
     </Column>
     <Column
-      header="Avanç temps"
+      :header="pt('Avanç temps')"
       field="timeProgressPercentage"
       sortable
       style="min-width: 13rem"
@@ -77,23 +78,23 @@
             style="height: 0.75rem; flex: 1"
           />
           <span
-            class="text-sm white-space-nowrap"
             v-tooltip.top="timeBreakdown(data)"
-            :class="{ 'text-red-500 font-medium': data.timeProgressPercentage > 100 }"
-            >{{ data.timeProgressPercentage }}%</span
+            class="text-sm white-space-nowrap cursor-help"
           >
+            {{ data.timeProgressPercentage }}%
+          </span>
         </div>
       </template>
     </Column>
-    <Column field="orderPrice" header="Preu comanda" sortable>
+    <Column field="orderPrice" :header="pt('Preu comanda')" sortable>
       <template #body="{ data }">{{ formatCurrency(data.orderPrice) }}</template>
     </Column>
-    <Column field="theoreticalCost" header="Cost teòric" sortable>
+    <Column field="theoreticalCost" :header="pt('Cost teòric')" sortable>
       <template #body="{ data }">{{
         formatCurrency(data.theoreticalCost)
       }}</template>
     </Column>
-    <Column field="accumulatedTotalCost" header="Cost acumulat" sortable>
+    <Column field="accumulatedTotalCost" :header="pt('Cost acumulat')" sortable>
       <template #body="{ data }">
         <span
           v-tooltip.top="costBreakdown(data)"
@@ -102,7 +103,7 @@
         >
       </template>
     </Column>
-    <Column field="margin" header="Marge" sortable>
+    <Column field="margin" :header="pt('Marge')" sortable>
       <template #body="{ data }">
         <Tag
           :value="formatCurrency(data.margin)"
@@ -114,6 +115,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
@@ -121,7 +125,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { FilterMatchMode } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 
-import { useStore } from "../../../store";
+import { useStore } from "@/store";
 import { formatCurrency } from "../../../utils/functions";
 import { WorkOrderDashboardItem } from "../types";
 import { WorkOrderService } from "../services/workorder.service";
@@ -168,7 +172,7 @@ const loadData = async () => {
     console.error("Error loading production dashboard:", error);
     toast.add({
       severity: "error",
-      summary: "Error al carregar el dashboard de producció",
+      summary: pt("Error al carregar el dashboard de producció"),
       life: 5000,
     });
   } finally {
@@ -179,7 +183,7 @@ const loadData = async () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CHART_LINE,
-    title: "Dashboard de producció",
+    title: pt("Dashboard de producció"),
   });
   await loadData();
 });
@@ -187,6 +191,10 @@ onMounted(async () => {
 
 <style scoped>
 :deep(.time-overrun .p-progressbar-value) {
+  background: var(--red-500);
+}
+
+:deep(.phase-overrun .p-progressbar-value) {
   background: var(--red-500);
 }
 </style>

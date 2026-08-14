@@ -4,18 +4,14 @@
       <div class="produced-units-row">
         <div class="produced-column">
           <h4 class="section-title">
-            <i :class="PrimeIcons.CHECK_CIRCLE" class="mr-2"></i>
-            Quantitat produida
-          </h4>
+            <i :class="PrimeIcons.CHECK_CIRCLE" class="mr-2"></i>{{ $t("plant.quantitat-produida") }}</h4>
           <div class="produced-unit-card ok">
             <span class="produced-value">{{ quantityOk }}</span>
           </div>
         </div>
         <div class="produced-column">
           <h4 class="section-title">
-            <i :class="PrimeIcons.EXCLAMATION_TRIANGLE" class="mr-2"></i>
-            Quantitat defectuosa
-          </h4>
+            <i :class="PrimeIcons.EXCLAMATION_TRIANGLE" class="mr-2"></i>{{ $t("plant.quantitat-defectuosa") }}</h4>
           <div class="produced-unit-card ko">
             <span class="produced-value">{{ quantityKo }}</span>
           </div>
@@ -25,12 +21,8 @@
 
     <div class="input-section">
       <h4 class="section-title">
-        <i :class="PrimeIcons.PLUS_CIRCLE" class="mr-2"></i>
-        Afegir mes quantitat
-      </h4>
-      <p class="section-hint">
-        Introdueix la quantitat addicional produida en aquesta sessio
-      </p>
+        <i :class="PrimeIcons.PLUS_CIRCLE" class="mr-2"></i>{{ $t("plant.afegir-mes-quantitat") }}</h4>
+      <p class="section-hint">{{ $t("plant.introdueix-la-quantitat-addicional-produida-en-aquesta-sessio") }}</p>
       <div class="counters-row">
         <div class="counter-field">
           <InputNumber

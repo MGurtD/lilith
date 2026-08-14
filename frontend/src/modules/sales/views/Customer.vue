@@ -3,19 +3,19 @@
     <TabList>
       <Tab value="0">
         <i :class="PrimeIcons.WALLET" class="mr-2"></i>
-        <span>Client</span>
+        <span>{{ t("sales.customers.title") }}</span>
       </Tab>
       <Tab value="1" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.USERS" class="mr-2"></i>
-        <span>Contactes</span>
+        <span>{{ t("sales.customers.contacts") }}</span>
       </Tab>
       <Tab value="2" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.ENVELOPE" class="mr-2"></i>
-        <span>Adreces</span>
+        <span>{{ t("sales.customers.addresses") }}</span>
       </Tab>
       <Tab value="3" v-if="formMode === FormActionMode.EDIT">
         <i :class="PrimeIcons.CHART_PIE" class="mr-2"></i>
-        <span>Estadístiques</span>
+        <span>{{ t("sales.customers.statistics") }}</span>
       </Tab>
     </TabList>
     <TabPanels>
@@ -63,6 +63,7 @@ import { useSharedDataStore } from "../../shared/store/masterData";
 import { useBudgetStore } from "../store/budget";
 import { formatDateForQueryParameter } from "../../../utils/functions";
 import { useSalesInvoiceStore } from "../store/invoice";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -74,6 +75,7 @@ const salesInvoiceStore = useSalesInvoiceStore();
 const { customer } = storeToRefs(customerStore);
 const { budgets } = storeToRefs(budgetStore);
 const { invoices } = storeToRefs(salesInvoiceStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await customerStore.fetchCustomer(route.params.id as string);
@@ -103,10 +105,10 @@ const loadView = async () => {
   if (!customer.value) {
     formMode.value = FormActionMode.CREATE;
     customerStore.setNewCustomer(route.params.id as string);
-    pageTitle = "Alta de client";
+    pageTitle = t("sales.customers.createCustomer");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Client ${customer.value.comercialName}`;
+    pageTitle = `${t("sales.customers.title")} ${customer.value.comercialName}`;
   }
 
   store.setMenuItem({
@@ -128,10 +130,10 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await customerStore.createCustomer(data);
-    successMessage = "Client creat correctament";
+    successMessage = t("sales.customers.customerCreated");
   } else {
     result = await customerStore.updateCustomer(data.id, data);
-    successMessage = "Client actualizat correctament";
+    successMessage = t("sales.customers.customerUpdated");
   }
 
   if (result.result) {
@@ -144,8 +146,8 @@ const submitForm = async () => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: result.errors?.[0] ?? "No s'ha pogut desar el client",
+      summary: t("sales.detail.messages.error"),
+      detail: result.errors?.[0] ?? t("sales.customers.customerSaveError"),
       life: 6000,
     });
   }
@@ -156,7 +158,7 @@ const addContact = async (contact: CustomerContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte afegit",
+      summary: t("sales.customers.contactAdded"),
       life: 5000,
     });
   }
@@ -167,7 +169,7 @@ const editContact = async (contact: CustomerContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte actualizat",
+      summary: t("sales.customers.contactUpdated"),
       life: 5000,
     });
   }
@@ -178,7 +180,7 @@ const removeContact = async (contact: CustomerContact) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Contacte eliminat",
+      summary: t("sales.customers.contactDeleted"),
       life: 5000,
     });
   }
@@ -189,7 +191,7 @@ const addAddress = async (address: CustomerAddress) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Adreça afegida",
+      summary: t("sales.customers.addressAdded"),
       life: 5000,
     });
   }
@@ -200,7 +202,7 @@ const editAddress = async (address: CustomerAddress) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Adreça actualizada",
+      summary: t("sales.customers.addressUpdated"),
       life: 5000,
     });
   }
@@ -211,7 +213,7 @@ const removeAddress = async (address: CustomerAddress) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Adreça eliminada",
+      summary: t("sales.customers.addressDeleted"),
       life: 5000,
     });
   }

@@ -8,15 +8,15 @@
 
     <Tabs v-if="reference" value="0">
       <TabList>
-        <Tab value="0">Documentació</Tab>
+        <Tab value="0">{{ t("sales.detail.tabs.documentation") }}</Tab>
         <Tab value="1" v-if="formMode === FormActionMode.EDIT"
-          >Rutes de fabricació</Tab
+          >{{ t("sales.detail.tabs.manufacturingRoutes") }}</Tab
         >
       </TabList>
       <TabPanels>
         <TabPanel value="0">
           <FileEntityPicker
-            title="Documentació"
+            :title="t('sales.detail.tabs.documentation')"
             entity="referenceMaps"
             :id="reference.id"
             :key="reference.id"
@@ -38,7 +38,7 @@
                 class="flex flex-wrap align-items-center justify-content-between gap-2"
               >
                 <div>
-                  <label class="block text-900">Rutes de fabricació</label>
+                  <label class="block text-900">{{ t("sales.detail.tabs.manufacturingRoutes") }}</label>
                 </div>
                 <div class="datatable-buttons">
                   <Button
@@ -54,12 +54,12 @@
             <!-- ...resto de columnas sin cambios... -->
             <Column
               field="baseQuantity"
-              header="Quantitat Base"
+              :header="t('sales.detail.labels.baseQuantity')"
               style="width: 10%"
             ></Column>
             <Column
               field="machineCost"
-              header="Cost màquina"
+              :header="t('sales.detail.labels.machineCost')"
               style="width: 10%"
             >
               <template #body="slotProps">
@@ -68,7 +68,7 @@
             </Column>
             <Column
               field="operatorCost"
-              header="Cost operari"
+              :header="t('sales.detail.labels.operatorCost')"
               style="width: 10%"
             >
               <template #body="slotProps">
@@ -77,7 +77,7 @@
             </Column>
             <Column
               field="materialCost"
-              header="Cost material"
+              :header="t('sales.detail.labels.materialCost')"
               style="width: 10%"
             >
               <template #body="slotProps">
@@ -86,14 +86,14 @@
             </Column>
             <Column
               field="externalCost"
-              header="Cost extern"
+              :header="t('sales.detail.labels.externalCost')"
               style="width: 10%"
             >
               <template #body="slotProps">
                 {{ formatCurrency(slotProps.data.externalCost) }}
               </template>
             </Column>
-            <Column header="Cost total" style="width: 10%">
+            <Column :header="t('sales.detail.labels.totalCost')" style="width: 10%">
               <template #body="slotProps">
                 {{
                   formatCurrency(
@@ -138,6 +138,7 @@ import { Reference, ReferenceCategoryEnum } from "../../shared/types";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
 import { formatCurrency, getNewUuid } from "../../../utils/functions";
+import { useI18n } from "vue-i18n";
 
 const route = useRoute();
 const router = useRouter();
@@ -157,6 +158,7 @@ const module = ref("");
 const loading = ref(false);
 const workmasterLoading = ref(false);
 const creatingWorkmaster = ref(false);
+const { t } = useI18n();
 
 const loadView = async () => {
   loading.value = true;
@@ -174,10 +176,10 @@ const loadView = async () => {
     if (!reference.value) {
       formMode.value = FormActionMode.CREATE;
       referenceStore.setNewReference(id.value, ReferenceCategoryEnum.PRODUCT);
-      pageTitle = `Alta de referència`;
+      pageTitle = t("sales.references.create");
     } else {
       formMode.value = FormActionMode.EDIT;
-      pageTitle = `Referència ${reference.value.code} - ${reference.value.description}`;
+      pageTitle = t("sales.references.pageTitle", { code: reference.value.code, description: reference.value.description });
 
       // Solo cargar workmasters si estamos en modo edición y tenemos una referencia
       workmasterLoading.value = true;
@@ -197,7 +199,7 @@ const loadView = async () => {
     console.error("Error loading view:", error);
     toast.add({
       severity: "error",
-      summary: "Error al carregar la vista",
+      summary: t("sales.detail.messages.viewLoadError"),
       life: 5000,
     });
   } finally {
@@ -224,11 +226,11 @@ const submitForm = async () => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await referenceStore.createReference(data);
-    if (result) message = "Referència creada correctament";
-    else message = "La referència + versió introduïda ja existeix";
+    if (result) message = t("sales.references.created");
+    else message = t("sales.references.duplicate");
   } else {
     result = await referenceStore.updateReference(data.id, data);
-    message = "Referència actualizada correctament";
+    message = t("sales.references.updated");
   }
 
   toast.add({
@@ -264,7 +266,7 @@ const createWorkmaster = async () => {
         } else {
           toast.add({
             severity: "error",
-            summary: "Error al crear la ruta de fabricació",
+            summary: t("sales.detail.messages.routeCreateError"),
             life: 5000,
           });
         }
@@ -273,7 +275,7 @@ const createWorkmaster = async () => {
       console.error("Error creating workmaster:", error);
       toast.add({
         severity: "error",
-        summary: "Error al crear la ruta de fabricació",
+          summary: t("sales.detail.messages.routeCreateError"),
         life: 5000,
       });
     } finally {
@@ -291,7 +293,7 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
 
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la ruta seleccionada?`,
+    message: t("sales.references.confirmDeleteRoute"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -307,7 +309,7 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
       if (result) {
         toast.add({
           severity: "success",
-          summary: "Ruta eliminada correctament",
+          summary: t("sales.detail.messages.routeDeleted"),
           life: 5000,
         });
       } else {
@@ -315,7 +317,7 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
         await workmasterStore.fetchByReferenceId(reference.value!.id);
         toast.add({
           severity: "warn",
-          summary: "No s'ha pogut eliminar la ruta",
+          summary: t("sales.detail.messages.routeDeleteError"),
           life: 5000,
         });
       }

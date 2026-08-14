@@ -17,7 +17,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
@@ -30,6 +31,7 @@ import TableLocations from "../components/TableLocations.vue";
 import FormWarehouse from "../components/FormWarehouse.vue";
 
 const formMode = ref(FormActionMode.EDIT);
+const { t, locale } = useI18n();
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
@@ -42,10 +44,10 @@ const loadView = async () => {
   if (!warehouse.value) {
     formMode.value = FormActionMode.CREATE;
     warehouseStore.setNewWarehouse(route.params.id as string);
-    pageTitle = "Alta de magatzem";
+    pageTitle = t("warehouse.warehouse.newTitle");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Magatzem ${warehouse.value.name}`;
+    pageTitle = t("warehouse.warehouse.editTitle", { name: warehouse.value.name });
   }
 
   store.setMenuItem({
@@ -59,6 +61,10 @@ onMounted(async () => {
   await loadView();
 });
 
+watch(locale, async () => {
+  await loadView();
+});
+
 const toast = useToast();
 const submitForm = async () => {
   const data = warehouse.value as Warehouse;
@@ -68,19 +74,19 @@ const submitForm = async () => {
   if (formMode.value === FormActionMode.CREATE) {
     data.defaultLocationId = null;
     result = await warehouseStore.createWarehouse(data);
-    message = "Magatzem creat correctament";
+    message = t("warehouse.messages.warehouseCreated");
   } else {
     if (!data.defaultLocationId) {
       toast.add({
         severity: "warn",
-        summary: "Seleccioni una ubicació per defecte",
+        summary: t("warehouse.messages.selectDefaultLocation"),
         life: 5000,
       });
       return;
     }
 
     result = await warehouseStore.updateWarehouse(data.id, data);
-    message = "Magatzem actualizat correctament";
+    message = t("warehouse.messages.warehouseUpdated");
   }
 
   if (result) {
@@ -103,9 +109,8 @@ const onDeleteLocation = (location: Location): void => {
   if (warehouse.value && location.id === warehouse.value.defaultLocationId) {
     toast.add({
       severity: "warn",
-      summary: "Ubicació amb dependencies",
-      detail:
-        "La ubicació que intenta eliminar és la ubicació per defecte del magatzem",
+      summary: t("warehouse.messages.locationHasDependencies"),
+      detail: t("warehouse.messages.defaultLocationCannotBeDeleted"),
       life: 6000,
     });
     return;

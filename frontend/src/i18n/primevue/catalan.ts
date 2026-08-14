@@ -17,14 +17,14 @@ export default {
   clear: "Netejar",
   apply: "Aplicar",
   matchAll: "Coincideix amb Tots",
-  matchAny: "Coincideix con Algún",
+  matchAny: "Coincideix amb algun",
   addRule: "Afegir Regla",
   removeRule: "Eliminar Regla",
-  accept: "Si",
+  accept: "Sí",
   reject: "No",
   choose: "Escollir",
   upload: "Pujar",
-  cancel: "Cancelar",
+  cancel: "Cancel·lar",
   dayNames: [
     "Diumenge",
     "Dilluns",
@@ -48,7 +48,7 @@ export default {
     "Setembre",
     "Octubre",
     "Novembre",
-    "Decembre",
+    "Desembre",
   ],
   monthNamesShort: [
     "Gen",
@@ -73,5 +73,5 @@ export default {
   strong: "Forta",
   passwordPrompt: "Introdueix contrasenya",
   emptyFilterMessage: "Sense resultats",
-  emptyMessage: "Sense opciones disp.",
+  emptyMessage: "Sense opcions disponibles",
 };

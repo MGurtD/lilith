@@ -3,7 +3,7 @@
     <!-- Workcenter Picture Section 
     <Panel
       v-if="workcenterStore.workcenterPictureUrl"
-      header="Imatge del centre de treball"
+      :header='$t("plant.imatge-del-centre-de-treball")'
       :toggleable="true"
       class="panel-section"
     >
@@ -18,7 +18,7 @@
     -->
 
     <!-- Machine Status Section -->
-    <Panel header="Estat actual" :toggleable="false" class="panel-section">
+    <Panel :header='$t("plant.estat-actual")' :toggleable="false" class="panel-section">
       <MachineStatusDetail
         :status="currentStatus"
         :reason="currentReason"
@@ -35,7 +35,7 @@
 
     <!-- Current Work Order Section -->
     <Panel
-      header="Ordre de fabricació"
+      :header='$t("plant.ordre-de-fabricacio")'
       :toggleable="false"
       class="panel-section"
     >
@@ -51,12 +51,12 @@
         :counterKo="currentWorkOrderData.counterKo"
       />
       <div v-else class="no-data">
-        <p>No hi ha cap ordre de fabricació carregada</p>
+        <p>{{ $t("plant.no-hi-ha-cap-ordre-de-fabricacio-carregada") }}</p>
       </div>
     </Panel>
 
     <!-- Current Operators -->
-    <Panel header="Operaris" :toggleable="false" class="panel-section">
+    <Panel :header='$t("plant.operaris")' :toggleable="false" class="panel-section">
       <div
         v-if="
           workcenter.realtime?.operators &&
@@ -78,7 +78,7 @@
         />
       </div>
       <div v-else class="no-data">
-        <p>No hi ha operaris fitxats</p>
+        <p>{{ $t("plant.no-hi-ha-operaris-fitxats") }}</p>
       </div>
     </Panel>
   </div>

@@ -17,15 +17,17 @@ import { Reference } from "../../../modules/shared/types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { getNewUuid } from "../../../utils/functions";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const referenceStore = useReferenceStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
 
 onMounted(async () => {
-  let title = "Referencies de venta";
+  const title = t("sales.references.title");
   store.setMenuItem({
     icon: PrimeIcons.TICKET,
     title,
@@ -48,7 +50,7 @@ const editReference = (reference: Reference) => {
 
 const deleteReference = (reference: Reference) => {
   confirm.require({
-    message: `Está segur que vol eliminar la refèrencia ${reference.description}?`,
+    message: t("sales.references.confirmDelete", { name: reference.description }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -65,7 +67,7 @@ const deleteReference = (reference: Reference) => {
       } else {
         toast.add({
           severity: "success",
-          summary: "Referencia eliminada correctament",
+          summary: t("sales.references.deleted"),
           life: 5000,
         });
       }

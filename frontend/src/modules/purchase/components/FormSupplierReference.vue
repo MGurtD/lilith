@@ -3,17 +3,17 @@
     <section class="three-columns pt-5">
       <DropdownReference
         v-if="!referenceId"
-        label="Referència"
+        :label="t('purchase.supplierReference.fields.reference')"
         v-model="referenceSupplier.referenceId"
         :fullName="true"
       ></DropdownReference>
       <DropdownSupplier
         v-if="!supplierId"
-        label="Proveïdor"
+        :label="t('purchase.supplierReference.fields.supplier')"
         v-model="referenceSupplier.supplierId"
       />
       <BaseInput
-        label="Codi proveïdor"
+        :label="t('purchase.supplierReference.fields.supplierCode')"
         id="supplierCode"
         v-model="referenceSupplier.supplierCode"
         class="mb-2"
@@ -22,7 +22,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Descripció proveïdor"
+        :label="t('purchase.supplierReference.fields.supplierDescription')"
         id="supplierDescription"
         v-model="referenceSupplier.supplierDescription"
         class="mb-2"
@@ -30,7 +30,7 @@
     </section>
     <section class="three-columns">
       <BaseInput
-        label="Preu proveïdor"
+        :label="t('purchase.supplierReference.fields.supplierPrice')"
         id="supplierPrice"
         v-model="referenceSupplier.supplierPrice"
         :type="BaseInputType.CURRENCY"
@@ -40,7 +40,7 @@
         }"
       ></BaseInput>
       <BaseInput
-        label="Dies de subministrament"
+        :label="t('purchase.supplierReference.fields.supplyDays')"
         id="supplyDays"
         v-model="referenceSupplier.supplyDays"
         :type="BaseInputType.NUMERIC"
@@ -51,7 +51,7 @@
       ></BaseInput>
     </section>
     <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
+      <Button :label="t('purchase.supplierReference.actions.save')" @click="submitForm" />
     </div>
   </form>
 </template>
@@ -69,6 +69,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   referenceId?: string;
@@ -82,13 +83,12 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
 const schema = Yup.object().shape({
-  supplierCode: Yup.string().required("El codi és obligatori"),
-  supplierPrice: Yup.number().required("El preu és obligatori"),
-  supplyDays: Yup.number().required(
-    "Els dies de subministrament són obligatoris",
-  ),
+  supplierCode: Yup.string().required(() => t("purchase.supplierReference.validation.supplierCodeRequired")),
+  supplierPrice: Yup.number().required(() => t("purchase.supplierReference.validation.supplierPriceRequired")),
+  supplyDays: Yup.number().required(() => t("purchase.supplierReference.validation.supplyDaysRequired")),
 });
 const validation = ref({
   result: false,
@@ -111,7 +111,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.supplierReference.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

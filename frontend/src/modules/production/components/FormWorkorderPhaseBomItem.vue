@@ -2,7 +2,7 @@
   <form v-if="bomItem">
     <div>
       <DropdownReference
-        label="Material"
+        :label="t('production.components.material')"
         :fullName="true"
         v-model="bomItem.referenceId"
         :class="{
@@ -15,14 +15,14 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat"
+          :label="t('production.components.quantitat')"
           v-model="bomItem.quantity"
         />
       </div>
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Amplada (mm)"
+          :label="t('production.components.ampladaMm')"
           :decimals="2"
           v-model="bomItem.width"
         />
@@ -31,7 +31,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Alçada (mm)"
+          :label="t('production.components.alcadaMm')"
           v-model="bomItem.height"
         />
       </div>
@@ -42,7 +42,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Longitud (mm)"
+          :label="t('production.components.longitudMm')"
           v-model="bomItem.length"
         />
       </div>
@@ -50,7 +50,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Diàmetre (mm)"
+          :label="t('production.components.diametreMm')"
           v-model="bomItem.diameter"
         />
       </div>
@@ -58,7 +58,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          label="Gruix (mm)"
+          :label="t('production.components.gruixMm')"
           v-model="bomItem.thickness"
         />
       </div>
@@ -67,7 +67,7 @@
     <br />
     <div>
       <Button
-        label="Guardar material"
+        :label="t('production.components.guardarMaterial')"
         style="float: right"
         size="small"
         @click="submitForm"
@@ -77,6 +77,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { ref } from "vue";
 import { WorkOrderPhaseBillOfMaterials } from "../types";
@@ -100,10 +103,10 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const schema = Yup.object().shape({
-  referenceId: Yup.string().required("El material de consum és obligatori"),
+  referenceId: Yup.string().required(t("production.validation.elMaterialDeConsumEsObligatori")),
   quantity: Yup.number()
-    .min(1, "La quantitat a consumir ha de ser positiva")
-    .required("La quantitat a consumir és obligatoria"),
+    .min(1, t("production.validation.laQuantitatAConsumirHaDeSerPositiva"))
+    .required(t("production.validation.laQuantitatAConsumirEsObligatoria")),
 });
 const validation = ref({
   result: false,
@@ -126,7 +129,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

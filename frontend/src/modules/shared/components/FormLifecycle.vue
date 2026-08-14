@@ -3,7 +3,7 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="$t('shared.lifecycle.form.name')"
         id="name"
         v-model="lifecycle.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="$t('shared.lifecycle.form.description')"
         id="description"
         v-model="lifecycle.description"
         :class="{
@@ -20,7 +20,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Estat inicial</label>
+        <label class="block text-900 mb-2">{{ $t('shared.lifecycle.form.initialStatus') }}</label>
         <Select
           class="w-full"
           v-model="lifecycle.initialStatusId"
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Lifecycle } from "../types";
 import * as Yup from "yup";
@@ -43,6 +44,8 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   lifecycle: Lifecycle;
@@ -84,7 +87,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("shared.common.invalidForm"),
       detail: errors,
       life: 5000,
     });

@@ -17,22 +17,22 @@
       </div>
     </template>
     <Column rowReorder headerStyle="width: 3rem" :reorderableColumn="false" />
-    <Column field="code" header="Codi">
+    <Column field="code" :header="pt('Codi')">
       <template #body="slotProps">
         <LinkWorkorder :id="slotProps.data.id" :code="slotProps.data.code" />
       </template>
     </Column>
-    <Column header="Estat">
+    <Column :header="pt('Estat')">
       <template #body="slotProps">
         {{ slotProps.data.status?.name }}
       </template>
     </Column>
-    <Column header="Client">
+    <Column :header="pt('Client')">
       <template #body="slotProps">
         {{ slotProps.data.reference?.customer?.comercialName }}
       </template>
     </Column>
-    <Column header="Referència">
+    <Column :header="pt('Referència')">
       <template #body="slotProps">
         {{
           slotProps.data.reference?.code +
@@ -41,16 +41,19 @@
         }}
       </template>
     </Column>
-    <Column field="plannedDate" header="Data Prevista" style="width: 12%">
+    <Column field="plannedDate" :header="pt('Data Prevista')" style="width: 12%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.plannedDate) }}
       </template>
     </Column>
-    <Column field="order" header="Prioritat"></Column>
-    <Column field="plannedQuantity" header="Quantitat"></Column>
+    <Column field="order" :header="pt('Prioritat')"></Column>
+    <Column field="plannedQuantity" :header="pt('Quantitat')"></Column>
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import LinkWorkorder from "../components/LinkWorkorder.vue";
 import { onMounted } from "vue";
 import { useWorkOrderStore } from "../store/workorder";
@@ -69,7 +72,7 @@ onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     backButtonVisible: false,
-    title: "Prioritzar ordres de fabricació",
+    title: pt("Prioritzar ordres de fabricació"),
   });
 
   await workorderStore.fetchPlannable();
@@ -100,14 +103,14 @@ const updateOrder = async () => {
   if (response.result) {
     toast.add({
       severity: "success",
-      summary: "Ordres de fabricació actualitzades",
-      detail: "L'ordre de les ordres de fabricació s'ha actualitzat.",
+      summary: pt("Ordres de fabricació actualitzades"),
+      detail: t("production.messages.updatedWorkorderPlanning"),
       life: 3000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error actualitzant les ordres de fabricació",
+      summary: pt("Error actualitzant les ordres de fabricació"),
       detail:
         response.errors?.join(", ") || "S'ha produït un error desconegut.",
       life: 5000,

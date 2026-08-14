@@ -2,8 +2,10 @@
 import { onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useRegisterSW } from "virtual:pwa-register/vue";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
+const { t } = useI18n();
 const showUpdateToast = ref(false);
 
 // Configuración del service worker con auto-update
@@ -33,8 +35,8 @@ onMounted(() => {
   if (offlineReady.value) {
     toast.add({
       severity: "success",
-      summary: "App disponible offline",
-      detail: "Temges pot funcionar sense connexió a internet",
+      summary: t("pwa.offlineReady"),
+      detail: t("pwa.offlineReadyDetail"),
       life: 5000,
     });
   }
@@ -45,8 +47,8 @@ onMounted(() => {
 
     toast.add({
       severity: "info",
-      summary: "Actualització disponible",
-      detail: "Actualitzant a la versió més recent...",
+      summary: t("pwa.updateAvailable"),
+      detail: t("pwa.updating"),
       life: 3000,
     });
 

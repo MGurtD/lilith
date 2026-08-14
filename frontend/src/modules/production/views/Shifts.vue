@@ -11,7 +11,7 @@
             <div
               class="flex flex-wrap align-items-center justify-content-between gap-2"
             >
-              <span class="text-900 font-bold">Torns</span>
+              <span class="text-900 font-bold">{{ pt("Torns") }}</span>
               <Button
                 :icon="PrimeIcons.PLUS"
                 rounded
@@ -20,8 +20,8 @@
               />
             </div>
           </template>
-          <Column field="name" header="Nom"></Column>
-          <Column field="disabled" header="Desactivat">
+          <Column field="name" :header="pt('Nom')"></Column>
+          <Column field="disabled" :header="pt('Desactivat')">
             <template #body="slotProps">
               <BooleanColumn :value="slotProps.data.disabled" />
             </template>
@@ -37,7 +37,7 @@
             <div
               class="flex flex-wrap align-items-center justify-content-between gap-2"
             >
-              <span class="text-900 font-bold">Horaris</span>
+              <span class="text-900 font-bold">{{ pt("Horaris") }}</span>
               <Button
                 :icon="PrimeIcons.PLUS"
                 rounded
@@ -46,9 +46,9 @@
               />
             </div>
           </template>
-          <Column field="startTime" header="Hora inici"></Column>
-          <Column field="endTime" header="Hora fi"></Column>
-          <Column field="isProductiveTime" header="Temps Productiu">
+          <Column field="startTime" :header="pt('Hora inici')"></Column>
+          <Column field="endTime" :header="pt('Hora fi')"></Column>
+          <Column field="isProductiveTime" :header="pt('Temps Productiu')">
             <template #body="slotProps">
               <BooleanColumn :value="slotProps.data.isProductiveTime" />
             </template>
@@ -79,6 +79,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "../../../store";
@@ -102,7 +105,7 @@ const { shift, shiftdetail } = storeToRefs(shiftStore);
 const openShift = () => {
   shiftStore.setNewShift(getNewUuid());
   dialogOptions.visible = true;
-  dialogOptions.title = "Alta de torns";
+  dialogOptions.title = t("production.detail.createShift");
 };
 
 const openShiftDetail = () => {
@@ -141,7 +144,7 @@ onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     backButtonVisible: false,
-    title: "Gestió de torns",
+    title: pt("Gestió de torns"),
   });
 });
 
@@ -153,7 +156,7 @@ const submitShift = async () => {
     dialogOptions.visible = false;
     toast.add({
       severity: "success",
-      summary: "Torn creat correctament",
+      summary: pt("Torn creat correctament"),
       life: 5000,
     });
   }
@@ -166,7 +169,7 @@ const submitShiftDetail = async () => {
     dialogOptionsDetail.visible = false;
     toast.add({
       severity: "success",
-      summary: "Detall creat correctament",
+      summary: pt("Detall creat correctament"),
       life: 5000,
     });
   }

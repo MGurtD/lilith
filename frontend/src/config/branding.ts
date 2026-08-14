@@ -1,24 +1,9 @@
-// Central branding configuration
-// Extendable for theming (logo variants, colors) later.
-export interface BrandingConfig {
-  companyName: string;
-  companyShortName?: string; // Used when sidebar collapsed
-  logoPath?: string; // Relative to /src/assets or public root
-  logoAlt?: string;
-}
+import logoMain from "../assets/images/logo.jpg";
+import logoSidebar from "../assets/images/logo-header-white.png";
 
-// Use explicit import so Vite handles hashing and correct URL emission
-import logoHeaderWhite from "../assets/images/logo-header-white.png";
+export const DEFAULT_BRAND_NAME = "Temges";
+export const DEFAULT_MAIN_LOGO = logoMain;
+export const DEFAULT_SIDEBAR_LOGO = logoSidebar;
 
-export const branding: BrandingConfig = {
-  companyName: "Temges",
-  companyShortName: "T",
-  logoPath: logoHeaderWhite, // Built asset URL
-  logoAlt: "Temges Logo",
-};
-
-export function getCompanyName(collapsed?: boolean) {
-  return collapsed
-    ? branding.companyShortName || branding.companyName.charAt(0)
-    : branding.companyName;
-}
+export const getBrandMonogram = (brandName: string): string =>
+  brandName.trim().charAt(0).toUpperCase() || "T";

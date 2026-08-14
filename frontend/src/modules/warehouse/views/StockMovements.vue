@@ -25,7 +25,7 @@
         >
           <template #prepend>
             <div class="table-filter-prepend-field table-filter-prepend-field--lg">
-              <label class="filter-label table-filter-prepend-label">Període</label>
+              <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
               <DatePicker
                 v-model="filter.dates"
                 selectionMode="range"
@@ -33,11 +33,11 @@
                 showIcon
                 class="w-full"
                 size="small"
-                placeholder="Selecciona període"
+                :placeholder="t('warehouse.placeholders.selectPeriod')"
               />
             </div>
             <div class="table-filter-prepend-field table-filter-prepend-field--md">
-              <label class="filter-label table-filter-prepend-label">Ubicació</label>
+              <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.location") }}</label>
               <DropdownWarehousesWithLocations
                 label=""
                 v-model="filter.locationId"
@@ -46,16 +46,17 @@
           </template>
         </TableFilter>
       </template>
-      <Column header="Data" field="movementDate" sortable style="width: 10%">
+      <Column :header="t('common.date')" field="movementDate" sortable style="width: 10%">
         <template #body="slotProps">
           {{ formatDateTime(slotProps.data.movementDate) }}
         </template>
       </Column>
-      <Column header="Referència" style="width: 15%">
+      <Column :header="t('warehouse.fields.reference')" style="width: 15%">
         <template #body="slotProps">
           {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
         </template></Column
       >
+      <Column :header="t('warehouse.fields.location')" style="width: 10%">
       <Column header="Lot" style="width: 8%">
         <template #body="slotProps">
           {{ getLotCode(slotProps.data.lotId) }}
@@ -66,18 +67,18 @@
           {{ slotProps.data.location?.name }}
         </template>
       </Column>
-      <Column field="width" header="Ample (x) mm" style="width: 5%"></Column>
-      <Column field="length" header="Llarg (y) mm" style="width: 5%"></Column>
-      <Column field="height" header="Alt (z) mm" style="width: 5%"></Column>
-      <Column field="diameter" header="Diámetre mm" style="width: 5%"></Column>
-      <Column field="thickness" header="Gruix mm" style="width: 5%"></Column>
+      <Column field="width" :header="t('warehouse.fields.widthMmAxis')" style="width: 5%"></Column>
+      <Column field="length" :header="t('warehouse.fields.lengthMmAxis')" style="width: 5%"></Column>
+      <Column field="height" :header="t('warehouse.fields.heightMmAxis')" style="width: 5%"></Column>
+      <Column field="diameter" :header="t('warehouse.fields.diameterMm')" style="width: 5%"></Column>
+      <Column field="thickness" :header="t('warehouse.fields.thicknessMm')" style="width: 5%"></Column>
       <Column
         field="description"
-        header="Descripció"
-        style="width: 20%"
+        :header="t('common.description')"
+        style="width: 25%"
       ></Column>
       <Column
-        header="Tipus de moviment"
+        :header="t('warehouse.fields.movementType')"
         field="movementType"
         style="width: 10%"
       >
@@ -85,7 +86,7 @@
           <TagMovementType :movementType="slotProps.data.movementType" />
         </template>
       </Column>
-      <Column field="quantity" header="Quantitat" style="width: 8%"></Column>
+      <Column field="quantity" :header="t('warehouse.fields.quantity')" style="width: 8%"></Column>
       <Column header="" style="width: 4%">
         <template #body="slotProps">
           <Button
@@ -122,6 +123,7 @@ import { useExerciseStore } from "../../shared/store/exercise";
 import Services from "../services";
 import { Lot } from "../types";
 import { onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import {
   formatDateForQueryParameter,
@@ -129,6 +131,7 @@ import {
 } from "../../../utils/functions";
 
 const toast = useToast();
+const { t } = useI18n();
 const router = useRouter();
 const store = useStore();
 const stockMovementStore = useStockMovementStore();
@@ -150,7 +153,7 @@ const filterBodyWidth: FilterBodyWidth = {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MAP,
-    title: "Moviments de magatzem",
+    title: t("warehouse.stockMovements.title"),
   });
   await exerciseStore.fetchAll();
   await referenceStore.fetchReferences();
@@ -222,8 +225,8 @@ const filterMovements = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("warehouse.messages.invalidFilter"),
+      detail: t("warehouse.messages.selectPeriod"),
       life: 5000,
     });
   }

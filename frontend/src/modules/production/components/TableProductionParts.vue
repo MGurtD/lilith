@@ -16,10 +16,10 @@
     <template #header>
       <slot name="header"></slot>
     </template>
-    <template #empty> No s'han trobat tiquets. </template>
-    <template #loading> Carregant tiquets. Si us plau espera. </template>
+    <template #empty> {{ t("production.components.noSHanTrobatTiquets") }} </template>
+    <template #loading> {{ t("production.components.carregantTiquetsSiUsPlauEspera") }} </template>
 
-    <Column field="operatorId" header="Operari" style="width: 20%" :showFilterMenu="false">
+    <Column field="operatorId" :header="t('production.components.operari')" style="width: 20%" :showFilterMenu="false">
       <template #body="slotProps">
         {{ slotProps.data.operatorId
           ? plantModelStore.getOperatorNameById(slotProps.data.operatorId)
@@ -31,7 +31,7 @@
           :options="operatorOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Tots"
+          :placeholder="t('production.components.tots')"
           showClear
           @change="filterCallback()"
           class="w-full"
@@ -40,7 +40,7 @@
       </template>
     </Column>
 
-    <Column field="workcenterId" header="Màquina" style="width: 20%" :showFilterMenu="false">
+    <Column field="workcenterId" :header="t('production.components.maquina')" style="width: 20%" :showFilterMenu="false">
       <template #body="slotProps">
         {{ plantModelStore.getWorkcenterNameById(slotProps.data.workcenterId) }}
       </template>
@@ -50,7 +50,7 @@
           :options="workcenterOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Totes"
+          :placeholder="t('production.components.totes')"
           showClear
           @change="filterCallback()"
           class="w-full"
@@ -59,7 +59,7 @@
       </template>
     </Column>
 
-    <Column field="workOrderPhaseId" header="Fase/Estat" style="width: 25%" :showFilterMenu="false">
+    <Column field="workOrderPhaseId" :header="t('production.components.faseEstat')" style="width: 25%" :showFilterMenu="false">
       <template #body="slotProps">
         {{ getWorkOrderPhaseName(slotProps.data) }}
       </template>
@@ -67,14 +67,14 @@
         <InputText
           v-model="filterModel.value"
           @input="filterCallback()"
-          placeholder="Cercar fase..."
+          :placeholder="t('production.components.cercarFase')"
           class="w-full"
           size="small"
         />
       </template>
     </Column>
 
-    <Column field="date" header="Data" style="width: 10%" sortable :showFilterMenu="false">
+    <Column field="date" :header="t('production.components.data')" style="width: 10%" sortable :showFilterMenu="false">
       <template #body="slotProps">
         {{ formatDateTime(slotProps.data.date) }}
       </template>
@@ -82,25 +82,25 @@
         <InputText
           v-model="filterModel.value"
           @input="filterCallback()"
-          placeholder="dd/mm/aa..."
+          :placeholder="t('production.components.ddMmAa')"
           class="w-full"
           size="small"
         />
       </template>
     </Column>
 
-    <Column field="quantity" header="Quantitat" style="width: 7.5%" sortable :showFilterMenu="false">
+    <Column field="quantity" :header="t('production.components.quantitat')" style="width: 7.5%" sortable :showFilterMenu="false">
       <template #filter> <span /> </template>
     </Column>
 
-    <Column field="workcenterTime" header="Temps màquina" style="width: 10%" sortable :showFilterMenu="false">
+    <Column field="workcenterTime" :header="t('production.components.tempsMaquina')" style="width: 10%" sortable :showFilterMenu="false">
       <template #body="slotProps">
         {{ slotProps.data.workcenterTime }} min.
       </template>
       <template #filter> <span /> </template>
     </Column>
 
-    <Column field="operatorTime" header="Temps operari" style="width: 10%" sortable :showFilterMenu="false">
+    <Column field="operatorTime" :header="t('production.components.tempsOperari')" style="width: 10%" sortable :showFilterMenu="false">
       <template #body="slotProps">
         {{ slotProps.data.operatorTime }} min.
       </template>
@@ -121,6 +121,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref, computed } from "vue";
 import { FilterMatchMode } from "@primevue/core/api";
 import { usePlantModelStore } from "../store/plantmodel";
@@ -142,7 +145,7 @@ const filters = ref({
 const operatorOptions = computed(() => {
   if (!plantModelStore.operators) return [];
   return plantModelStore.operators.map((o) => ({
-    label: `${o.name} ${o.surname}`,
+    label: t("production.components.operatorName", { name: o.name, surname: o.surname }),
     value: o.id,
   }));
 });

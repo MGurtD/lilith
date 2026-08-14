@@ -16,7 +16,7 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-l text-900 font-bold">Adreces</span>
+          <span class="text-l text-900 font-bold">{{ t('sales.components.adreces') }}</span>
           <div>
             <Button
               :icon="PrimeIcons.PLUS"
@@ -26,15 +26,15 @@
           </div>
         </div>
       </template>
-      <Column header="Nom" field="name" style="width: 25%"></Column>
-      <Column header="Província" field="region" style="width: 25%"></Column>
-      <Column header="Municipi" field="city" style="width: 25%"></Column>
+      <Column :header="t('sales.components.nom')" field="name" style="width: 25%"></Column>
+      <Column :header="t('sales.components.provincia')" field="region" style="width: 25%"></Column>
+      <Column :header="t('sales.components.municipi')" field="city" style="width: 25%"></Column>
       <Column
-        header="Codi Postal"
+        :header="t('sales.components.codiPostal')"
         field="postalCode"
         style="width: 25%"
       ></Column>
-      <Column header="Principal">
+      <Column :header="t('sales.components.principal')">
         <template #body="slotProps">
           <BooleanColumn :value="slotProps.data.main" :show-color="false" />
         </template>
@@ -52,6 +52,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { getNewUuid } from "../../../utils/functions";
 import FormCustomerAddress from "./FormCustomerAddress.vue";
@@ -63,6 +64,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useCustomersStore } from "../store/customers";
 
+const { t } = useI18n();
 const confirm = useConfirm();
 const customerStore = useCustomersStore();
 const { customer } = storeToRefs(customerStore);

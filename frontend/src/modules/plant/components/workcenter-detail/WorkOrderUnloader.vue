@@ -17,7 +17,7 @@
             <i :class="PrimeIcons.STOP" class="text-red-500 text-xl"></i>
           </div>
           <div class="flex flex-column">
-            <span class="font-bold text-lg text-900">Finalitzar Fase</span>
+            <span class="font-bold text-lg text-900">{{ $t("plant.finalitzar-fase") }}</span>
             <span class="text-sm text-500">{{
               loadedPhase?.phaseDescription
             }}</span>
@@ -25,20 +25,20 @@
         </div>
         <div class="flex gap-4 flex-wrap">
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold">Ordre</span>
+            <span class="text-xs text-500 uppercase font-semibold">{{ $t("plant.ordre") }}</span>
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.workOrderCode
             }}</span>
           </div>
           <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold">Ref.</span>
+            <span class="text-xs text-500 uppercase font-semibold">{{ $t("plant.ref-2") }}</span>
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.salesReferenceDisplay
             }}</span>
           </div>
           <div class="flex flex-column align-items-end">
             <span class="text-xs text-500 uppercase font-semibold"
-              >Quantitat</span
+              >{{ $t("plant.quantitat") }}</span
             >
             <span class="font-medium text-900 text-lg">{{
               loadedWorkOrder?.plannedQuantity
@@ -64,9 +64,7 @@
         class="options-section"
       >
         <h4 class="section-title">
-          <i :class="PrimeIcons.COG" class="mr-2"></i>
-          Opcions
-        </h4>
+          <i :class="PrimeIcons.COG" class="mr-2"></i>{{ $t("plant.opcions") }}</h4>
         <div class="options-list">
           <div class="option-item">
             <Checkbox
@@ -105,7 +103,7 @@
       <div class="actions-panel">
         <Button
           :icon="PrimeIcons.TIMES"
-          label="Cancel·lar"
+          :label='$t("plant.cancel-lar")'
           severity="secondary"
           @click="onCancel"
           :disabled="isValidating"
@@ -113,7 +111,7 @@
         />
         <Button
           :icon="PrimeIcons.PAUSE"
-          label="Pausar"
+          :label='$t("plant.pausar")'
           severity="warning"
           :disabled="isValidating"
           :loading="isValidating && !closingPhase"
@@ -122,7 +120,7 @@
         />
         <Button
           :icon="PrimeIcons.STOP"
-          label="Finalitzar"
+          :label='$t("plant.finalitzar")'
           severity="danger"
           :disabled="isValidating"
           :loading="isValidating && closingPhase"
@@ -135,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { watch, computed, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -145,6 +144,8 @@ import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 import MaterialConsumptionDialog from "./MaterialConsumptionDialog.vue";
 import type { ConsumeStockEntry } from "../../../warehouse/types";
 import ProductionServices from "../../../production/services";
+
+const { t } = useI18n();
 
 interface Props {
   visible: boolean;
@@ -246,8 +247,8 @@ const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
     if (!success) {
       toast.add({
         severity: "error",
-        summary: "Error",
-        detail: "No s'ha pogut registrar el consum de materials",
+        summary: t("plant.error"),
+        detail: t("plant.messages.materialConsumptionRegistrationError"),
         life: 6000,
       });
       return;
@@ -263,8 +264,8 @@ const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
     console.error("Error consuming phase stock:", error);
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "Error de connexió al registrar el consum",
+      summary: t("plant.error"),
+      detail: t("plant.messages.consumptionConnectionError"),
       life: 6000,
     });
   }
@@ -274,8 +275,8 @@ const onUnload = async (closePhase: boolean) => {
   if (!isFormValid.value) {
     toast.add({
       severity: "warn",
-      summary: "Formulari incomplet",
-      detail: "Si us plau, omple tots els camps obligatoris",
+      summary: t("plant.formulari-incomplet"),
+      detail: t("plant.si-us-plau-omple-tots-els-camps-obligatoris"),
       life: 4000,
     });
     return;
@@ -292,7 +293,7 @@ const onUnload = async (closePhase: boolean) => {
     if (!validation.valid) {
       toast.add({
         severity: "warn",
-        summary: "Validació de quantitat",
+        summary: t("plant.validacio-de-quantitat"),
         detail: validation.error,
         life: 6000,
       });
@@ -305,8 +306,8 @@ const onUnload = async (closePhase: boolean) => {
     if (!statusId) {
       toast.add({
         severity: "error",
-        summary: "Error",
-        detail: "No s'ha pogut determinar l'estat de sortida de la fase",
+        summary: t("plant.error"),
+        detail: t("plant.messages.phaseExitStatusError"),
         life: 6000,
       });
       return;
@@ -330,8 +331,8 @@ const onUnload = async (closePhase: boolean) => {
       ) {
         toast.add({
           severity: "warn",
-          summary: "Activitat requerida",
-          detail: "Selecciona una activitat per a la fase següent",
+          summary: t("plant.activitat-requerida"),
+          detail: t("plant.selecciona-una-activitat-per-a-la-fase-seguent"),
           life: 4000,
         });
         return;
@@ -366,9 +367,8 @@ const onUnload = async (closePhase: boolean) => {
       if (!allProvisioned) {
         toast.add({
           severity: "error",
-          summary: "Materials no aprovisionats",
-          detail:
-            "Tots els materials han d'estar aprovisionats abans de finalitzar la fase",
+          summary: t("plant.materials-no-aprovisionats"),
+          detail: t("plant.messages.materialsMustBeProvisioned"),
           life: 6000,
         });
         return;

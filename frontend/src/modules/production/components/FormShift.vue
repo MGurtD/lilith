@@ -3,21 +3,24 @@
     <section class="two-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         v-model="shift.name"
         :class="{
           'p-invalid': validation.errors.baseAmount,
         }"
       ></BaseInput>
       <div class="mb-4">
-        <label class="block text-900 mb-2">Deshabilitat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.deshabilitat") }}</label>
         <Checkbox v-model="shift.disabled" :binary="true" />
       </div>
     </section>
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
+    <Button :label="t('production.components.confirmar')" @click="submitForm" style="float: right" />
   </form>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Shift } from "../types";
@@ -41,8 +44,8 @@ const toast = useToast();
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
 });
 const validation = ref({
   result: false,
@@ -65,7 +68,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

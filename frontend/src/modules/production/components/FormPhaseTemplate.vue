@@ -1,25 +1,27 @@
 <template>
   <form v-if="phaseTemplate">
     <div class="grid_add_row_button">
-      <Button label="Guardar" size="small" @click="submitForm" />
+      <Button :label="t('common.save')" size="small" @click="submitForm" />
       <br />
     </div>
     <section class="three-columns">
       <div>
         <BaseInput
-          label="Nom"
+          :label="t('phaseTemplates.fields.name')"
           v-model="phaseTemplate.name"
           :class="{ 'p-invalid': validation.errors.name }"
         />
       </div>
       <div>
         <BaseInput
-          label="Descripció"
+          :label="t('common.description')"
           v-model="phaseTemplate.description"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">
+          {{ t("phaseTemplates.fields.disabled") }}
+        </label>
         <Checkbox v-model="phaseTemplate.disabled" class="w-full" :binary="true" />
       </div>
     </section>
@@ -28,6 +30,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { PhaseTemplate } from "../types";
 import * as Yup from "yup";
 import {
@@ -47,17 +50,21 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string().required("El nom és obligatori"),
-});
+const getSchema = () =>
+  Yup.object().shape({
+    name: Yup.string().required(
+      t("phaseTemplates.validation.nameRequired"),
+    ),
+  });
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
 const validate = () => {
-  const formValidation = new FormValidation(schema);
+  const formValidation = new FormValidation(getSchema());
   validation.value = formValidation.validate(props.phaseTemplate);
 };
 
@@ -72,7 +79,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari invàlid",
+      summary: t("phaseTemplates.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

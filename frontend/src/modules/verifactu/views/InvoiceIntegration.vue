@@ -148,11 +148,11 @@
         <div class="flex align-items-center justify-content-between">
           <div>
             <span class="font-semibold">{{ successCount }}</span>
-            <span class="ml-1">ok</span>
+            <span class="ml-1">{{ t("verifactu.invoiceIntegration.status.success") }}</span>
           </div>
           <div>
             <span class="font-semibold">{{ errorCount }}</span>
-            <span class="ml-1">error</span>
+            <span class="ml-1">{{ t("verifactu.invoiceIntegration.status.error") }}</span>
           </div>
         </div>
         <div class="results-list">
@@ -220,7 +220,7 @@
 
         <div class="flex justify-content-end">
           <Button
-            :label="t('common.close') || 'Close'"
+            :label="t('common.close')"
             @click="batchDialogVisible = false"
           />
         </div>
@@ -399,7 +399,7 @@ const integrateVisibleInvoices = async () => {
           const errMsg =
             response?.errors?.[0] ??
             content?.errorMessage ??
-            "Integration failed";
+            t("verifactu.invoiceIntegration.messages.integrationFailed");
           batchResults.value.push({
             id: inv.id,
             invoiceNumber: String(inv.invoiceNumber ?? ""),
@@ -412,7 +412,7 @@ const integrateVisibleInvoices = async () => {
           break;
         }
       } catch (e: any) {
-        const message = e?.message || "Unexpected error";
+        const message = e?.message || t("verifactu.invoiceIntegration.messages.unexpectedError");
         batchResults.value.push({
           id: inv.id,
           invoiceNumber: String(inv.invoiceNumber ?? ""),

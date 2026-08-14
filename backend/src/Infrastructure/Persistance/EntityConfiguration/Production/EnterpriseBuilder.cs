@@ -20,6 +20,14 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                 .IsRequired()
                 .HasColumnType("varchar")
                 .HasMaxLength(250);
+            builder
+                .Property(b => b.BrandName)
+                .HasColumnType("varchar")
+                .HasMaxLength(60);
+            builder
+                .Property(b => b.PrimaryColor)
+                .HasColumnType("varchar")
+                .HasMaxLength(7);
 
             // Default site (optional)
             builder
@@ -33,10 +41,26 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder
+                .HasOne<Domain.Entities.File>()
+                .WithMany()
+                .HasForeignKey(b => b.LogoMainFileId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder
+                .HasOne<Domain.Entities.File>()
+                .WithMany()
+                .HasForeignKey(b => b.LogoSidebarFileId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName("PK_Enterprise");
 
             builder.HasIndex(builder => builder.Name, "UK_Enterprise_Name");
+            builder
+                .HasIndex(builder => builder.Disabled, "UK_Enterprise_SingleEnabled")
+                .IsUnique()
+                .HasFilter("\"Disabled\" = false");
 
             builder.ToTable("Enterprises");
         }

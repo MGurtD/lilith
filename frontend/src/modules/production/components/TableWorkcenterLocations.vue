@@ -13,13 +13,13 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Ubicacions assignades</span>
+          <span class="text-900 font-bold">{{ t("production.components.ubicacionsAssignades") }}</span>
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
         </div>
       </template>
-      <template #empty>No s'han trobat ubicacions.</template>
-      <template #loading>Carregant ubicacions. Si us plau espera.</template>
-      <Column header="Magatzem" style="width: 40%">
+      <template #empty>{{ t("production.components.noSHanTrobatUbicacions") }}</template>
+      <template #loading>{{ t("production.components.carregantUbicacionsSiUsPlauEspera") }}</template>
+      <Column :header="t('production.components.magatzem')" style="width: 40%">
         <template #body="slotProps">
           {{
             slotProps.data.location?.description ||
@@ -28,7 +28,7 @@
           }}
         </template>
       </Column>
-      <Column header="Ubicació" style="width: 50%">
+      <Column :header="t('production.components.ubicacio')" style="width: 50%">
         <template #body="slotProps">
           {{ slotProps.data.location?.name || "-" }}
         </template>
@@ -46,28 +46,28 @@
 
     <Dialog
       v-model:visible="dialogVisible"
-      header="Vincular ubicació"
+      :header="t('production.components.vincularUbicacio')"
       :closable="true"
       :modal="true"
       :style="{ width: '450px' }"
     >
       <div class="flex flex-column gap-3 mt-3">
         <DropdownWarehousesWithLocations
-          label="Ubicació"
+          :label="t('production.components.ubicacio')"
           v-model="selectedLocationId"
-          placeholder="Selecciona una ubicació"
+          :placeholder="t('production.components.seleccionaUnaUbicacio')"
         />
       </div>
 
       <template #footer>
         <Button
-          label="Cancel·lar"
+          :label="t('production.components.cancellar')"
           :icon="PrimeIcons.TIMES"
           text
           @click="dialogVisible = false"
         />
         <Button
-          label="Guardar"
+          :label="t('production.components.guardar')"
           :icon="PrimeIcons.CHECK"
           @click="onSaveHandler"
         />
@@ -77,6 +77,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { ref } from "vue";
 import { useConfirm } from "primevue/useconfirm";
@@ -109,8 +112,8 @@ const onSaveHandler = () => {
   if (!selectedLocationId.value) {
     toast.add({
       severity: "warn",
-      summary: "Ubicació no seleccionada",
-      detail: "Has de seleccionar una ubicació per continuar.",
+      summary: t("production.components.ubicacioNoSeleccionada"),
+      detail: t("production.components.hasDeSeleccionarUnaUbicacioPerContinuar"),
       life: 5000,
     });
     return;
@@ -122,8 +125,8 @@ const onSaveHandler = () => {
   if (alreadyAssigned) {
     toast.add({
       severity: "warn",
-      summary: "Ubicació duplicada",
-      detail: "Aquesta ubicació ja està assignada a aquesta màquina.",
+      summary: t("production.components.ubicacioDuplicada"),
+      detail: t("production.components.aquestaUbicacioJaEstaAssignadaAAquestaMaquina"),
       life: 5000,
     });
     return;
@@ -138,7 +141,9 @@ const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols desvincular la ubicació '${entity.location?.name || entity.locationId}'?`,
+    message: t("production.messages.confirmUnlinkLocation", {
+      name: entity.location?.name || entity.locationId,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

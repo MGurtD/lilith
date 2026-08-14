@@ -2,11 +2,10 @@ import { defineStore } from "pinia";
 import { AuthenticationResponse, User } from "../types";
 import { MenuItem, SidebarConfig } from "../types/component";
 import { jwtDecode } from "jwt-decode";
-import { UserService } from "../services/user.service";
+import { UserService } from "../modules/system/services/user.service";
 import { PrimeIcons } from "@primevue/core/api";
-import { getMenusByRole } from "./raw.menus"; // fallback
-import { AppProfileService } from "../services/profile.service";
-import { UserMenuResponse, MenuNode } from "../types/profile";
+import { AppProfileService } from "../modules/system/services/profile.service";
+import { UserMenuResponse, MenuNode } from "../modules/system/types/profile";
 import { Exercise } from "../modules/shared/types";
 import { useUserFilterStore } from "./userfilter";
 import { useExerciseStore } from "../modules/shared/store/exercise";
@@ -31,6 +30,7 @@ export const useStore = defineStore("applicationStore", {
       authorization: undefined as AuthenticationResponse | undefined,
       user: undefined as User | undefined,
       role: undefined as string | undefined,
+      brandName: "Temges",
       isWaiting: false,
       sidebar: {
         collapsed: false,
@@ -72,22 +72,23 @@ export const useStore = defineStore("applicationStore", {
       this.exercisePicker.exercise = undefined;
       this.exercisePicker.dates = undefined;
     },
+    setBrandName(brandName: string) {
+      this.brandName = brandName || "Temges";
+      document.title = this.currentMenuItem.title
+        ? this.brandName + " - " + this.currentMenuItem.title
+        : this.brandName;
+    },
     setMenuItem(menu: MenuItem) {
       this.currentMenuItem = menu;
 
-      if (menu.title && menu.title !== "") {
-        document.title = `Temges - ${menu.title}`;
-      }
-    },
-    setMenusByRole(user: User) {
-      // legacy fallback
-      this.sidebar.menus = getMenusByRole(user);
+      document.title = menu.title
+        ? this.brandName + " - " + menu.title
+        : this.brandName;
     },
     async loadUserMenus(user: User) {
       const userMenu: UserMenuResponse | undefined =
         await AppProfileService.GetUserMenu(user.id);
       if (!userMenu || !userMenu.items) {
-        //this.setMenusByRole(user); // fallback to legacy static menus
         return;
       }
 
@@ -129,53 +130,6 @@ export const useStore = defineStore("applicationStore", {
         }
       }
     },
-    /*async loadUserMenus(user: User) {
-      const userMenu: UserMenuResponse | undefined =
-        await AppProfileService.GetUserMenu(user.id);
-      if (!userMenu || !userMenu.items) {
-        //this.setMenusByRole(user); // fallback to legacy static menus
-        return;
-      }
-
-      const transform = (node: MenuNode): any => {
-        const hasChildren = node.children && node.children.length > 0;
-        const entry: any = {
-          icon: node.icon || undefined,
-          title: node.title,
-          href: node.route ? node.route : "",
-        };
-        if (hasChildren) {
-          entry.child = node.children!.map(transform);
-        }
-        return entry;
-      };
-
-      // Exclude technical header_main if backend included it as a MenuNode
-      const roots = userMenu.items
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map(transform);
-
-      this.menus = [...roots];
-
-      // Apply default screen highlighting if current still Home
-      if (userMenu.defaultScreen) {
-        const stack: MenuNode[] = [...userMenu.items];
-        while (stack.length) {
-          const n = stack.pop()!;
-          if (n.key === userMenu.defaultScreen && n.route) {
-            if (this.currentMenuItem?.title === "Home") {
-              this.currentMenuItem = {
-                title: n.title,
-                icon: n.icon || undefined,
-              } as any;
-            }
-            break;
-          }
-          if (n.children && n.children.length) stack.push(...n.children);
-        }
-      }
-    },*/
-
     // Language helpers
     async initLanguage() {
       const fromLs = localStorage.getItem(localStorageLangKey);
@@ -226,7 +180,7 @@ export const useStore = defineStore("applicationStore", {
         const service = new UserService();
         this.user = await service.GetById(jwtDecoded.id);
         if (this.user) {
-          // Load dynamic menus (with fallback)
+          // Load dynamic menus
           await this.loadUserMenus(this.user);
 
           // Get user filters

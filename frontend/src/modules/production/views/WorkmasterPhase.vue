@@ -10,8 +10,8 @@
   <main class="main" v-if="workmasterPhase">
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Pasos</Tab>
-        <Tab value="1">Materials</Tab>
+        <Tab value="0">{{ pt("Pasos") }}</Tab>
+        <Tab value="1">{{ pt("Materials") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -55,6 +55,9 @@
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkmasterPhase from "../components/FormWorkmasterPhase.vue";
 import TableWorkmasterPhaseDetails from "../components/TableWorkmasterPhaseDetails.vue";
 import FormWorkmasterPhaseDetail from "../components/FormWorkmasterPhaseDetail.vue";
@@ -89,7 +92,7 @@ const phaseId = ref("");
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Linea",
+  title: pt("Linea"),
   closable: true,
   position: "center",
   modal: true,
@@ -101,11 +104,12 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ruta de fabricació`;
+  pageTitle = t("production.detail.workmasterTitle");
   if (workmaster.value && workmasterPhase.value) {
-    pageTitle = `${pageTitle} ${referenceStore.getFullName(
-      workmaster.value.reference!,
-    )} - Fase ${workmasterPhase.value.code}`;
+    pageTitle = t("production.detail.workmasterPhaseTitle", {
+      name: referenceStore.getFullName(workmaster.value.reference!),
+      code: workmasterPhase.value.code,
+    });
   }
 
   store.setMenuItem({
@@ -127,8 +131,8 @@ const onWorkmasterPhaseSubmit = async (phase: WorkMasterPhase) => {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Fase actualitzada",
-      detail: `La fase ${phase.code} ha estat actualitzada correctament`,
+      summary: pt("Fase actualitzada"),
+      detail: pt("Fase actualitzada correctament"),
       life: 10000,
     });
   }
@@ -148,14 +152,14 @@ const onAddDetail = (detail: WorkMasterPhaseDetail) => {
   formAction.value = FormActionMode.CREATE;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Afegir pas de fabricació";
+  dialogOptions.title = t("production.detail.createPhaseStep");
   dialogOptions.visible = true;
 };
 const onEditDetail = (detail: WorkMasterPhaseDetail) => {
   formAction.value = FormActionMode.EDIT;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Modificar pas de fabricació";
+  dialogOptions.title = t("production.detail.editPhaseStep");
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkMasterPhaseDetail) => {
@@ -189,14 +193,14 @@ const onAddBomItem = (bomItem: WorkMasterPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.CREATE;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Afegir material";
+  dialogOptions.title = t("production.detail.createMaterial");
   dialogOptions.visible = true;
 };
 const onEditBomItem = (bomItem: WorkMasterPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.EDIT;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Modificar material";
+  dialogOptions.title = t("production.detail.editMaterial");
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkMasterPhaseBillOfMaterials) => {

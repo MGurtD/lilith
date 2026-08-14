@@ -37,6 +37,8 @@ namespace Domain.Entities.Sales
 
         public string UserNotes { get; set; }
 
+        public ICollection<SalesOrderDetailPhaseProfit> PhaseProfits { get; set; } = new List<SalesOrderDetailPhaseProfit>();
+
         public SalesOrderDetail() 
         {
             Description = string.Empty;

@@ -1,7 +1,7 @@
 <template>
   <form v-if="machineStatus">
     <div class="flex justify-content-end">
-      <Button label="Guardar" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" @click="submitForm" />
     </div>
 
     <!-- Fila 1: Camps de text -->
@@ -9,7 +9,7 @@
       <div class="col-12 md:col-6 lg:col-3">
         <BaseInput
           class="mb-2"
-          label="Nom"
+          :label="t('production.components.nom')"
           id="name"
           v-model="machineStatus.name"
           :class="{ 'p-invalid': validation.errors.name }"
@@ -18,14 +18,14 @@
       <div class="col-12 md:col-6 lg:col-3">
         <BaseInput
           class="mb-2"
-          label="Descripció"
+          :label="t('production.components.descripcio')"
           id="description"
           v-model="machineStatus.description"
           :class="{ 'p-invalid': validation.errors.description }"
         />
       </div>
       <div class="col-12 md:col-6 lg:col-3">
-        <label class="block text-900 mb-2">Color</label>
+        <label class="block text-900 mb-2">{{ t("production.components.color") }}</label>
         <ColorPicker
           v-model="machineStatus.color"
           class="mb-2"
@@ -33,10 +33,10 @@
         />
       </div>
       <div class="col-12 md:col-6 lg:col-3">
-        <label class="block text-900 mb-2">Icona</label>
+        <label class="block text-900 mb-2">{{ t("production.components.icona") }}</label>
         <IconPicker
           v-model="machineStatus.icon"
-          placeholder="Selecciona una icona"
+          :placeholder="t('production.components.seleccionaUnaIcona')"
         />
       </div>
     </div>
@@ -44,27 +44,27 @@
     <!-- Fila 2: Checkboxes -->
     <div class="grid mt-3">
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Aturada</label>
+        <label class="block text-900 mb-2">{{ t("production.components.aturada") }}</label>
         <Checkbox v-model="machineStatus.stopped" :binary="true" />
       </div>
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Operaris</label>
+        <label class="block text-900 mb-2">{{ t("production.components.operaris") }}</label>
         <Checkbox v-model="machineStatus.operatorsAllowed" :binary="true" />
       </div>
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Tancada</label>
+        <label class="block text-900 mb-2">{{ t("production.components.tancada") }}</label>
         <Checkbox v-model="machineStatus.closed" :binary="true" />
       </div>
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Preferida</label>
+        <label class="block text-900 mb-2">{{ t("production.components.preferida") }}</label>
         <Checkbox v-model="machineStatus.preferred" :binary="true" />
       </div>
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Permet OF</label>
+        <label class="block text-900 mb-2">{{ t("production.components.permetOf") }}</label>
         <Checkbox v-model="machineStatus.workOrderAllowed" :binary="true" />
       </div>
       <div class="col-6 md:col-4 lg:col-2">
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="machineStatus.disabled" :binary="true" />
       </div>
     </div>
@@ -72,6 +72,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import IconPicker from "../../../components/IconPicker.vue";
@@ -104,12 +107,12 @@ const { machineStatus } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatoria")
-    .max(250, "La descripció pot superar els 250 carácters"),
-  color: Yup.string().required("El color es obligatori"),
+    .required(t("production.validation.laDescripcioEsObligatoria"))
+    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
+  color: Yup.string().required(t("production.validation.elColorEsObligatori")),
 });
 const validation = ref({
   result: false,
@@ -132,7 +135,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

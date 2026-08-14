@@ -21,13 +21,13 @@
             class="table-filter-prepend-field table-filter-prepend-field--md"
           >
             <label class="filter-label table-filter-prepend-label"
-              >Període</label
+              >{{ pt("Període") }}</label
             >
             <DatePicker
               v-model="filter.dates"
               selectionMode="range"
               dateFormat="dd/mm/yy"
-              placeholder="Seleccioni un període"
+              :placeholder="pt('Seleccioni un període')"
               showIcon
               class="w-full"
               size="small"
@@ -52,6 +52,9 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormCreateWorkorder from "../components/FormCreateWorkorder.vue";
 import TableWorkorders from "../components/TableWorkorders.vue";
 import TableFilter from "../../../components/tables/TableFilter.vue";
@@ -101,31 +104,31 @@ const filter = ref({
 const filterConfig = computed<FilterConfig[]>(() => [
   {
     key: "customerId",
-    label: "Client",
+    label: pt("Client"),
     type: "select",
     options: customersStore.customers || [],
     optionLabel: "comercialName",
     optionValue: "id",
-    placeholder: "Selecciona un client",
+    placeholder: pt("Selecciona un client"),
     size: "md",
     row: 0,
   },
   {
     key: "code",
-    label: "Codi",
+    label: pt("Codi"),
     type: "text",
-    placeholder: "Codi",
+    placeholder: pt("Codi"),
     size: "md",
     row: 0,
   },
   {
     key: "statusId",
-    label: "Estat",
+    label: pt("Estat"),
     type: "select",
     options: lifecycleStore.lifecycle?.statuses || [],
     optionLabel: "name",
     optionValue: "id",
-    placeholder: "Selecciona un estat",
+    placeholder: pt("Selecciona un estat"),
     size: "md",
     row: 0,
   },
@@ -176,8 +179,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: pt("Filtre invàlid"),
+      detail: pt("Seleccioni un període"),
       life: 5000,
     });
   }
@@ -185,7 +188,7 @@ const filterData = async () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear ordre",
+  title: pt("Crear ordre"),
   closable: true,
   position: "center",
   modal: true,
@@ -210,7 +213,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Ordres de fabricació",
+    title: pt("Ordres de fabricació"),
   });
 
   getUserFilter();
@@ -255,7 +258,7 @@ const createWorkOrder = async () => {
 
 const deleteButton = (workorder: WorkOrder) => {
   confirm.require({
-    message: `Está segur que vol eliminar la ordre ${workorder.code}?`,
+    message: pt("Confirmar l'eliminació de l'ordre de fabricació"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -265,7 +268,7 @@ const deleteButton = (workorder: WorkOrder) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: pt("Eliminada"),
           life: 3000,
         });
         filterData();

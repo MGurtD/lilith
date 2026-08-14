@@ -13,9 +13,9 @@
     <template #header>
       <slot name="header"></slot>
     </template>
-    <Column field="quantity" header="Un." style="width: 3%" />
+    <Column field="quantity" :header="t('sales.components.un')" style="width: 3%" />
     <Column
-      header="Referencia"
+      :header="t('sales.components.referencia')"
       field="reference.code"
       sortable
       style="width: 15%"
@@ -24,8 +24,8 @@
         <LinkReference :id="slotProps.data.referenceId" />
       </template>
     </Column>
-    <Column field="description" header="Descripció" style="width: 25%" />
-    <Column field="workOrderId" header="Ordre fabr." style="width: 8%">
+    <Column field="description" :header="t('sales.components.descripcio')" style="width: 25%" />
+    <Column field="workOrderId" :header="t('sales.components.ordreFabr')" style="width: 8%">
       <template #body="slotProps">
         <div v-if="!isWorkOrdersLoaded">
           <Button size="small" icon="pi pi-spin pi-spinner" disabled />
@@ -55,22 +55,22 @@
         </div>
       </template>
     </Column>
-    <Column field="unitCost" header="Cost un. teo." style="width: 8%">
+    <Column field="unitCost" :header="t('sales.components.costUnTeo')" style="width: 8%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.unitCost) }}
       </template>
     </Column>
-    <Column field="totalCost" header="Cost teòric" style="width: 8%">
+    <Column field="totalCost" :header="t('sales.components.costTeoric')" style="width: 8%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.totalCost) }}
       </template>
     </Column>
-    <Column header="Cost un. r." style="width: 8%">
+    <Column :header="t('sales.components.costUnR')" style="width: 8%">
       <template #body="slotProps">
         {{ formatCurrency(getUnitRealCost(slotProps.data)) }}
       </template>
     </Column>
-    <Column header="Cost real" style="width: 6%">
+    <Column :header="t('sales.components.costReal')" style="width: 6%">
       <template #body="slotProps">
         {{
           formatCurrency(
@@ -79,18 +79,18 @@
         }}
       </template>
     </Column>
-    <Column field="discount" header="% Bene." style="width: 6%">
+    <Column field="discount" :header="t('sales.components.bene')" style="width: 6%">
       <template #body="slotProps"> {{ slotProps.data.profit }} % </template>
     </Column>
-    <Column field="profit" header="% Desc." style="width: 6%">
+    <Column field="profit" :header="t('sales.components.desc')" style="width: 6%">
       <template #body="slotProps"> {{ slotProps.data.discount }} % </template>
     </Column>
-    <Column header="Preu un." style="width: 6%">
+    <Column :header="t('sales.components.preuUn')" style="width: 6%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.unitPrice) }}
       </template>
     </Column>
-    <Column field="amount" header="Total" style="width: 6%">
+    <Column field="amount" :header="t('sales.components.total')" style="width: 6%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}
       </template>
@@ -107,7 +107,7 @@
     </Column>
     <template #footer>
       <div class="total-footer">
-        <span class="total-label">Total</span>
+        <span class="total-label">{{ t('sales.components.total') }}</span>
         <span class="total-value">{{ formatCurrency(totalAmount) }}</span>
       </div>
     </template>
@@ -128,6 +128,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import LinkReference from "../../shared/components/LinkReference.vue";
 import { computed, ref } from "vue";
 import FormCreateWorkorder from "../../production/components/FormCreateWorkorder.vue";
@@ -152,6 +153,7 @@ import {
 } from "../../../utils/functions";
 import { Lifecycle } from "../../shared/types";
 
+const { t } = useI18n();
 const props = defineProps<{
   salesOrder: SalesOrderHeader;
   salesOrderDetails: Array<SalesOrderDetail> | undefined;
@@ -195,7 +197,7 @@ var selectedDetail = undefined as SalesOrderDetail | undefined;
 const dialogOptions = ref({
   closable: true,
   modal: true,
-  title: "Generar ordre de fabricació",
+  title: t('sales.components.generarOrdreDeFabricacio'),
   visible: false,
 } as DialogOptions);
 const referenceActiveWorkMasters = ref([] as Array<WorkMaster>);
@@ -221,7 +223,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, salesOrderDetail: SalesOrderDetail) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la referència?`,
+    message: t("sales.componentMessages.deleteReference"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

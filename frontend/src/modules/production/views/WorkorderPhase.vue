@@ -11,9 +11,9 @@
   <main class="main" v-if="workorderPhase">
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Pasos</Tab>
-        <Tab value="1">Materials</Tab>
-        <Tab value="2">Comentaris</Tab>
+        <Tab value="0">{{ pt("Pasos") }}</Tab>
+        <Tab value="1">{{ pt("Materials") }}</Tab>
+        <Tab value="2">{{ pt("Comentaris") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -40,7 +40,7 @@
               <template #title>
                 <div class="comment-header">
                   <i :class="PrimeIcons.COMMENT" class="comment-icon"></i>
-                  <span>Comentari de Fase</span>
+                  <span>{{ pt("Comentari de Fase") }}</span>
                 </div>
               </template>
               <template #content>
@@ -49,9 +49,9 @@
                 </div>
                 <div v-else class="empty-comment">
                   <i :class="PrimeIcons.INFO_CIRCLE" class="empty-icon"></i>
-                  <p class="empty-text">Aquesta fase no té cap comentari</p>
+                  <p class="empty-text">{{ pt("Aquesta fase no té cap comentari") }}</p>
                   <small class="empty-subtext">
-                    Els comentaris es poden afegir des del mòdul de planta durant la fabricació
+                    {{ pt("Els comentaris es poden afegir des del mòdul de planta durant la fabricació") }}
                   </small>
                 </div>
               </template>
@@ -81,6 +81,9 @@
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkOrderPhase from "../components/FormWorkorderPhase.vue";
 import TableWorkOrderPhaseDetails from "../components/TableWorkorderPhaseDetails.vue";
 import FormWorkOrderPhaseDetail from "../components/FormWorkorderPhaseDetail.vue";
@@ -117,7 +120,7 @@ const workorderPhaseForm =
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Fase",
+  title: pt("Fase"),
   closable: true,
   position: "center",
   modal: true,
@@ -129,9 +132,12 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ordre de fabricació`;
+  pageTitle = t("production.detail.workorderTitle");
   if (workorder.value && workorderPhase.value) {
-    pageTitle = `${pageTitle} ${workorder.value.code} - Fase ${workorderPhase.value.code}`;
+    pageTitle = t("production.detail.workorderPhaseTitle", {
+      code: workorder.value.code,
+      phaseCode: workorderPhase.value.code,
+    });
   }
 
   store.setMenuItem({
@@ -157,8 +163,8 @@ const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
 
     toast.add({
       severity: "success",
-      summary: "Fase actualitzada",
-      detail: `La fase ${phase.code} ha estat actualitzada correctament`,
+      summary: pt("Fase actualitzada"),
+      detail: pt("Fase actualitzada correctament"),
       life: 10000,
     });
   }
@@ -178,14 +184,14 @@ const onAddDetail = (detail: WorkOrderPhaseDetail) => {
   formAction.value = FormActionMode.CREATE;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Afegir pas de fabricació";
+  dialogOptions.title = t("production.detail.createPhaseStep");
   dialogOptions.visible = true;
 };
 const onEditDetail = (detail: WorkOrderPhaseDetail) => {
   formAction.value = FormActionMode.EDIT;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Modificar pas de fabricació";
+  dialogOptions.title = t("production.detail.editPhaseStep");
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkOrderPhaseDetail) => {
@@ -219,14 +225,14 @@ const onAddBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.CREATE;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Afegir material";
+  dialogOptions.title = t("production.detail.createMaterial");
   dialogOptions.visible = true;
 };
 const onEditBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.EDIT;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Modificar material";
+  dialogOptions.title = t("production.detail.editMaterial");
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkOrderPhaseBillOfMaterials) => {

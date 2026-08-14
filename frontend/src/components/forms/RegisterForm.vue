@@ -8,7 +8,7 @@
         {{ $t("login.register") }}
       </h1>
       <p class="text-600 text-lg">
-        {{ $t("login.registerSubtitle") || "Crea el teu compte per començar" }}
+        {{ $t("login.registerSubtitle") }}
       </p>
     </div>
 
@@ -131,10 +131,10 @@
 
       <div class="text-center">
         <span class="text-600">{{
-          $t("login.hasAccount") || "Ja tens compte?"
+          $t("login.hasAccount")
         }}</span>
         <Button
-          :label="$t('login.signIn') || 'Inicia sessió'"
+          :label="$t('login.signIn')"
           link
           class="login-link p-0 ml-2"
           @click="loginClick"
@@ -152,9 +152,11 @@ import { required, email } from "@vuelidate/validators";
 import { useToast } from "primevue/usetoast";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
+import { useI18n } from "vue-i18n";
 
 const emits = defineEmits(["register", "loginClick"]);
 const toast = useToast();
+const { t } = useI18n();
 
 const state = reactive({
   firstName: "",
@@ -188,7 +190,7 @@ const register = () => {
   if (!arePasswordsEqual) {
     toast.add({
       severity: "error",
-      summary: "Les contrasenyes introduïdes no coincideixen",
+      summary: t("login.passwordsDoNotMatch"),
     });
     return;
   }

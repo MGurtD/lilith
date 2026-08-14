@@ -3,7 +3,7 @@
     <section class="four-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('production.components.nom')"
         id="name"
         v-model="workcenterType.name"
         :class="{
@@ -12,7 +12,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('production.components.descripcio')"
         id="description"
         v-model="workcenterType.description"
         :class="{
@@ -23,13 +23,13 @@
         :type="BaseInputType.NUMERIC"
         :minFractionDigits="2"
         class="mb-2"
-        label="Marge de benefici"
+        :label="t('production.components.margeDeBenefici')"
         id="profitPercentage"
         v-model="workcenterType.profitPercentage"
         suffix="%"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox
           v-model="workcenterType.disabled"
           class="w-full"
@@ -39,12 +39,15 @@
     </section>
 
     <div class="mt-2">
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" class="mr-2" @click="submitForm" />
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Area, WorkcenterType } from "../types";
@@ -77,11 +80,11 @@ const { workcenterType } = storeToRefs(plantModelStore);
 
 const schema = Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("production.validation.elNomEsObligatori"))
+    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
+    .required(t("production.validation.laDescripcioEsObligatori"))
+    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
 });
 const validation = ref({
   result: false,
@@ -104,7 +107,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });

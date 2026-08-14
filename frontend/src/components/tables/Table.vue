@@ -7,6 +7,7 @@ import TableViewConfig from "./TableViewConfig.vue";
 import TableAttachmentViewer from "./TableAttachmentViewer.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
+import ProgressColumn from "@/components/ProgressColumn.vue";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
 import type { DataTableRowClickEvent } from "primevue/datatable";
@@ -71,6 +72,7 @@ const props = withDefaults(
     filterValues?: any;
     filterBodyWidth?: FilterBodyWidth;
     showFilters?: boolean;
+    showCreate?: boolean;
     page?: string;
     showDeleteColumn?: boolean;
     canDelete?: (item: any) => boolean;
@@ -90,7 +92,7 @@ const props = withDefaults(
     sortField?: string;
     sortOrder?: number;
   }>(),
-  { showFilters: true, paginator: null, scrollable: null },
+  { showFilters: true, showCreate: true, paginator: null, scrollable: null },
 );
 
 const resolvedDataTableProps = computed(() => {
@@ -586,6 +588,7 @@ function formatCellValue(col: Column, data: any): string {
         :body-width="filterBodyWidth"
         :show-title="false"
         :show-action-labels="false"
+        :show-create="showCreate"
         embedded
         @update:model-value="emit('update:filterValues', $event)"
         @filter="onFilterApplied"
@@ -606,8 +609,8 @@ function formatCellValue(col: Column, data: any): string {
             size="small"
             text
             rounded
-            aria-label="Configuració de la vista"
-            v-tooltip.top="'Configuració de la vista'"
+            :aria-label="t('tables.views.configuration')"
+            v-tooltip.top="t('tables.views.configuration')"
             @click="viewConfigVisible = true"
           />
         </template>
@@ -625,19 +628,31 @@ function formatCellValue(col: Column, data: any): string {
     </template>
 
     <!-- Dynamic columns -->
-    <Column
-      v-for="col in visibleColumns"
-      :key="col.field"
-      :field="col.field"
-      :header="col.header"
-      :sortable="col.sortable || activeSortConfig?.field === col.field"
-      :style="col.style"
-      :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
-    >
+    <template v-for="col in visibleColumns" :key="col.field">
+      <ProgressColumn
+        v-if="col.columnType === ColumnType.ProgressBar"
+        :field="col.field"
+        :header="col.header"
+        :sortable="col.sortable || activeSortConfig?.field === col.field"
+        :style="col.style"
+        :show-value="col.props?.showValue"
+        :cap="col.props?.cap"
+        :overrun-severity="col.props?.overrunSeverity"
+        :tooltip="col.props?.tooltip"
+      />
+      <Column
+        v-else
+        :field="col.field"
+        :header="col.header"
+        :sortable="col.sortable || activeSortConfig?.field === col.field"
+        :style="col.style"
+        :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
+      >
       <!-- Custom body slot from consumer takes priority -->
       <template v-if="slots[`body-${col.field}`]" #body="slotProps">
         <slot :name="`body-${col.field}`" v-bind="slotProps" />
       </template>
+
       <!-- Boolean: not affected by truncation (its own component) -->
       <template v-else-if="col.columnType === ColumnType.Boolean" #body="slotProps">
         <BooleanColumn
@@ -654,7 +669,8 @@ function formatCellValue(col: Column, data: any): string {
           :truncate="col.truncate !== false"
         />
       </template>
-    </Column>
+      </Column>
+    </template>
 
     <!-- Read-only attachment action column -->
     <Column

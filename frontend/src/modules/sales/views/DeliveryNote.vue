@@ -1,6 +1,6 @@
 <template>
   <SplitButton
-    label="Guardar"
+    :label="t('sales.detail.actions.save')"
     @click="submitForm"
     :model="items"
     :size="'small'"
@@ -25,12 +25,12 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-l text-900 font-bold">Linies de l'albarà</span>
+        <span class="text-l text-900 font-bold">{{ t("sales.detail.labels.deliveryNoteLines") }}</span>
         <div>
           <Button
             :disabled="!canModifyDetails || isAddingOrders"
             :size="'small'"
-            label="Afegir comanda"
+            :label="t('sales.detail.actions.createOrder')"
             @click="openSalesOrderSelector()"
           />
         </div>
@@ -76,6 +76,7 @@ import { useSalesOrderStore } from "../store/order";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
+import { useI18n } from "vue-i18n";
 
 const deliveryNoteForm = ref();
 
@@ -91,26 +92,27 @@ const plantModelStore = usePlantModelStore();
 const referenceStore = useReferenceStore();
 const lifecycleStore = useLifecyclesStore();
 const { deliveryNote } = storeToRefs(deliveryNoteStore);
+const { t } = useI18n();
 
-const items = [
+const items = computed(() => [
   {
-    label: "Descarregar",
+    label: t("sales.detail.actions.download"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(true),
   },
   {
-    label: "Imprimir PDF",
+    label: t("sales.detail.actions.printPdf"),
     icon: PrimeIcons.FILE_PDF,
     command: () => printPdf(),
   },
   {
-    label: "Descarregar sense preu",
+    label: t("sales.detail.actions.downloadWithoutPrice"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(false),
   },
-];
+]);
 
-const dialogTitle = "Selector de comandes";
+const dialogTitle = computed(() => t("sales.detail.dialogs.orderSelector"));
 const isDialogVisible = ref(false);
 const initialStatusId = ref("");
 
@@ -149,7 +151,7 @@ const loadView = async () => {
   let pageTitle = "";
   if (deliveryNote.value) {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Albarà d'entrega ${deliveryNote.value.number}`;
+    pageTitle = `${t("sales.deliveryNotes.title")} ${deliveryNote.value.number}`;
 
     if (deliveryNote.value.deliveryDate) {
       deliveryNote.value.deliveryDate = formatDate(
@@ -179,8 +181,8 @@ const submitForm = () => {
   if (!deliveryNote.value?.createdOn) {
     toast.add({
       severity: "error",
-      summary: "Error al crear la comanda ",
-      detail: "La data no pot estar buida",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.dateRequired"),
       life: 5000,
     });
     return false;
@@ -196,7 +198,7 @@ const onDeliveryNoteSubmit = async (deliveryNote: DeliveryNote) => {
   let message = "";
 
   result = await deliveryNoteStore.Update(deliveryNote.id, deliveryNote);
-  message = result ? "Albarà actualitzat" : "Error al actualitzar l'albarà";
+  message = result ? t("sales.detail.messages.updated") : t("sales.deliveryNotes.messages.createError");
 
   toast.add({
     life: 5000,
@@ -233,11 +235,11 @@ const addSalesOrdersToDeliveryNote = async (
       if (!response.result) {
         toast.add({
           severity: "error",
-          summary: "Error en afegir la comanda",
+          summary: t("sales.detail.messages.orderAddError"),
           detail:
             typeof response.content === "string"
               ? response.content
-              : `No s'ha pogut afegir la comanda`,
+              : t("sales.detail.messages.orderAddFailed"),
           life: 6000,
         });
         continue;
@@ -281,8 +283,8 @@ const printInvoice = async (showPrices: boolean) => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("sales.detail.messages.error"),
+        detail: t("sales.detail.messages.reportError"),
       });
     }
   }

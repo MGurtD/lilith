@@ -3,25 +3,28 @@
 </template>
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   movementType: string;
 }>();
+const { t } = useI18n();
 
 const MOVEMENT_TYPE_MAP: Record<
   string,
   { label: string; severity: string }
 > = {
-  INPUT: { label: "Entrada", severity: "success" },
-  OUTPUT: { label: "Sortida", severity: "danger" },
-  SUPPLY: { label: "Subministrament", severity: "info" },
-  CONSUMPTION: { label: "Consum", severity: "warn" },
-  PRODUCTION: { label: "Producció", severity: "contrast" },
+  INPUT: { label: "movementTypes.input", severity: "success" },
+  OUTPUT: { label: "movementTypes.output", severity: "danger" },
+  SUPPLY: { label: "movementTypes.supply", severity: "info" },
+  CONSUMPTION: { label: "movementTypes.consumption", severity: "warn" },
+  PRODUCTION: { label: "movementTypes.production", severity: "contrast" },
 };
 
-const label = computed(
-  () => MOVEMENT_TYPE_MAP[props.movementType]?.label ?? props.movementType,
-);
+const label = computed(() => {
+  const movementType = MOVEMENT_TYPE_MAP[props.movementType];
+  return movementType ? t(movementType.label) : props.movementType;
+});
 
 const severity = computed(
   () =>

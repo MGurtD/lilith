@@ -8,7 +8,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Operaris</span>
+        <span class="text-900 font-bold">{{ pt("Operaris") }}</span>
         <Button
           :icon="PrimeIcons.PLUS"
           rounded
@@ -17,14 +17,14 @@
         />
       </div>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column header="Nom complet" style="width: 35%">
+    <Column field="code" :header="pt('Codi')" style="width: 15%"></Column>
+    <Column :header="pt('Nom complet')" style="width: 35%">
       <template #body="slotProps">
         {{ slotProps.data.name }} {{ slotProps.data.surname }}
       </template>
     </Column>
     <Column field="vatNumber" header="NIF" style="width: 15%"></Column>
-    <Column header="Tipus" style="width: 15%">
+    <Column :header="pt('Tipus')" style="width: 15%">
       <template #body="slotProps">
         {{
           operatorTypeStore.getOperatorTypeNameById(
@@ -33,7 +33,7 @@
         }}
       </template>
     </Column>
-    <Column header="Desactivat" style="width: 10%">
+    <Column :header="pt('Desactivat')" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.disabled" />
       </template>
@@ -50,6 +50,9 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -77,7 +80,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'operaris",
+    title: t("production.detail.operatorsTitle"),
   });
 });
 
@@ -98,7 +101,9 @@ const editRow = (row: DataTableRowClickEvent) => {
 const deleteButton = (event: any, operator: Operator) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar l'operari ${operator.surname}, ${operator.name}?`,
+    message: t("production.messages.confirmDeleteOperator", {
+      name: `${operator.surname}, ${operator.name}`,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -108,7 +113,7 @@ const deleteButton = (event: any, operator: Operator) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchOperators();

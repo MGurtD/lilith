@@ -14,11 +14,11 @@
       >
         <div class="datatable-filter">
           <div class="filter-field">
-            <label>Codi</label>
+            <label>{{ $t('shared.tableReferences.filters.code') }}</label>
             <BaseInput v-model="filter.code" />
           </div>
           <div class="filter-field" v-if="isSales">
-            <label>Client</label>
+            <label>{{ $t('shared.tableReferences.filters.client') }}</label>
             <DropdownCustomers label="" v-model="filter.customerId" />
           </div>
         </div>
@@ -40,35 +40,35 @@
         </div>
       </div>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column field="description" header="Descripció" style="width: 35%"></Column>
+    <Column field="code" :header="$t('shared.tableReferences.columns.code')" style="width: 15%"></Column>
+    <Column field="description" :header="$t('shared.tableReferences.columns.description')" style="width: 35%"></Column>
     <Column
       v-if="isSales"
       field="version"
-      header="Versió"
+      :header="$t('shared.tableReferences.columns.version')"
       style="width: 10%"
     ></Column>
     <Column
       v-if="isSales"
       field="customerId"
-      header="Client"
+      :header="$t('shared.tableReferences.columns.client')"
       style="width: 20%"
     >
       <template #body="slotProps">
         <span>{{ getCustomerById(slotProps.data.customerId) }}</span>
       </template>
     </Column>
-    <Column v-if="isSales" field="price" header="Preu" style="width: 10%">
+    <Column v-if="isSales" field="price" :header="$t('shared.tableReferences.columns.price')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.price) }}
       </template>
     </Column>
-    <Column v-if="isSales" field="cost" header="Cost" style="width: 10%">
+    <Column v-if="isSales" field="cost" :header="$t('shared.tableReferences.columns.cost')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.workMasterCost) }}
       </template>
     </Column>
-    <Column header="Servei" v-if="isSales" style="width: 10%">
+    <Column :header="$t('shared.tableReferences.columns.service')" v-if="isSales" style="width: 10%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isService" />
       </template>
@@ -76,14 +76,14 @@
     <Column
       v-if="isPurchase"
       field="referenceTypeId"
-      header="Tipus"
+      :header="$t('shared.tableReferences.columns.type')"
       style="width: 15%"
     >
       <template #body="slotProps">
         <span>{{ getTypeDescription(slotProps.data.referenceTypeId) }}</span>
       </template>
     </Column>
-    <Column v-if="isPurchase" header="Densitat (mm)" style="width: 10%">
+    <Column v-if="isPurchase" :header="$t('shared.tableReferences.columns.density')" style="width: 10%">
       <template #body="slotProps">
         {{ getReferenceTypeDensity(slotProps.data.referenceTypeId) }}
       </template>
@@ -91,7 +91,7 @@
     <Column
       v-if="isPurchase"
       field="referenceFormatId"
-      header="Format"
+      :header="$t('shared.tableReferences.columns.format')"
       style="width: 10%"
     >
       <template #body="slotProps">
@@ -103,7 +103,7 @@
     <Column
       v-if="isPurchase"
       field="lastPurchaseCost"
-      header="Última Compra"
+      :header="$t('shared.tableReferences.columns.lastPurchase')"
       style="width: 10%"
     ></Column>
 

@@ -2,10 +2,8 @@
   <div class="workcenter-materials">
     <div v-if="!activePhaseStore.hasBillOfMaterials" class="empty-state">
       <i :class="PrimeIcons.BOX" class="empty-icon"></i>
-      <p class="empty-text">Sense materials</p>
-      <span class="empty-subtext">
-        Aquesta fase no té materials associats.
-      </span>
+      <p class="empty-text">{{ $t("plant.sense-materials") }}</p>
+      <span class="empty-subtext">{{ $t("plant.aquesta-fase-no-te-materials-associats") }}</span>
     </div>
 
     <DataTable
@@ -16,7 +14,7 @@
       stripedRows
       class="materials-table"
     >
-      <Column field="referenceCode" header="Referència" style="width: 200px">
+      <Column field="referenceCode" :header='$t("plant.referencia")' style="width: 200px">
         <template #body="slotProps">
           <div class="reference-cell">
             <span class="font-semibold">{{ slotProps.data.referenceCode }}</span>
@@ -35,8 +33,8 @@
           </div>
         </template>
       </Column>
-      <Column field="referenceDescription" header="Descripció" />
-      <Column header="Mesures" style="min-width: 260px">
+      <Column field="referenceDescription" :header='$t("plant.descripcio")' />
+      <Column :header='$t("plant.mesures")' style="min-width: 260px">
         <template #body="slotProps">
           <DimensionChips
             :width="slotProps.data.width"
@@ -49,14 +47,14 @@
       </Column>
       <Column
         field="quantity"
-        header="Quantitat"
+        :header='$t("plant.quantitat")'
         style="width: 120px; text-align: right"
       >
         <template #body="slotProps">
           <span class="font-semibold">{{ slotProps.data.quantity }}</span>
         </template>
       </Column>
-      <Column header="Estoc" style="width: 80px; text-align: center">
+      <Column :header='$t("plant.estoc")' style="width: 80px; text-align: center">
         <template #body="slotProps">
           <Button
             icon="pi pi-warehouse"
@@ -75,7 +73,7 @@
       class="provisioning-status"
     >
       <i class="pi pi-spin pi-spinner"></i>
-      <span>Comprovant aprovisionament dels materials...</span>
+      <span>{{ $t("plant.comprovant-aprovisionament-dels-materials") }}</span>
     </div>
 
     <div
@@ -100,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
@@ -115,6 +114,8 @@ import WarehouseServices from "../../../warehouse/services";
 import ProductionServices from "../../../production/services";
 import AvailableStockDialog from "./AvailableStockDialog.vue";
 import DimensionChips from "./DimensionChips.vue";
+
+const { t } = useI18n();
 
 const route = useRoute();
 const toast = useToast();
@@ -150,8 +151,8 @@ async function moveStock(payload: { stockItem: StockResponse; quantity: number }
   if (!workOrderPhaseId) {
     toast.add({
       severity: "error",
-      summary: "Error al moure l'stock",
-      detail: "No s'ha pogut determinar la fase activa",
+      summary: t("plant.messages.stockMoveError"),
+      detail: t("plant.messages.activePhaseIdentificationError"),
       life: 4000,
     });
     return;
@@ -170,8 +171,8 @@ async function moveStock(payload: { stockItem: StockResponse; quantity: number }
     if (result) {
       toast.add({
         severity: "success",
-        summary: "Stock mogut correctament",
-        detail: `${quantity} unitats de ${stockItem.referenceCode} mogudes a la ubicació d'aprovisionament`,
+        summary: t("plant.stock-mogut-correctament"),
+        detail: t("plant.quantity-unitats-de-referencecode-mogudes-a-la-ubicacio-d-aprovisionament", { quantity, referenceCode: stockItem.referenceCode }),
         life: 4000,
       });
 
@@ -182,8 +183,8 @@ async function moveStock(payload: { stockItem: StockResponse; quantity: number }
     } else {
       toast.add({
         severity: "error",
-        summary: "Error al moure l'stock",
-        detail: "No s'ha pogut moure l'stock a la ubicació d'aprovisionament",
+        summary: t("plant.messages.stockMoveError"),
+        detail: t("plant.messages.stockMoveToSupplyError"),
         life: 4000,
       });
     }
@@ -198,8 +199,8 @@ async function returnStock(payload: { stockItem: StockResponse; quantity: number
   if (!workOrderPhaseId) {
     toast.add({
       severity: "error",
-      summary: "Error al retornar l'stock",
-      detail: "No s'ha pogut determinar la fase activa",
+      summary: t("plant.messages.stockReturnError"),
+      detail: t("plant.messages.activePhaseIdentificationError"),
       life: 4000,
     });
     return;
@@ -218,8 +219,8 @@ async function returnStock(payload: { stockItem: StockResponse; quantity: number
     if (result) {
       toast.add({
         severity: "success",
-        summary: "Stock retornat correctament",
-        detail: `${quantity} unitats de ${stockItem.referenceCode} retornades a la ubicació per defecte`,
+        summary: t("plant.stock-retornat-correctament"),
+        detail: t("plant.quantity-unitats-de-referencecode-retornades-a-la-ubicacio-per-defecte", { quantity, referenceCode: stockItem.referenceCode }),
         life: 4000,
       });
 
@@ -230,8 +231,8 @@ async function returnStock(payload: { stockItem: StockResponse; quantity: number
     } else {
       toast.add({
         severity: "error",
-        summary: "Error al retornar l'stock",
-        detail: "No s'ha pogut retornar l'stock a la ubicació per defecte",
+        summary: t("plant.messages.stockReturnError"),
+        detail: t("plant.messages.stockReturnToDefaultError"),
         life: 4000,
       });
     }

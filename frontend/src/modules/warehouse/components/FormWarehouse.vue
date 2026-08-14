@@ -2,7 +2,7 @@
   <form v-if="warehouse">
     <div class="pb-4">
       <Button
-        label="Guardar"
+        :label="t('common.save')"
         size="small"
         class="grid_add_row_button"
         @click="submitForm"
@@ -11,7 +11,7 @@
     <section class="three-columns">
       <BaseInput
         class="mb-2"
-        label="Nom"
+        :label="t('warehouse.fields.name')"
         id="name"
         v-model="warehouse.name"
         :class="{
@@ -20,7 +20,7 @@
       ></BaseInput>
       <BaseInput
         class="mb-2"
-        label="Descripció"
+        :label="t('common.description')"
         id="description"
         v-model="warehouse.description"
         :class="{
@@ -28,7 +28,7 @@
         }"
       ></BaseInput>
       <div>
-        <label class="block text-900 mb-2">Local</label>
+        <label class="block text-900 mb-2">{{ t("warehouse.fields.site") }}</label>
         <Select
           v-model="warehouse.siteId"
           :options="plantmodelStore.sites"
@@ -43,7 +43,7 @@
     </section>
     <section class="three-columns">
       <div>
-        <label class="block text-900 mb-2">Ubicació predeterminada</label>
+        <label class="block text-900 mb-2">{{ t("warehouse.fields.defaultLocation") }}</label>
         <Select
           v-model="warehouse.defaultLocationId"
           :options="warehouse.locations"
@@ -56,7 +56,7 @@
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("warehouse.fields.disabled") }}</label>
         <Checkbox v-model="warehouse.disabled" class="w-full" :binary="true" />
       </div>
     </section>
@@ -64,7 +64,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
 import { Warehouse } from "../types";
 import * as Yup from "yup";
@@ -78,6 +79,7 @@ import { useWarehouseStore } from "../store/warehouse";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 
 const toast = useToast();
+const { t } = useI18n();
 const warehouseStore = useWarehouseStore();
 const plantmodelStore = usePlantModelStore();
 const { warehouse } = storeToRefs(warehouseStore);
@@ -95,22 +97,22 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const schema = Yup.object().shape({
+const schema = computed(() => Yup.object().shape({
   name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
+    .required(t("warehouse.validation.nameRequired"))
+    .max(250, t("warehouse.validation.nameMaxLength")),
   description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-  siteId: Yup.string().required("El local es obligatori"),
-});
+    .required(t("warehouse.validation.descriptionRequired"))
+    .max(250, t("warehouse.validation.descriptionMaxLength")),
+  siteId: Yup.string().required(t("warehouse.validation.siteRequired")),
+}));
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
 const validate = () => {
-  const formValidation = new FormValidation(schema);
+  const formValidation = new FormValidation(schema.value);
   validation.value = formValidation.validate(props.warehouse);
 };
 
@@ -125,7 +127,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("warehouse.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

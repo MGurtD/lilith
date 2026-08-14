@@ -11,10 +11,10 @@
     <template #header>
       <header class="selector-filter">
         <div class="selector-filter-field">
-          <label for="">Buscar</label> &nbsp;
+          <label for="" class="mr-2">{{ t("purchase.orderDetailsToReceipt.search") }}</label>
           <InputText
             style="width: 250px; height: 35px"
-            placeholder="Comanda, OF o referència"
+            :placeholder="t('purchase.orderDetailsToReceipt.placeholders.search')"
             v-model="filterReference"
             size="small"
           />
@@ -25,7 +25,8 @@
               @click="onSelectedClick"
               :size="'small'"
               :icon="PrimeIcons.CHECK_SQUARE"
-              label="Afegir"
+              :aria-label="t('purchase.orderDetailsToReceipt.actions.add')"
+              :label="t('purchase.orderDetailsToReceipt.actions.add')"
             ></Button>
           </div>
         </div>
@@ -54,12 +55,12 @@
     <Column header="" field="number" style="width: 10%">
       <template #body="{ data }">
         <div>
-          <label>Import</label>
+          <label>{{ t("purchase.orderDetailsToReceipt.fields.amount") }}</label>
           <BaseInput
             :type="BaseInputType.CURRENCY"
             style="width: 250px; height: 35px"
             v-model="data.price"
-            placeholder="Import (€)"
+            :placeholder="t('purchase.orderDetailsToReceipt.placeholders.amount')"
           />
         </div>
       </template>
@@ -71,9 +72,9 @@
         v-model:selection="selectedOrderDetails"
       >
         <Column selectionMode="multiple" headerStyle="width: 2%"></Column>
-        <Column header="Comanda" field="orderNumber" headerStyle="width: 15%" />
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.order')" field="orderNumber" headerStyle="width: 15%" />
         <Column
-          header="D. Prevista"
+          :header="t('purchase.orderDetailsToReceipt.columns.expectedDate')"
           field="expectedReceiptDate"
           headerStyle="width: 15%"
         >
@@ -81,14 +82,14 @@
             {{ formatDate(data.expectedReceiptDate) }}
           </template>
         </Column>
-        <Column header="OF" field="workOrder" headerStyle="width: 60%">
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.workOrder')" field="workOrder" headerStyle="width: 60%">
           <template #body="{ data }">
             <span v-if="data.workOrder.length > 0">{{
               `${data.workOrder} - ${data.workOrderPhase}`
             }}</span>
           </template>
         </Column>
-        <Column header="Quantitat pendent" headerStyle="width: 10%">
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.pendingQuantity')" headerStyle="width: 10%">
           <template #body="{ data }">
             <BaseInput
               style="width: 250px; height: 35px"
@@ -117,10 +118,12 @@ import { PrimeIcons } from "@primevue/core/api";
 import { formatDate, getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { useStore } from "../../../store";
 import { BaseInputType } from "../../../types/component";
 
 const toast = useToast();
+const { t } = useI18n();
 const store = useStore();
 const referenceStore = useReferenceStore();
 const expandedRows = ref({});
@@ -177,8 +180,8 @@ const validateSelection = () => {
   if (selectedOrderDetails.value.length === 0) {
     toast.add({
       severity: "warn",
-      summary: "Selecció inválida",
-      detail: "Selecciona alguna línia per afegir-la a l'albarà",
+      summary: t("purchase.orderDetailsToReceipt.messages.invalidSelection"),
+      detail: t("purchase.orderDetailsToReceipt.messages.selectLine"),
       life: 6000,
     });
 
@@ -190,8 +193,8 @@ const validateSelection = () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "Selecció inválida",
-      detail: "No es poden afegir línies amb quantitat 0",
+      summary: t("purchase.orderDetailsToReceipt.messages.invalidSelection"),
+      detail: t("purchase.orderDetailsToReceipt.messages.zeroQuantity"),
       life: 6000,
     });
 

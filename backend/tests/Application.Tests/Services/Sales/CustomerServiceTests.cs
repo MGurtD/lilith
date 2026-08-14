@@ -222,6 +222,7 @@ public class CustomerServiceTests
         public IRepository<UserTableView, Guid> UserTableViews => throw new NotImplementedException();
         public IRepository<Profile, Guid> Profiles => throw new NotImplementedException();
         public IRepository<MenuItem, Guid> MenuItems => throw new NotImplementedException();
+        public IRepository<MenuItemTranslation, Guid> MenuItemTranslations => throw new NotImplementedException();
         public IRepository<ProfileMenuItem, Guid> ProfileMenuItems => throw new NotImplementedException();
         public IRepository<Domain.Entities.File, Guid> Files => throw new NotImplementedException();
         public IRepository<Parameter, Guid> Parameters => throw new NotImplementedException();

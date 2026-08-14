@@ -5,6 +5,7 @@
     :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
+    :show-create="false"
     preset="crud-list"
     page="SalesInvoicesByDates"
     class="small-datatable"
@@ -17,7 +18,7 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Període</label>
+        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
         <DatePicker
           v-model="filter.dates"
           :numberOfMonths="2"
@@ -32,6 +33,7 @@
     <template #append>
       <Button
         :icon="PrimeIcons.CHECK"
+        :aria-label="t('sales.invoiceAccounting.actions.markManaged')"
         :disabled="selectedInvoices.length === 0"
         rounded
         raised
@@ -56,6 +58,7 @@
       <i
         :class="PrimeIcons.DOWNLOAD"
         class="download_column"
+        :aria-label="t('sales.invoiceAccounting.actions.download')"
         @click="downloadInvoices(data)"
       />
     </template>
@@ -63,6 +66,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import type { FilterBodyWidth, FilterConfig } from "../../../components/tables/TableFilter.vue";
@@ -84,6 +88,7 @@ const store = useStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
 const invoiceStore = useSalesInvoiceStore();
+const { locale, t } = useI18n();
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -96,25 +101,25 @@ const filterBodyWidth: FilterBodyWidth = {
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
     key: "showManaged",
-    label: "Gestionades",
+    label: t("sales.invoiceAccounting.filters.showManaged"),
     type: "checkbox",
     size: "sm",
   },
 ]);
 
-const columns = ref<Column[]>([
-  { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
+const columns = computed<Column[]>(() => [
+  { field: "invoiceNumber", header: t("common.number"), sortable: true, style: "width: 10%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
     style: "width: 15%",
   },
-  { field: "_status", header: "Estat", style: "width: 15%" },
-  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
-  { field: "_dueDate", header: "Venciment", style: "width: 15%" },
-  { field: "baseAmount", header: "Import Base", columnType: ColumnType.Currency, style: "width: 15%" },
+  { field: "_status", header: t("common.status"), style: "width: 15%" },
+  { field: "invoiceDate", header: t("common.date"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "_dueDate", header: t("sales.list.columns.dueDate"), style: "width: 15%" },
+  { field: "baseAmount", header: t("sales.invoiceAccounting.columns.baseAmount"), columnType: ColumnType.Currency, style: "width: 15%" },
   { field: "download", header: "", style: "width: 2%" },
 ]);
 
@@ -129,11 +134,14 @@ onMounted(async () => {
   }
   lifecycleStore.fetchOneByName(lifecycleName);
 
-  store.setMenuItem({
-    icon: PrimeIcons.SERVER,
-    title: "Comptabilització de factures de venta",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.SERVER, title: t("sales.invoiceAccounting.title") });
+};
+
+watch(locale, setMenuItem);
 
 onUnmounted(() => {
   invoiceStore.invoices = undefined;
@@ -205,8 +213,8 @@ const filterInvoices = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -227,8 +235,8 @@ const updateSelectedInvoiceStatusToManaged = async () => {
     if (updated) {
       toast.add({
         severity: "success",
-        summary: "Comptabilització de factures de venta",
-        detail: `Factures comptabilitzades: ${selectedInvoices.value.length}`,
+        summary: t("sales.invoiceAccounting.title"),
+        detail: t("sales.invoiceAccounting.messages.managedInvoices", { count: selectedInvoices.value.length }),
         life: 5000,
       });
 
@@ -246,15 +254,15 @@ const downloadInvoices = async (invoice: SalesInvoice) => {
   if (printed) {
     toast.add({
       severity: "success",
-      summary: "Comptabilització de factures de venta",
-      detail: `Factura ${invoice.invoiceNumber} descarregada`,
+      summary: t("sales.invoiceAccounting.title"),
+      detail: t("sales.invoiceAccounting.messages.invoiceDownloaded", { number: invoice.invoiceNumber }),
       life: 5000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Comptabilització de factures de venta",
-      detail: `Error al descarregar la factura ${invoice.invoiceNumber}`,
+      summary: t("sales.invoiceAccounting.title"),
+      detail: t("sales.invoiceAccounting.messages.invoiceDownloadError", { number: invoice.invoiceNumber }),
       life: 5000,
     });
   }

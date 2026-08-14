@@ -1,7 +1,7 @@
 <template>
   <div>
     <Button
-      label="Guardar"
+      :label="t('purchase.receipt.actions.save')"
       size="small"
       class="grid_add_row_button"
       @click="submitForm"
@@ -12,14 +12,14 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Número"
+            :label="t('purchase.receipt.fields.number')"
             id="number"
             v-model="receipt.number"
             disabled
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Exercici</label>
+          <label class="block text-900 mb-2">{{ t("purchase.receipt.fields.exercise") }}</label>
           <Select
             v-model="receipt.exerciseId"
             :options="sharedDataStore.exercises"
@@ -32,14 +32,14 @@
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Data Albarà</label>
+          <label class="block text-900 mb-2">{{ t("purchase.receipt.fields.date") }}</label>
           <DatePicker v-model="receipt.date" dateFormat="dd/mm/yy" />
         </div>
       </section>
       <section class="three-columns">
         <div class="mt-1">
           <DropdownLifecycleStatusTransitions
-            label="Estat"
+            :label="t('purchase.receipt.fields.status')"
             :statusId="receipt.statusId"
             v-model="receipt.statusId"
             :class="{
@@ -48,7 +48,7 @@
           />
         </div>
         <div class="mt-1">
-          <label class="block text-900 mb-2">Proveïdor</label>
+          <label class="block text-900 mb-2">{{ t("purchase.receipt.fields.supplier") }}</label>
           <Select
             v-model="receipt.supplierId"
             :options="suppliersStore.suppliers"
@@ -63,7 +63,7 @@
         <div class="mt-1">
           <BaseInput
             :type="BaseInputType.TEXT"
-            label="Número Albarà"
+            :label="t('purchase.receipt.fields.supplierNumber')"
             id="supplierNumber"
             v-model="receipt.supplierNumber"
           />
@@ -86,6 +86,7 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { BaseInputType } from "../../../types/component";
 import { convertDateTimeToJSON, formatDate } from "../../../utils/functions";
@@ -100,6 +101,7 @@ const receiptStore = useReceiptsStore();
 const suppliersStore = useSuppliersStore();
 const sharedDataStore = useSharedDataStore();
 const toast = useToast();
+const { t } = useI18n();
 
 const { receipt } = storeToRefs(receiptStore);
 
@@ -109,9 +111,9 @@ onMounted(async () => {
 });
 
 const schema = Yup.object().shape({
-  supplierId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
+  supplierId: Yup.string().required(t("purchase.receipt.validation.supplierRequired")),
+  statusId: Yup.string().required(t("purchase.receipt.validation.statusRequired")),
+  exerciseId: Yup.string().required(t("purchase.receipt.validation.exerciseRequired")),
 });
 const validation = ref({
   result: false,
@@ -135,7 +137,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("purchase.receipt.messages.invalidForm"),
       detail: errors,
       life: 5000,
     });

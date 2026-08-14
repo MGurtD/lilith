@@ -73,12 +73,7 @@ body {
 
 .container {
   min-height: 100vh;
-  background: linear-gradient(
-    135deg,
-    var(--p-blue-900) 0%,
-    var(--p-blue-800) 50%,
-    var(--p-blue-700) 100%
-  );
+  background: var(--p-primary-color);
   background-attachment: fixed;
   display: flex;
   align-items: center;

@@ -1,15 +1,15 @@
 <template>
   <form v-if="workmaster">
     <div class="grid_add_row_button">
-      <Button label="Calcular Cost" size="small" @click="calculateCost" />
+      <Button :label="t('production.components.calcularCost')" size="small" @click="calculateCost" />
       &nbsp;
-      <Button label="Guardar" size="small" @click="submitForm" />
+      <Button :label="t('production.components.guardar')" size="small" @click="submitForm" />
       <br />
     </div>
     <section class="six-columns">
       <div>
         <DropdownReference
-          label="Referència"
+          :label="t('production.components.referencia')"
           v-model="workmaster.referenceId"
           :fullName="true"
         ></DropdownReference>
@@ -17,7 +17,7 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Quantitat Base"
+          :label="t('production.components.quantitatBase')"
           :decimals="2"
           v-model="workmaster.baseQuantity"
         />
@@ -25,24 +25,24 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          label="Volum mm3"
+          :label="t('production.components.volumMm3')"
           :decimals="2"
           v-model="workmaster.volume"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Mode</label>
+        <label class="block text-900 mb-2">{{ t("production.components.mode") }}</label>
         <Select
           v-model="workmaster.mode"
           :options="workmasterStore.workmasterModes"
           optionLabel="value"
           optionValue="id"
-          placeholder="Seleccione el modo"
+          :placeholder="t('production.components.seleccioneElModo')"
           class="w-full"
         />
       </div>
       <div>
-        <label class="block text-900 mb-2">Desactivat</label>
+        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
         <Checkbox v-model="workmaster.disabled" class="w-full" :binary="true" />
       </div>
     </section>
@@ -50,7 +50,7 @@
       <div class="costs-section">
         <h4 class="costs-section-title">
           <i class="pi pi-euro" />
-          Costos
+          {{ t("production.components.costos") }}
         </h4>
         <div class="costs-grid">
           <div class="cost-card">
@@ -58,7 +58,7 @@
               <i class="pi pi-user" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Operari</span>
+              <span class="cost-card-label">{{ t("production.components.costOperari") }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.operatorCost)
               }}</span>
@@ -69,7 +69,7 @@
               <i class="pi pi-cog" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Màquina</span>
+              <span class="cost-card-label">{{ t("production.components.costMaquina") }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.machineCost)
               }}</span>
@@ -80,7 +80,7 @@
               <i class="pi pi-box" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Material</span>
+              <span class="cost-card-label">{{ t("production.components.costMaterial") }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.materialCost)
               }}</span>
@@ -91,7 +91,7 @@
               <i class="pi pi-truck" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Extern</span>
+              <span class="cost-card-label">{{ t("production.components.costExtern") }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.externalCost)
               }}</span>
@@ -102,7 +102,7 @@
               <i class="pi pi-calculator" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Total</span>
+              <span class="cost-card-label">{{ t("production.components.costTotal") }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(totalCost)
               }}</span>
@@ -113,7 +113,7 @@
               <i class="pi pi-objects-column" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Pes Total</span>
+              <span class="cost-card-label">{{ t("production.components.pesTotal") }}</span>
               <span class="cost-card-value"
                 >{{ workmaster.totalWeight }} KG</span
               >
@@ -126,6 +126,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { ref, computed } from "vue";
 import { WorkMaster } from "../types";
@@ -164,9 +167,9 @@ const totalCost = computed(() => {
 
 const schema = Yup.object().shape({
   baseQuantity: Yup.number()
-    .min(1, "La quantitat base ha de ser superior a 0")
-    .required("La quanitat base és obligatoria"),
-  referenceId: Yup.string().required("La referència és obligatoria"),
+    .min(1, t("production.validation.laQuantitatBaseHaDeSerSuperiorA0"))
+    .required(t("production.validation.laQuanitatBaseEsObligatoria")),
+  referenceId: Yup.string().required(t("production.validation.laReferenciaEsObligatoria")),
 });
 const validation = ref({
   result: false,
@@ -189,7 +192,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });
@@ -207,7 +210,7 @@ const calculateCost = () => {
     });
     toast.add({
       severity: "warn",
-      summary: "Formulari inválid",
+      summary: t("production.components.formulariInvalid"),
       detail: errors,
       life: 5000,
     });
