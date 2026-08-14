@@ -63,12 +63,28 @@
               style="width: 22%"
             />
             <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Origen de compra" style="width: 36%">
+            <Column header="Origen de compra / moviments" style="width: 36%">
               <template #body="slotProps">
                 <span v-if="slotProps.node.data.kind === 'purchase'">
                   {{ slotProps.node.data.supplierName }} · Rebut
                   {{ slotProps.node.data.receiptNumber }} ·
                   {{ formatDate(slotProps.node.data.receiptDate) }}
+                </span>
+                <span
+                  v-else-if="slotProps.node.data.kind === 'movement'"
+                  class="movement-row"
+                >
+                  <Tag
+                    :severity="movementSeverity(slotProps.node.data.movementType)"
+                    :value="movementTypeLabel(slotProps.node.data.movementType)"
+                  />
+                  <span>
+                    {{ slotProps.node.data.locationName }} ·
+                    {{ formatDate(slotProps.node.data.movementDate) }}
+                    <template v-if="slotProps.node.data.description">
+                      · {{ slotProps.node.data.description }}
+                    </template>
+                  </span>
                 </span>
               </template>
             </Column>
@@ -96,12 +112,28 @@
               style="width: 22%"
             />
             <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Destí de venda" style="width: 36%">
+            <Column header="Destí de venda / moviments" style="width: 36%">
               <template #body="slotProps">
                 <span v-if="slotProps.node.data.kind === 'sale'">
                   {{ slotProps.node.data.customerName }} · Albarà
                   {{ slotProps.node.data.deliveryNoteNumber }} ·
                   {{ formatDate(slotProps.node.data.deliveryDate) }}
+                </span>
+                <span
+                  v-else-if="slotProps.node.data.kind === 'movement'"
+                  class="movement-row"
+                >
+                  <Tag
+                    :severity="movementSeverity(slotProps.node.data.movementType)"
+                    :value="movementTypeLabel(slotProps.node.data.movementType)"
+                  />
+                  <span>
+                    {{ slotProps.node.data.locationName }} ·
+                    {{ formatDate(slotProps.node.data.movementDate) }}
+                    <template v-if="slotProps.node.data.description">
+                      · {{ slotProps.node.data.description }}
+                    </template>
+                  </span>
                 </span>
               </template>
             </Column>
@@ -178,13 +210,17 @@ interface TraceabilityTreeRowData {
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
-  kind: "node" | "purchase" | "sale";
+  kind: "node" | "purchase" | "sale" | "movement";
   supplierName?: string;
   receiptNumber?: string;
   receiptDate?: any;
   customerName?: string;
   deliveryNoteNumber?: string;
   deliveryDate?: any;
+  movementType?: string;
+  movementDate?: any;
+  locationName?: string;
+  description?: string;
 }
 
 interface TraceabilityTreeRow {
@@ -209,6 +245,51 @@ const lots = ref<Lot[]>([]);
 const lotsLoading = ref(false);
 const pendingLotIdFromQuery = ref<string | undefined>(undefined);
 
+const movementTypeLabels: Record<string, string> = {
+  INPUT: "Entrada",
+  OUTPUT: "Sortida",
+  SUPPLY: "Subministrament",
+  CONSUMPTION: "Consum",
+  PRODUCTION: "Producció",
+};
+
+const movementTypeLabel = (type?: string) =>
+  (type && movementTypeLabels[type]) || type || "";
+
+const movementSeverity = (type?: string) => {
+  switch (type) {
+    case "INPUT":
+    case "PRODUCTION":
+      return "success";
+    case "OUTPUT":
+    case "CONSUMPTION":
+      return "danger";
+    case "SUPPLY":
+      return "info";
+    default:
+      return "secondary";
+  }
+};
+
+const buildMovementRows = (
+  node: LotTraceabilityNode,
+  parentKey: string,
+): TraceabilityTreeRow[] =>
+  (node.movements ?? []).map((movement, index) => ({
+    key: `${parentKey}-movement-${index}-${movement.movementId}`,
+    data: {
+      lotCode: node.lotCode,
+      referenceCode: node.referenceCode,
+      referenceDescription: node.referenceDescription,
+      quantity: movement.quantity,
+      kind: "movement",
+      movementType: movement.movementType,
+      movementDate: movement.movementDate,
+      locationName: movement.locationName,
+      description: movement.description,
+    },
+  }));
+
 const toBackwardTreeNode = (
   node: LotTraceabilityNode,
   parentKey = "root",
@@ -219,6 +300,8 @@ const toBackwardTreeNode = (
   node.children?.forEach((child) =>
     children.push(toBackwardTreeNode(child, key)),
   );
+
+  buildMovementRows(node, key).forEach((row) => children.push(row));
 
   node.purchaseOrigins?.forEach((origin, index) => {
     children.push({
@@ -259,6 +342,8 @@ const toForwardTreeNode = (
   node.children?.forEach((child) =>
     children.push(toForwardTreeNode(child, key)),
   );
+
+  buildMovementRows(node, key).forEach((row) => children.push(row));
 
   node.salesDestinations?.forEach((destination, index) => {
     children.push({
@@ -390,3 +475,11 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+.movement-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+</style>

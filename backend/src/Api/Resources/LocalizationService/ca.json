@@ -246,13 +246,6 @@
     "ProfileNameExists": "Nom de perfil {0} existent",
     "MenuItemKeyExists": "Clau d'element de menú {0} existent",
     "InvalidMenuHierarchy": "Jerarquia de menú invàlida",
-    "MenuItemTranslationsInvalid": "Cal informar un títol per a cadascun dels idiomes actius",
-    "MenuItemTranslationBatchEmpty": "Cal informar almenys una traducció per actualitzar",
-    "MenuItemTranslationBatchDuplicateMenu": "La petició conté elements de menú duplicats",
-    "MenuItemTranslationBatchEmptyRow": "Cada element de menú ha de contenir almenys una traducció",
-    "MenuItemTranslationBatchDuplicateCell": "La petició conté traduccions duplicades",
-    "MenuItemTranslationLanguageInvalid": "L'idioma {0} no està actiu",
-    "MenuItemTranslationTitleInvalid": "El títol de l'idioma {0} és obligatori i no pot superar els 250 caràcters",
     "DefaultMenuItemNotInProfile": "L'element de menú per defecte no està assignat al perfil",
     "UserProfileAssigned": "Perfil assignat a l'usuari",
     "ProfileDeleteForbidden": "No es pot eliminar un perfil de sistema",
@@ -289,14 +282,6 @@
     "TableViewDeleted": "Vista eliminada correctament",
     "TableViewNotFound": "Vista no trobada",
     "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
-    "DefaultViewSet": "Vista per defecte establerta",
-    "EnterpriseActiveAlreadyExists": "Ja existeix una Enterprise habilitada. Desactiveu-la abans d'habilitar-ne una altra.",
-    "BrandingEnterpriseUnavailable": "No hi ha cap Enterprise habilitada disponible per gestionar el branding.",
-    "BrandingLogoRequired": "Cal seleccionar un fitxer de logotip.",
-    "BrandingLogoInvalidSize": "El logotip ha de tenir una mida d'entre 1 byte i 2 MB.",
-    "BrandingLogoInvalidFormat": "El logotip ha de ser un fitxer PNG, JPEG o WebP vàlid.",
-    "BrandingLogoUploadFailed": "No s'ha pogut desar el logotip.",
-    "BrandingNameInvalid": "El nom comercial no pot superar els 60 caràcters.",
-    "BrandingPaletteInvalid": "La paleta de color seleccionada no és vàlida."
+    "DefaultViewSet": "Vista per defecte establerta"
   }
 }

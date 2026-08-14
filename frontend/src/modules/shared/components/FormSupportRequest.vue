@@ -284,6 +284,100 @@ const validate = () => {
   validation.value = formValidation.validate(model);
 };
 
+type MarkdownAction =
+  | "bold"
+  | "italic"
+  | "strike"
+  | "heading"
+  | "quote"
+  | "ulist"
+  | "olist"
+  | "link"
+  | "code"
+  | "codeblock";
+
+const applyMarkdown = (action: MarkdownAction) => {
+  const textarea = document.getElementById(
+    "descripcio",
+  ) as HTMLTextAreaElement | null;
+  if (!textarea) return;
+
+  const value = model.descripcio;
+  const start = textarea.selectionStart ?? value.length;
+  const end = textarea.selectionEnd ?? value.length;
+  const selected = value.slice(start, end);
+
+  let replacement = selected;
+  let cursorStart = start;
+  let cursorEnd = end;
+
+  const wrap = (marker: string) => {
+    replacement = `${marker}${selected}${marker}`;
+    cursorStart = start + marker.length;
+    cursorEnd = cursorStart + selected.length;
+  };
+
+  const prefixLines = (prefix: string) => {
+    replacement = selected
+      .split("\n")
+      .map((line) => `${prefix}${line}`)
+      .join("\n");
+    cursorStart = start;
+    cursorEnd = start + replacement.length;
+  };
+
+  switch (action) {
+    case "bold":
+      wrap("**");
+      break;
+    case "italic":
+      wrap("*");
+      break;
+    case "strike":
+      wrap("~~");
+      break;
+    case "code":
+      wrap("`");
+      break;
+    case "heading":
+      prefixLines("# ");
+      break;
+    case "quote":
+      prefixLines("> ");
+      break;
+    case "ulist":
+      prefixLines("- ");
+      break;
+    case "olist":
+      replacement = selected
+        .split("\n")
+        .map((line, index) => `${index + 1}. ${line}`)
+        .join("\n");
+      cursorStart = start;
+      cursorEnd = start + replacement.length;
+      break;
+    case "link": {
+      const text = selected || "text";
+      replacement = `[${text}](url)`;
+      cursorStart = start + 1;
+      cursorEnd = start + 1 + text.length;
+      break;
+    }
+    case "codeblock":
+      replacement = `\`\`\`\n${selected}\n\`\`\``;
+      cursorStart = start + 4;
+      cursorEnd = cursorStart + selected.length;
+      break;
+  }
+
+  model.descripcio = value.slice(0, start) + replacement + value.slice(end);
+
+  nextTick(() => {
+    textarea.focus();
+    textarea.setSelectionRange(cursorStart, cursorEnd);
+  });
+};
+
 const submitForm = async () => {
   validate();
   if (!validation.value.result) {

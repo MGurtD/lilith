@@ -246,13 +246,6 @@
     "ProfileNameExists": "Nombre de perfil {0} existente",
     "MenuItemKeyExists": "Clave de elemento de menú {0} existente",
     "InvalidMenuHierarchy": "Jerarquía de menú inválida",
-    "MenuItemTranslationsInvalid": "Se debe informar un título para cada uno de los idiomas activos",
-    "MenuItemTranslationBatchEmpty": "Se debe informar al menos una traducción para actualizar",
-    "MenuItemTranslationBatchDuplicateMenu": "La petición contiene elementos de menú duplicados",
-    "MenuItemTranslationBatchEmptyRow": "Cada elemento de menú debe contener al menos una traducción",
-    "MenuItemTranslationBatchDuplicateCell": "La petición contiene traducciones duplicadas",
-    "MenuItemTranslationLanguageInvalid": "El idioma {0} no está activo",
-    "MenuItemTranslationTitleInvalid": "El título del idioma {0} es obligatorio y no puede superar los 250 caracteres",
     "DefaultMenuItemNotInProfile": "El elemento de menú por defecto no está asignado al perfil",
     "UserProfileAssigned": "Perfil asignado al usuario",
     "ProfileDeleteForbidden": "No se puede eliminar un perfil de sistema",
@@ -289,14 +282,6 @@
     "TableViewDeleted": "Vista eliminada correctamente",
     "TableViewNotFound": "Vista no encontrada",
     "CannotDeleteDefaultView": "No se puede eliminar la vista por defecto",
-    "DefaultViewSet": "Vista por defecto establecida",
-    "EnterpriseActiveAlreadyExists": "Ya existe una Enterprise habilitada. Desactívala antes de habilitar otra.",
-    "BrandingEnterpriseUnavailable": "No hay ninguna Enterprise habilitada disponible para gestionar el branding.",
-    "BrandingLogoRequired": "Debe seleccionar un archivo de logotipo.",
-    "BrandingLogoInvalidSize": "El logotipo debe tener un tamaño de entre 1 byte y 2 MB.",
-    "BrandingLogoInvalidFormat": "El logotipo debe ser un archivo PNG, JPEG o WebP válido.",
-    "BrandingLogoUploadFailed": "No se ha podido guardar el logotipo.",
-    "BrandingNameInvalid": "El nombre comercial no puede superar los 60 caracteres.",
-    "BrandingPaletteInvalid": "La paleta de color seleccionada no es válida."
+    "DefaultViewSet": "Vista por defecto establecida"
   }
 }

@@ -281,6 +281,7 @@ public class CustomerServiceTests
         public IRepository<ReferenceType, Guid> ReferenceTypes => throw new NotImplementedException();
         public IRepository<Stock, Guid> Stocks => throw new NotImplementedException();
         public IStockMovementRepository StockMovements => throw new NotImplementedException();
+        public ILotRepository Lots => throw new NotImplementedException();
     }
 
     private sealed class FakeCustomerRepository : ICustomerRepository

@@ -614,6 +614,7 @@ public class BrandingServiceTests
         public IRepository<ReferenceType, Guid> ReferenceTypes => UnusedRepository<ReferenceType>.Instance;
         public IRepository<Stock, Guid> Stocks => UnusedRepository<Stock>.Instance;
         public IStockMovementRepository StockMovements => throw new NotImplementedException();
+        public ILotRepository Lots => throw new NotImplementedException();
     }
 
     private sealed class FakeRepository<TEntity> : IRepository<TEntity, Guid>

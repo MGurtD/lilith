@@ -56,7 +56,7 @@
           {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
         </template></Column
       >
-      <Column :header="t('warehouse.fields.location')" style="width: 10%">
+      <Column :header="t('warehouse.fields.location')" style="width: 10%"></Column>
       <Column header="Lot" style="width: 8%">
         <template #body="slotProps">
           {{ getLotCode(slotProps.data.lotId) }}

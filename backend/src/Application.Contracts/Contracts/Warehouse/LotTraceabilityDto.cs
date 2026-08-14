@@ -17,6 +17,22 @@ public class LotTraceabilityNode
     public List<LotTraceabilityNode> Children { get; set; } = [];
     public List<PurchaseOriginDto> PurchaseOrigins { get; set; } = [];
     public List<SalesDestinationDto> SalesDestinations { get; set; } = [];
+
+    // Stock movements involving this lot (provisioning, consumption, production, etc.).
+    public List<LotStockMovementDto> Movements { get; set; } = [];
+}
+
+public class LotStockMovementDto
+{
+    public Guid MovementId { get; set; }
+    public string MovementType { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public DateTime MovementDate { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public Guid? LocationId { get; set; }
+    public string LocationName { get; set; } = string.Empty;
+    public string? Entity { get; set; }
+    public Guid? EntityId { get; set; }
 }
 
 public class PurchaseOriginDto

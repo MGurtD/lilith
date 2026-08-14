@@ -2,7 +2,7 @@
   <form v-if="newMovement">
     <div>
         <DropdownReference
-          :label="t('warehouse.fields.material')"
+          label="Material"
           :fullName="true"
           v-model="newMovement.referenceId"
           :class="{
@@ -23,14 +23,14 @@
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          :label="t('warehouse.fields.quantity')"
+          label="Quantitat"
           v-model="newMovement.newQuantity"
         />
       </div>
       <div>
         <BaseInput
           :type="BaseInputType.NUMERIC"
-          :label="t('warehouse.fields.widthMm')"
+          label="Amplada (mm)"
           :decimals="2"
           v-model="newMovement.width"
         />
@@ -39,7 +39,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          :label="t('warehouse.fields.heightMm')"
+          label="Alçada (mm)"
           v-model="newMovement.height"
         />
       </div>
@@ -51,7 +51,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          :label="t('warehouse.fields.lengthMm')"
+          label="Longitud (mm)"
           v-model="newMovement.length"
         />
       </div>
@@ -59,7 +59,7 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          :label="t('warehouse.fields.diameterMm')"
+          label="Diàmetre (mm)"
           v-model="newMovement.diameter"
         />
       </div>
@@ -67,14 +67,14 @@
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :decimals="2"
-          :label="t('warehouse.fields.thicknessMm')"
+          label="Gruix (mm)"
           v-model="newMovement.thickness"
         />
       </div>
     </section>
 
     <Button
-      :label="t('warehouse.actions.create')"
+      label="Crear"
       @click="submitForm"
       style="float: right"
       :size="'small'"
@@ -86,8 +86,7 @@
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import SelectorLot from "./SelectorLot.vue";
-import { computed, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
+import { onMounted, ref } from "vue";
 import { Inventory } from "../types";
 import * as Yup from "yup";
 import {
@@ -109,7 +108,6 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
-const { t } = useI18n();
 const referenceStore = useReferenceStore();
 
 onMounted(async () => {
@@ -118,19 +116,19 @@ onMounted(async () => {
   }
 });
 
-const schema = computed(() => Yup.object().shape({
+const schema = Yup.object().shape({
   newQuantity: Yup.number()
-    .min(1, t("warehouse.validation.quantityMinimum"))
-    .required(t("warehouse.validation.quantityGreaterThanZero")),
-  referenceId: Yup.string().required(t("warehouse.validation.referenceRequired")),
-}));
+    .min(1)
+    .required("La quantitat ha de ser superior a 1"),
+  referenceId: Yup.string().required("La referencia és obligatoria"),
+});
 const validation = ref({
   result: false,
   errors: {},
 } as FormValidationResult);
 
 const validate = () => {
-  const formValidation = new FormValidation(schema.value);
+  const formValidation = new FormValidation(schema);
   validation.value = formValidation.validate(props.newMovement);
 };
 
@@ -145,7 +143,7 @@ const submitForm = async () => {
     });
     toast.add({
       severity: "warn",
-      summary: t("warehouse.messages.invalidForm"),
+      summary: "Formulari inválid",
       detail: errors,
       life: 5000,
     });

@@ -12,6 +12,7 @@ public class LotTraceabilityService(IUnitOfWork unitOfWork) : ILotTraceabilitySe
 
         var rootRow = edges.First(e => e.Depth == 0);
         var root = BuildBackwardNode(rootRow, edges);
+        await AttachMovements(root);
 
         return new LotBackwardTraceabilityDto
         {
@@ -37,6 +38,7 @@ public class LotTraceabilityService(IUnitOfWork unitOfWork) : ILotTraceabilitySe
         var leafLotIds = CollectLeafLotIds(root).Distinct().ToList();
         var salesByLot = await GetSalesDestinationsByLot(leafLotIds);
         AttachSalesDestinations(root, salesByLot);
+        await AttachMovements(root);
 
         return new LotForwardTraceabilityDto
         {
@@ -231,5 +233,50 @@ public class LotTraceabilityService(IUnitOfWork unitOfWork) : ILotTraceabilitySe
                     DeliveryNoteNumber = d.DeliveryNote.Number,
                     DeliveryDate = d.DeliveryNote.DeliveryDate
                 }).ToList());
+    }
+
+    // Attaches the stock movements (provisioning, consumption, production, etc.) of every lot in the tree.
+    private async Task AttachMovements(LotTraceabilityNode root)
+    {
+        var lotIds = CollectAllLotIds(root).Distinct().ToList();
+        var movements = await unitOfWork.StockMovements.GetByLotIds(lotIds);
+        var movementsByLot = movements
+            .Where(m => m.LotId.HasValue)
+            .GroupBy(m => m.LotId!.Value)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(m => new LotStockMovementDto
+                {
+                    MovementId = m.Id,
+                    MovementType = m.MovementType,
+                    Quantity = m.Quantity,
+                    MovementDate = m.MovementDate,
+                    Description = m.Description,
+                    LocationId = m.LocationId,
+                    LocationName = m.Location?.Name ?? string.Empty,
+                    Entity = m.Entity,
+                    EntityId = m.EntityId
+                }).ToList());
+
+        AttachMovementsToNodes(root, movementsByLot);
+    }
+
+    private static void AttachMovementsToNodes(LotTraceabilityNode node, Dictionary<Guid, List<LotStockMovementDto>> movementsByLot)
+    {
+        if (movementsByLot.TryGetValue(node.LotId, out var movements))
+            node.Movements = movements;
+
+        foreach (var child in node.Children)
+            AttachMovementsToNodes(child, movementsByLot);
+    }
+
+    private static IEnumerable<Guid> CollectAllLotIds(LotTraceabilityNode node)
+    {
+        yield return node.LotId;
+        foreach (var child in node.Children)
+        {
+            foreach (var lotId in CollectAllLotIds(child))
+                yield return lotId;
+        }
     }
 }
