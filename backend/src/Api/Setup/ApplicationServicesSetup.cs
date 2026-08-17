@@ -1,4 +1,7 @@
 using Application.Services.System;
+using Application.Services.System.Migration;
+using Application.Contracts.Migration;
+using Infrastructure.DataMigration;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
@@ -36,6 +39,12 @@ public static class ApplicationServicesSetup
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IBrandingService, BrandingService>();
+
+        // Data migration (import/export)
+        services.AddScoped<ISpreadsheetReader, XlsxSpreadsheet>();
+        services.AddScoped<ISpreadsheetWriter, XlsxSpreadsheet>();
+        services.AddScoped<IMigrationHandler, CustomerMigrationHandler>();
+        services.AddScoped<IDataMigrationService, DataMigrationService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
         services.AddScoped<IReferenceService, ReferenceService>();

@@ -70,6 +70,8 @@ public class SpanishFiscalIdValidatorTests
     [InlineData("S1234567D")]
     [InlineData("G1234567D")]
     [InlineData("Q1234567D")]
+    // Mixed-control types accept a digit control too (real AEAT example).
+    [InlineData("V32904799")]
     public void IsValidCif_returns_true_for_valid_cif(string cif)
     {
         Assert.True(SpanishFiscalIdValidator.IsValidCif(cif));

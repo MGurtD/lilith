@@ -1,4 +1,39 @@
 const es = {
+  dataMigration: {
+    title: "Importación / Exportación de datos",
+    description:
+      "Descarga una plantilla, rellénala y súbela para importar datos, o exporta los datos existentes a Excel.",
+    entitiesTitle: "Entidades disponibles",
+    selectAll: "Seleccionar todo",
+    downloadTemplate: "Descargar plantilla",
+    import: "Importar",
+    export: "Exportar",
+    noEntities: "No hay entidades disponibles.",
+    entities: {
+      customer: "Clientes",
+    },
+    messages: {
+      noSelection: "Selecciona al menos una entidad.",
+      templateError: "No se ha podido generar la plantilla.",
+      exportError: "No se han podido exportar los datos.",
+      importError: "No se ha podido importar el archivo.",
+      importDone: "Importación finalizada: {inserted} insertados, {skipped} omitidos.",
+    },
+    report: {
+      title: "Resultado de la importación",
+      total: "Total",
+      inserted: "Insertados",
+      skipped: "Omitidos",
+      sheet: "Hoja",
+      row: "Fila",
+      code: "Código",
+      reason: "Motivo",
+      statusSuccess: "Importado",
+      statusPartial: "Importado parcialmente",
+      statusFailed: "No importado",
+      noErrors: "Todas las filas se han importado correctamente.",
+    },
+  },
   plant: {
     "motiu": "Motivo:",
     "no-hi-ha-motius-disponibles-per-aquest-estat": "No hay motivos disponibles para este estado",

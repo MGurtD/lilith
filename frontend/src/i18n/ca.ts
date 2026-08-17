@@ -1,4 +1,39 @@
 const ca = {
+  dataMigration: {
+    title: "Importació / Exportació de dades",
+    description:
+      "Descarrega una plantilla, omple-la i puja-la per importar dades, o exporta les dades existents a Excel.",
+    entitiesTitle: "Entitats disponibles",
+    selectAll: "Selecciona-ho tot",
+    downloadTemplate: "Descarregar plantilla",
+    import: "Importar",
+    export: "Exportar",
+    noEntities: "No hi ha entitats disponibles.",
+    entities: {
+      customer: "Clients",
+    },
+    messages: {
+      noSelection: "Selecciona almenys una entitat.",
+      templateError: "No s'ha pogut generar la plantilla.",
+      exportError: "No s'han pogut exportar les dades.",
+      importError: "No s'ha pogut importar el fitxer.",
+      importDone: "Importació finalitzada: {inserted} inserits, {skipped} omesos.",
+    },
+    report: {
+      title: "Resultat de la importació",
+      total: "Total",
+      inserted: "Inserits",
+      skipped: "Omesos",
+      sheet: "Full",
+      row: "Fila",
+      code: "Codi",
+      reason: "Motiu",
+      statusSuccess: "Importat",
+      statusPartial: "Importat parcialment",
+      statusFailed: "No importat",
+      noErrors: "Totes les files s'han importat correctament.",
+    },
+  },
   plant: {
     "motiu": "Motiu:",
     "no-hi-ha-motius-disponibles-per-aquest-estat": "No hi ha motius disponibles per aquest estat",

@@ -15,29 +15,7 @@ public static class SpanishFiscalIdValidator
     private static readonly char[] DniLetters =
         "TRWAGMYFPDXBNJZSQVHLCKE".ToCharArray();
 
-    private static readonly Dictionary<char, string> CifControlLetters = new()
-    {
-        { 'A', "JABCDEFGHI" },
-        { 'B', "JABCDEFGHI" },
-        { 'E', "JABCDEFGHI" },
-        { 'H', "JABCDEFGHI" },
-        { 'K', "JABCDEFGHI" },
-        { 'L', "JABCDEFGHI" },
-        { 'M', "JABCDEFGHI" },
-        { 'Q', "JABCDEFGHI" },
-        { 'S', "JABCDEFGHI" },
-        { 'C', "JABCDEFGHI" },
-        { 'G', "JABCDEFGHI" },
-        { 'N', "JABCDEFGHI" },
-        { 'P', "JABCDEFGHI" },
-        { 'R', "JABCDEFGHI" },
-        { 'D', "JABCDEFGHI" },
-        { 'F', "JABCDEFGHI" },
-        { 'J', "JABCDEFGHI" },
-        { 'U', "JABCDEFGHI" },
-        { 'V', "JABCDEFGHI" },
-        { 'W', "JABCDEFGHI" },
-    };
+    private const string CifControlLetters = "JABCDEFGHI";
 
     public static bool IsValidSpanishFiscalId(string? value)
     {
@@ -104,20 +82,19 @@ public static class SpanishFiscalIdValidator
 
         var total = sumEven + sumOdd;
         var controlDigit = (10 - (total % 10)) % 10;
+        var controlAsDigit = (char)('0' + controlDigit);
+        var controlAsLetter = CifControlLetters[controlDigit];
 
+        // Digit-control types.
         if (firstLetter is 'A' or 'B' or 'E' or 'H' or 'K')
-        {
-            return providedControl == (char)('0' + controlDigit);
-        }
+            return providedControl == controlAsDigit;
 
-        if (CifControlLetters.TryGetValue(firstLetter, out var letters))
-        {
-            return providedControl == letters[controlDigit];
-        }
+        // Letter-control types.
+        if (firstLetter is 'P' or 'Q' or 'R' or 'S' or 'N' or 'W')
+            return providedControl == controlAsLetter;
 
-        return providedControl == (char)('0' + controlDigit)
-            || CifControlLetters.TryGetValue(firstLetter, out var bothLetters)
-                && bothLetters[controlDigit] == providedControl;
+        // Remaining types accept either a digit or a letter control.
+        return providedControl == controlAsDigit || providedControl == controlAsLetter;
     }
 
     private static string Normalize(string value)

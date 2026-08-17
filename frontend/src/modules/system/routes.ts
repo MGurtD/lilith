@@ -55,4 +55,10 @@ export default [
     name: "ApiKeys",
     component: () => import("./views/ApiKeys.vue"),
   },
+  {
+    path: "/data-migration",
+    name: "DataMigration",
+    component: () => import("./views/DataMigration.vue"),
+    meta: { roles: ["Admin"] },
+  },
 ] as Array<RouteRecordRaw>;
