@@ -1,0 +1,65 @@
+backend/src/Api/Controllers/System/DataMigrationController.cs
+  s_4da0a76bf707bf::t_be16c64f75ba00 1-52
+backend/src/Api/Resources/LocalizationService/ca.json
+  s_4da0a76bf707bf::t_f526187c4dc399 4-27
+backend/src/Api/Resources/LocalizationService/en.json
+  s_4da0a76bf707bf::t_ee9dec9645f8d0 4-27
+backend/src/Api/Resources/LocalizationService/es.json
+  s_4da0a76bf707bf::t_bf54c4f5eebdcf 4-27
+backend/src/Api/Setup/ApplicationServicesSetup.cs
+  s_4da0a76bf707bf::t_d57b7411e942e3 2-4,42-47
+backend/src/Application.Contracts/Services/System/Migration/IDataMigrationService.cs
+  s_4da0a76bf707bf::t_5506c22bf31b63 1-10
+backend/src/Application.Contracts/Services/System/Migration/IMigrationHandler.cs
+  s_4da0a76bf707bf::t_4a2d1d00fc30f5 1-13
+backend/src/Application.Contracts/Services/System/Migration/ISpreadsheetReader.cs
+  s_4da0a76bf707bf::t_2b013a8915ad4a 1-7
+backend/src/Application.Contracts/Services/System/Migration/ISpreadsheetWriter.cs
+  s_4da0a76bf707bf::t_2faea87c6687a2 1-7
+backend/src/Application.Contracts/Services/System/Migration/MigrationDtos.cs
+  s_4da0a76bf707bf::t_98133f8fd74bcb 1-25
+backend/src/Application.Contracts/Services/System/Migration/SpreadsheetModels.cs
+  s_4da0a76bf707bf::t_0f5d01a5f93eab 1-34
+backend/src/Application/Services/System/Migration/CustomerMigrationHandler.cs
+  s_4da0a76bf707bf::t_7df2d3dfc8b1eb 1-612
+backend/src/Application/Services/System/Migration/DataMigrationService.cs
+  s_4da0a76bf707bf::t_ead96852c93eb8 1-58
+backend/src/Application/Utils/SpanishFiscalIdValidator.cs
+  s_4da0a76bf707bf::t_5e8f00ac263979 18,85-86,88,90,92-94,96-97
+backend/src/Infrastructure/Infrastructure.csproj
+  s_4da0a76bf707bf::t_83a24c6e4face5 20
+backend/src/Infrastructure/Migration/XlsxSpreadsheet.cs
+  s_4da0a76bf707bf::t_d0c679f2b3a6de 1-99
+backend/tests/Application.Tests/Utils/SpanishFiscalIdValidatorTests.cs
+  s_4da0a76bf707bf::t_6545775858d0be 73-74
+frontend/src/i18n/ca.ts
+  s_4da0a76bf707bf::t_fb7cab8912659a 2-36
+frontend/src/i18n/en.ts
+  s_4da0a76bf707bf::t_771572656c20bd 2-36
+frontend/src/i18n/es.ts
+  s_4da0a76bf707bf::t_7267d4dcd6ce3c 2-36
+frontend/src/modules/system/routes.ts
+  s_4da0a76bf707bf::t_4ff89bc4ce7be5 58-63
+frontend/src/modules/system/services/datamigration.service.ts
+  s_4da0a76bf707bf::t_fe7056af2e5396 1-82
+frontend/src/modules/system/services/index.ts
+  s_4da0a76bf707bf::t_bda3184676a05b 3,8
+frontend/src/modules/system/views/DataMigration.vue
+  s_4da0a76bf707bf::t_aa80aaf91584d1 1-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "5d3dbb4ed66bcbca37c468034e51a0f35920211c",
+  "prompts": {},
+  "sessions": {
+    "s_4da0a76bf707bf": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "12db2314-0649-4b92-a161-5fe7dc5807ad",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
