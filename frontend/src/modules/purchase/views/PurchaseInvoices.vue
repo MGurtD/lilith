@@ -1,164 +1,98 @@
 <template>
-  <DataTable
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="purchaseInvoiceStore.purchaseInvoices ?? []"
+    :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="PurchaseInvoices"
     class="small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    :paginator="
-      purchaseInvoiceStore.purchaseInvoices &&
-      purchaseInvoiceStore.purchaseInvoices.length > 20
-    "
-    :rows="20"
     sortMode="multiple"
-    :value="purchaseInvoiceStore.purchaseInvoices"
+    delete-column-width="3%"
+    show-delete-column
+    :can-delete="canDelete"
+    @filter="filterInvoices"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deletePurchaseInvoice"
     @row-click="editPurchaseInvoice"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterInvoices"
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.purchaseInvoices.filters.period") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.purchaseInvoices.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.purchaseInvoices.filters.supplier") }}</label
-            >
-            <DropdownSupplier label="" v-model="filter.supplierId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.purchaseInvoices.filters.paymentMethod") }}</label
-            >
-            <Select
-              v-model="filter.paymentMethodId"
-              :options="puchaseMasterDataStore.masterData.paymentMethods"
-              optionValue="id"
-              optionLabel="name"
-              showClear
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.purchaseInvoices.filters.accountNumber") }}</label
-            >
-            <Select
-              v-model="filter.accountNumber"
-              :options="suppliersStore.accountNumbers"
-              showClear
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.purchaseInvoices.filters.dueDate") }}</label
-            >
-            <DatePicker
-              v-model="filter.dueDates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.purchaseInvoices.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column
-      field="number"
-      :header="t('purchase.purchaseInvoices.columns.number')"
-      :sortable="true"
-      style="width: 10%"
-    ></Column>
-    <Column
-      :header="t('purchase.purchaseInvoices.columns.date')"
-      field="purchaseInvoiceDate"
-      sortable
-      style="width: 10%"
-    >
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.purchaseInvoiceDate) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.purchaseInvoices.columns.supplier')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getSupplierNameById(slotProps.data.supplierId) }}
-      </template>
-    </Column>
-    <Column
-      :header="t('purchase.purchaseInvoices.columns.supplierInvoiceNumber')"
-      style="width: 15%"
-      field="supplierNumber"
-    ></Column>
-    <Column :header="t('purchase.purchaseInvoices.columns.status')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.purchaseInvoices.columns.dueDate')" style="width: 10%">
-      <template #body="slotProps">
-        {{ getLastDueDate(slotProps.data) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.purchaseInvoices.columns.amount')" style="width: 10%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.netAmount) }}
-      </template>
-      <template #footer>
-        <div class="total-footer">
-          <span class="total-label">{{ t("common.total") }}</span>
-          <span class="total-value">{{ formatCurrency(totalNetAmount) }}</span>
-        </div>
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="getStatusNameById(slotProps.data.statusId) === 'Nova'"
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deletePurchaseInvoice($event, slotProps.data)"
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("purchase.purchaseInvoices.filters.period")
+        }}</label>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="
+            t('purchase.purchaseInvoices.placeholders.selectPeriod')
+          "
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("purchase.purchaseInvoices.filters.supplier")
+        }}</label>
+        <DropdownSupplier label="" v-model="filter.supplierId" />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("purchase.purchaseInvoices.filters.paymentMethod")
+        }}</label>
+        <Select
+          v-model="filter.paymentMethodId"
+          :options="puchaseMasterDataStore.masterData.paymentMethods"
+          optionValue="id"
+          optionLabel="name"
+          showClear
+          class="w-full"
+          size="small"
+        />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--sm">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("purchase.purchaseInvoices.filters.accountNumber")
+        }}</label>
+        <Select
+          v-model="filter.accountNumber"
+          :options="suppliersStore.accountNumbers"
+          showClear
+          class="w-full"
+          size="small"
+        />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("purchase.purchaseInvoices.filters.dueDate")
+        }}</label>
+        <DatePicker
+          v-model="filter.dueDates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="
+            t('purchase.purchaseInvoices.placeholders.selectPeriod')
+          "
+          showIcon
+          class="w-full"
+          size="small"
+        />
+      </div>
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
+import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -169,12 +103,15 @@ import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
 import { useSuppliersStore } from "../store/suppliers";
 import { onMounted, ref, computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
-import { formatDateForQueryParameter, formatDate, formatCurrency, getNewUuid } from "../../../utils/functions";
+import {
+  formatDateForQueryParameter,
+  formatCurrency,
+  getNewUuid,
+} from "../../../utils/functions";
 import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
 
@@ -189,6 +126,71 @@ const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const suppliersStore = useSuppliersStore();
 const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.purchaseInvoices.columns.number"),
+    sortable: true,
+    style: "width: 10%",
+  },
+  {
+    field: "purchaseInvoiceDate",
+    header: t("purchase.purchaseInvoices.columns.date"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 10%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.purchaseInvoices.columns.supplier"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.purchaseInvoices.columns.supplierInvoiceNumber"),
+    style: "width: 15%",
+  },
+  {
+    field: "statusId",
+    header: t("purchase.purchaseInvoices.columns.status"),
+    columnType: ColumnType.Lookup,
+    resolver: getStatusNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "dueDate",
+    header: t("purchase.purchaseInvoices.columns.dueDate"),
+    columnType: ColumnType.Date,
+    resolver: resolveLastDueDate,
+    style: "width: 15%",
+  },
+  {
+    field: "netAmount",
+    header: t("purchase.purchaseInvoices.columns.amount"),
+    columnType: ColumnType.Currency,
+    total: "sum",
+    totalFormat: formatCurrency,
+    style: "width: 10%; text-align: right",
+  },
+]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: t("purchase.purchaseInvoices.filters.period"),
+      dueDates: t("purchase.purchaseInvoices.filters.dueDate"),
+      supplierId: t("purchase.purchaseInvoices.filters.supplier"),
+      paymentMethodId: t("purchase.purchaseInvoices.filters.paymentMethod"),
+      accountNumber: t("purchase.purchaseInvoices.filters.accountNumber"),
+    },
+    valueResolvers: {
+      paymentMethodId: getPaymentMethodNameById,
+    },
+  }),
+);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "100%", tablet: "100%" };
 
@@ -314,11 +316,22 @@ const getStatusNameById = (id: string) => {
   else return "";
 };
 
-const getLastDueDate = (invoice: PurchaseInvoice): string => {
+function getPaymentMethodNameById(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return (
+    puchaseMasterDataStore.masterData.paymentMethods?.find(
+      (method) => method.id === value,
+    )?.name ?? ""
+  );
+}
+
+const resolveLastDueDate = (_value: unknown, data: unknown): string | Date => {
+  if (!data || typeof data !== "object") return "";
+  const invoice = data as PurchaseInvoice;
   if (!invoice.purchaseInvoiceDueDates) {
     return "";
   } else if (invoice.purchaseInvoiceDueDates.length === 0) {
-    return formatDate(invoice.purchaseInvoiceDate);
+    return invoice.purchaseInvoiceDate;
   } else {
     const sortedDueDates = [...invoice.purchaseInvoiceDueDates].sort(
       (left, right) =>
@@ -326,34 +339,23 @@ const getLastDueDate = (invoice: PurchaseInvoice): string => {
     );
     const lastDueDate = sortedDueDates[sortedDueDates.length - 1];
 
-    return formatDate(lastDueDate.dueDate);
+    return lastDueDate.dueDate;
   }
 };
-
-const totalNetAmount = computed(() =>
-  (purchaseInvoiceStore.purchaseInvoices ?? []).reduce(
-    (sum, inv) => sum + (inv.netAmount ?? 0),
-    0,
-  ),
-);
 
 const createButtonClick = () => {
   router.push({ path: `/purchaseInvoice/${getNewUuid()}` });
 };
 
 const editPurchaseInvoice = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/purchaseinvoice/${row.data.id}` });
-  }
+  router.push({ path: `/purchaseinvoice/${row.data.id}` });
 };
 
-const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
+const canDelete = (invoice: PurchaseInvoice) =>
+  lifecycleStore.lifecycle?.initialStatusId === invoice.statusId;
+
+const deletePurchaseInvoice = (invoice: PurchaseInvoice) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.purchaseInvoices.messages.confirmDelete", {
       number: invoice.number,
     }),
@@ -374,22 +376,3 @@ const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
   });
 };
 </script>
-
-<style scoped>
-.total-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.total-label {
-  font-weight: 600;
-  color: var(--p-text-muted-color);
-  font-size: 0.85rem;
-}
-
-.total-value {
-  font-weight: 700;
-}
-</style>

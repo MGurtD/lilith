@@ -3,7 +3,9 @@
     <div class="table-filter__content">
       <div class="table-filter__row table-filter__row--main">
         <div v-if="showTitle" class="table-filter__title">
-          <span v-if="showTitle" class="table-filter__title-text">{{ t("tables.filters.title") }}</span>
+          <span v-if="showTitle" class="table-filter__title-text">{{
+            t("tables.filters.title")
+          }}</span>
         </div>
 
         <div
@@ -29,14 +31,29 @@
               {{ field.label }}
             </label>
 
+            <DatePicker
+              v-if="field.type === 'date-range'"
+              :id="field.key"
+              :model-value="dateRangeValue(field.key)"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              :placeholder="field.placeholder"
+              showIcon
+              class="w-full"
+              size="small"
+              @update:model-value="updateField(field.key, $event)"
+            />
+
             <Select
-              v-if="field.type === 'select'"
+              v-else-if="field.type === 'select'"
               :id="field.key"
               :model-value="fieldValue(field.key)"
               :options="field.options"
               :optionLabel="field.optionLabel || 'label'"
               :optionValue="field.optionValue || 'value'"
-              :placeholder="field.placeholder || t('tables.filters.selectPlaceholder')"
+              :placeholder="
+                field.placeholder || t('tables.filters.selectPlaceholder')
+              "
               class="w-full"
               size="small"
               showClear
@@ -64,7 +81,10 @@
               @update:model-value="updateField(field.key, $event)"
             />
 
-            <div v-else-if="field.type === 'checkbox'" class="table-filter__checkbox">
+            <div
+              v-else-if="field.type === 'checkbox'"
+              class="table-filter__checkbox"
+            >
               <Checkbox
                 :inputId="field.key"
                 :model-value="booleanValue(field.key)"
@@ -80,7 +100,9 @@
               :options="field.options"
               :optionLabel="field.optionLabel || 'label'"
               :optionValue="field.optionValue || 'value'"
-              :placeholder="field.placeholder || t('tables.filters.selectPlaceholder')"
+              :placeholder="
+                field.placeholder || t('tables.filters.selectPlaceholder')
+              "
               :display="field.display || 'chip'"
               :maxSelectedLabels="field.maxSelectedLabels ?? 3"
               :filter="field.filter ?? true"
@@ -90,6 +112,8 @@
               @update:model-value="updateField(field.key, $event)"
             />
           </div>
+
+          <slot name="filter-append"></slot>
         </div>
 
         <div class="table-filter__actions">
@@ -106,7 +130,7 @@
             v-tooltip.top="t('tables.filters.apply')"
           />
           <Button
-            v-if="hasFilters"
+            v-if="showClearAction && hasFilters"
             :label="showActionLabels ? t('tables.filters.clear') : undefined"
             icon="pi pi-filter-slash"
             @click="$emit('clear')"
@@ -155,9 +179,22 @@
               {{ field.label }}
             </label>
 
+            <DatePicker
+              v-if="field.type === 'date-range'"
+              :id="field.key"
+              :model-value="dateRangeValue(field.key)"
+              selectionMode="range"
+              dateFormat="dd/mm/yy"
+              :placeholder="field.placeholder"
+              showIcon
+              class="w-full"
+              size="small"
+              @update:model-value="updateField(field.key, $event)"
+            />
+
             <!-- Select / Dropdown -->
             <Select
-              v-if="field.type === 'select'"
+              v-else-if="field.type === 'select'"
               :id="field.key"
               :model-value="fieldValue(field.key)"
               :options="field.options"
@@ -193,7 +230,10 @@
               @update:model-value="updateField(field.key, $event)"
             />
 
-            <div v-else-if="field.type === 'checkbox'" class="table-filter__checkbox">
+            <div
+              v-else-if="field.type === 'checkbox'"
+              class="table-filter__checkbox"
+            >
               <Checkbox
                 :inputId="field.key"
                 :model-value="booleanValue(field.key)"
@@ -236,7 +276,8 @@ const { t } = useI18n();
 export interface FilterConfig {
   key: string;
   label?: string;
-  type: "select" | "text" | "number" | "checkbox" | "multiselect";
+  type:
+    "select" | "text" | "number" | "checkbox" | "multiselect" | "date-range";
   options?: any[];
   optionLabel?: string;
   optionValue?: string;
@@ -284,6 +325,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showClearAction: {
+    type: Boolean,
+    default: true,
+  },
   embedded: {
     type: Boolean,
     default: false,
@@ -328,6 +373,11 @@ const booleanValue = (key: string): boolean => {
 const arrayValue = (key: string): unknown[] => {
   const value = fieldValue(key);
   return Array.isArray(value) ? value : [];
+};
+
+const dateRangeValue = (key: string): (Date | null)[] | undefined => {
+  const value = fieldValue(key);
+  return Array.isArray(value) ? (value as (Date | null)[]) : undefined;
 };
 
 const updateField = (key: string, value: unknown): void => {
@@ -432,6 +482,7 @@ const tableFilterClassName = computed(() => ({
   min-width: 0;
   flex-direction: row;
   align-items: end;
+  align-self: stretch;
   gap: 0.65rem;
 }
 
@@ -454,6 +505,14 @@ const tableFilterClassName = computed(() => ({
 
 .table-filter__prepend {
   display: contents;
+}
+
+.table-filter__prepend > :deep(*) {
+  align-self: center;
+}
+
+.table-filter__prepend > :deep(.table-filter-prepend-field) {
+  align-self: end;
 }
 
 .table-filter__field {

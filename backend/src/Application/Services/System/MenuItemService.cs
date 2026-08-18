@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Application.Contracts;
 using Domain.Entities.Auth;
 
@@ -9,6 +10,9 @@ public class MenuItemService(
     ILocalizationService localization,
     ILanguageCatalog languageCatalog) : IMenuItemService
 {
+    private const int TransferVersion = 1;
+    private const long MaxImportFileSize = 5 * 1024 * 1024;
+
     public async Task<GenericResponse> GetAll(bool hierarchy = false)
     {
         var items = (await unitOfWork.MenuItems.GetAll()).OrderBy(i => i.SortOrder).ToList();
@@ -232,6 +236,161 @@ public class MenuItemService(
         return new GenericResponse(true, new UpdateMenuItemTranslationsResult(request.Items.Count, normalizedCells.Count));
     }
 
+    public async Task<GenericResponse> Export()
+    {
+        var menuItems = (await unitOfWork.MenuItems.GetAll()).ToList();
+        var duplicateKey = menuItems
+            .GroupBy(item => item.Key, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1)?.Key;
+        if (duplicateKey is not null)
+            return TransferError("MenuItemTransferDuplicateKey", duplicateKey);
+
+        var itemsById = menuItems.ToDictionary(item => item.Id);
+        var activeCodes = await GetActiveLanguageCodes();
+        var translations = await unitOfWork.MenuItemTranslations.FindAsync(t => !t.Disabled);
+        var translationsByMenu = translations.ToLookup(t => t.MenuItemId);
+        var transferItems = new List<MenuItemTransferItem>(menuItems.Count);
+
+        foreach (var item in menuItems.OrderBy(item => item.SortOrder).ThenBy(item => item.Key))
+        {
+            string? parentKey = null;
+            if (item.ParentId.HasValue)
+            {
+                if (!itemsById.TryGetValue(item.ParentId.Value, out var parent))
+                    return TransferError("MenuItemTransferParentInvalid", item.Key);
+                parentKey = parent.Key;
+            }
+
+            var itemTranslations = translationsByMenu[item.Id].ToList();
+            transferItems.Add(new MenuItemTransferItem(
+                item.Key,
+                parentKey,
+                item.Icon,
+                item.Route,
+                item.SortOrder,
+                item.Disabled,
+                activeCodes
+                    .OrderBy(code => code)
+                    .Select(code => new MenuItemTranslationDto(
+                        code,
+                        itemTranslations.FirstOrDefault(translation =>
+                            translation.LanguageCode.Equals(code, StringComparison.OrdinalIgnoreCase))?.Title
+                            ?? string.Empty))
+                    .ToList()));
+        }
+
+        var document = new MenuItemTransferDocument(TransferVersion, transferItems);
+        var validation = ValidateTransferDocument(document, activeCodes);
+        return validation.Error ?? new GenericResponse(true, ToTransferDocument(validation.Items!));
+    }
+
+    public async Task<GenericResponse> Import(Stream? content)
+    {
+        if (content is null || !content.CanRead || (content.CanSeek && content.Length == 0))
+            return TransferError("MenuItemTransferFileInvalid");
+        if (content.CanSeek && content.Length > MaxImportFileSize)
+            return TransferError("MenuItemTransferFileTooLarge");
+
+        MenuItemTransferDocument? document;
+        try
+        {
+            document = await JsonSerializer.DeserializeAsync<MenuItemTransferDocument>(
+                content,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        }
+        catch (JsonException)
+        {
+            return TransferError("MenuItemTransferFileInvalid");
+        }
+        catch (NotSupportedException)
+        {
+            return TransferError("MenuItemTransferFileInvalid");
+        }
+
+        if (document is null)
+            return TransferError("MenuItemTransferFileInvalid");
+
+        var activeCodes = await GetActiveLanguageCodes();
+        var validation = ValidateTransferDocument(document, activeCodes);
+        if (validation.Error is not null)
+            return validation.Error;
+
+        var importedItems = validation.Items!;
+        var existingItems = (await unitOfWork.MenuItems.GetAll()).ToList();
+        var duplicateExistingKey = existingItems
+            .GroupBy(item => item.Key, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1)?.Key;
+        if (duplicateExistingKey is not null)
+            return TransferError("MenuItemTransferDuplicateKey", duplicateExistingKey);
+
+        var existingByKey = existingItems.ToDictionary(item => item.Key, StringComparer.Ordinal);
+        var entitiesByKey = importedItems.ToDictionary(
+            item => item.Key,
+            item => existingByKey.GetValueOrDefault(item.Key) ?? new MenuItem(),
+            StringComparer.Ordinal);
+        var affectedIds = entitiesByKey.Values.Select(item => item.Id).ToHashSet();
+        var existingTranslations = await unitOfWork.MenuItemTranslations
+            .FindAsync(translation => affectedIds.Contains(translation.MenuItemId));
+        var createdItems = 0;
+        var updatedItems = 0;
+        var updatedTranslations = 0;
+
+        // Validation is complete. Stage the entire import and save it as one EF transaction.
+        foreach (var imported in importedItems)
+        {
+            var entity = entitiesByKey[imported.Key];
+            var exists = existingByKey.ContainsKey(imported.Key);
+            entity.Key = imported.Key;
+            entity.Icon = imported.Icon;
+            entity.Route = imported.Route;
+            entity.SortOrder = imported.SortOrder;
+            entity.Disabled = imported.Disabled;
+            entity.ParentId = imported.ParentKey is null ? null : entitiesByKey[imported.ParentKey].Id;
+
+            if (exists)
+            {
+                unitOfWork.MenuItems.UpdateWithoutSave(entity);
+                updatedItems++;
+            }
+            else
+            {
+                await unitOfWork.MenuItems.AddWithoutSave(entity);
+                createdItems++;
+            }
+
+            foreach (var importedTranslation in imported.Translations)
+            {
+                var translation = existingTranslations.FirstOrDefault(existing =>
+                    existing.MenuItemId == entity.Id
+                    && existing.LanguageCode.Equals(importedTranslation.Key, StringComparison.OrdinalIgnoreCase));
+                if (translation is null)
+                {
+                    translation = new MenuItemTranslation
+                    {
+                        MenuItemId = entity.Id,
+                        LanguageCode = importedTranslation.Key,
+                        Title = importedTranslation.Value
+                    };
+                    await unitOfWork.MenuItemTranslations.AddWithoutSave(translation);
+                    existingTranslations.Add(translation);
+                }
+                else
+                {
+                    translation.LanguageCode = importedTranslation.Key;
+                    translation.Title = importedTranslation.Value;
+                    translation.Disabled = false;
+                    unitOfWork.MenuItemTranslations.UpdateWithoutSave(translation);
+                }
+                updatedTranslations++;
+            }
+        }
+
+        await unitOfWork.CompleteAsync();
+        return new GenericResponse(
+            true,
+            new MenuItemImportResult(createdItems, updatedItems, updatedTranslations));
+    }
+
     public async Task<GenericResponse> Delete(Guid id)
     {
         var item = await unitOfWork.MenuItems.Get(id);
@@ -293,6 +452,119 @@ public class MenuItemService(
 
     private GenericResponse TranslationBatchError(string key) =>
         new(false, localization.GetLocalizedString(key));
+
+    private async Task<HashSet<string>> GetActiveLanguageCodes() =>
+        (await languageCatalog.GetAllAsync())
+            .Select(language => language.Code.Trim().ToLowerInvariant())
+            .Where(code => code.Length > 0)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private (List<NormalizedTransferItem>? Items, GenericResponse? Error) ValidateTransferDocument(
+        MenuItemTransferDocument document,
+        HashSet<string> activeCodes)
+    {
+        if (document.Version != TransferVersion)
+            return (null, TransferError("MenuItemTransferVersionInvalid", document.Version));
+        if (document.Items is null || document.Items.Count == 0)
+            return (null, TransferError("MenuItemTransferItemsEmpty"));
+
+        var normalizedItems = new List<NormalizedTransferItem>(document.Items.Count);
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var item in document.Items)
+        {
+            if (item is null)
+                return (null, TransferError("MenuItemTransferFileInvalid"));
+
+            var key = item.Key?.Trim() ?? string.Empty;
+            var parentKey = string.IsNullOrWhiteSpace(item.ParentKey) ? null : item.ParentKey.Trim();
+            var icon = string.IsNullOrWhiteSpace(item.Icon) ? null : item.Icon.Trim();
+            var route = string.IsNullOrWhiteSpace(item.Route) ? null : item.Route.Trim();
+            if (key.Length == 0 || key.Length > 250)
+                return (null, TransferError("MenuItemTransferKeyInvalid", key));
+            if (!keys.Add(key))
+                return (null, TransferError("MenuItemTransferDuplicateKey", key));
+            if (icon?.Length > 100 || route?.Length > 500 || item.SortOrder < 0)
+                return (null, TransferError("MenuItemTransferFieldInvalid", key));
+            if (item.Translations is null)
+                return (null, TransferError("MenuItemTransferTranslationsInvalid", key));
+
+            var normalizedTranslations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var translation in item.Translations)
+            {
+                var code = translation.LanguageCode?.Trim().ToLowerInvariant() ?? string.Empty;
+                var title = translation.Title?.Trim() ?? string.Empty;
+                if (!activeCodes.Contains(code)
+                    || title.Length == 0
+                    || title.Length > 250
+                    || !normalizedTranslations.TryAdd(code, title))
+                    return (null, TransferError("MenuItemTransferTranslationsInvalid", key));
+            }
+            if (normalizedTranslations.Count != activeCodes.Count)
+                return (null, TransferError("MenuItemTransferTranslationsInvalid", key));
+
+            normalizedItems.Add(new NormalizedTransferItem(
+                key,
+                parentKey,
+                icon,
+                route,
+                item.SortOrder,
+                item.Disabled,
+                normalizedTranslations));
+        }
+
+        var itemsByKey = normalizedItems.ToDictionary(item => item.Key, StringComparer.Ordinal);
+        foreach (var item in normalizedItems)
+        {
+            if (item.ParentKey is not null
+                && (item.ParentKey == item.Key || !itemsByKey.ContainsKey(item.ParentKey)))
+                return (null, TransferError("MenuItemTransferParentInvalid", item.Key));
+        }
+
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        var visiting = new HashSet<string>(StringComparer.Ordinal);
+        bool HasCycle(NormalizedTransferItem item)
+        {
+            if (visited.Contains(item.Key)) return false;
+            if (!visiting.Add(item.Key)) return true;
+            if (item.ParentKey is not null && HasCycle(itemsByKey[item.ParentKey])) return true;
+            visiting.Remove(item.Key);
+            visited.Add(item.Key);
+            return false;
+        }
+
+        if (normalizedItems.Any(HasCycle))
+            return (null, TransferError("MenuItemTransferHierarchyInvalid"));
+
+        return (normalizedItems, null);
+    }
+
+    private static MenuItemTransferDocument ToTransferDocument(IEnumerable<NormalizedTransferItem> items) =>
+        new(
+            TransferVersion,
+            items.Select(item => new MenuItemTransferItem(
+                item.Key,
+                item.ParentKey,
+                item.Icon,
+                item.Route,
+                item.SortOrder,
+                item.Disabled,
+                item.Translations
+                    .OrderBy(translation => translation.Key)
+                    .Select(translation => new MenuItemTranslationDto(translation.Key, translation.Value))
+                    .ToList()))
+                .ToList());
+
+    private GenericResponse TransferError(string key, params object[] arguments) =>
+        new(false, localization.GetLocalizedString(key, arguments));
+
+    private sealed record NormalizedTransferItem(
+        string Key,
+        string? ParentKey,
+        string? Icon,
+        string? Route,
+        int SortOrder,
+        bool Disabled,
+        Dictionary<string, string> Translations);
 
     private static List<MenuItemTranslationMatrixRowDto> BuildMatrixRows(
         IReadOnlyList<MenuItem> items,

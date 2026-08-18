@@ -488,7 +488,7 @@ const ca = {
       "Fases": "Fases", "Costs": "Costos", "Moviments": "Moviments", "Costos": "Costos", "Cost Material": "Cost de material", "Cost Total": "Cost total", "Temps": "Temps", "Temps Operari": "Temps d'operari", "Temps Màquina": "Temps de màquina", "Ordre de fabricació actualitzada": "Ordre de fabricació actualitzada", "Revisi el log per a més informació": "Reviseu el registre per obtenir més informació", "Error al crear la fase": "Error en crear la fase", "Fase eliminada": "Fase eliminada", "Error": "Error", "No s'ha pugut generar l'informe de l'ordre de fabricació": "No s'ha pogut generar l'informe de l'ordre de fabricació",
       "Comentaris": "Comentaris", "Comentari de Fase": "Comentari de fase", "Aquesta fase no té cap comentari": "Aquesta fase no té cap comentari", "Els comentaris es poden afegir des del mòdul de planta durant la fabricació": "Els comentaris es poden afegir des del mòdul de planta durant la fabricació",
       "Data Prevista": "Data prevista", "Ordres de fabricació actualitzades": "Ordres de fabricació actualitzades", "Error actualitzant les ordres de fabricació": "Error en actualitzar les ordres de fabricació",
-      "Crear": "Crear", "Última actual.": "Última actualització", "Revisió": "Revisió", "Cálcul de cost": "Càlcul de cost", "Seguiment": "Seguiment", "Dashboard costs producció": "Quadre de comandament de costos de producció", "Dashboard de producció": "Quadre de comandament de producció",
+      "Crear": "Crear", lastUpdated: "Última actualització", "Revisió": "Revisió", "Cálcul de cost": "Càlcul de cost", "Seguiment": "Seguiment", "Dashboard costs producció": "Quadre de comandament de costos de producció", "Dashboard de producció": "Quadre de comandament de producció",
     },
   },
   analytics: {
@@ -614,6 +614,13 @@ const ca = {
       saved: "S'han desat {count} traduccions",
       loadError: "No s'ha pogut carregar la matriu de traduccions",
       saveError: "No s'han pogut desar les traduccions",
+    },
+    transfer: {
+      import: "Importar menús",
+      export: "Exportar menús",
+      imported: "S'han creat {created} menús i se n'han actualitzat {updated}",
+      importError: "No s'han pogut importar els menús",
+      exportError: "No s'han pogut exportar els menús",
     },
   },
   profiles: {
@@ -1853,7 +1860,7 @@ const ca = {
     actions: { save: "Desar" },
     messages: { invalidForm: "Formulari invàlid", invalidFilter: "Filtre invàlid", deleted: "Eliminat", confirmDeleteExpense: "Esteu segur que voleu eliminar la despesa?", confirmDeleteExpenseType: "Esteu segur que voleu eliminar el tipus de despesa?", expenseCreated: "Despesa registrada correctament", expenseUpdated: "Despesa actualitzada correctament", expenseTypeCreated: "Tipus de despesa creat correctament", expenseTypeUpdated: "Tipus de despesa actualitzat correctament", confirmDeleteSupplier: "Esteu segur que voleu eliminar el proveïdor {name}?", confirmDeleteSupplierType: "Esteu segur que voleu eliminar el tipus de proveïdor {name}?", supplierTypeCreated: "Tipus de proveïdor creat correctament", supplierTypeUpdated: "Tipus de proveïdor actualitzat correctament" },
     expense: { createTitle: "Alta de despesa", editTitle: "Modificació de despesa" },
-    expenses: { title: "Gestió de despeses", visibleTotal: "Total visible: {amount}" },
+    expenses: { title: "Gestió de despeses" },
     expenseTypes: { title: "Tipus de despesa", managementTitle: "Gestió de tipus de despesa", createTitle: "Alta de tipus de despesa", detailTitle: "Tipus de despesa {name}" },
     dashboard: { title: "Tauler de despeses", totalExpense: "Despesa total", charts: "Gràfics", list: "Llistat", monthlyExpenses: "Despeses agrupades mensualment", expensesByType: "Gràfic de despeses per tipologia", purchase: "Compra", expense: "Despesa", detail: "Detall", expenses: "Despeses", expenseType: "Tipus de despesa" },
     suppliers: { title: "Proveïdors" },

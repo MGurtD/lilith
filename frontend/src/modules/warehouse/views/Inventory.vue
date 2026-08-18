@@ -1,63 +1,45 @@
 <template>
-  <DataTable
-    :value="filteredInventories"
+  <Table
+    :items="filteredInventories"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
     :paginator="(inventoryStore.inventories?.length ?? 0) > 20"
     :rows="20"
+    @create="newMovement"
+    @clear="cleanFilter"
   >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @create="newMovement"
-        @clear="cleanFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.location") }}</label>
-            <DropdownWarehousesWithLocations
-              label=""
-              v-model="filter.locationId"
-            />
-          </div>
-        </template>
-        <template #append>
-          <Button
-            :label="t('common.save')"
-            icon="pi pi-save"
-            size="small"
-            rounded
-            :aria-label="t('warehouse.inventory.saveMovementsAria')"
-            @click="saveMovement"
-          />
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("warehouse.fields.location")
+        }}</label>
+        <DropdownWarehousesWithLocations label="" v-model="filter.locationId" />
+      </div>
     </template>
-    <Column field="referenceName" :header="t('warehouse.fields.reference')" style="width: 28%">
-    </Column>
-    <Column field="locationName" :header="t('warehouse.fields.location')"></Column>
-    <Column field="oldQuantity" :header="t('warehouse.fields.units')"></Column>
-    <Column :header="t('warehouse.inventory.count')" style="width: 12%">
-      <template #body="slotProps">
-        <BaseInput
-          label=""
-          id="newQuantity"
-          v-model="slotProps.data.newQuantity"
-        ></BaseInput>
-      </template>
-    </Column>
-    <Column field="width" :header="t('warehouse.fields.widthMmAxis')"></Column>
-    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')"></Column>
-    <Column field="height" :header="t('warehouse.fields.heightMmAxis')"></Column>
-    <Column field="diameter" :header="t('warehouse.fields.diameterMm')"></Column>
-    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')"></Column>
-  </DataTable>
+    <template #append>
+      <Button
+        :label="t('common.save')"
+        icon="pi pi-save"
+        size="small"
+        rounded
+        :aria-label="t('warehouse.inventory.saveMovementsAria')"
+        @click="saveMovement"
+      />
+    </template>
+    <template #body-newQuantity="slotProps">
+      <BaseInput
+        label=""
+        id="newQuantity"
+        v-model="slotProps.data.newQuantity"
+      />
+    </template>
+  </Table>
   <Dialog :closable="true" v-model:visible="isDialogVisible" :modal="true">
     <FormInventoryNewMovements
       :newMovement="newStockMovement"
@@ -67,10 +49,12 @@
 </template>
 <script setup lang="ts">
 import BaseInput from "../../../components/BaseInput.vue";
-import TableFilter, {
+import {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
@@ -111,6 +95,47 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
   },
 ]);
 
+const columns = computed<Column[]>(() => [
+  {
+    field: "referenceName",
+    header: t("warehouse.fields.reference"),
+    style: "width: 28%",
+  },
+  {
+    field: "locationName",
+    header: t("warehouse.fields.location"),
+  },
+  {
+    field: "oldQuantity",
+    header: t("warehouse.fields.units"),
+  },
+  {
+    field: "newQuantity",
+    header: t("warehouse.inventory.count"),
+    style: "width: 12%",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
+  },
+]);
+
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "55%",
   tablet: "70%",
@@ -126,7 +151,6 @@ const setMenuTitle = () => {
 watch(locale, setMenuTitle, { immediate: true });
 
 onMounted(async () => {
-
   await refreshData();
 });
 
@@ -182,7 +206,9 @@ const isDialogVisible = ref(false);
 const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
-  inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
+  inventory.referenceName = referenceStore.getFullNameById(
+    inventory.referenceId,
+  );
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };

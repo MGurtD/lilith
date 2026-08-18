@@ -488,7 +488,7 @@ const es = {
       "Fases": "Fases", "Costs": "Costes", "Moviments": "Movimientos", "Costos": "Costes", "Cost Material": "Coste de material", "Cost Total": "Coste total", "Temps": "Tiempo", "Temps Operari": "Tiempo de operario", "Temps Màquina": "Tiempo de máquina", "Ordre de fabricació actualitzada": "Orden de fabricación actualizada", "Revisi el log per a més informació": "Revisa el registro para más información", "Error al crear la fase": "Error al crear la fase", "Fase eliminada": "Fase eliminada", "Error": "Error", "No s'ha pugut generar l'informe de l'ordre de fabricació": "No se ha podido generar el informe de la orden de fabricación",
       "Comentaris": "Comentarios", "Comentari de Fase": "Comentario de fase", "Aquesta fase no té cap comentari": "Esta fase no tiene ningún comentario", "Els comentaris es poden afegir des del mòdul de planta durant la fabricació": "Los comentarios se pueden añadir desde el módulo de planta durante la fabricación",
       "Data Prevista": "Fecha prevista", "Ordres de fabricació actualitzades": "Órdenes de fabricación actualizadas", "Error actualitzant les ordres de fabricació": "Error al actualizar las órdenes de fabricación",
-      "Crear": "Crear", "Última actual.": "Última actualización", "Revisió": "Revisión", "Cálcul de cost": "Cálculo de coste", "Seguiment": "Seguimiento", "Dashboard costs producció": "Panel de costes de producción", "Dashboard de producció": "Panel de producción",
+      "Crear": "Crear", lastUpdated: "Última actualización", "Revisió": "Revisión", "Cálcul de cost": "Cálculo de coste", "Seguiment": "Seguimiento", "Dashboard costs producció": "Panel de costes de producción", "Dashboard de producció": "Panel de producción",
     },
   },
   analytics: {
@@ -614,6 +614,13 @@ const es = {
       saved: "Se han guardado {count} traducciones",
       loadError: "No se ha podido cargar la matriz de traducciones",
       saveError: "No se han podido guardar las traducciones",
+    },
+    transfer: {
+      import: "Importar menús",
+      export: "Exportar menús",
+      imported: "Se han creado {created} menús y actualizado {updated}",
+      importError: "No se han podido importar los menús",
+      exportError: "No se han podido exportar los menús",
     },
   },
   profiles: {
@@ -1796,7 +1803,7 @@ const es = {
     actions: { save: "Guardar" },
     messages: { invalidForm: "Formulario no válido", invalidFilter: "Filtro no válido", deleted: "Eliminado", confirmDeleteExpense: "¿Seguro que desea eliminar el gasto?", confirmDeleteExpenseType: "¿Seguro que desea eliminar el tipo de gasto?", expenseCreated: "Gasto registrado correctamente", expenseUpdated: "Gasto actualizado correctamente", expenseTypeCreated: "Tipo de gasto creado correctamente", expenseTypeUpdated: "Tipo de gasto actualizado correctamente", confirmDeleteSupplier: "¿Seguro que desea eliminar el proveedor {name}?", confirmDeleteSupplierType: "¿Seguro que desea eliminar el tipo de proveedor {name}?", supplierTypeCreated: "Tipo de proveedor creado correctamente", supplierTypeUpdated: "Tipo de proveedor actualizado correctamente" },
     expense: { createTitle: "Alta de gasto", editTitle: "Modificación de gasto" },
-    expenses: { title: "Gestión de gastos", visibleTotal: "Total visible: {amount}" },
+    expenses: { title: "Gestión de gastos" },
     expenseTypes: { title: "Tipos de gasto", managementTitle: "Gestión de tipos de gasto", createTitle: "Alta de tipo de gasto", detailTitle: "Tipo de gasto {name}" },
     dashboard: { title: "Panel de gastos", totalExpense: "Gasto total", charts: "Gráficos", list: "Listado", monthlyExpenses: "Gastos agrupados mensualmente", expensesByType: "Gráfico de gastos por tipología", purchase: "Compra", expense: "Gasto", detail: "Detalle", expenses: "Gastos", expenseType: "Tipo de gasto" },
     suppliers: { title: "Proveedores" },

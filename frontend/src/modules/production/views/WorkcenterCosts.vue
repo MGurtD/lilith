@@ -1,93 +1,31 @@
 <template>
-  <DataTable
-    :value="filteredData"
+  <Table
+    :items="filteredData"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="workcenterName"
     :sort-order="1"
+    show-delete-column
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
-  >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Màquina") }}</label
-            >
-            <Select
-              v-model="filter.workcenterId"
-              :options="plantmodelStore.workcenters"
-              optionValue="id"
-              optionLabel="name"
-              class="w-full"
-              size="small"
-              showClear
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Cost 0") }}</label
-            >
-            <div class="table-filter-checkbox-field">
-              <Checkbox :binary="true" v-model="filter.zerocost" />
-            </div>
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="workcenterName" :header="pt('Màquina')" style="width: 30%" sortable>
-    </Column>
-    <Column
-      field="machineStatusName"
-      :header="pt('Estat de màquina')"
-      style="width: 30%"
-    >
-    </Column>
-    <Column field="cost" :header="pt('Cost')" style="width: 30%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.cost) }}
-      </template>
-    </Column>
-    <Column :header="pt('Desactivada')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  />
 </template>
 
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
-const pt = (key: string): string => t(`production.ui.${key}`);
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
@@ -97,9 +35,11 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkcenterCost } from "../types";
-import { formatCurrency, getNewUuid } from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { useUserFilterStore } from "../../../store/userfilter";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
@@ -108,6 +48,50 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "workcenterId",
+    label: pt("Màquina"),
+    type: "select",
+    options: plantmodelStore.workcenters ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    size: "md",
+  },
+  {
+    key: "zerocost",
+    label: pt("Cost 0"),
+    type: "checkbox",
+    size: "sm",
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "workcenterName",
+    header: pt("Màquina"),
+    sortable: true,
+    style: "width: 30%",
+  },
+  {
+    field: "machineStatusName",
+    header: pt("Estat de màquina"),
+    style: "width: 30%",
+  },
+  {
+    field: "cost",
+    header: pt("Cost"),
+    columnType: ColumnType.Currency,
+    style: "width: 30%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivada"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("WorkcenterCosts", "");
@@ -191,18 +175,11 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/workcentercost/${row.data.id}` });
-  }
+  router.push({ path: `/workcentercost/${row.data.id}` });
 };
 
-const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
+const deleteButton = (workcentercost: WorkcenterCost) => {
   confirm.require({
-    target: event.currentTarget,
     message: pt("Confirmar l'eliminació del cost"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -224,11 +201,3 @@ const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
   });
 };
 </script>
-
-<style scoped>
-.table-filter-checkbox-field {
-  display: flex;
-  align-items: center;
-  min-height: 2.375rem;
-}
-</style>

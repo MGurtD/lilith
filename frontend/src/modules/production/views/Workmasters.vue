@@ -1,138 +1,65 @@
 <template>
-  <DataTable
-    :value="filteredData"
+  <Table
+    :items="filteredData"
+    :columns="columns"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-labels="filterLabels"
+    :filter-value-resolvers="filterValueResolvers"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    page="Workmasters"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="reference.code"
     :sort-order="1"
+    show-delete-column
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Client") }}</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Referència") }}</label
-            >
-            <DropdownReference
-              label=""
-              v-model="filter.referenceId"
-              :customer-id="filter.customerId"
-              :fullName="true"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Última actual.") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :showIcon="true"
-              class="w-full"
-              :placeholder="pt('Selecciona periode')"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          pt("Client")
+        }}</label>
+        <DropdownCustomers label="" v-model="filter.customerId" />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          pt("Referència")
+        }}</label>
+        <DropdownReference
+          label=""
+          v-model="filter.referenceId"
+          :customer-id="filter.customerId"
+          :fullName="true"
+        />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          pt("lastUpdated")
+        }}</label>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :showIcon="true"
+          class="w-full"
+          :placeholder="pt('Selecciona periode')"
+          size="small"
+        />
+      </div>
     </template>
-    <Column
-      field="reference.code"
-      sortable
-      :header="pt('Referencia')"
-      style="width: 40%"
-    >
-      <template #body="slotProps">
-        {{ referenceStore.getFullName(slotProps.data.reference) }}
-      </template>
-    </Column>
-    <Column sortable :header="pt('Client')" style="width: 20%">
-      <template #body="slotProps">
-        {{
-          customersStore.getCustomerNameById(
-            slotProps.data.reference.customerId,
-          )
-        }}
-      </template>
-    </Column>
-    <Column field="updatedOn" :header="pt('Actualitzada')" sortable style="width: 10%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.updatedOn) }}
-      </template>
-    </Column>
-    <Column :header="pt('Mode')" style="width: 12.5%">
-      <template #body="slotProps">
-        {{ returnMode(slotProps.data.mode) }}
-      </template>
-    </Column>
-    <Column
-      field="baseQuantity"
-      :header="pt('Quantitat Base')"
-      style="width: 10%"
-    ></Column>
-    <Column :header="pt('Cost')" style="width: 10%">
-      <template #body="slotProps">
-        {{
-          formatCurrency(
-            slotProps.data.machineCost +
-              slotProps.data.operatorCost +
-              slotProps.data.materialCost +
-              slotProps.data.externalCost,
-          )
-        }}
-      </template>
-    </Column>
-    <Column :header="pt('Desactivada')" style="width: 5%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.COPY"
-          class="grid_copy_column_button"
-          @click="copyButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+    <template #body-copyAction="{ data }">
+      <i
+        :class="PrimeIcons.COPY"
+        class="grid_copy_column_button"
+        @click.stop="copyButton(data)"
+      />
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -166,9 +93,9 @@
   >
     <div v-if="copyModel" class="flex flex-column gap-3">
       <div class="flex flex-column gap-1">
-        <label class="font-semibold text-sm text-color-secondary"
-          >{{ pt("Ruta d'origen") }}</label
-        >
+        <label class="font-semibold text-sm text-color-secondary">{{
+          pt("Ruta d'origen")
+        }}</label>
         <span class="text-lg">{{ copySourceName }}</span>
       </div>
 
@@ -178,9 +105,9 @@
       />
 
       <div class="flex flex-column gap-2">
-        <label class="font-semibold text-sm text-color-secondary"
-          >{{ pt("Destí de la còpia") }}</label
-        >
+        <label class="font-semibold text-sm text-color-secondary">{{
+          pt("Destí de la còpia")
+        }}</label>
 
         <div class="flex align-items-center gap-2">
           <RadioButton
@@ -224,9 +151,9 @@
       </div>
 
       <div class="flex flex-column gap-1">
-        <label class="font-semibold text-sm text-color-secondary mb-1"
-          >{{ pt("Mode de fabricació") }}</label
-        >
+        <label class="font-semibold text-sm text-color-secondary mb-1">{{
+          pt("Mode de fabricació")
+        }}</label>
         <Select
           v-model="copyModel.mode"
           :options="workmasterStore.workmasterModes"
@@ -258,16 +185,15 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
-const pt = (key: string): string => t(`production.ui.${key}`);
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
-import { useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -276,14 +202,12 @@ import { useWorkMasterStore } from "../store/workmaster";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../../sales/store/customers";
 import { WorkMaster, WorkMasterToCopy } from "../types";
-import {
-  getNewUuid,
-  formatCurrency,
-  formatDate,
-} from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
@@ -294,6 +218,95 @@ const referenceStore = useReferenceStore();
 const customersStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
+
+const filterLabels = computed<Record<string, string>>(() => ({
+  customerId: pt("Client"),
+  referenceId: pt("Referència"),
+  dates: pt("lastUpdated"),
+}));
+
+const filterValueResolvers: Record<string, (value: unknown) => string> = {
+  customerId: (value) =>
+    typeof value === "string"
+      ? (customersStore.getCustomerNameById(value) ?? "")
+      : "",
+  referenceId: (value) =>
+    typeof value === "string"
+      ? (referenceStore.getFullNameById(value) ?? "")
+      : "",
+};
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "reference.code",
+    header: pt("Referencia"),
+    sortable: true,
+    resolver: (_value, data) => {
+      const workmaster = data as WorkMaster;
+      return workmaster.reference
+        ? referenceStore.getFullName(workmaster.reference)
+        : "";
+    },
+    style: "width: 40%",
+  },
+  {
+    field: "reference.customerId",
+    header: pt("Client"),
+    sortable: true,
+    resolver: (value) =>
+      typeof value === "string"
+        ? customersStore.getCustomerNameById(value)
+        : "",
+    style: "width: 20%",
+  },
+  {
+    field: "updatedOn",
+    header: pt("Actualitzada"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 10%",
+  },
+  {
+    field: "mode",
+    header: pt("Mode"),
+    resolver: (value) =>
+      typeof value === "number" ? (returnMode(value) ?? "") : "",
+    style: "width: 12.5%",
+  },
+  {
+    field: "baseQuantity",
+    header: pt("Quantitat Base"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "totalCost",
+    header: pt("Cost"),
+    columnType: ColumnType.Currency,
+    resolver: (_value, data) => {
+      const workmaster = data as WorkMaster;
+      return (
+        workmaster.machineCost +
+        workmaster.operatorCost +
+        workmaster.materialCost +
+        workmaster.externalCost
+      );
+    },
+    style: "width: 10%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivada"),
+    columnType: ColumnType.Boolean,
+    style: "width: 5%",
+  },
+  {
+    field: "copyAction",
+    header: "",
+    style: "width: 3%",
+    truncate: false,
+  },
+]);
 
 const filter = ref({
   referenceId: undefined,
@@ -323,7 +336,7 @@ const filteredData = computed(() => {
     filteredWorkmasters = filteredWorkmasters.filter(
       (w) =>
         w.reference?.customerId === filter.value.customerId ||
-        w.reference.customerId === null,
+        w.reference?.customerId === null,
     );
 
   if (filter.value.dates && filter.value.dates.length > 0) {
@@ -386,8 +399,8 @@ onMounted(async () => {
     if (userFilter.dates) filter.value.dates = userFilter.dates;
   }
 });
-onUnmounted(() => {
-  userFilterStore.addFilter("Workmasters", "", filter.value);
+onBeforeRouteLeave(async () => {
+  await userFilterStore.addFilter("Workmasters", "", filter.value);
 });
 
 const createButtonClick = () => {
@@ -397,7 +410,7 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const copyButton = (event: any, workmaster: WorkMaster) => {
+const copyButton = (workmaster: WorkMaster) => {
   copySourceWorkmasterId.value = workmaster.id;
   copySourceName.value = referenceStore.getFullNameById(workmaster.referenceId);
   copyDestinyMode.value = "existing";
@@ -479,16 +492,7 @@ const onCopySubmit = async () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    ) &&
-    !(row.originalEvent.target as any).className.includes(
-      "grid_copy_column_button",
-    )
-  ) {
-    router.push({ path: `/workmaster/${row.data.id}` });
-  }
+  router.push({ path: `/workmaster/${row.data.id}` });
 };
 
 const onCreateSubmit = async () => {
@@ -499,9 +503,8 @@ const onCreateSubmit = async () => {
     router.push({ path: `/workmaster/${workmasterStore.workmaster.id}` });
 };
 
-const deleteButton = (event: any, workmaster: WorkMaster) => {
+const deleteButton = (workmaster: WorkMaster) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("production.messages.confirmDeleteWorkmaster", {
       name: workmaster.reference!.description,
     }),

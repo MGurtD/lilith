@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using Application.Contracts;
 using Application.Services.System;
 using Domain.Entities;
@@ -177,8 +179,204 @@ public class MenuItemServiceTests
         Assert.Equal(0, proxy.CompleteCalls);
     }
 
+    [Fact]
+    public async Task Export_uses_keys_for_hierarchy_and_includes_all_transferable_fields()
+    {
+        var parent = new MenuItem
+        {
+            Key = "system",
+            Icon = "pi pi-cog",
+            SortOrder = 1,
+            Disabled = true
+        };
+        var child = new MenuItem
+        {
+            Key = "users",
+            ParentId = parent.Id,
+            Route = "/users",
+            SortOrder = 2
+        };
+        var menuItems = new InMemoryRepository<MenuItem>([child, parent]);
+        var translations = new InMemoryRepository<MenuItemTranslation>(
+            TranslationsFor(parent, "Sistema", "Sistema", "System")
+                .Concat(TranslationsFor(child, "Usuaris", "Usuarios", "Users")));
+        var (unitOfWork, _) = CreateUnitOfWork(menuItems, translations);
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+
+        var response = await service.Export();
+
+        Assert.True(response.Result);
+        var document = Assert.IsType<MenuItemTransferDocument>(response.Content);
+        Assert.Equal(1, document.Version);
+        var exportedParent = Assert.Single(document.Items!, item => item.Key == "system");
+        var exportedChild = Assert.Single(document.Items!, item => item.Key == "users");
+        Assert.Null(exportedParent.ParentKey);
+        Assert.True(exportedParent.Disabled);
+        Assert.Equal("system", exportedChild.ParentKey);
+        Assert.Equal("/users", exportedChild.Route);
+        Assert.Equal(["ca", "en", "es"], exportedChild.Translations!.Select(t => t.LanguageCode));
+    }
+
+    [Fact]
+    public async Task Import_creates_and_updates_by_key_preserving_absent_items_and_existing_ids()
+    {
+        var existingId = Guid.NewGuid();
+        var existing = new MenuItem
+        {
+            Id = existingId,
+            Key = "system",
+            Icon = "old",
+            SortOrder = 9
+        };
+        var absentFromImport = new MenuItem { Key = "local_only", Route = "/local" };
+        var menuItems = new InMemoryRepository<MenuItem>([existing, absentFromImport]);
+        var translations = new InMemoryRepository<MenuItemTranslation>(
+            TranslationsFor(existing, "Sistema vell", "Sistema viejo", "Old system"));
+        var (unitOfWork, proxy) = CreateUnitOfWork(menuItems, translations);
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+        var document = new MenuItemTransferDocument(1,
+        [
+            TransferItem("system", null, "Sistema", "Sistema", "System", icon: "pi pi-cog", disabled: true),
+            TransferItem("users", "system", "Usuaris", "Usuarios", "Users", route: "/users", sortOrder: 2)
+        ]);
+
+        var response = await service.Import(JsonStream(document));
+
+        Assert.True(response.Result);
+        Assert.Equal(1, proxy.CompleteCalls);
+        Assert.Equal(3, menuItems.Items.Count);
+        Assert.Equal(existingId, menuItems.Items.Single(item => item.Key == "system").Id);
+        Assert.Equal("pi pi-cog", existing.Icon);
+        Assert.True(existing.Disabled);
+        Assert.Contains(absentFromImport, menuItems.Items);
+        var users = menuItems.Items.Single(item => item.Key == "users");
+        Assert.Equal(existingId, users.ParentId);
+        Assert.Equal("/users", users.Route);
+        Assert.Equal("System", translations.Items.Single(t => t.MenuItemId == existingId && t.LanguageCode == "en").Title);
+        Assert.Equal(3, translations.Items.Count(t => t.MenuItemId == users.Id));
+        var result = Assert.IsType<MenuItemImportResult>(response.Content);
+        Assert.Equal(1, result.CreatedItems);
+        Assert.Equal(1, result.UpdatedItems);
+        Assert.Equal(6, result.UpdatedTranslations);
+    }
+
+    [Fact]
+    public async Task Import_rejects_invalid_json_without_mutating_data()
+    {
+        var existing = new MenuItem { Key = "system", Icon = "original" };
+        var menuItems = new InMemoryRepository<MenuItem>([existing]);
+        var (unitOfWork, proxy) = CreateUnitOfWork(menuItems, new InMemoryRepository<MenuItemTranslation>());
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+
+        var response = await service.Import(new MemoryStream(Encoding.UTF8.GetBytes("{ invalid")));
+
+        Assert.False(response.Result);
+        Assert.Contains("MenuItemTransferFileInvalid", response.Errors);
+        Assert.Equal("original", existing.Icon);
+        Assert.Equal(0, proxy.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task Import_rejects_language_mismatch_before_staging_changes()
+    {
+        var existing = new MenuItem { Key = "system", Icon = "original" };
+        var menuItems = new InMemoryRepository<MenuItem>([existing]);
+        var (unitOfWork, proxy) = CreateUnitOfWork(menuItems, new InMemoryRepository<MenuItemTranslation>());
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+        var document = new MenuItemTransferDocument(1,
+        [
+            new MenuItemTransferItem(
+                "system",
+                null,
+                "changed",
+                null,
+                0,
+                false,
+                [new("ca", "Sistema"), new("es", "Sistema")])
+        ]);
+
+        var response = await service.Import(JsonStream(document));
+
+        Assert.False(response.Result);
+        Assert.Contains("MenuItemTransferTranslationsInvalid", response.Errors);
+        Assert.Equal("original", existing.Icon);
+        Assert.Equal(0, proxy.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task Import_rejects_cyclic_hierarchy_before_staging_changes()
+    {
+        var menuItems = new InMemoryRepository<MenuItem>();
+        var (unitOfWork, proxy) = CreateUnitOfWork(menuItems, new InMemoryRepository<MenuItemTranslation>());
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+        var document = new MenuItemTransferDocument(1,
+        [
+            TransferItem("first", "second", "Primer", "Primero", "First"),
+            TransferItem("second", "first", "Segon", "Segundo", "Second")
+        ]);
+
+        var response = await service.Import(JsonStream(document));
+
+        Assert.False(response.Result);
+        Assert.Contains("MenuItemTransferHierarchyInvalid", response.Errors);
+        Assert.Empty(menuItems.Items);
+        Assert.Equal(0, proxy.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task Export_rejects_menu_items_without_every_active_translation()
+    {
+        var item = new MenuItem { Key = "system" };
+        var menuItems = new InMemoryRepository<MenuItem>([item]);
+        var translations = new InMemoryRepository<MenuItemTranslation>(
+        [
+            new() { MenuItemId = item.Id, LanguageCode = "ca", Title = "Sistema" }
+        ]);
+        var (unitOfWork, proxy) = CreateUnitOfWork(menuItems, translations);
+        var service = new MenuItemService(unitOfWork, new FakeLocalizationService(), new FakeLanguageCatalog());
+
+        var response = await service.Export();
+
+        Assert.False(response.Result);
+        Assert.Contains("MenuItemTransferTranslationsInvalid", response.Errors);
+        Assert.Equal(0, proxy.CompleteCalls);
+    }
+
     private static CreateMenuItemRequest NewRequest(IReadOnlyList<MenuItemTranslationDto> translations) =>
         new(Guid.NewGuid(), "users", "pi pi-users", "/users", 1, null, translations);
+
+    private static MenuItemTransferItem TransferItem(
+        string key,
+        string? parentKey,
+        string catalan,
+        string spanish,
+        string english,
+        string? icon = null,
+        string? route = null,
+        int sortOrder = 0,
+        bool disabled = false) =>
+        new(
+            key,
+            parentKey,
+            icon,
+            route,
+            sortOrder,
+            disabled,
+            [new("ca", catalan), new("es", spanish), new("en", english)]);
+
+    private static IEnumerable<MenuItemTranslation> TranslationsFor(
+        MenuItem item,
+        string catalan,
+        string spanish,
+        string english) =>
+    [
+        new() { MenuItemId = item.Id, LanguageCode = "ca", Title = catalan },
+        new() { MenuItemId = item.Id, LanguageCode = "es", Title = spanish },
+        new() { MenuItemId = item.Id, LanguageCode = "en", Title = english }
+    ];
+
+    private static MemoryStream JsonStream(MenuItemTransferDocument document) =>
+        new(JsonSerializer.SerializeToUtf8Bytes(document, new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
     private static (IUnitOfWork UnitOfWork, UnitOfWorkProxy Proxy) CreateUnitOfWork(
         IRepository<MenuItem, Guid> menuItems,

@@ -1,46 +1,33 @@
 <template>
-  <DataTable
-    :value="purchaseStore.purchaseInvoiceSeries"
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="purchaseStore.purchaseInvoiceSeries ?? []"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    delete-column-width="5%"
+    show-delete-column
     tableStyle="min-width: 100%"
     @row-click="editPurchaseInvoiceSerie"
+    @create="createButtonClick"
+    @delete="deletePurchaseInvoiceSerie"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ t("purchase.invoiceSeries.title") }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("purchase.invoiceSeries.title") }}</span>
     </template>
-    <Column field="name" :header="t('purchase.invoiceSeries.fields.name')" style="width: 20%"></Column>
-    <Column field="description" :header="t('purchase.invoiceSeries.fields.description')" style="width: 50%"></Column>
-    <Column :header="t('purchase.invoiceSeries.fields.disabled')" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deletePurchaseInvoiceSerie($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
-import { onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -55,6 +42,25 @@ const store = useStore();
 const purchaseStore = usePurchaseInvoiceSeries();
 const { t } = useI18n();
 
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.invoiceSeries.fields.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("purchase.invoiceSeries.fields.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("purchase.invoiceSeries.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 20%",
+  },
+]);
+
 onMounted(async () => {
   await purchaseStore.fetchPurchaseInvoiceSeries();
   store.setMenuItem({
@@ -67,21 +73,11 @@ const createButtonClick = () => {
 };
 
 const editPurchaseInvoiceSerie = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/purchaseinvoiceserie/${row.data.id}` });
-  }
+  router.push({ path: `/purchaseinvoiceserie/${row.data.id}` });
 };
 
-const deletePurchaseInvoiceSerie = (
-  event: any,
-  purchaseInvoiceSerie: InvoiceSerie
-) => {
+const deletePurchaseInvoiceSerie = (purchaseInvoiceSerie: InvoiceSerie) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.invoiceSeries.messages.confirmDelete", {
       name: purchaseInvoiceSerie.name,
     }),

@@ -22,7 +22,7 @@ const ExpenseDashboard = () => import("./views/ExpenseDashboard.vue");
 const Materials = () => import("./views/Materials.vue");
 const Material = () => import("./views/Material.vue");
 
-const PhaseToPurchaseOrder = () => import("./views/PhaseToPurchaseOrder.vue");
+  const PhaseToPurchaseOrder = () => import("./views/PhaseToPurchaseOrder.vue");
 
 export default [
   {

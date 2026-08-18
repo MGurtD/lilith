@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "@/store";
 import { useApiKeysStore } from "@/modules/system/store/apiKeys";
@@ -9,6 +9,8 @@ import { PrimeIcons } from "@primevue/core/api";
 import { getNewUuid } from "@/utils/functions";
 import FormApiKey from "@/modules/system/components/FormApiKey.vue";
 import type { CreateApiKeyResponse } from "@/types";
+import Table from "@/components/tables/Table.vue";
+import type { Column } from "@/components/tables/types";
 
 const { t } = useI18n();
 const globalStore = useStore();
@@ -31,6 +33,45 @@ const formInitialData = ref<{
 const generatedKey = ref<CreateApiKeyResponse | null>(null);
 const showKeyDialog = ref(false);
 const copied = ref(false);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("apiKeys.table.columns.name"),
+    sortable: true,
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("apiKeys.table.columns.description"),
+    style: "width: 25%",
+  },
+  {
+    field: "keyPrefix",
+    header: t("apiKeys.table.columns.prefix"),
+    style: "width: 12%",
+  },
+  {
+    field: "scopes",
+    header: t("apiKeys.table.columns.scopes"),
+    style: "width: 18%",
+  },
+  {
+    field: "expiresOn",
+    header: t("apiKeys.table.columns.expires"),
+    style: "width: 12%",
+  },
+  {
+    field: "disabled",
+    header: t("apiKeys.table.columns.status"),
+    style: "width: 8%",
+  },
+  {
+    field: "_actions",
+    header: t("apiKeys.table.columns.actions"),
+    style: "width: 5%",
+  },
+]);
 
 const openCreateDialog = () => {
   newKeyId.value = getNewUuid();
@@ -96,7 +137,9 @@ const confirmDisable = (row: any) => {
       const ok = await store.disable(row.data.id);
       toast.add({
         severity: ok ? "success" : "error",
-        summary: ok ? t("apiKeys.toasts.disableSuccess") : t("apiKeys.toasts.disableError"),
+        summary: ok
+          ? t("apiKeys.toasts.disableSuccess")
+          : t("apiKeys.toasts.disableError"),
         life: 3000,
       });
     },
@@ -114,61 +157,59 @@ onMounted(async () => {
 
 <template>
   <div class="card">
-    <DataTable
-      :value="store.items"
+    <Table
+      :items="store.items"
+      :columns="columns"
+      :filter-config="[]"
+      :show-filter-actions="false"
+      :show-create="false"
       :loading="store.loading"
       dataKey="id"
       tableStyle="min-width:50rem"
     >
-      <template #header>
-        <div class="flex justify-content-between align-items-center w-full">
-          <span class="font-bold">{{ t('apiKeys.pageTitle') }}</span>
-          <Button
-            :label="t('apiKeys.newButton')"
-            icon="pi pi-plus"
-            @click="openCreateDialog"
-          />
-        </div>
+      <template #prepend>
+        <span class="font-bold">{{ t("apiKeys.pageTitle") }}</span>
       </template>
-
-      <Column field="name" :header="t('apiKeys.table.columns.name')" sortable style="width: 20%" />
-      <Column field="description" :header="t('apiKeys.table.columns.description')" style="width: 25%" />
-      <Column field="keyPrefix" :header="t('apiKeys.table.columns.prefix')" style="width: 12%">
-        <template #body="slotProps">
-          <code class="text-sm">{{ slotProps.data.keyPrefix }}</code>
-        </template>
-      </Column>
-      <Column field="scopes" :header="t('apiKeys.table.columns.scopes')" style="width: 18%" />
-      <Column field="expiresOn" :header="t('apiKeys.table.columns.expires')" style="width: 12%">
-        <template #body="slotProps">
-          <span v-if="slotProps.data.expiresOn">
-            {{ new Date(slotProps.data.expiresOn).toLocaleDateString("ca-ES") }}
-          </span>
-          <span v-else class="text-color-secondary">{{ t('apiKeys.table.never') }}</span>
-        </template>
-      </Column>
-      <Column field="disabled" :header="t('apiKeys.table.columns.status')" style="width: 8%">
-        <template #body="slotProps">
-          <Tag
-            :value="slotProps.data.disabled ? t('apiKeys.table.statusInactive') : t('apiKeys.table.statusActive')"
-            :severity="slotProps.data.disabled ? 'danger' : 'success'"
-          />
-        </template>
-      </Column>
-      <Column :header="t('apiKeys.table.columns.actions')" style="width: 5%">
-        <template #body="slotProps">
-          <Button
-            icon="pi pi-ban"
-            text
-            rounded
-            severity="danger"
-            :disabled="slotProps.data.disabled"
-            @click.stop="confirmDisable(slotProps)"
-            v-tooltip.left="t('apiKeys.disable.tooltip')"
-          />
-        </template>
-      </Column>
-    </DataTable>
+      <template #append>
+        <Button
+          :label="t('apiKeys.newButton')"
+          icon="pi pi-plus"
+          @click="openCreateDialog"
+        />
+      </template>
+      <template #body-keyPrefix="{ data }">
+        <code class="text-sm">{{ data.keyPrefix }}</code>
+      </template>
+      <template #body-expiresOn="{ data }">
+        <span v-if="data.expiresOn">
+          {{ new Date(data.expiresOn).toLocaleDateString("ca-ES") }}
+        </span>
+        <span v-else class="text-color-secondary">{{
+          t("apiKeys.table.never")
+        }}</span>
+      </template>
+      <template #body-disabled="{ data }">
+        <Tag
+          :value="
+            data.disabled
+              ? t('apiKeys.table.statusInactive')
+              : t('apiKeys.table.statusActive')
+          "
+          :severity="data.disabled ? 'danger' : 'success'"
+        />
+      </template>
+      <template #body-_actions="slotProps">
+        <Button
+          icon="pi pi-ban"
+          text
+          rounded
+          severity="danger"
+          :disabled="slotProps.data.disabled"
+          @click.stop="confirmDisable(slotProps)"
+          v-tooltip.left="t('apiKeys.disable.tooltip')"
+        />
+      </template>
+    </Table>
   </div>
 
   <!-- Create dialog -->
@@ -197,19 +238,25 @@ onMounted(async () => {
   >
     <div class="flex flex-column gap-3">
       <Message severity="warn" :closable="false">
-        {{ t('apiKeys.showKeyDialog.warning') }}
+        {{ t("apiKeys.showKeyDialog.warning") }}
       </Message>
 
       <div>
-        <label class="block mb-1 font-semibold">{{ t('apiKeys.showKeyDialog.fieldName') }}</label>
+        <label class="block mb-1 font-semibold">{{
+          t("apiKeys.showKeyDialog.fieldName")
+        }}</label>
         <span>{{ generatedKey?.name }}</span>
       </div>
       <div>
-        <label class="block mb-1 font-semibold">{{ t('apiKeys.showKeyDialog.fieldPrefix') }}</label>
+        <label class="block mb-1 font-semibold">{{
+          t("apiKeys.showKeyDialog.fieldPrefix")
+        }}</label>
         <code>{{ generatedKey?.keyPrefix }}</code>
       </div>
       <div>
-        <label class="block mb-1 font-semibold">{{ t('apiKeys.showKeyDialog.fieldApiKey') }}</label>
+        <label class="block mb-1 font-semibold">{{
+          t("apiKeys.showKeyDialog.fieldApiKey")
+        }}</label>
         <div class="flex gap-2 align-items-center">
           <InputText
             :value="generatedKey?.apiKey"

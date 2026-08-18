@@ -1,11 +1,4 @@
 <template>
-  <Button
-    :icon="PrimeIcons.PLUS"
-    class="grid_add_row_button"
-    rounded
-    @click="createButtonClick"
-  />
-
   <Tabs v-model:value="selectedTabIndex">
     <TabList>
       <Tab value="0">
@@ -16,81 +9,61 @@
         <i :class="PrimeIcons.HASHTAG" class="mr-2"></i>
         <span>{{ $t("purchase.supplierTypes.title") }}</span>
       </Tab>
-    </TabList>
+      </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <DataTable
-          :value="supplierStore.suppliers"
+        <Table
+          preset="crud-list"
+          :columns="supplierColumns"
+          :items="supplierStore.suppliers ?? []"
+          :filter-config="[]"
+          :show-filter-actions="false"
+          delete-column-width="5%"
+          show-delete-column
           tableStyle="min-width: 100%"
-          scrollable
-          scrollHeight="flex"
           @row-click="editSupplier"
+          @create="createButtonClick"
+          @delete="deleteSupplier"
         >
-          <Column
-            field="comercialName"
-            :header="$t('purchase.fields.commercialName')"
-            style="width: 20%"
-          ></Column>
-          <Column
-            field="taxName"
-            :header="$t('purchase.fields.taxName')"
-            style="width: 20%"
-          ></Column>
-          <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
-          <Column field="phone" :header="$t('purchase.fields.phone')" style="width: 20%"></Column>
-          <Column :header="$t('purchase.fields.type')" style="width: 20%">
-            <template #body="slotProps">
-              <span>{{
-                getSupplierTypeName(slotProps.data.supplierTypeId)
-              }}</span>
-            </template>
-          </Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteSupplier($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ t("purchase.suppliers.title") }}</span>
+          </template>
+        </Table>
       </TabPanel>
       <TabPanel value="1">
-        <DataTable
-          :value="supplierStore.supplierTypes"
+        <Table
+          preset="crud-list"
+          :columns="supplierTypeColumns"
+          :items="supplierStore.supplierTypes ?? []"
+          :filter-config="[]"
+          :show-filter-actions="false"
+          delete-column-width="5%"
+          show-delete-column
           tableStyle="min-width: 100%"
-          scrollable
-          scrollHeight="flex"
           @row-click="editSupplierType"
+          @create="createButtonClick"
+          @delete="deleteSupplierType"
         >
-          <Column field="name" :header="$t('purchase.fields.name')" style="width: 50%"></Column>
-          <Column
-            field="description"
-            :header="$t('purchase.fields.description')"
-            style="width: 50%"
-          ></Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteSupplierType($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ t("purchase.supplierTypes.title") }}</span>
+          </template>
+        </Table>
       </TabPanel>
     </TabPanels>
   </Tabs>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useSuppliersStore } from "../store/suppliers";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Supplier, SupplierType } from "../types";
@@ -105,6 +78,45 @@ const store = useStore();
 const supplierStore = useSuppliersStore();
 const { t } = useI18n();
 
+const supplierColumns = computed<Column[]>(() => [
+  {
+    field: "comercialName",
+    header: t("purchase.fields.commercialName"),
+    style: "width: 19%",
+  },
+  {
+    field: "taxName",
+    header: t("purchase.fields.taxName"),
+    style: "width: 19%",
+  },
+  { field: "vatNumber", header: "CIF", style: "width: 19%" },
+  {
+    field: "phone",
+    header: t("purchase.fields.phone"),
+    style: "width: 19%",
+  },
+  {
+    field: "supplierTypeId",
+    header: t("purchase.fields.type"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierTypeName,
+    style: "width: 19%",
+  },
+]);
+
+const supplierTypeColumns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.fields.name"),
+    style: "width: 47.5%",
+  },
+  {
+    field: "description",
+    header: t("purchase.fields.description"),
+    style: "width: 47.5%",
+  },
+]);
+
 onMounted(async () => {
   await supplierStore.fetchSuppliers();
   await supplierStore.fetchSupplierTypes();
@@ -115,12 +127,10 @@ onMounted(async () => {
   });
 });
 
-const getSupplierTypeName = (id: string) => {
+function getSupplierTypeName(id: string): string {
   const supplierType = supplierStore.supplierTypes?.find((st) => st.id === id);
-  if (supplierType) {
-    return supplierType.name;
-  }
-};
+  return supplierType?.name ?? "";
+}
 
 const createButtonClick = () => {
   if (selectedTabIndex.value === "0") {
@@ -131,28 +141,15 @@ const createButtonClick = () => {
 };
 
 const editSupplier = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/suppliers/${row.data.id}` });
-  }
+  router.push({ path: `/suppliers/${row.data.id}` });
 };
 
 const editSupplierType = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/supplier-types/${row.data.id}` });
-  }
+  router.push({ path: `/supplier-types/${row.data.id}` });
 };
 
-const deleteSupplier = (event: any, supplier: Supplier) => {
+const deleteSupplier = (supplier: Supplier) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteSupplier", { name: supplier.comercialName }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -172,9 +169,8 @@ const deleteSupplier = (event: any, supplier: Supplier) => {
   });
 };
 
-const deleteSupplierType = (event: any, supplierType: SupplierType) => {
+const deleteSupplierType = (supplierType: SupplierType) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteSupplierType", { name: supplierType.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",

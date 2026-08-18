@@ -1,62 +1,20 @@
 <template>
   <div class="card">
-    <DataTable
-      :value="users"
+    <Table
+      :items="tableItems"
+      :columns="columns"
+      :filter-config="[]"
+      :show-filter-actions="false"
+      preset="crud-list"
       removableSort
       tableStyle="min-width: 50rem"
       @row-click="openUser"
+      @create="showCreateDialog = true"
     >
-      <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <span class="text-900 font-bold">{{
-            t("usersView.tableTitle")
-          }}</span>
-          <Button
-            :label="t('usersView.newButton')"
-            icon="pi pi-plus"
-            @click="showCreateDialog = true"
-          />
-        </div>
+      <template #prepend>
+        <span class="text-900 font-bold">{{ t("usersView.tableTitle") }}</span>
       </template>
-      <Column
-        field="username"
-        :header="t('usersView.columns.username')"
-        sortable
-        style="width: 20%"
-      ></Column>
-      <Column
-        field="firstName"
-        :header="t('usersView.columns.firstName')"
-        sortable
-        style="width: 20%"
-      ></Column>
-      <Column
-        field="lastName"
-        :header="t('usersView.columns.lastName')"
-        sortable
-        style="width: 20%"
-      ></Column>
-      <Column
-        :header="t('usersView.columns.profile')"
-        sortable
-        style="width: 15%"
-      >
-        <template #body="slotProps">
-          {{ getProfileName(slotProps.data.profileId, slotProps.data.profile) }}
-        </template>
-      </Column>
-      <Column
-        :header="t('usersView.columns.disabled')"
-        sortable
-        style="width: 20%"
-      >
-        <template #body="slotProps">
-          <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-        </template>
-      </Column>
-    </DataTable>
+    </Table>
 
     <Dialog
       v-model:visible="showCreateDialog"
@@ -78,12 +36,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { UserService } from "@/modules/system/services/user.service";
 import { useStore } from "@/store";
 import { PrimeIcons } from "@primevue/core/api";
-import BooleanColumn from "@/components/tables/BooleanColumn.vue";
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { User, Profile, Role, Language } from "@/types";
@@ -140,6 +99,48 @@ const getProfileName = (profileId?: string, profileObj?: Profile) => {
     return profileMap.value[profileId];
   return "";
 };
+
+const tableItems = computed(() =>
+  (users.value ?? []).map((user) => ({
+    ...user,
+    profileName: getProfileName(user.profileId ?? undefined, user.profile),
+  })),
+);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "username",
+    header: t("usersView.columns.username"),
+    sortable: true,
+    style: "width: 20%",
+  },
+  {
+    field: "firstName",
+    header: t("usersView.columns.firstName"),
+    sortable: true,
+    style: "width: 20%",
+  },
+  {
+    field: "lastName",
+    header: t("usersView.columns.lastName"),
+    sortable: true,
+    style: "width: 20%",
+  },
+  {
+    field: "profileName",
+    header: t("usersView.columns.profile"),
+    sortable: true,
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: t("usersView.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    sortable: true,
+    showColor: false,
+    style: "width: 20%",
+  },
+]);
 
 const openUser = (row: DataTableRowClickEvent) => {
   router.push({ path: `/user/${row.data.id}` });

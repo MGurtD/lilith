@@ -1,60 +1,31 @@
 <template>
-  <DataTable
-    :value="referenceTypeStore.referenceTypes"
-    tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    sort-mode="single"
+  <Table
+    :items="referenceTypeStore.referenceTypes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     sort-field="name"
     :sort-order="1"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ $t('shared.referenceTypes.title') }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{
+        t("shared.referenceTypes.title")
+      }}</span>
     </template>
-    <Column field="name" sortable :header="$t('shared.referenceTypes.columns.name')" style="width: 25%"></Column>
-    <Column
-      field="description"
-      sortable
-      :header="$t('shared.referenceTypes.columns.description')"
-      style="width: 40%"
-    ></Column>
-    <Column
-      field="density"
-      :header="$t('shared.referenceTypes.columns.density')"
-      style="width: 15%"
-    ></Column>
-    <Column :header="$t('shared.referenceTypes.columns.disabled')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -70,6 +41,33 @@ const confirm = useConfirm();
 const referenceTypeStore = useReferenceTypeStore();
 const { t } = useI18n();
 
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.referenceTypes.columns.name"),
+    sortable: true,
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("shared.referenceTypes.columns.description"),
+    sortable: true,
+    style: "width: 40%",
+  },
+  {
+    field: "density",
+    header: t("shared.referenceTypes.columns.density"),
+    columnType: ColumnType.Number,
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.referenceTypes.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
 onMounted(async () => {
   await referenceTypeStore.fetchAll();
 
@@ -84,19 +82,14 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/referencetype/${row.data.id}` });
-  }
+  router.push({ path: `/referencetype/${row.data.id}` });
 };
 
-const deleteButton = (event: any, rawmaterialtype: ReferenceType) => {
+const deleteButton = (rawmaterialtype: ReferenceType) => {
   confirm.require({
-    target: event.currentTarget,
-    message: t("shared.referenceTypes.messages.confirmDelete", { name: rawmaterialtype.name }),
+    message: t("shared.referenceTypes.messages.confirmDelete", {
+      name: rawmaterialtype.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
