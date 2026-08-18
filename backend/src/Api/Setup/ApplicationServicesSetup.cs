@@ -2,6 +2,7 @@ using Application.Services.System;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
+using Application.Services.Analytics;
 using Application.Services.Shared;
 using Application.Services.Verifactu;
 using Application.Services.Warehouse;
@@ -47,6 +48,9 @@ public static class ApplicationServicesSetup
         services.AddScoped<IDeliveryNoteService, DeliveryNoteService>();
         services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
         services.AddScoped<ICustomerRankingService, CustomerRankingService>();
+        services.AddScoped<IBudgetConversionService, BudgetConversionService>();
+        services.AddScoped<IAbcAnalysisService, AbcAnalysisService>();
+        services.AddScoped<IManagementDashboardService, ManagementDashboardService>();
         services.AddScoped<ISalesInvoiceReportService, SalesInvoiceReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
         services.AddScoped<IBudgetReportService, BudgetReportService>();
@@ -100,6 +104,7 @@ public static class ApplicationServicesSetup
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
         services.AddScoped<IProductionPartService, ProductionPartService>();
+        services.AddScoped<IProductionTimeDeviationService, ProductionTimeDeviationService>();
 
         // Production services - Group C Specialized
         services.AddScoped<IWorkcenterService, WorkcenterService>();
