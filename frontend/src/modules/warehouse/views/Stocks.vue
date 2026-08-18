@@ -1,7 +1,16 @@
 <template>
-  <DataTable
+  <Table
     class="small-datatable"
-    :value="filteredStocks"
+    :items="filteredStocks"
+    :columns="columns"
+    :filter-config="[]"
+    v-model:filter-values="filter"
+    :filter-labels="filterLabels"
+    :filter-value-resolvers="filterValueResolvers"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    :show-create="false"
+    page="Stocks"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
@@ -9,55 +18,37 @@
     :sortOrder="1"
     :paginator="filteredStocks.length > 20"
     :rows="20"
+    @clear="cleanFilter"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :show-create="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.warehouse") }}</label>
-            <DropdownWarehouses label="" v-model="filter.warehouseId" />
-          </div>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.reference") }}</label>
-            <DropdownReference
-              label=""
-              :fullName="true"
-              :options="stockStore.availableReferences"
-              v-model="filter.referenceId"
-            />
-          </div>
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("warehouse.fields.warehouse")
+        }}</label>
+        <DropdownWarehouses label="" v-model="filter.warehouseId" />
+      </div>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          t("warehouse.fields.reference")
+        }}</label>
+        <DropdownReference
+          label=""
+          :fullName="true"
+          :options="stockStore.availableReferences"
+          v-model="filter.referenceId"
+        />
+      </div>
     </template>
-    <Column field="referenceDisplay" :header="t('warehouse.fields.reference')" :sortable="true" style="width: 28%" />
-    <Column field="warehouseName" :header="t('warehouse.fields.warehouse')" style="width: 16%" />
-    <Column field="locationName" :header="t('warehouse.fields.location')" style="width: 16%" />
-    <Column field="quantity" :header="t('warehouse.fields.units')" style="width: 12%" />
-    <Column field="width" :header="t('warehouse.fields.widthMmAxis')" style="width: 12%" />
-    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')" style="width: 12%" />
-    <Column field="height" :header="t('warehouse.fields.heightMmAxis')" style="width: 12%" />
-    <Column field="diameter" :header="t('warehouse.fields.diameterMm')" style="width: 12%" />
-    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')" style="width: 12%" />
-  </DataTable>
+  </Table>
 </template>
 
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
-import TableFilter, {
-  type FilterBodyWidth,
-} from "../../../components/tables/TableFilter.vue";
+import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import DropdownWarehouses from "../components/DropdownWarehouses.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { useStore } from "../../../store";
@@ -79,17 +70,96 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "70%",
 };
 
+const filterLabels = computed<Record<string, string>>(() => ({
+  warehouseId: t("warehouse.fields.warehouse"),
+  referenceId: t("warehouse.fields.reference"),
+}));
+
+const filterValueResolvers: Record<string, (value: unknown) => string> = {
+  warehouseId: (value) =>
+    typeof value === "string"
+      ? (warehouseStore.warehouses?.find((item) => item.id === value)?.name ??
+        "")
+      : "",
+  referenceId: (value) => {
+    if (typeof value !== "string") return "";
+    const reference = stockStore.availableReferences.find(
+      (item) => item.id === value,
+    );
+    return reference ? `${reference.code} - ${reference.description}` : "";
+  },
+};
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "referenceDisplay",
+    header: t("warehouse.fields.reference"),
+    sortable: true,
+    style: "width: 28%",
+  },
+  {
+    field: "warehouseName",
+    header: t("warehouse.fields.warehouse"),
+    style: "width: 16%",
+  },
+  {
+    field: "locationName",
+    header: t("warehouse.fields.location"),
+    style: "width: 16%",
+  },
+  {
+    field: "quantity",
+    header: t("warehouse.fields.units"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
+    columnType: ColumnType.Number,
+    style: "width: 6.67%; min-width: 8rem",
+  },
+]);
+
 const filteredStocks = computed(() => {
   if (!stockStore.stocks) return [];
 
   let result = [...stockStore.stocks];
 
   if (filter.value.referenceId) {
-    result = result.filter((stock) => stock.referenceId === filter.value.referenceId);
+    result = result.filter(
+      (stock) => stock.referenceId === filter.value.referenceId,
+    );
   }
 
   if (filter.value.warehouseId) {
-    result = result.filter((stock) => stock.warehouseId === filter.value.warehouseId);
+    result = result.filter(
+      (stock) => stock.warehouseId === filter.value.warehouseId,
+    );
   }
 
   return result.sort((left, right) =>

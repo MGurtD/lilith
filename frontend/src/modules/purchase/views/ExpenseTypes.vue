@@ -1,46 +1,33 @@
 <template>
-  <DataTable
-    :value="expenseStore.expenseTypes"
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="expenseStore.expenseTypes ?? []"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    delete-column-width="5%"
+    show-delete-column
     tableStyle="min-width: 100%"
     @row-click="editExpenseType"
+    @create="createButtonClick"
+    @delete="deleteExpenseType"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ t("purchase.expenseTypes.title") }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("purchase.expenseTypes.title") }}</span>
     </template>
-    <Column field="name" :header="t('purchase.fields.name')" style="width: 20%"></Column>
-    <Column field="description" :header="t('purchase.fields.description')" style="width: 50%"></Column>
-    <Column :header="t('purchase.fields.disabled')" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteExpenseType($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
-import { onMounted, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
@@ -52,6 +39,26 @@ const router = useRouter();
 const store = useStore();
 const expenseStore = useExpenseStore();
 const { t, locale } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.fields.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("purchase.fields.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("purchase.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 20%",
+  },
+]);
 
 const setMenuTitle = () => {
   store.setMenuItem({
@@ -73,20 +80,13 @@ const createButtonClick = () => {
 };
 
 const editExpenseType = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/expensetype/${row.data.id}` });
-  }
+  router.push({ path: `/expensetype/${row.data.id}` });
 };
 
 const confirm = useConfirm();
 const toast = useToast();
-const deleteExpenseType = (event: any, expenseType: ExpenseType) => {
+const deleteExpenseType = (expenseType: ExpenseType) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteExpenseType"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",

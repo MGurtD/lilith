@@ -2,58 +2,34 @@
   <main class="container">
     <section class="two-columns">
       <div>
-        <DataTable
-          :value="shiftStore.shifts"
+        <Table
+          :items="shiftStore.shifts ?? []"
+          :columns="shiftColumns"
+          :filter-config="[]"
+          :show-filter-actions="false"
           tableStyle="min-width: 100%"
+          @create="openShift"
           @row-click="selectShift"
         >
-          <template #header>
-            <div
-              class="flex flex-wrap align-items-center justify-content-between gap-2"
-            >
-              <span class="text-900 font-bold">{{ pt("Torns") }}</span>
-              <Button
-                :icon="PrimeIcons.PLUS"
-                rounded
-                raised
-                @click="openShift"
-              />
-            </div>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ pt("Torns") }}</span>
           </template>
-          <Column field="name" :header="pt('Nom')"></Column>
-          <Column field="disabled" :header="pt('Desactivat')">
-            <template #body="slotProps">
-              <BooleanColumn :value="slotProps.data.disabled" />
-            </template>
-          </Column>
-        </DataTable>
+        </Table>
       </div>
       <div>
-        <DataTable
-          :value="shiftStore.shiftdetails"
+        <Table
+          :items="shiftStore.shiftdetails ?? []"
+          :columns="shiftDetailColumns"
+          :filter-config="[]"
+          :show-filter-actions="false"
+          :show-create="Boolean(selectedShift)"
           tableStyle="min-width: 100%"
+          @create="openShiftDetail"
         >
-          <template #header>
-            <div
-              class="flex flex-wrap align-items-center justify-content-between gap-2"
-            >
-              <span class="text-900 font-bold">{{ pt("Horaris") }}</span>
-              <Button
-                :icon="PrimeIcons.PLUS"
-                rounded
-                raised
-                @click="openShiftDetail"
-              />
-            </div>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ pt("Horaris") }}</span>
           </template>
-          <Column field="startTime" :header="pt('Hora inici')"></Column>
-          <Column field="endTime" :header="pt('Hora fi')"></Column>
-          <Column field="isProductiveTime" :header="pt('Temps Productiu')">
-            <template #body="slotProps">
-              <BooleanColumn :value="slotProps.data.isProductiveTime" />
-            </template>
-          </Column>
-        </DataTable>
+        </Table>
       </div>
     </section>
   </main>
@@ -79,10 +55,12 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "../../../store";
 import { Shift, ShiftDetail } from "../types";
@@ -94,13 +72,31 @@ import FormShift from "../components/FormShift.vue";
 import FormShiftDetail from "../components/FormShiftDetail.vue";
 import { storeToRefs } from "pinia";
 import { getNewUuid } from "../../../utils/functions";
-import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
 
 const store = useStore();
 const shiftStore = useShiftStore();
 const toast = useToast();
 
 const { shift, shiftdetail } = storeToRefs(shiftStore);
+
+const shiftColumns = computed<Column[]>(() => [
+  { field: "name", header: pt("Nom") },
+  {
+    field: "disabled",
+    header: pt("Desactivat"),
+    columnType: ColumnType.Boolean,
+  },
+]);
+
+const shiftDetailColumns = computed<Column[]>(() => [
+  { field: "startTime", header: pt("Hora inici") },
+  { field: "endTime", header: pt("Hora fi") },
+  {
+    field: "isProductiveTime",
+    header: pt("Temps Productiu"),
+    columnType: ColumnType.Boolean,
+  },
+]);
 
 const openShift = () => {
   shiftStore.setNewShift(getNewUuid());

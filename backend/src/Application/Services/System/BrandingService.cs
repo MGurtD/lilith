@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Application.Services.Production;
+namespace Application.Services.System;
 
 public class BrandingService(
     IUnitOfWork unitOfWork,

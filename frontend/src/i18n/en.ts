@@ -488,7 +488,7 @@ const en = {
       "Fases": "Phases", "Costs": "Costs", "Moviments": "Movements", "Costos": "Costs", "Cost Material": "Material cost", "Cost Total": "Total cost", "Temps": "Time", "Temps Operari": "Operator time", "Temps Màquina": "Machine time", "Ordre de fabricació actualitzada": "Manufacturing order updated", "Revisi el log per a més informació": "Review the log for more information", "Error al crear la fase": "Error creating the phase", "Fase eliminada": "Phase deleted", "Error": "Error", "No s'ha pugut generar l'informe de l'ordre de fabricació": "The manufacturing order report could not be generated",
       "Comentaris": "Comments", "Comentari de Fase": "Phase comment", "Aquesta fase no té cap comentari": "This phase has no comments", "Els comentaris es poden afegir des del mòdul de planta durant la fabricació": "Comments can be added from the plant module during manufacturing",
       "Data Prevista": "Planned date", "Ordres de fabricació actualitzades": "Manufacturing orders updated", "Error actualitzant les ordres de fabricació": "Error updating the manufacturing orders",
-      "Crear": "Create", "Última actual.": "Last updated", "Revisió": "Review", "Cálcul de cost": "Cost calculation", "Seguiment": "Tracking", "Dashboard costs producció": "Production cost dashboard", "Dashboard de producció": "Production dashboard",
+      "Crear": "Create", lastUpdated: "Last updated", "Revisió": "Review", "Cálcul de cost": "Cost calculation", "Seguiment": "Tracking", "Dashboard costs producció": "Production cost dashboard", "Dashboard de producció": "Production dashboard",
     },
   },
   analytics: {
@@ -614,6 +614,13 @@ const en = {
       saved: "{count} translations saved",
       loadError: "Unable to load the translation matrix",
       saveError: "Unable to save translations",
+    },
+    transfer: {
+      import: "Import menus",
+      export: "Export menus",
+      imported: "Created {created} menus and updated {updated}",
+      importError: "Unable to import menus",
+      exportError: "Unable to export menus",
     },
   },
   profiles: {
@@ -1827,7 +1834,7 @@ const en = {
     actions: { save: "Save" },
     messages: { invalidForm: "Invalid form", invalidFilter: "Invalid filter", deleted: "Deleted", confirmDeleteExpense: "Are you sure you want to delete the expense?", confirmDeleteExpenseType: "Are you sure you want to delete the expense type?", expenseCreated: "Expense registered successfully", expenseUpdated: "Expense updated successfully", expenseTypeCreated: "Expense type created successfully", expenseTypeUpdated: "Expense type updated successfully", confirmDeleteSupplier: "Are you sure you want to delete supplier {name}?", confirmDeleteSupplierType: "Are you sure you want to delete supplier type {name}?", supplierTypeCreated: "Supplier type created successfully", supplierTypeUpdated: "Supplier type updated successfully" },
     expense: { createTitle: "New expense", editTitle: "Edit expense" },
-    expenses: { title: "Expense management", visibleTotal: "Visible total: {amount}" },
+    expenses: { title: "Expense management" },
     expenseTypes: { title: "Expense types", managementTitle: "Expense type management", createTitle: "New expense type", detailTitle: "Expense type {name}" },
     dashboard: { title: "Expense dashboard", totalExpense: "Total expense", charts: "Charts", list: "List", monthlyExpenses: "Monthly grouped expenses", expensesByType: "Expense chart by type", purchase: "Purchase", expense: "Expense", detail: "Detail", expenses: "Expenses", expenseType: "Expense type" },
     suppliers: { title: "Suppliers" },

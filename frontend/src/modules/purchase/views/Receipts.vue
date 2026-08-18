@@ -1,95 +1,54 @@
 <template>
-  <DataTable
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="receiptsStore.receipts ?? []"
+    :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="Receipts"
     class="small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     paginator
     :rows="20"
-    :value="receiptsStore.receipts"
+    delete-column-width="5%"
+    show-delete-column
+    :can-delete="canDelete"
+    @filter="filterReceipts"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteReceipt"
     @row-click="editReceipt"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterReceipts"
-        @clear="cleanFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.receipts.filters.period") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.receipts.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.receipts.filters.supplier") }}</label
-            >
-            <DropdownSupplier label="" v-model="filter.supplierId" />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column
-      field="number"
-      :header="t('purchase.receipts.columns.number')"
-      :sortable="true"
-      style="width: 10%"
-    ></Column>
-    <Column :header="t('purchase.receipts.columns.date')" field="date" sortable style="width: 10%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.receipts.columns.supplier')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getSupplierNameById(slotProps.data.supplierId) }}
-      </template>
-    </Column>
-    <Column
-      :header="t('purchase.receipts.columns.supplierNumber')"
-      style="width: 15%"
-      field="supplierNumber"
-    ></Column>
-    <Column :header="t('purchase.receipts.columns.status')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            lifecycleStore.lifecycle?.initialStatusId ===
-            slotProps.data.statusId
-          "
-          :class="PrimeIcons.TIMES"
-          :aria-label="t('purchase.receipts.actions.delete')"
-          class="grid_delete_column_button"
-          @click="deleteReceipt($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.receipts.filters.period") }}</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="t('purchase.receipts.placeholders.selectPeriod')"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.receipts.filters.supplier") }}</label
+        >
+        <DropdownSupplier label="" v-model="filter.supplierId" />
+      </div>
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -105,9 +64,14 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
+import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -116,16 +80,15 @@ import { useStore } from "../../../store";
 import { useReceiptsStore } from "../store/receipt";
 import { useSuppliersStore } from "../store/suppliers";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DialogOptions } from "../../../types/component";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
-import { CreatePurchaseDocumentRequest, PurchaseInvoice } from "../types";
+import { CreatePurchaseDocumentRequest, Receipt } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 
 const toast = useToast();
@@ -136,6 +99,50 @@ const store = useStore();
 const lifecycleStore = useLifecyclesStore();
 const receiptsStore = useReceiptsStore();
 const suppliersStore = useSuppliersStore();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.receipts.columns.number"),
+    sortable: true,
+    style: "width: 15%",
+  },
+  {
+    field: "date",
+    header: t("purchase.receipts.columns.date"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 15%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.receipts.columns.supplier"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierNameById,
+    style: "width: 25%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.receipts.columns.supplierNumber"),
+    style: "width: 20%",
+  },
+  {
+    field: "statusId",
+    header: t("purchase.receipts.columns.status"),
+    columnType: ColumnType.Lookup,
+    resolver: getStatusNameById,
+    style: "width: 20%",
+  },
+]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: t("purchase.receipts.filters.period"),
+      supplierId: t("purchase.receipts.filters.supplier"),
+    },
+  }),
+);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
@@ -238,24 +245,20 @@ const createReceipt = async () => {
 };
 
 const editReceipt = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/receipts/${row.data.id}` });
-  }
+  router.push({ path: `/receipts/${row.data.id}` });
 };
 
-const deleteReceipt = (event: any, invoice: PurchaseInvoice) => {
+const canDelete = (receipt: Receipt) =>
+  lifecycleStore.lifecycle?.initialStatusId === receipt.statusId;
+
+const deleteReceipt = (receipt: Receipt) => {
   confirm.require({
-    target: event.currentTarget,
-    message: t("purchase.receipts.messages.confirmDelete", { number: invoice.number }),
+    message: t("purchase.receipts.messages.confirmDelete", { number: receipt.number }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
-      const deleted = await receiptsStore.deleteReceipt(invoice.id);
+      const deleted = await receiptsStore.deleteReceipt(receipt.id);
       if (deleted) {
         toast.add({
           severity: "success",

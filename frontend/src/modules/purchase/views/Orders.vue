@@ -1,90 +1,53 @@
 <template>
-  <DataTable
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="ordersStore.orders ?? []"
+    :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="PurchaseOrders"
     class="small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sortMode="multiple"
-    :paginator="ordersStore.orders && ordersStore.orders.length > 20"
-    :rows="20"
-    :value="ordersStore.orders"
+    delete-column-width="5%"
+    show-delete-column
+    :can-delete="canDelete"
+    @filter="filterData"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="remove"
     @row-click="edit"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterData"
-        @clear="cleanFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.orders.filters.period") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.orders.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.order.fields.supplier") }}</label
-            >
-            <DropdownSupplier label="" v-model="filter.supplierId" />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column
-      field="number"
-      :header="t('purchase.order.fields.number')"
-      :sortable="true"
-      style="width: 10%"
-    ></Column>
-    <Column :header="t('purchase.order.fields.date')" field="date" sortable style="width: 10%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.order.fields.supplier')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getSupplierNameById(slotProps.data.supplierId) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.order.fields.status')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="
-            lifecycleStore.lifecycle?.initialStatusId ===
-            slotProps.data.statusId
-          "
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="remove($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.orders.filters.period") }}</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="t('purchase.orders.placeholders.selectPeriod')"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.order.fields.supplier") }}</label
+        >
+        <DropdownSupplier label="" v-model="filter.supplierId" />
+      </div>
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -100,9 +63,14 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
+import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -111,15 +79,14 @@ import { useStore } from "../../../store";
 import { useOrderStore } from "../store/order";
 import { useSuppliersStore } from "../store/suppliers";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DialogOptions } from "../../../types/component";
 import {
   formatDateForQueryParameter,
-  formatDate,
   getNewUuid,
 } from "../../../utils/functions";
-import { CreatePurchaseDocumentRequest, PurchaseInvoice } from "../types";
+import { CreatePurchaseDocumentRequest, PurchaseOrder } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useI18n } from "vue-i18n";
 
@@ -131,6 +98,45 @@ const suppliersStore = useSuppliersStore();
 const lifecycleStore = useLifecyclesStore();
 const ordersStore = useOrderStore();
 const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.order.fields.number"),
+    sortable: true,
+    style: "width: 20%",
+  },
+  {
+    field: "date",
+    header: t("purchase.order.fields.date"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 20%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.order.fields.supplier"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierNameById,
+    style: "width: 30%",
+  },
+  {
+    field: "statusId",
+    header: t("purchase.order.fields.status"),
+    columnType: ColumnType.Lookup,
+    resolver: getStatusNameById,
+    style: "width: 25%",
+  },
+]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: t("purchase.orders.filters.period"),
+      supplierId: t("purchase.order.fields.supplier"),
+    },
+  }),
+);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
@@ -228,24 +234,20 @@ const create = async () => {
 };
 
 const edit = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/purchase-orders/${row.data.id}` });
-  }
+  router.push({ path: `/purchase-orders/${row.data.id}` });
 };
 
-const remove = (event: any, invoice: PurchaseInvoice) => {
+const canDelete = (order: PurchaseOrder) =>
+  lifecycleStore.lifecycle?.initialStatusId === order.statusId;
+
+const remove = (order: PurchaseOrder) => {
   confirm.require({
-    target: event.currentTarget,
-    message: t("purchase.orders.messages.confirmDelete", { number: invoice.number }),
+    message: t("purchase.orders.messages.confirmDelete", { number: order.number }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
-      const deleted = await ordersStore.delete(invoice.id);
+      const deleted = await ordersStore.delete(order.id);
       if (deleted) {
         toast.add({
           severity: "success",

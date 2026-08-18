@@ -40,7 +40,7 @@ export const useUserFilterStore = defineStore("userFilterStore", {
       } as UserFilter;
 
       await AppServices.UserFilter.CreateOrUpdate(userFilter);
-      this.getUserFilters(userFilter.userId);
+      await this.getUserFilters(userFilter.userId);
     },
     async removeFilter(page: string, key: string) {
       const userFilter = this.filters.find(

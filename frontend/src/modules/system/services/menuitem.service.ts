@@ -1,6 +1,7 @@
 import apiClient from "@/api/api.client";
 import type {
   CreateMenuItemRequest,
+  MenuItemImportResult,
   MenuItemFlat,
   MenuItemNode,
   MenuItemTranslationMatrix,
@@ -10,6 +11,13 @@ import type {
 } from "@/modules/system/types/menuitem";
 
 const baseUrl = "/MenuItem";
+
+interface TransferErrorResponse {
+  errors?: string[];
+}
+
+const transferError = (data: TransferErrorResponse | undefined) =>
+  new Error(data?.errors?.[0] ?? "");
 
 export const getMenuItems = async (): Promise<MenuItemFlat[]> => {
   const { data } = await apiClient.get<MenuItemFlat[]>(baseUrl);
@@ -68,4 +76,52 @@ export const updateMenuItemTranslations = async (
     payload,
   );
   return data;
+};
+
+export const exportMenuItems = async (): Promise<{
+  blob: Blob;
+  fileName: string;
+}> => {
+  const response = await apiClient.get<Blob>(`${baseUrl}/export`, {
+    responseType: "blob",
+  });
+  if (response.status !== 200) {
+    let error: TransferErrorResponse | undefined;
+    try {
+      error = JSON.parse(await response.data.text()) as TransferErrorResponse;
+    } catch {
+      error = undefined;
+    }
+    throw transferError(error);
+  }
+
+  const disposition = response.headers["content-disposition"] as
+    | string
+    | undefined;
+  const encodedName = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plainName = disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+  const fallbackDate = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+
+  return {
+    blob: response.data,
+    fileName: encodedName
+      ? decodeURIComponent(encodedName)
+      : plainName ?? `menu-items-${fallbackDate}.json`,
+  };
+};
+
+export const importMenuItems = async (
+  file: File,
+): Promise<MenuItemImportResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await apiClient.post<
+    MenuItemImportResult | TransferErrorResponse
+  >(`${baseUrl}/import`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  if (response.status !== 200) {
+    throw transferError(response.data as TransferErrorResponse);
+  }
+  return response.data as MenuItemImportResult;
 };

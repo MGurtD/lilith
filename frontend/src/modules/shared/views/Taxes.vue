@@ -1,53 +1,27 @@
 <template>
-  <DataTable
-    :value="taxStore.taxes"
+  <Table
+    :items="taxStore.taxes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteTax"
     @row-click="edit"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ $t('shared.taxes.title') }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("shared.taxes.title") }}</span>
     </template>
-    <Column field="name" :header="$t('shared.taxes.columns.name')" style="width: 30%"></Column>
-    <Column
-      field="percentatge"
-      :header="$t('shared.taxes.columns.percentage')"
-      style="width: 25%"
-    ></Column>
-    <Column :header="$t('shared.taxes.columns.reverseCharge')" style="width: 25%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.isReverseCharge" :showColor="false" />
-      </template>
-    </Column>
-    <Column :header="$t('shared.taxes.columns.disabled')" style="width: 15%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteTax($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { onMounted, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -64,6 +38,34 @@ const taxStore = useTaxesStore();
 const confirm = useConfirm();
 const toast = useToast();
 const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.taxes.columns.name"),
+    style: "width: 30%",
+  },
+  {
+    field: "percentatge",
+    header: t("shared.taxes.columns.percentage"),
+    columnType: ColumnType.Number,
+    style: "width: 25%",
+  },
+  {
+    field: "isReverseCharge",
+    header: t("shared.taxes.columns.reverseCharge"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 25%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.taxes.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 15%",
+  },
+]);
 
 const refreshMenu = () => {
   store.setMenuItem({
@@ -99,18 +101,11 @@ const createButtonClick = () => {
 };
 
 const edit = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/tax/${row.data.id}` });
-  }
+  router.push({ path: `/tax/${row.data.id}` });
 };
 
-const deleteTax = (event: any, tax: Tax) => {
+const deleteTax = (tax: Tax) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("shared.taxes.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",

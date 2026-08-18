@@ -1,55 +1,30 @@
 <template>
-  <DataTable
-    :value="filteredPaymentMethods"
+  <Table
+    :items="filteredPaymentMethods"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :show-filter-action="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollHeight="flex"
+    @clear="cleanFilter"
+    @create="createButtonClick"
     @row-click="editPaymentMethod"
-  >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      />
-    </template>
-    <Column field="name" :header="$t('shared.paymentMethods.columns.name')" style="width: 20%"></Column>
-    <Column field="description" :header="$t('shared.paymentMethods.columns.description')" style="width: 20%"></Column>
-    <Column field="dueDays" :header="$t('shared.paymentMethods.columns.dueDays')" style="width: 20%"></Column>
-    <Column
-      field="paymentDay"
-      :header="$t('shared.paymentMethods.columns.paymentDay')"
-      style="width: 20%"
-    ></Column>
-    <Column :header="$t('shared.paymentMethods.columns.disabled')" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-  </DataTable>
+  />
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import type { FilterConfig } from "@/components/tables/TableFilter.vue";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { PaymentMethod } from "../types";
 import { useStore } from "../../../store";
 import { usePaymentMethodStore } from "../store/paymentMethod";
-import TableFilter, {
-  type FilterConfig,
-} from "../../../components/tables/TableFilter.vue";
 
-const toast = useToast();
-const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const paymentMethodStore = usePaymentMethodStore();
@@ -59,7 +34,7 @@ const filter = ref({
   search: "",
 });
 
-const filterConfig: Array<FilterConfig> = [
+const filterConfig = computed<FilterConfig[]>(() => [
   {
     key: "search",
     label: t("shared.paymentMethods.filters.searchLabel"),
@@ -68,7 +43,39 @@ const filterConfig: Array<FilterConfig> = [
     size: "sm",
     row: 0,
   },
-];
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.paymentMethods.columns.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("shared.paymentMethods.columns.description"),
+    style: "width: 20%",
+  },
+  {
+    field: "dueDays",
+    header: t("shared.paymentMethods.columns.dueDays"),
+    columnType: ColumnType.Number,
+    style: "width: 20%",
+  },
+  {
+    field: "paymentDay",
+    header: t("shared.paymentMethods.columns.paymentDay"),
+    columnType: ColumnType.Number,
+    style: "width: 20%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.paymentMethods.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 20%",
+  },
+]);
 
 const filteredPaymentMethods = computed(() => {
   if (!paymentMethodStore.paymentMethods) return [];
@@ -102,35 +109,7 @@ const cleanFilter = () => {
 };
 
 const editPaymentMethod = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/payment-methods/${row.data.id}` });
-  }
-};
-
-const deletePaymentMethod = (event: any, model: PaymentMethod) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("shared.paymentMethods.messages.confirmDelete", { name: model.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await paymentMethodStore.delete(model.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("shared.paymentMethods.messages.deleted"),
-          life: 3000,
-        });
-      }
-
-      await paymentMethodStore.fetchAll();
-    },
-  });
+  router.push({ path: `/payment-methods/${row.data.id}` });
 };
 </script>
 

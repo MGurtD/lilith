@@ -1,84 +1,75 @@
 <template>
-  <DataTable
-    :value="workOrderStore.workorderPhases"
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="workOrderStore.workorderPhases ?? []"
+    :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-create="false"
+    page="PhaseToPurchaseOrder"
     class="p-datatable-sm small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     :sort-order="1"
     sort-field="date"
     paginator
     :rows="20"
     dataKey="id"
-    ><template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="fetchWorkOrderPhases"
-        @clear="cleanFilter"
+    @filter="fetchWorkOrderPhases"
+    @clear="cleanFilter"
+  >
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.phaseToOrder.filters.period") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.phaseToOrder.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-        <template #append>
-          <Button
-            :size="'small'"
-            :label="t('purchase.phaseToOrder.actions.createOrders')"
-            rounded
-            @click="sendData"
-          />
-        </template>
-      </TableFilter>
-    </template>
-    <!--    <Column selectionMode="multiple" headerStyle="width: 1rem"></Column>-->
-    <Column field="workOrder.code" :header="t('purchase.phaseToOrder.columns.workOrder')"></Column>
-    <Column field="description" :header="t('purchase.phaseToOrder.columns.phase')" style="width: 15%"></Column>
-    <Column :header="t('purchase.phaseToOrder.columns.reference')">
-      <template #body="slotProps">
-        {{ getName(slotProps.data.serviceReferenceId) }}
-      </template>
-    </Column>
-    <Column field="workOrder.plannedQuantity" :header="t('purchase.phaseToOrder.columns.plannedQuantity')">
-    </Column>
-    <Column :header="t('purchase.phaseToOrder.columns.supplier')">
-      <template #body="slotProps">
-        <Select
-          v-model="selectedSuppliers[slotProps.data.id]"
-          :options="suppliersByReference[slotProps.data.id]"
-          :placeholder="t('purchase.phaseToOrder.placeholders.selectSupplier')"
-          optionValue="id"
-          optionLabel="comercialName"
-          @show="() => onSupplierDropdownShow(slotProps.data)"
-          @focus="() => onSupplierDropdownShow(slotProps.data)"
-          @change="(event) => selectPhase(slotProps.data, event.value)"
-          showClear
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.phaseToOrder.filters.period") }}</label
         >
-        </Select>
-      </template>
-    </Column>
-  </DataTable>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="t('purchase.phaseToOrder.placeholders.selectPeriod')"
+          showIcon
+          class="w-full"
+          size="small"
+        />
+      </div>
+    </template>
+
+    <template #append>
+      <Button
+        :size="'small'"
+        :label="t('purchase.phaseToOrder.actions.createOrders')"
+        rounded
+        @click="sendData"
+      />
+    </template>
+
+    <template #body-supplierId="slotProps">
+      <Select
+        v-model="selectedSuppliers[slotProps.data.id]"
+        :options="suppliersByReference[slotProps.data.id]"
+        :placeholder="t('purchase.phaseToOrder.placeholders.selectSupplier')"
+        optionValue="id"
+        optionLabel="comercialName"
+        @show="() => onSupplierDropdownShow(slotProps.data)"
+        @focus="() => onSupplierDropdownShow(slotProps.data)"
+        @change="(event) => selectPhase(slotProps.data, event.value)"
+        showClear
+      />
+    </template>
+  </Table>
 </template>
 
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
+import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
@@ -93,7 +84,6 @@ import { WorkOrderPhase } from "../../production/types";
 import { useOrderStore } from "../store/order";
 import { useUserFilterStore } from "../../../store/userfilter";
 import { formatDateForQueryParameter } from "../../../utils/functions";
-import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
 
@@ -107,6 +97,45 @@ const sharedStore = useSharedDataStore();
 const orderStore = useOrderStore();
 const userFilterStore = useUserFilterStore();
 const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "workOrder.code",
+    header: t("purchase.phaseToOrder.columns.workOrder"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("purchase.phaseToOrder.columns.phase"),
+    style: "width: 20%",
+  },
+  {
+    field: "serviceReferenceId",
+    header: t("purchase.phaseToOrder.columns.reference"),
+    columnType: ColumnType.Lookup,
+    resolver: getName,
+    style: "width: 25%",
+  },
+  {
+    field: "workOrder.plannedQuantity",
+    header: t("purchase.phaseToOrder.columns.plannedQuantity"),
+    style: "width: 15%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.phaseToOrder.columns.supplier"),
+    style: "width: 20%",
+    truncate: false,
+  },
+]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: t("purchase.phaseToOrder.filters.period"),
+    },
+  }),
+);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "33%", tablet: "50%" };
 

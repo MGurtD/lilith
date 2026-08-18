@@ -6,6 +6,8 @@
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     :show-create="false"
+    show-selection-column
+    selection-column-width="2%"
     preset="crud-list"
     page="SalesInvoicesByDates"
     class="small-datatable"
@@ -18,7 +20,9 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
+        <label class="filter-label table-filter-prepend-label">{{
+          t("common.period")
+        }}</label>
         <DatePicker
           v-model="filter.dates"
           :numberOfMonths="2"
@@ -69,7 +73,10 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import type { FilterBodyWidth, FilterConfig } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { SalesInvoice } from "../types";
@@ -108,7 +115,12 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
 ]);
 
 const columns = computed<Column[]>(() => [
-  { field: "invoiceNumber", header: t("common.number"), sortable: true, style: "width: 10%" },
+  {
+    field: "invoiceNumber",
+    header: t("common.number"),
+    sortable: true,
+    style: "width: 10%",
+  },
   {
     field: "customerId",
     header: t("common.customer"),
@@ -117,9 +129,24 @@ const columns = computed<Column[]>(() => [
     style: "width: 15%",
   },
   { field: "_status", header: t("common.status"), style: "width: 15%" },
-  { field: "invoiceDate", header: t("common.date"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
-  { field: "_dueDate", header: t("sales.list.columns.dueDate"), style: "width: 15%" },
-  { field: "baseAmount", header: t("sales.invoiceAccounting.columns.baseAmount"), columnType: ColumnType.Currency, style: "width: 15%" },
+  {
+    field: "invoiceDate",
+    header: t("common.date"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 15%",
+  },
+  {
+    field: "_dueDate",
+    header: t("sales.list.columns.dueDate"),
+    style: "width: 15%",
+  },
+  {
+    field: "baseAmount",
+    header: t("sales.invoiceAccounting.columns.baseAmount"),
+    columnType: ColumnType.Currency,
+    style: "width: 15%",
+  },
   { field: "download", header: "", style: "width: 2%" },
 ]);
 
@@ -138,7 +165,10 @@ onMounted(async () => {
 });
 
 const setMenuItem = () => {
-  store.setMenuItem({ icon: PrimeIcons.SERVER, title: t("sales.invoiceAccounting.title") });
+  store.setMenuItem({
+    icon: PrimeIcons.SERVER,
+    title: t("sales.invoiceAccounting.title"),
+  });
 };
 
 watch(locale, setMenuItem);
@@ -236,7 +266,9 @@ const updateSelectedInvoiceStatusToManaged = async () => {
       toast.add({
         severity: "success",
         summary: t("sales.invoiceAccounting.title"),
-        detail: t("sales.invoiceAccounting.messages.managedInvoices", { count: selectedInvoices.value.length }),
+        detail: t("sales.invoiceAccounting.messages.managedInvoices", {
+          count: selectedInvoices.value.length,
+        }),
         life: 5000,
       });
 
@@ -255,14 +287,18 @@ const downloadInvoices = async (invoice: SalesInvoice) => {
     toast.add({
       severity: "success",
       summary: t("sales.invoiceAccounting.title"),
-      detail: t("sales.invoiceAccounting.messages.invoiceDownloaded", { number: invoice.invoiceNumber }),
+      detail: t("sales.invoiceAccounting.messages.invoiceDownloaded", {
+        number: invoice.invoiceNumber,
+      }),
       life: 5000,
     });
   } else {
     toast.add({
       severity: "error",
       summary: t("sales.invoiceAccounting.title"),
-      detail: t("sales.invoiceAccounting.messages.invoiceDownloadError", { number: invoice.invoiceNumber }),
+      detail: t("sales.invoiceAccounting.messages.invoiceDownloadError", {
+        number: invoice.invoiceNumber,
+      }),
       life: 5000,
     });
   }

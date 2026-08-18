@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Application.Contracts.Persistance.Repositories.Purchase;
 using Application.Services.Production;
+using Application.Services.System;
 using Domain.Entities;
 using Domain.Entities.Auth;
 using Domain.Entities.Production;
@@ -15,7 +16,7 @@ using Microsoft.Extensions.Options;
 using System.Linq.Expressions;
 using Xunit;
 
-namespace Application.Tests.Services.Production;
+namespace Application.Tests.Services.System;
 
 public class BrandingServiceTests
 {
@@ -212,7 +213,7 @@ public class BrandingServiceTests
             var enterprise = NewEnterprise();
             var path = Path.Combine(root, "EnterpriseBranding", "legacy.png");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await System.IO.File.WriteAllBytesAsync(path, PngHeader);
+            await global::System.IO.File.WriteAllBytesAsync(path, PngHeader);
             var legacyFile = NewBrandingFile(enterprise.Id, path, "EnterpriseBranding");
             enterprise.LogoMainFileId = legacyFile.Id;
             enterprise.LogoSidebarFileId = legacyFile.Id;
@@ -270,7 +271,7 @@ public class BrandingServiceTests
         {
             var enterprise = NewEnterprise();
             var outsidePath = Path.Combine(Path.GetTempPath(), $"lilith-invalid-branding-{Guid.NewGuid():N}.png");
-            await System.IO.File.WriteAllBytesAsync(outsidePath, PngHeader);
+            await global::System.IO.File.WriteAllBytesAsync(outsidePath, PngHeader);
             try
             {
                 var mainFile = NewBrandingFile(enterprise.Id, outsidePath, "EnterpriseBranding:main");
@@ -289,8 +290,8 @@ public class BrandingServiceTests
             }
             finally
             {
-                if (System.IO.File.Exists(outsidePath))
-                    System.IO.File.Delete(outsidePath);
+                if (global::System.IO.File.Exists(outsidePath))
+                    global::System.IO.File.Delete(outsidePath);
             }
         }
         finally
@@ -422,7 +423,7 @@ public class BrandingServiceTests
             Assert.Null(response.Content);
             var committedFile = Assert.Single(uow.FilesStore.Store);
             Assert.Equal(committedFile.Id, enterprise.LogoMainFileId);
-            Assert.True(System.IO.File.Exists(committedFile.Path));
+            Assert.True(global::System.IO.File.Exists(committedFile.Path));
         }
         finally
         {
@@ -441,9 +442,9 @@ public class BrandingServiceTests
             var orphanedPath = Path.Combine(root, "EnterpriseBranding", "orphaned.png");
             var sidebarPath = Path.Combine(root, "EnterpriseBranding", "sidebar.png");
             Directory.CreateDirectory(Path.GetDirectoryName(referencedPath)!);
-            await System.IO.File.WriteAllBytesAsync(referencedPath, PngHeader);
-            await System.IO.File.WriteAllBytesAsync(orphanedPath, PngHeader);
-            await System.IO.File.WriteAllBytesAsync(sidebarPath, PngHeader);
+            await global::System.IO.File.WriteAllBytesAsync(referencedPath, PngHeader);
+            await global::System.IO.File.WriteAllBytesAsync(orphanedPath, PngHeader);
+            await global::System.IO.File.WriteAllBytesAsync(sidebarPath, PngHeader);
 
             var uow = new FakeUnitOfWork(enterprise);
             uow.FilesStore.Store.AddRange(
@@ -458,9 +459,9 @@ public class BrandingServiceTests
 
             Assert.True(response.Result);
             Assert.Empty(uow.FilesStore.Store);
-            Assert.False(System.IO.File.Exists(referencedPath));
-            Assert.False(System.IO.File.Exists(orphanedPath));
-            Assert.False(System.IO.File.Exists(sidebarPath));
+            Assert.False(global::System.IO.File.Exists(referencedPath));
+            Assert.False(global::System.IO.File.Exists(orphanedPath));
+            Assert.False(global::System.IO.File.Exists(sidebarPath));
         }
         finally
         {

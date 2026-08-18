@@ -9,5 +9,7 @@ public interface IMenuItemService
     Task<GenericResponse> Update(UpdateMenuItemRequest request);
     Task<GenericResponse> GetTranslationMatrix();
     Task<GenericResponse> UpdateTranslations(UpdateMenuItemTranslationsRequest request);
+    Task<GenericResponse> Export();
+    Task<GenericResponse> Import(Stream? content);
     Task<GenericResponse> Delete(Guid id);
 }

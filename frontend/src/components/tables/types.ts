@@ -1,6 +1,7 @@
 export type Aggregation = "sum" | "avg" | "count" | "min" | "max";
 
-export type TablePreset = "crud-list" | "read-only" | "detail-lines" | "selector";
+export type TablePreset =
+  "crud-list" | "read-only" | "detail-lines" | "selector";
 
 /**
  * Enables the read-only attachment viewer system column in Table.
@@ -40,6 +41,10 @@ export interface ProgressBarColumnProps {
  */
 export type ColumnProps = ProgressBarColumnProps;
 
+export type ColumnResolver = {
+  resolve(value: unknown, data: unknown): unknown;
+}["resolve"];
+
 export interface Column {
   field: string;
   header: string;
@@ -50,8 +55,9 @@ export interface Column {
   visible?: boolean;
   order?: number;
   style?: string;
+  frozen?: boolean;
   showColor?: boolean;
-  resolver?: (id: string) => string;
+  resolver?: ColumnResolver;
   truncate?: boolean;
   props?: ColumnProps;
 }

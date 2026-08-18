@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { resolveFieldValue } from "@/components/tables/field-value";
 
 type RowData = Record<string, unknown>;
 type ProgressValue = number | ((data: never) => number);
@@ -67,7 +68,7 @@ const rawValue = (data: RowData): number => {
   const value =
     typeof props.value === "function"
       ? props.value(data as never)
-      : (props.value ?? data[props.field]);
+      : (props.value ?? resolveFieldValue(data, props.field));
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 };
 
