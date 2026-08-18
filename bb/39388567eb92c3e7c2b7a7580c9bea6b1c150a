@@ -1,0 +1,77 @@
+backend/src/Api/Controllers/Analytics/AbcAnalysisController.cs
+  s_3deaa126b91b46::t_0803442b370fbb 1-22
+backend/src/Api/Controllers/Analytics/ManagementDashboardController.cs
+  s_3deaa126b91b46::t_59cb72bd3d09e9 1-16
+backend/src/Api/Controllers/Production/ProductionTimeDeviationController.cs
+  s_3deaa126b91b46::t_a0126e5c7d292e 1-17
+backend/src/Api/Controllers/Sales/BudgetConversionController.cs
+  s_3deaa126b91b46::t_92ef58c0f28500 1-17
+backend/src/Api/Setup/ApplicationServicesSetup.cs
+  s_3deaa126b91b46::t_b0aa702ca5b32a 5,51-53,107
+backend/src/Application.Contracts/Contracts/Production/ProductionTimeDeviation.cs
+  s_3deaa126b91b46::t_bb184194e76f21 1-35
+backend/src/Application.Contracts/Contracts/Sales/BudgetConversion.cs
+  s_3deaa126b91b46::t_1de840ef8e394d 1-29
+backend/src/Application.Contracts/Contracts/Shared/AbcAnalysis.cs
+  s_3deaa126b91b46::t_3110a7f656f327 1-31
+backend/src/Application.Contracts/Contracts/Shared/ManagementDashboard.cs
+  s_3deaa126b91b46::t_4991a9d94dbd50 1-56
+backend/src/Application.Contracts/Services/Analytics/IAbcAnalysisService.cs
+  s_3deaa126b91b46::t_834ca9dd529b5c 1-8
+backend/src/Application.Contracts/Services/Analytics/IManagementDashboardService.cs
+  s_3deaa126b91b46::t_1a3596ebe291fb 1-7
+backend/src/Application.Contracts/Services/Production/IProductionTimeDeviationService.cs
+  s_3deaa126b91b46::t_b84fa8b502213a 1-7
+backend/src/Application.Contracts/Services/Sales/IBudgetConversionService.cs
+  s_3deaa126b91b46::t_a43af685ac2cc0 1-7
+backend/src/Application/Services/Analytics/AbcAnalysisService.cs
+  s_3deaa126b91b46::t_abdd238ebfc78d 1-106
+backend/src/Application/Services/Analytics/ManagementDashboardService.cs
+  s_3deaa126b91b46::t_8548b285be332c 1-287
+backend/src/Application/Services/Production/ProductionTimeDeviationService.cs
+  s_3deaa126b91b46::t_c8f3687224d92c 1-113
+backend/src/Application/Services/Sales/BudgetConversionService.cs
+  s_3deaa126b91b46::t_f71a5afce91941 1-76
+frontend/src/components/StatsDashboard.vue
+  s_3deaa126b91b46::t_f7454b0752a425 1-162
+frontend/src/i18n/ca.ts
+  s_3deaa126b91b46::t_82913d70a8b9a0 569-671
+frontend/src/i18n/en.ts
+  s_3deaa126b91b46::t_8f9e8287c95c7f 569-671
+frontend/src/i18n/es.ts
+  s_3deaa126b91b46::t_760d2731a1e616 569-671
+frontend/src/modules/analytics/routes.ts
+  s_3deaa126b91b46::t_7f1ca9a87118a3 7-12,27-56
+frontend/src/modules/analytics/services/abcAnalysis.service.ts
+  s_3deaa126b91b46::t_d499c4dfa8ae1e 1-27
+frontend/src/modules/analytics/services/budgetConversion.service.ts
+  s_3deaa126b91b46::t_0727fc5891cae3 1-18
+frontend/src/modules/analytics/services/managementDashboard.service.ts
+  s_3deaa126b91b46::t_d3d91fc576b423 1-12
+frontend/src/modules/analytics/services/productionTimeDeviation.service.ts
+  s_3deaa126b91b46::t_5face277765e93 1-18
+frontend/src/modules/analytics/types/index.ts
+  s_3deaa126b91b46::t_35913970b567cd 13-135
+frontend/src/modules/analytics/views/AbcDashboard.vue
+  s_3deaa126b91b46::t_193012c29082a2 1-304
+frontend/src/modules/analytics/views/BudgetConversionDashboard.vue
+  s_3deaa126b91b46::t_29acc2a9f3fa03 1-213
+frontend/src/modules/analytics/views/ProductionTimeDeviationDashboard.vue
+  s_3deaa126b91b46::t_dec8c7e7346bc5 1-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "bb39388567eb92c3e7c2b7a7580c9bea6b1c150a",
+  "prompts": {},
+  "sessions": {
+    "s_3deaa126b91b46": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "3061bc53-c336-4eb4-ab7a-5604d95a1334",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
