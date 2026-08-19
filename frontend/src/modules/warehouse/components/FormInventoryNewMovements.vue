@@ -12,6 +12,16 @@
       </div>
 
     <div class="mt-2">
+      <DropdownWarehousesWithLocations
+        label="Ubicació"
+        v-model="newMovement.locationId"
+        :class="{
+          'p-invalid': validation.errors.locationId,
+        }"
+      />
+    </div>
+
+    <div class="mt-2">
       <SelectorLot
         :reference-id="newMovement.referenceId"
         v-model="newMovement.lotId"
@@ -85,6 +95,7 @@
 
 <script setup lang="ts">
 import DropdownReference from "../../shared/components/DropdownReference.vue";
+import DropdownWarehousesWithLocations from "./DropdownWarehousesWithLocations.vue";
 import SelectorLot from "./SelectorLot.vue";
 import { onMounted, ref } from "vue";
 import { Inventory } from "../types";
@@ -121,6 +132,7 @@ const schema = Yup.object().shape({
     .min(1)
     .required("La quantitat ha de ser superior a 1"),
   referenceId: Yup.string().required("La referencia és obligatoria"),
+  locationId: Yup.string().required("La ubicació és obligatoria"),
 });
 const validation = ref({
   result: false,

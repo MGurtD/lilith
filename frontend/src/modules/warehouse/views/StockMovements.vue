@@ -90,11 +90,11 @@
       <Column header="" style="width: 4%">
         <template #body="slotProps">
           <Button
+            v-if="hasVisibleLot(slotProps.data.lotId)"
             icon="pi pi-sitemap"
             text
             rounded
             size="small"
-            :disabled="!slotProps.data.lotId"
             v-tooltip.top="'Veure traçabilitat del lot'"
             @click="
               goToLotTraceability(
@@ -179,7 +179,13 @@ const cleanFilter = () => {
 
 const getLotCode = (lotId?: string | null) => {
   if (!lotId) return "—";
-  return lotsById.value[lotId]?.code ?? "—";
+  return lotsById.value[lotId]?.code || "—";
+};
+
+// Un lot sense codi (bucket genèric per referències loteades sense lot explícit) no aporta traça útil
+const hasVisibleLot = (lotId?: string | null) => {
+  if (!lotId) return false;
+  return !!lotsById.value[lotId]?.code;
 };
 
 const resolveLotCodes = async () => {

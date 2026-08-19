@@ -9,6 +9,7 @@ const ca = {
     "estoc-disponible": "Estoc disponible",
     "ubicacio": "Ubicació",
     "mesures": "Mesures",
+    "lot": "Lot",
     "disponible": "Disponible",
     "quantitat": "Quantitat",
     "retornar": "Retornar",

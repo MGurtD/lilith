@@ -152,6 +152,7 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                             Diameter = st.Diameter,
                             Thickness = st.Thickness,
                             LotId = st.LotId,
+                            LotCode = lot != null ? lot.Code : null,
                             LotCreatedOn = lot != null ? lot.CreatedOn : (DateTime?)null
                         };
 

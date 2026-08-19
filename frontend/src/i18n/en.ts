@@ -9,6 +9,7 @@ const en = {
     "estoc-disponible": "Available stock",
     "ubicacio": "Location",
     "mesures": "Measurements",
+    "lot": "Lot",
     "disponible": "Available",
     "quantitat": "Quantity",
     "retornar": "Return",

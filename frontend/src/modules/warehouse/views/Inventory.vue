@@ -41,6 +41,11 @@
     </template>
     <Column field="referenceName" :header="t('warehouse.fields.reference')" style="width: 28%">
     </Column>
+    <Column field="lotCode" header="Lot" style="width: 10%">
+      <template #body="slotProps">
+        <span>{{ slotProps.data.lotCode || "—" }}</span>
+      </template>
+    </Column>
     <Column field="locationName" :header="t('warehouse.fields.location')"></Column>
     <Column field="oldQuantity" :header="t('warehouse.fields.units')"></Column>
     <Column :header="t('warehouse.inventory.count')" style="width: 12%">
@@ -75,6 +80,7 @@ import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useWarehouseStore } from "../store/warehouse";
 
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -95,6 +101,7 @@ const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
+const warehouseStore = useWarehouseStore();
 
 const filter = ref({
   referenceName: "",
@@ -186,6 +193,9 @@ const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
   inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
+  inventory.locationName = inventory.locationId
+    ? warehouseStore.getLocationName(inventory.locationId)
+    : undefined;
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };
@@ -196,7 +206,7 @@ const newMovement = () => {
     id: getNewUuid(),
     stockId: getNewUuid(),
     movementType: "",
-    locationId: null,
+    locationId: filter.value.locationId ?? null,
     referenceId: "",
     lotId: null,
     lotCode: "",

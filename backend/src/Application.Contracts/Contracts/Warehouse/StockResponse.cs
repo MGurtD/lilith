@@ -37,6 +37,7 @@ namespace Application.Contracts
 
         // Lot Info (traçabilitat)
         public Guid? LotId { get; set; }
+        public string? LotCode { get; set; }
         public DateTime? LotCreatedOn { get; set; }
     }
 }

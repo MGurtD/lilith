@@ -63,24 +63,24 @@
               style="width: 22%"
             />
             <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Origen de compra / moviments" style="width: 36%">
+            <Column header="Data" style="width: 10%">
+              <template #body="slotProps">
+                {{ traceabilityRowDate(slotProps.node.data) }}
+              </template>
+            </Column>
+            <Column header="Origen de compra / moviments" style="width: 26%">
               <template #body="slotProps">
                 <span v-if="slotProps.node.data.kind === 'purchase'">
                   {{ slotProps.node.data.supplierName }} · Rebut
-                  {{ slotProps.node.data.receiptNumber }} ·
-                  {{ formatDate(slotProps.node.data.receiptDate) }}
+                  {{ slotProps.node.data.receiptNumber }}
                 </span>
                 <span
                   v-else-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
-                  <Tag
-                    :severity="movementSeverity(slotProps.node.data.movementType)"
-                    :value="movementTypeLabel(slotProps.node.data.movementType)"
-                  />
+                  <TagMovementType :movementType="slotProps.node.data.movementType" />
                   <span>
-                    {{ slotProps.node.data.locationName }} ·
-                    {{ formatDate(slotProps.node.data.movementDate) }}
+                    {{ slotProps.node.data.locationName }}
                     <template v-if="slotProps.node.data.description">
                       · {{ slotProps.node.data.description }}
                     </template>
@@ -112,24 +112,24 @@
               style="width: 22%"
             />
             <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Destí de venda / moviments" style="width: 36%">
+            <Column header="Data" style="width: 10%">
+              <template #body="slotProps">
+                {{ traceabilityRowDate(slotProps.node.data) }}
+              </template>
+            </Column>
+            <Column header="Destí de venda / moviments" style="width: 26%">
               <template #body="slotProps">
                 <span v-if="slotProps.node.data.kind === 'sale'">
                   {{ slotProps.node.data.customerName }} · Albarà
-                  {{ slotProps.node.data.deliveryNoteNumber }} ·
-                  {{ formatDate(slotProps.node.data.deliveryDate) }}
+                  {{ slotProps.node.data.deliveryNoteNumber }}
                 </span>
                 <span
                   v-else-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
-                  <Tag
-                    :severity="movementSeverity(slotProps.node.data.movementType)"
-                    :value="movementTypeLabel(slotProps.node.data.movementType)"
-                  />
+                  <TagMovementType :movementType="slotProps.node.data.movementType" />
                   <span>
-                    {{ slotProps.node.data.locationName }} ·
-                    {{ formatDate(slotProps.node.data.movementDate) }}
+                    {{ slotProps.node.data.locationName }}
                     <template v-if="slotProps.node.data.description">
                       · {{ slotProps.node.data.description }}
                     </template>
@@ -201,8 +201,9 @@ import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useLotTraceabilityStore } from "../store/lotTraceability";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
+import TagMovementType from "../../../components/TagMovementType.vue";
 import Services from "../services";
-import { formatDate } from "../../../utils/functions";
+import { formatDate, formatDateTime } from "../../../utils/functions";
 import { Lot, LotTraceabilityNode } from "../types";
 
 interface TraceabilityTreeRowData {
@@ -245,29 +246,16 @@ const lots = ref<Lot[]>([]);
 const lotsLoading = ref(false);
 const pendingLotIdFromQuery = ref<string | undefined>(undefined);
 
-const movementTypeLabels: Record<string, string> = {
-  INPUT: "Entrada",
-  OUTPUT: "Sortida",
-  SUPPLY: "Subministrament",
-  CONSUMPTION: "Consum",
-  PRODUCTION: "Producció",
-};
-
-const movementTypeLabel = (type?: string) =>
-  (type && movementTypeLabels[type]) || type || "";
-
-const movementSeverity = (type?: string) => {
-  switch (type) {
-    case "INPUT":
-    case "PRODUCTION":
-      return "success";
-    case "OUTPUT":
-    case "CONSUMPTION":
-      return "danger";
-    case "SUPPLY":
-      return "info";
+const traceabilityRowDate = (data: TraceabilityTreeRowData): string => {
+  switch (data.kind) {
+    case "purchase":
+      return data.receiptDate ? formatDate(data.receiptDate) : "";
+    case "sale":
+      return data.deliveryDate ? formatDate(data.deliveryDate) : "";
+    case "movement":
+      return data.movementDate ? formatDateTime(data.movementDate) : "";
     default:
-      return "secondary";
+      return "";
   }
 };
 

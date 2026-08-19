@@ -241,6 +241,8 @@ export interface StockResponse {
   height: number;
   diameter: number;
   thickness: number;
+  lotId?: string | null;
+  lotCode?: string | null;
 }
 
 export interface MoveStockToWorkcenterSupplyRequest {
