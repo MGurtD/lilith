@@ -1,0 +1,37 @@
+backend/src/Application.Contracts/Contracts/Warehouse/StockResponse.cs
+  s_0e993ba70c9c3c::t_61d278f6c4e6d1 40
+backend/src/Infrastructure/Persistance/Repositories/Warehouse/WarehouseRespository.cs
+  s_0e993ba70c9c3c::t_3966527a102d50 155
+frontend/src/i18n/ca.ts
+  s_0e993ba70c9c3c::t_c205ed7d9d79a6 12
+frontend/src/i18n/en.ts
+  s_0e993ba70c9c3c::t_a4f4817876db44 12
+frontend/src/i18n/es.ts
+  s_0e993ba70c9c3c::t_87592c32cf1133 12
+frontend/src/modules/plant/components/workcenter-detail/AvailableStockDialog.vue
+  s_0e993ba70c9c3c::t_6413c49b520b7a 67-71,149-153
+frontend/src/modules/warehouse/components/FormInventoryNewMovements.vue
+  s_0e993ba70c9c3c::t_237dcb2b45b060 14-23,98,135
+frontend/src/modules/warehouse/types/index.ts
+  s_0e993ba70c9c3c::t_ef105a4dc4a9d0 244-245
+frontend/src/modules/warehouse/views/Inventory.vue
+  s_0e993ba70c9c3c::t_368f455adfbe89 44-48,83,104,196-198,209
+frontend/src/modules/warehouse/views/LotTraceability.vue
+  s_0e993ba70c9c3c::t_dd68386e619155 66-71,75,81,83,115-120,124,130,132,204,206,249-256,258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "1d6f9973ae569f6b0783cf6e0dac7009266211a2",
+  "prompts": {},
+  "sessions": {
+    "s_0e993ba70c9c3c": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "7f00a39f-4cd9-412b-ac82-7d33cd17ef82",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
