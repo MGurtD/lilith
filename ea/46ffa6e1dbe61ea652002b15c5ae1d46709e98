@@ -1,0 +1,23 @@
+backend/src/Application.Contracts/Persistance/Repositories/Warehouse/ILotRepository.cs
+  s_0e993ba70c9c3c::t_3d8c4ba0de1009 13-14
+backend/src/Application/Services/Production/WorkOrderStockService.cs
+  s_0e993ba70c9c3c::t_b4917c45ac28c0 618-625,627,668-684
+frontend/src/modules/warehouse/views/StockMovements.vue
+  s_0e993ba70c9c3c::t_cb88bff8d3d81b 10-11,46-67,138,148,169-170,203-204,218-242,273-285
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ea46ffa6e1dbe61ea652002b15c5ae1d46709e98",
+  "prompts": {},
+  "sessions": {
+    "s_0e993ba70c9c3c": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "7f00a39f-4cd9-412b-ac82-7d33cd17ef82",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
