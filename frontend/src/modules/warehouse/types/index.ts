@@ -127,6 +127,8 @@ export interface LotStockMovement {
   locationName: string;
   entity?: string | null;
   entityId?: string | null;
+  partnerName?: string | null;
+  documentNumber?: string | null;
 }
 
 export interface LotBackwardTraceability {

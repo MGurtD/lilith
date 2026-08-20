@@ -50,7 +50,8 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                     FROM chain c
                     JOIN backward_edges e ON e.produced_lot_id = c."LotId"
                     WHERE c."Depth" < {1}
-                      AND NOT EXISTS (SELECT 1 FROM "ReceiptDetails" rd WHERE rd."LotId" = c."LotId")
+                      -- A receipt line only counts as a real purchase origin once it actually moved stock into the warehouse
+                      AND NOT EXISTS (SELECT 1 FROM "ReceiptDetails" rd WHERE rd."LotId" = c."LotId" AND rd."StockMovementId" IS NOT NULL)
                 )
                 SELECT
                     chain."ParentLotId",
@@ -60,18 +61,10 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                     l."Code" AS "LotCode",
                     l."ReferenceId",
                     r."Code" AS "ReferenceCode",
-                    r."Description" AS "ReferenceDescription",
-                    rcpt."Id" AS "ReceiptId",
-                    rcpt."Number" AS "ReceiptNumber",
-                    rcpt."Date" AS "ReceiptDate",
-                    sup."Id" AS "SupplierId",
-                    sup."ComercialName" AS "SupplierName"
+                    r."Description" AS "ReferenceDescription"
                 FROM chain
                 JOIN "Lot" l ON l."Id" = chain."LotId"
                 JOIN "References" r ON r."Id" = l."ReferenceId"
-                LEFT JOIN "ReceiptDetails" rd ON rd."LotId" = chain."LotId"
-                LEFT JOIN "Receipts" rcpt ON rcpt."Id" = rd."ReceiptId"
-                LEFT JOIN "Suppliers" sup ON sup."Id" = rcpt."SupplierId"
                 ORDER BY chain."Depth"
                 """;
 
@@ -129,12 +122,7 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                     l."Code" AS "LotCode",
                     l."ReferenceId",
                     r."Code" AS "ReferenceCode",
-                    r."Description" AS "ReferenceDescription",
-                    CAST(NULL AS uuid) AS "ReceiptId",
-                    CAST(NULL AS varchar) AS "ReceiptNumber",
-                    CAST(NULL AS timestamp) AS "ReceiptDate",
-                    CAST(NULL AS uuid) AS "SupplierId",
-                    CAST(NULL AS varchar) AS "SupplierName"
+                    r."Description" AS "ReferenceDescription"
                 FROM chain
                 JOIN "Lot" l ON l."Id" = chain."LotId"
                 JOIN "References" r ON r."Id" = l."ReferenceId"

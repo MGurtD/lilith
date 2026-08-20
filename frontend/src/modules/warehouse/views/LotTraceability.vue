@@ -70,17 +70,16 @@
             </Column>
             <Column header="Origen de compra / moviments" style="width: 26%">
               <template #body="slotProps">
-                <span v-if="slotProps.node.data.kind === 'purchase'">
-                  {{ slotProps.node.data.supplierName }} · Rebut
-                  {{ slotProps.node.data.receiptNumber }}
-                </span>
                 <span
-                  v-else-if="slotProps.node.data.kind === 'movement'"
+                  v-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
                   <TagMovementType :movementType="slotProps.node.data.movementType" />
                   <span>
                     {{ slotProps.node.data.locationName }}
+                    <template v-if="slotProps.node.data.partnerName">
+                      · {{ slotProps.node.data.partnerName }}
+                    </template>
                     <template v-if="slotProps.node.data.description">
                       · {{ slotProps.node.data.description }}
                     </template>
@@ -119,17 +118,16 @@
             </Column>
             <Column header="Destí de venda / moviments" style="width: 26%">
               <template #body="slotProps">
-                <span v-if="slotProps.node.data.kind === 'sale'">
-                  {{ slotProps.node.data.customerName }} · Albarà
-                  {{ slotProps.node.data.deliveryNoteNumber }}
-                </span>
                 <span
-                  v-else-if="slotProps.node.data.kind === 'movement'"
+                  v-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
                   <TagMovementType :movementType="slotProps.node.data.movementType" />
                   <span>
                     {{ slotProps.node.data.locationName }}
+                    <template v-if="slotProps.node.data.partnerName">
+                      · {{ slotProps.node.data.partnerName }}
+                    </template>
                     <template v-if="slotProps.node.data.description">
                       · {{ slotProps.node.data.description }}
                     </template>
@@ -211,17 +209,13 @@ interface TraceabilityTreeRowData {
   referenceCode: string;
   referenceDescription: string;
   quantity: number;
-  kind: "node" | "purchase" | "sale" | "movement";
-  supplierName?: string;
-  receiptNumber?: string;
-  receiptDate?: any;
-  customerName?: string;
-  deliveryNoteNumber?: string;
-  deliveryDate?: any;
+  kind: "node" | "movement";
   movementType?: string;
   movementDate?: any;
   locationName?: string;
   description?: string;
+  partnerName?: string | null;
+  documentNumber?: string | null;
 }
 
 interface TraceabilityTreeRow {
@@ -246,18 +240,8 @@ const lots = ref<Lot[]>([]);
 const lotsLoading = ref(false);
 const pendingLotIdFromQuery = ref<string | undefined>(undefined);
 
-const traceabilityRowDate = (data: TraceabilityTreeRowData): string => {
-  switch (data.kind) {
-    case "purchase":
-      return data.receiptDate ? formatDate(data.receiptDate) : "";
-    case "sale":
-      return data.deliveryDate ? formatDate(data.deliveryDate) : "";
-    case "movement":
-      return data.movementDate ? formatDateTime(data.movementDate) : "";
-    default:
-      return "";
-  }
-};
+const traceabilityRowDate = (data: TraceabilityTreeRowData): string =>
+  data.kind === "movement" && data.movementDate ? formatDateTime(data.movementDate) : "";
 
 const buildMovementRows = (
   node: LotTraceabilityNode,
@@ -275,6 +259,8 @@ const buildMovementRows = (
       movementDate: movement.movementDate,
       locationName: movement.locationName,
       description: movement.description,
+      partnerName: movement.partnerName,
+      documentNumber: movement.documentNumber,
     },
   }));
 
@@ -290,22 +276,6 @@ const toBackwardTreeNode = (
   );
 
   buildMovementRows(node, key).forEach((row) => children.push(row));
-
-  node.purchaseOrigins?.forEach((origin, index) => {
-    children.push({
-      key: `${key}-purchase-${index}-${origin.receiptId}`,
-      data: {
-        lotCode: origin.lotCode,
-        referenceCode: origin.referenceCode,
-        referenceDescription: origin.referenceDescription,
-        quantity: origin.quantity,
-        kind: "purchase",
-        supplierName: origin.supplierName,
-        receiptNumber: origin.receiptNumber,
-        receiptDate: origin.receiptDate,
-      },
-    });
-  });
 
   return {
     key,
@@ -332,22 +302,6 @@ const toForwardTreeNode = (
   );
 
   buildMovementRows(node, key).forEach((row) => children.push(row));
-
-  node.salesDestinations?.forEach((destination, index) => {
-    children.push({
-      key: `${key}-sale-${index}-${destination.deliveryNoteId}`,
-      data: {
-        lotCode: destination.lotCode,
-        referenceCode: destination.referenceCode,
-        referenceDescription: destination.referenceDescription,
-        quantity: destination.quantity,
-        kind: "sale",
-        customerName: destination.customerName,
-        deliveryNoteNumber: destination.deliveryNoteNumber,
-        deliveryDate: destination.deliveryDate,
-      },
-    });
-  });
 
   return {
     key,

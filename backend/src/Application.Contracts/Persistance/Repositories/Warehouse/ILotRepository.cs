@@ -10,8 +10,8 @@ public interface ILotRepository : IRepository<Lot, Guid>
 }
 
 /// <summary>
-/// Flat row produced by the WITH RECURSIVE traceability CTEs (see LotRepository).
-/// Purchase-origin columns are only populated for backward rows whose lot has its own ReceiptDetail (base case).
+/// Flat row produced by the WITH RECURSIVE traceability CTEs (see LotRepository). Purchase origins and
+/// stock movements for each lot are attached separately by LotTraceabilityService, not carried on this row.
 /// </summary>
 public class LotTraceabilityEdgeRow
 {
@@ -23,11 +23,4 @@ public class LotTraceabilityEdgeRow
     public Guid ReferenceId { get; set; }
     public string ReferenceCode { get; set; } = string.Empty;
     public string ReferenceDescription { get; set; } = string.Empty;
-
-    // Purchase origin (backward only, base case: this lot has its own ReceiptDetail)
-    public Guid? ReceiptId { get; set; }
-    public string? ReceiptNumber { get; set; }
-    public DateTime? ReceiptDate { get; set; }
-    public Guid? SupplierId { get; set; }
-    public string? SupplierName { get; set; }
 }

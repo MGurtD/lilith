@@ -33,6 +33,10 @@ public class LotStockMovementDto
     public string LocationName { get; set; } = string.Empty;
     public string? Entity { get; set; }
     public Guid? EntityId { get; set; }
+
+    // Supplier/customer attribution when this movement stems from a receipt or delivery note
+    public string? PartnerName { get; set; }
+    public string? DocumentNumber { get; set; }
 }
 
 public class PurchaseOriginDto

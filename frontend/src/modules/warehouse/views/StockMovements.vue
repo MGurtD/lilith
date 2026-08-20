@@ -7,8 +7,8 @@
       scrollHeight="flex"
       sortField="movementDate"
       :sortOrder="1"
-      :value="stockMovementStore.stockMovements"
-      :paginator="(stockMovementStore.stockMovements?.length ?? 0) > 20"
+      :value="filteredMovements"
+      :paginator="filteredMovements.length > 20"
       :rows="20"
     >
       <template #header>
@@ -41,6 +41,28 @@
               <DropdownWarehousesWithLocations
                 label=""
                 v-model="filter.locationId"
+              />
+            </div>
+            <div class="table-filter-prepend-field table-filter-prepend-field--md">
+              <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.reference") }}</label>
+              <DropdownReference
+                label=""
+                :fullName="true"
+                v-model="filter.referenceId"
+              />
+            </div>
+            <div class="table-filter-prepend-field table-filter-prepend-field--md">
+              <label class="filter-label table-filter-prepend-label">Lot</label>
+              <Select
+                showClear
+                filter
+                :filter-fields="['code']"
+                :options="lotOptions"
+                :placeholder="'Selecciona un lot...'"
+                optionValue="id"
+                optionLabel="code"
+                class="w-full"
+                v-model="filter.lotId"
               />
             </div>
           </template>
@@ -113,6 +135,7 @@ import TableFilter, {
   type FilterBodyWidth,
 } from "../../../components/tables/TableFilter.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
 import TagMovementType from "../../../components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -122,7 +145,7 @@ import { useReferenceStore } from "../../shared/store/reference";
 import { useExerciseStore } from "../../shared/store/exercise";
 import Services from "../services";
 import { Lot } from "../types";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import {
@@ -143,6 +166,8 @@ const lotsById = ref<Record<string, Lot>>({});
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   locationId: undefined as string | undefined,
+  referenceId: undefined as string | undefined,
+  lotId: undefined as string | undefined,
 });
 
 const filterBodyWidth: FilterBodyWidth = {
@@ -175,6 +200,8 @@ const setCurrentYear = () => {
 const cleanFilter = () => {
   filter.value.dates = undefined;
   filter.value.locationId = undefined;
+  filter.value.referenceId = undefined;
+  filter.value.lotId = undefined;
 };
 
 const getLotCode = (lotId?: string | null) => {
@@ -187,6 +214,31 @@ const hasVisibleLot = (lotId?: string | null) => {
   if (!lotId) return false;
   return !!lotsById.value[lotId]?.code;
 };
+
+// Opcions del filtre de lot: només lots amb codi dels moviments ja carregats, restringits a la referència seleccionada
+const lotOptions = computed(() =>
+  Object.values(lotsById.value)
+    .filter(
+      (lot) =>
+        !!lot.code &&
+        (!filter.value.referenceId || lot.referenceId === filter.value.referenceId),
+    )
+    .sort((a, b) => a.code.localeCompare(b.code)),
+);
+
+const filteredMovements = computed(() => {
+  let result = stockMovementStore.stockMovements ?? [];
+
+  if (filter.value.referenceId) {
+    result = result.filter((m) => m.referenceId === filter.value.referenceId);
+  }
+
+  if (filter.value.lotId) {
+    result = result.filter((m) => m.lotId === filter.value.lotId);
+  }
+
+  return result;
+});
 
 const resolveLotCodes = async () => {
   const lotIds = Array.from(
@@ -216,6 +268,19 @@ const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
 watch(
   () => stockMovementStore.stockMovements,
   () => resolveLotCodes(),
+);
+
+// Neteja el lot seleccionat si deixa de pertànyer a la referència triada
+watch(
+  () => filter.value.referenceId,
+  () => {
+    if (
+      filter.value.lotId &&
+      !lotOptions.value.some((lot) => lot.id === filter.value.lotId)
+    ) {
+      filter.value.lotId = undefined;
+    }
+  },
 );
 
 const filterMovements = async () => {

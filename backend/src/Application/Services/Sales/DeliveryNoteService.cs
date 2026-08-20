@@ -244,6 +244,9 @@ namespace Application.Services.Sales
                     ReferenceId = detail.ReferenceId,
                     LotId = lotId,
                     Quantity = detail.Quantity,
+                    // Links the movement back to its originating line for traceability (customer/delivery note lookup)
+                    Entity = StockMovementEntities.DeliveryNote,
+                    EntityId = detail.Id
                 };
                 var response = await stockMovementService.Create(stockMovement);
                 if (!response.Result) return response;

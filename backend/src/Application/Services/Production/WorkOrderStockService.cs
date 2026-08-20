@@ -615,9 +615,16 @@ public class WorkOrderStockService(
         var existingMovement = unitOfWork.StockMovements.Find(m =>
             m.Entity == StockMovementEntities.WorkOrder
             && m.EntityId == request.WorkOrderId
-            && m.MovementType == StockMovementType.PRODUCTION).Any();
-        if (existingMovement)
+            && m.MovementType == StockMovementType.PRODUCTION).FirstOrDefault();
+
+        if (existingMovement != null)
+        {
+            // Repara moviments antics gravats amb LotId nul abans que el lot produït es resolgués
+            if (existingMovement.LotId == null && workOrder.DefaultProducedLotId != null)
+                await BackfillProductionMovementLot(existingMovement, workOrder.DefaultProducedLotId.Value);
+
             return new GenericResponse(true);
+        }
 
         // 3. Get default warehouse location
         var defaultLocationId = await warehouseService.GetDefaultLocation();
@@ -657,6 +664,23 @@ public class WorkOrderStockService(
         // 6. Create stock movement (creates/updates Stock record and records the movement)
         return await stockMovementService.CreateProductionMovement(stockMovement);
     }
+
+    // Corregeix un moviment de PRODUCCIÓ orfe de lot i l'estoc que va generar, ara que el WO ja té lot produït assignat
+    private async Task BackfillProductionMovementLot(StockMovement movement, Guid lotId)
+    {
+        movement.LotId = lotId;
+        await unitOfWork.StockMovements.Update(movement);
+
+        var stock = await unitOfWork.Stocks.Get(movement.StockId);
+        if (stock != null && stock.LotId == null)
+        {
+            stock.LotId = lotId;
+            await unitOfWork.Stocks.Update(stock);
+        }
+
+        await UpdateLotRemainingQuantityAsync(lotId);
+    }
+
 
     // Recalcula Lot.RemainingQuantity sumant tot l'estoc del lot a totes les ubicacions; el tanca si arriba a 0 (mai el reobre).
     private async Task UpdateLotRemainingQuantityAsync(Guid lotId)
