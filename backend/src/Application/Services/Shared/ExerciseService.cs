@@ -22,55 +22,56 @@ namespace Application.Services.System
             }
 
             var prefix = exercise.Name[^2..];
-            int newcounter;
-            switch (counterName.ToLower())
+            var currentCounter = counterName.ToLowerInvariant() switch
+            {
+                "purchaseorder" => exercise.PurchaseOrderCounter,
+                "purchaseinvoice" => exercise.PurchaseInvoiceCounter,
+                "salesinvoice" => exercise.SalesInvoiceCounter,
+                "salesorder" => exercise.SalesOrderCounter,
+                "receipt" => exercise.ReceiptCounter,
+                "deliverynote" => exercise.DeliveryNoteCounter,
+                "budget" => exercise.BudgetCounter,
+                "workorder" => exercise.WorkOrderCounter,
+                _ => null
+            };
+
+            if (currentCounter is null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterNotFound", counterName));
+
+            var nextCounter = int.Parse(currentCounter) + 1;
+            var nextCounterValue = nextCounter.ToString("D3");
+            counter = prefix + nextCounterValue;
+
+            switch (counterName.ToLowerInvariant())
             {
                 case "purchaseorder":
-                    counter = prefix + exercise.PurchaseOrderCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.PurchaseOrderCounter = newcounter.ToString()[^3..];
+                    exercise.PurchaseOrderCounter = nextCounterValue;
                     break;
                 case "purchaseinvoice":
-                    counter = prefix + exercise.PurchaseInvoiceCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.PurchaseInvoiceCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.PurchaseInvoiceCounter = nextCounterValue;
                     break;
                 case "salesinvoice":
-                    counter = prefix + exercise.SalesInvoiceCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.SalesInvoiceCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.SalesInvoiceCounter = nextCounterValue;
                     break;
                 case "salesorder":
-                    counter = prefix + exercise.SalesOrderCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.SalesOrderCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.SalesOrderCounter = nextCounterValue;
                     break;
                 case "receipt":
-                    counter = prefix + exercise.ReceiptCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.ReceiptCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.ReceiptCounter = nextCounterValue;
                     break;
                 case "deliverynote":
-                    counter = prefix + exercise.DeliveryNoteCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.DeliveryNoteCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.DeliveryNoteCounter = nextCounterValue;
                     break;
                 case "budget":
-                    counter = prefix + exercise.BudgetCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.BudgetCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.BudgetCounter = nextCounterValue;
                     break;
                 case "workorder":
-                    counter = prefix + exercise.WorkOrderCounter.PadLeft(3, '0');
-                    newcounter = int.Parse(counter) + 1;
-                    exercise.WorkOrderCounter = newcounter.ToString().Substring(newcounter.ToString().Length - 3);
+                    exercise.WorkOrderCounter = nextCounterValue;
                     break;
-                default:
-                    return new GenericResponse(false, localizationService.GetLocalizedString("ExerciseCounterNotFound", counterName));
             }
 
             await unitOfWork.Exercices.Update(exercise);
-            return new GenericResponse(true, newcounter);
+            return new GenericResponse(true, (object)counter);
         }
 
         // CRUD operations
