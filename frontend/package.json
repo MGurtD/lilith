@@ -21,6 +21,7 @@
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
     "@primevue/core": "^4.5.5",
+    "@primevue/forms": "4.5.5",
     "@vuelidate/core": "^2.0.2",
     "@vuelidate/validators": "^2.0.2",
     "axios": "^1.18.1",

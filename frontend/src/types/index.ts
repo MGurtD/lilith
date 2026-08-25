@@ -1,6 +1,7 @@
 export interface GenericResponse<T> {
   result: boolean;
   errors: Array<string>;
+  errorCode?: string | null;
   content?: T | null;
 }
 

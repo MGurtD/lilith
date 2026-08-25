@@ -129,12 +129,12 @@ export const useLifecyclesStore = defineStore({
     // Tags
     async createTag(lifecycleId: string, model: LifecycleTag) {
       const result = await Services.Lifecycle.createTag(lifecycleId, model);
-      if (result) await this.fetchOne(this.lifecycle!.id);
+      if (result.result) await this.fetchOne(this.lifecycle!.id);
       return result;
     },
     async updateTag(model: LifecycleTag) {
       const result = await Services.Lifecycle.updateTag(model);
-      if (result) await this.fetchOne(this.lifecycle!.id);
+      if (result.result) await this.fetchOne(this.lifecycle!.id);
       return result;
     },
     async deleteTag(id: string) {

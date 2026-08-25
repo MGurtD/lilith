@@ -1371,6 +1371,7 @@ const es = {
       messages: {
         tagDeleted: "Etiqueta eliminada correctamente",
         tagSaved: "Etiqueta guardada correctamente",
+        tagSaveFailed: "No se ha podido guardar la etiqueta",
         dependentStatus: "Estado dependiente",
         dependentStatusDetail: "El estado {name} forma parte de una transición",
         created: "Ciclo de vida creado correctamente",
@@ -1440,6 +1441,21 @@ const es = {
         cancel: "Cancelar",
         confirm: "Confirmar",
         invalidForm: "Formulario inválido",
+        colors: {
+          none: "Ninguno",
+          info: "Azul",
+          secondary: "Gris",
+          help: "Lila",
+          contrast: "Negro",
+          warn: "Naranja",
+          success: "Verde",
+          danger: "Rojo",
+        },
+        validation: {
+          nameRequired: "El nombre es obligatorio",
+          nameMax: "El nombre no puede superar los 250 caracteres",
+          descriptionMax: "La descripción no puede superar los 250 caracteres",
+        },
       },
     },
     paymentMethods: {

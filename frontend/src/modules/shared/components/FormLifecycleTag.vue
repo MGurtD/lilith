@@ -1,64 +1,16 @@
-<template>
-  <form>
-    <section class="two-columns">
-      <BaseInput
-        class="mb-3"
-        :label="$t('shared.lifecycleTags.form.name')"
-        v-model="tag.name"
-        :class="{ 'p-invalid': validation.errors.name }"
-      />
-
-      <BaseInput
-        class="mb-3"
-        :label="$t('shared.lifecycleTags.form.description')"
-        v-model="tag.description"
-        :class="{ 'p-invalid': validation.errors.description }"
-      />
-
-      <div class="mb-3">
-        <label class="block text-900 mb-2">{{ $t('shared.lifecycleTags.form.color') }}</label>
-        <Select
-          v-model="tag.color"
-          :options="colors"
-          optionValue="id"
-          optionLabel="value"
-          class="w-full"
-        />
-      </div>
-
-      <div class="mb-3">
-        <label class="block text-900 mb-2">{{ $t('shared.lifecycleTags.form.icon') }}</label>
-        <IconPicker v-model="tag.icon" />
-      </div>
-    </section>
-
-    <div class="flex justify-content-end gap-2 mt-4">
-      <Button
-        :label="$t('shared.lifecycleTags.form.cancel')"
-        severity="secondary"
-        @click="$emit('cancel')"
-      />
-      <Button :label="$t('shared.lifecycleTags.form.confirm')" @click="submitForm" />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import IconPicker from "../../../components/IconPicker.vue";
-import { LifecycleTag } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import IconPicker from "@/components/IconPicker.vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { FormActionMode } from "../../../types/component";
-
-const { t } = useI18n();
-const toast = useToast();
+import { LifecycleTag } from "../types";
 
 const props = defineProps<{
   tag: LifecycleTag;
@@ -66,61 +18,102 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", tag: LifecycleTag): void;
-  (e: "cancel"): void;
+  (event: "submit", tag: LifecycleTag): void;
+  (event: "cancel"): void;
 }>();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 caràcters"),
-  description: Yup.string().max(
-    250,
-    "La descripció no pot superar els 250 caràcters",
-  ),
-});
+const { t } = useI18n();
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.tag);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.tag);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("shared.common.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-type Color = {
+interface ColorOption {
   id: string;
   value: string;
-};
+}
 
-const colors: Color[] = [
-  { id: "", value: "Cap" },
-  { id: "info", value: "Blau" },
-  { id: "secondary", value: "Gris" },
-  { id: "help", value: "Lila" },
-  { id: "contrast", value: "Negre" },
-  { id: "warn", value: "Taronja" },
-  { id: "success", value: "Verd" },
-  { id: "danger", value: "Vermell" },
-];
+const colors = computed<ColorOption[]>(() => [
+  { id: "", value: t("shared.lifecycleTags.form.colors.none") },
+  { id: "info", value: t("shared.lifecycleTags.form.colors.info") },
+  {
+    id: "secondary",
+    value: t("shared.lifecycleTags.form.colors.secondary"),
+  },
+  { id: "help", value: t("shared.lifecycleTags.form.colors.help") },
+  { id: "contrast", value: t("shared.lifecycleTags.form.colors.contrast") },
+  { id: "warn", value: t("shared.lifecycleTags.form.colors.warn") },
+  { id: "success", value: t("shared.lifecycleTags.form.colors.success") },
+  { id: "danger", value: t("shared.lifecycleTags.form.colors.danger") },
+]);
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "name",
+        label: t("shared.lifecycleTags.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.lifecycleTags.form.validation.nameRequired"))
+          .max(250, t("shared.lifecycleTags.form.validation.nameMax")),
+      },
+      {
+        name: "description",
+        label: t("shared.lifecycleTags.form.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string().max(
+          250,
+          t("shared.lifecycleTags.form.validation.descriptionMax"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "color",
+        label: t("shared.lifecycleTags.form.color"),
+        type: FormFieldType.Select,
+        defaultValue: "",
+        props: {
+          options: colors.value,
+          optionLabel: "value",
+          optionValue: "id",
+        },
+      },
+      {
+        name: "icon",
+        label: t("shared.lifecycleTags.form.icon"),
+        type: FormFieldType.Custom,
+        defaultValue: "",
+      },
+    ],
+  },
+]);
+
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.tag,
+    name: String(values.name ?? ""),
+    description: String(values.description ?? ""),
+    color: String(values.color ?? ""),
+    icon: String(values.icon ?? ""),
+  });
+};
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="tag"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-icon="{ value, setValue, disabled }">
+      <IconPicker
+        :model-value="typeof value === 'string' ? value : null"
+        :class="{ 'pointer-events-none opacity-60': disabled }"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>
