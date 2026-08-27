@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 import StockMovementService from "../services";
 
 export const useStockMovementStore = defineStore({
@@ -10,9 +11,13 @@ export const useStockMovementStore = defineStore({
   }),
   getters: {},
   actions: {
-    async create(createRequest: StockMovement) {
+    async create(
+      createRequest: StockMovement
+    ): Promise<GenericResponse<StockMovement>> {
       const created =
-        await StockMovementService.StockMovementService.create(createRequest);
+        await StockMovementService.StockMovementService.createMovement(
+          createRequest
+        );
       return created;
     },
     async getBetweenDates(

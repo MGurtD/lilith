@@ -4,10 +4,11 @@ using Application.Contracts;
 using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
 using Domain.Entities.Sales;
+using Domain.Entities.Warehouse;
 
 namespace Application.Services.Production
 {
-    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService, IMetricsService metricsService) : IWorkOrderService
+    public class WorkOrderService(IUnitOfWork unitOfWork, IExerciseService exerciseService, ISalesOrderService salesOrderService, ILocalizationService localizationService, IWorkOrderStockService workOrderStockService, IMetricsService metricsService, IParameterService parameterService, ILotService lotService) : IWorkOrderService
     {
         public async Task<WorkOrder?> GetById(Guid id)
         {
@@ -226,6 +227,28 @@ namespace Application.Services.Production
             if (initialStatusId is null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("WorkMasterNoInitialStatus"));
 
+            // Lot de sortida (Fase 4: traçabilitat). Segons RequiresLot de la referència; null si no és loteada.
+            var reference = await unitOfWork.References.Get(workMaster.ReferenceId);
+            Guid? producedLotId = null;
+            if (reference is { RequiresLot: true })
+            {
+                var autoBatch = await parameterService.GetBool("Production.AutoBatch", true);
+                string? producedLotCode;
+                if (autoBatch)
+                {
+                    producedLotCode = code;
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(dto.LotCode))
+                        return new GenericResponse(false, localizationService.GetLocalizedString("WorkOrderLotCodeRequired"));
+                    producedLotCode = dto.LotCode;
+                }
+
+                var producedLotResponse = await lotService.ResolveOrCreateLot(workMaster.ReferenceId, producedLotCode, null, null);
+                producedLotId = (producedLotResponse.Content as Lot)?.Id;
+            }
+
             // Crear ordre de fabricació
             var workOrder = new WorkOrder()
             {
@@ -236,7 +259,8 @@ namespace Application.Services.Production
                 PlannedDate = dto.PlannedDate,
                 PlannedQuantity = dto.PlannedQuantity,
                 StatusId = initialStatusId.Value,
-                Comment = dto.Comment
+                Comment = dto.Comment,
+                DefaultProducedLotId = producedLotId
             };
 
             foreach (var workMasterPhase in workMaster.Phases)

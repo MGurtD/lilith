@@ -40,6 +40,24 @@
     </Column>
     <Column style="width: 5%">
       <template #body="slotProps">
+        <Button
+          icon="pi pi-sitemap"
+          text
+          rounded
+          size="small"
+          :disabled="!slotProps.data.lotId"
+          v-tooltip.top="'Veure traçabilitat del lot'"
+          @click.stop="
+            goToLotTraceability(
+              slotProps.data.referenceId,
+              slotProps.data.lotId,
+            )
+          "
+        />
+      </template>
+    </Column>
+    <Column style="width: 5%">
+      <template #body="slotProps">
         <i
           v-if="slotProps.data.stockMovementId === null"
           :class="PrimeIcons.TIMES"
@@ -58,8 +76,9 @@ import { useI18n } from "vue-i18n";
 import { ReceiptDetail } from "../types";
 import { formatCurrency } from "../../../utils/functions";
 import LinkReference from "../../shared/components/LinkReference.vue";
-
+import router from "../../../router";
 const { t } = useI18n();
+
 
 const props = defineProps<{
   details: Array<ReceiptDetail> | undefined;
@@ -82,5 +101,13 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 
 const onDeleteRow = (event: any, detail: ReceiptDetail) => {
   emit("delete", detail);
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
 };
 </script>

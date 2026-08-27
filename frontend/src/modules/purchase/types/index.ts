@@ -250,6 +250,8 @@ export interface ReceiptOrderDetailGroup {
   receivedQuantity: number;
   price: number;
   details: ReceiptOrderDetail[];
+  lotId?: string | null;
+  lotCode?: string;
 }
 
 export interface ReceiptOrderDetail {
@@ -280,6 +282,8 @@ export interface ReceiptDetail {
   amount: number;
   id: string;
   disabled: boolean;
+  lotId?: string | null;
+  lotCode?: string;
 }
 
 export interface PurchaseOrderReceiptDetail {
@@ -290,6 +294,8 @@ export interface PurchaseOrderReceiptDetail {
   user: string;
   createdOn: string;
   id: string;
+  lotId?: string | null;
+  lotCode?: string;
 }
 
 export interface AddReceptionsRequest {

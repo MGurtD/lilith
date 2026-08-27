@@ -9,6 +9,7 @@ const es = {
     "estoc-disponible": "Stock disponible",
     "ubicacio": "Ubicación",
     "mesures": "Medidas",
+    "lot": "Lote",
     "disponible": "Disponible",
     "quantitat": "Cantidad",
     "retornar": "Devolver",
@@ -246,6 +247,7 @@ const es = {
         cognom: "Apellido",
         color: "Color",
         comentariFabriacio: "Comentario de fabricación",
+        codiLot: "Código de lote",
         comentariFabricacio: "Comentario de fabricación",
         confirmar: "Confirmar",
         consum: "Consumo",
@@ -1597,6 +1599,7 @@ const es = {
         purchase: "Compras",
         production: "Producción",
         service: "Servicio",
+        requiresLot: "Requiere lote",
       },
       sales: {
         savePvp: "Guardar PVP",
@@ -1809,6 +1812,7 @@ const es = {
     stocks: { title: "Gestión de almacenes - Existencias" },
     stockMovements: { title: "Movimientos de almacén" },
     inventory: { title: "Inventario", count: "Recuento", saveMovementsAria: "Guardar movimientos" },
+    lotTraceability: { closed: "Cerrado", view: "Ver trazabilidad del lote" },
   },
   purchase: {
     fields: { type: "Tipo", period: "Período", creationDate: "Fecha de alta", paymentDate: "Fecha de pago", amount: "Importe", recurring: "Recurrente", frequency: "Frecuencia", paymentDay: "Día de pago", endDate: "Fecha de fin", description: "Descripción", disabled: "Desactivada", internalInvoiceNumber: "N.º de factura interna", exercise: "Ejercicio", series: "Serie", supplier: "Proveedor", supplierInvoiceNumber: "N.º de factura del proveedor", invoiceDate: "Fecha de factura", paymentMethod: "Forma de pago", transportAmount: "Portes", withholdingTax: "% IRPF", discount: "% descuento", base: "Base", taxes: "Impuestos", name: "Nombre", commercialName: "Nombre comercial", taxName: "Nombre fiscal", phone: "Teléfono", startDate: "Fecha de inicio", minimumWeight: "Peso mínimo (kg)", maximumWeight: "Peso máximo (kg)", minimumVolume: "Volumen mínimo (m³)", maximumVolume: "Volumen máximo (m³)", minimumDistance: "Distancia mínima (km)", maximumDistance: "Distancia máxima (km)", price: "Precio (€)" },

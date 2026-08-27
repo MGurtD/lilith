@@ -2,12 +2,7 @@
   <div>
     <Table
       class="p-datatable-sm"
-      tableStyle="min-width:100%"
-      scrollable
-      scrollHeight="flex"
-      sortField="movementDate"
-      :sortOrder="1"
-      :items="stockMovementStore.stockMovements ?? []"
+      :items="filteredMovements"
       :columns="columns"
       :filter-config="filterConfig"
       v-model:filter-values="filter"
@@ -16,28 +11,74 @@
       :filter-body-width="filterBodyWidth"
       :show-create="false"
       page="StockMovements"
-      :paginator="(stockMovementStore.stockMovements?.length ?? 0) > 20"
+      tableStyle="min-width: 100%"
+      scrollable
+      scrollHeight="flex"
+      sortField="movementDate"
+      :sortOrder="1"
+      :paginator="filteredMovements.length > 20"
       :rows="20"
       @filter="filterMovements"
       @clear="cleanFilter"
     >
       <template #filter-append>
         <div class="table-filter-prepend-field table-filter-prepend-field--sm">
-          <label class="filter-label table-filter-prepend-label">{{
-            t("warehouse.fields.location")
-          }}</label>
+          <label class="filter-label table-filter-prepend-label">
+            {{ t("warehouse.fields.location") }}
+          </label>
           <DropdownWarehousesWithLocations
             label=""
             v-model="filter.locationId"
           />
         </div>
+        <div class="table-filter-prepend-field table-filter-prepend-field--md">
+          <label class="filter-label table-filter-prepend-label">
+            {{ t("warehouse.fields.reference") }}
+          </label>
+          <DropdownReference
+            label=""
+            :fullName="true"
+            v-model="filter.referenceId"
+          />
+        </div>
+        <div class="table-filter-prepend-field table-filter-prepend-field--md">
+          <label class="filter-label table-filter-prepend-label">
+            {{ t("common.lot") }}
+          </label>
+          <Select
+            showClear
+            filter
+            :filter-fields="['code']"
+            :options="lotOptions"
+            :placeholder="t('common.lot')"
+            optionValue="id"
+            optionLabel="code"
+            class="w-full"
+            v-model="filter.lotId"
+          />
+        </div>
+      </template>
+      <template #body-lotId="{ data }">
+        {{ getLotCode(data.lotId) }}
       </template>
       <template #body-movementType="{ data }">
         <TagMovementType :movementType="data.movementType" />
       </template>
+      <template #body-lotTraceability="{ data }">
+        <Button
+          v-if="hasVisibleLot(data.lotId)"
+          icon="pi pi-sitemap"
+          text
+          rounded
+          size="small"
+          v-tooltip.top="t('warehouse.lotTraceability.view')"
+          @click="goToLotTraceability(data.referenceId, data.lotId)"
+        />
+      </template>
     </Table>
   </div>
 </template>
+
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
@@ -46,29 +87,38 @@ import type {
   FilterConfig,
 } from "@/components/tables/TableFilter.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
 import TagMovementType from "@/components/TagMovementType.vue";
 import { useToast } from "primevue/usetoast";
+import { useRouter } from "vue-router";
 import { useStore } from "@/store";
 import { useStockMovementStore } from "../store/stockMovement";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useExerciseStore } from "../../shared/store/exercise";
-import { computed, onMounted, ref } from "vue";
+import { useWarehouseStore } from "../store/warehouse";
+import Services from "../services";
+import { Lot } from "../types";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDateForQueryParameter } from "@/utils/functions";
-import { useWarehouseStore } from "../store/warehouse";
 
 const toast = useToast();
 const { t } = useI18n();
+const router = useRouter();
 const store = useStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
 const warehouseStore = useWarehouseStore();
 
+const lotsById = ref<Record<string, Lot>>({});
+
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   locationId: undefined as string | undefined,
+  referenceId: undefined as string | undefined,
+  lotId: undefined as string | undefined,
 });
 
 const filterBodyWidth: FilterBodyWidth = {
@@ -88,6 +138,8 @@ const filterConfig = computed<FilterConfig[]>(() => [
 
 const filterLabels = computed<Record<string, string>>(() => ({
   locationId: t("warehouse.fields.location"),
+  referenceId: t("warehouse.fields.reference"),
+  lotId: t("common.lot"),
 }));
 
 const filterValueResolvers: Record<string, (value: unknown) => string> = {
@@ -99,6 +151,9 @@ const filterValueResolvers: Record<string, (value: unknown) => string> = {
     }
     return "";
   },
+  referenceId: (value) =>
+    typeof value === "string" ? referenceStore.getFullNameById(value) : "",
+  lotId: (value) => (typeof value === "string" ? getLotCode(value) : ""),
 };
 
 const columns = computed<Column[]>(() => [
@@ -115,6 +170,11 @@ const columns = computed<Column[]>(() => [
     columnType: ColumnType.Lookup,
     resolver: referenceStore.getFullNameById,
     style: "width: 15%",
+  },
+  {
+    field: "lotId",
+    header: t("common.lot"),
+    style: "width: 8%",
   },
   {
     field: "location.name",
@@ -168,6 +228,12 @@ const columns = computed<Column[]>(() => [
     columnType: ColumnType.Number,
     style: "width: 10%; min-width: 8rem",
   },
+  {
+    field: "lotTraceability",
+    header: "",
+    style: "width: 4%",
+    truncate: false,
+  },
 ]);
 
 onMounted(async () => {
@@ -195,7 +261,85 @@ const setCurrentYear = () => {
 const cleanFilter = () => {
   filter.value.dates = undefined;
   filter.value.locationId = undefined;
+  filter.value.referenceId = undefined;
+  filter.value.lotId = undefined;
 };
+
+const getLotCode = (lotId?: string | null) => {
+  if (!lotId) return "-";
+  return lotsById.value[lotId]?.code || "-";
+};
+
+const hasVisibleLot = (lotId?: string | null) =>
+  !!lotId && !!lotsById.value[lotId]?.code;
+
+const lotOptions = computed(() =>
+  Object.values(lotsById.value)
+    .filter(
+      (lot) =>
+        !!lot.code &&
+        (!filter.value.referenceId || lot.referenceId === filter.value.referenceId),
+    )
+    .sort((a, b) => a.code.localeCompare(b.code)),
+);
+
+const filteredMovements = computed(() => {
+  let result = stockMovementStore.stockMovements ?? [];
+
+  if (filter.value.referenceId) {
+    result = result.filter((movement) =>
+      movement.referenceId === filter.value.referenceId,
+    );
+  }
+
+  if (filter.value.lotId) {
+    result = result.filter((movement) => movement.lotId === filter.value.lotId);
+  }
+
+  return result;
+});
+
+const resolveLotCodes = async () => {
+  const lotIds = Array.from(
+    new Set(
+      (stockMovementStore.stockMovements ?? [])
+        .map((movement) => movement.lotId)
+        .filter((id): id is string => !!id && !lotsById.value[id]),
+    ),
+  );
+
+  await Promise.all(
+    lotIds.map(async (lotId) => {
+      const lot = await Services.Lot.getById(lotId);
+      if (lot) lotsById.value[lotId] = lot;
+    }),
+  );
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
+};
+
+watch(
+  () => stockMovementStore.stockMovements,
+  () => resolveLotCodes(),
+);
+
+watch(
+  () => filter.value.referenceId,
+  () => {
+    if (
+      filter.value.lotId &&
+      !lotOptions.value.some((lot) => lot.id === filter.value.lotId)
+    ) {
+      filter.value.lotId = undefined;
+    }
+  },
+);
 
 const filterMovements = async () => {
   if (filter.value.dates && filter.value.dates[1]) {

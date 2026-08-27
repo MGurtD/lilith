@@ -33,6 +33,7 @@ namespace Domain.Entities.Shared
         public ReferenceFormat? ReferenceFormat { get; set; }
         public decimal LastCost { get; set; } = decimal.Zero;
         public decimal WorkMasterCost { get; set; } = decimal.Zero;        
+        public bool RequiresLot { get; set; }
         public string GetShortName()
         {
             return Purchase ? Code : $"{Code} (v. {Version})";

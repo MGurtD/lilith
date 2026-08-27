@@ -75,6 +75,7 @@
     "WorkOrderPhaseWithId": "Fase de orden de fabricación con ID {0}",
     "WorkOrderWithId": "Orden de fabricación con ID {0}",
     "WorkMasterNotFound": "Ruta de fabricación inexistente",
+    "WorkOrderLotCodeRequired": "Es necesario indicar un código de lote para la orden de fabricación",
     "WorkMasterAlreadyExists": "Ruta de fabricación existente",
     "WorkMasterPhaseNotFound": "Fase de la ruta de fabricación inexistente",
     "WorkMasterPhaseAlreadyExists": "Fase de la ruta de fabricación existente",
@@ -118,6 +119,8 @@
     "StockInsufficientQuantity": "Cantidad insuficiente de stock disponible",
     "QuantityMustBeGreaterThanZero": "La cantidad debe ser superior a 0",
     "StockDefaultLocationNotDefined": "No hay una ubicación por defecto definida en el proyecto",
+    "LotClosed": "El lote ya está cerrado y no se puede reabrir",
+    "LotReferenceMismatch": "El lote seleccionado no pertenece a esta referencia",
     "StockDefaultLocationNotFound": "No hay una ubicación por defecto",
     "WorkcenterSupplyLocationNotFound": "No se ha encontrado la ubicación de aprovisionamiento para el centro de trabajo",
     "ReferenceNotExistent": "Referencia no existente",
@@ -297,14 +300,6 @@
     "TableViewDeleted": "Vista eliminada correctamente",
     "TableViewNotFound": "Vista no encontrada",
     "CannotDeleteDefaultView": "No se puede eliminar la vista por defecto",
-    "DefaultViewSet": "Vista por defecto establecida",
-    "EnterpriseActiveAlreadyExists": "Ya existe una Enterprise habilitada. Desactívala antes de habilitar otra.",
-    "BrandingEnterpriseUnavailable": "No hay ninguna Enterprise habilitada disponible para gestionar el branding.",
-    "BrandingLogoRequired": "Debe seleccionar un archivo de logotipo.",
-    "BrandingLogoInvalidSize": "El logotipo debe tener un tamaño de entre 1 byte y 2 MB.",
-    "BrandingLogoInvalidFormat": "El logotipo debe ser un archivo PNG, JPEG o WebP válido.",
-    "BrandingLogoUploadFailed": "No se ha podido guardar el logotipo.",
-    "BrandingNameInvalid": "El nombre comercial no puede superar los 60 caracteres.",
-    "BrandingPaletteInvalid": "La paleta de color seleccionada no es válida."
+    "DefaultViewSet": "Vista por defecto establecida"
   }
 }

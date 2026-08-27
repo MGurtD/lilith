@@ -21,6 +21,7 @@ namespace Application.Services.Sales
         IStockMovementService stockMovementService,
         ISalesOrderService salesOrderService,
         IExerciseService exerciseService,
+        ILotService lotService,
         ILocalizationService localizationService) : IDeliveryNoteService
     {
         private readonly string lifecycleName = StatusConstants.Lifecycles.DeliveryNote;
@@ -224,6 +225,16 @@ namespace Application.Services.Sales
             {
                 detail.Reference = null;
 
+                // Llegim l'estat real persistit (la comanda pot arribar amb dades desactualitzades des del client)
+                var persistedDetail = unitOfWork.DeliveryNotes.Details.Find(d => d.Id == detail.Id).FirstOrDefault();
+
+                var lotId = await ResolveOutputLotId(persistedDetail ?? detail);
+                if (persistedDetail != null && persistedDetail.LotId != lotId)
+                {
+                    persistedDetail.LotId = lotId;
+                    unitOfWork.DeliveryNotes.Details.UpdateWithoutSave(persistedDetail);
+                }
+
                 var stockMovement = new StockMovement
                 {
                     MovementDate = DateTime.Now,
@@ -231,11 +242,17 @@ namespace Application.Services.Sales
                     MovementType = StockMovementType.OUTPUT,
                     Description = localizationService.GetLocalizedString("Movement.AlbaranDescription", deliveryNote.Number),
                     ReferenceId = detail.ReferenceId,
+                    LotId = lotId,
                     Quantity = detail.Quantity,
+                    // Links the movement back to its originating line for traceability (customer/delivery note lookup)
+                    Entity = StockMovementEntities.DeliveryNote,
+                    EntityId = detail.Id
                 };
                 var response = await stockMovementService.Create(stockMovement);
                 if (!response.Result) return response;
             }
+
+            await unitOfWork.CompleteAsync();
 
             return new GenericResponse(true);
         }
@@ -246,6 +263,10 @@ namespace Application.Services.Sales
             {
                 detail.Reference = null;
 
+                // El moviment de reversió ha d'usar sempre el LotId original assignat a la sortida, no un de nou
+                var persistedDetail = unitOfWork.DeliveryNotes.Details.Find(d => d.Id == detail.Id).FirstOrDefault();
+                var lotId = persistedDetail?.LotId ?? await ResolveOutputLotId(persistedDetail ?? detail);
+
                 var stockMovement = new StockMovement
                 {
                     MovementDate = DateTime.Now,
@@ -253,6 +274,7 @@ namespace Application.Services.Sales
                     MovementType = StockMovementType.INPUT,
                     Description = localizationService.GetLocalizedString("Movement.ReturnDescription", deliveryNote.Number),
                     ReferenceId = detail.ReferenceId,
+                    LotId = lotId,
                     Quantity = detail.Quantity,
                 };
                 var response = await stockMovementService.Create(stockMovement);
@@ -260,6 +282,34 @@ namespace Application.Services.Sales
             }
 
             return new GenericResponse(true);
+        }
+
+        // Resol el lot del moviment de sortida: explícit al detall, lot per defecte de l'OF, o (si la ref és loteada) un lot resolt/creat; null si no és loteada
+        private async Task<Guid?> ResolveOutputLotId(DeliveryNoteDetail detail)
+        {
+            if (detail.LotId.HasValue) return detail.LotId.Value;
+
+            var workOrder = ResolveWorkOrderForDetail(detail);
+            if (workOrder?.DefaultProducedLotId != null)
+                return workOrder.DefaultProducedLotId.Value;
+
+            var reference = await unitOfWork.References.Get(detail.ReferenceId);
+            if (reference is { RequiresLot: false })
+                return null;
+
+            var lotResponse = await lotService.ResolveOrCreateLot(detail.ReferenceId, string.Empty, null, null);
+            return ((Lot)lotResponse.Content!).Id;
+        }
+
+        // Arriba del DeliveryNoteDetail a l'OF que va produir el producte venut, a través de SalesOrderDetail.WorkOrderId
+        private WorkOrder? ResolveWorkOrderForDetail(DeliveryNoteDetail detail)
+        {
+            if (!detail.SalesOrderDetailId.HasValue) return null;
+
+            var salesOrderDetail = unitOfWork.SalesOrderDetails.Find(d => d.Id == detail.SalesOrderDetailId.Value).FirstOrDefault();
+            if (salesOrderDetail?.WorkOrderId == null) return null;
+
+            return unitOfWork.WorkOrders.Find(w => w.Id == salesOrderDetail.WorkOrderId.Value).FirstOrDefault();
         }
 
         public async Task<GenericResponse> AddOrder(Guid deliveryNoteId, SalesOrderHeader order)

@@ -1,6 +1,13 @@
 import BaseService from "../../../api/base.service";
 import { logException } from "../../../api/api.client";
-import { Warehouse, Stock, StockListItem, Location, StockResponse } from "../types";
+import {
+  Warehouse,
+  Stock,
+  StockListItem,
+  Location,
+  StockResponse,
+  Lot,
+} from "../types";
 
 export class WarehouseService extends BaseService<Warehouse> {
   async getAllWithLocations(): Promise<Array<Warehouse>> {
@@ -60,6 +67,21 @@ export class StockService extends BaseService<Stock> {
     try {
       const endpoint = `${this.resource}/ByBillOfMaterials/${bomId}`;
       const response = await this.apiClient.get(endpoint);
+      return response.data ?? [];
+    } catch (err) {
+      logException(err);
+      return [];
+    }
+  }
+}
+
+export class LotService extends BaseService<Lot> {
+  // Lots oberts (no tancats) d'una referència, per seleccionar-los en un moviment manual
+  async getOpenByReference(referenceId: string): Promise<Lot[]> {
+    try {
+      const response = await this.apiClient.get(
+        `${this.resource}?referenceId=${referenceId}`
+      );
       return response.data ?? [];
     } catch (err) {
       logException(err);

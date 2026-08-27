@@ -9,6 +9,7 @@ const ca = {
     "estoc-disponible": "Estoc disponible",
     "ubicacio": "Ubicació",
     "mesures": "Mesures",
+    "lot": "Lot",
     "disponible": "Disponible",
     "quantitat": "Quantitat",
     "retornar": "Retornar",
@@ -246,6 +247,7 @@ const ca = {
         cognom: "Cognom",
         color: "Color",
         comentariFabriacio: "Comentari de fabricació",
+        codiLot: "Codi de lot",
         comentariFabricacio: "Comentari fabricació",
         confirmar: "Confirmar",
         consum: "Consum",
@@ -1654,6 +1656,7 @@ const ca = {
         purchase: "Compres",
         production: "Producció",
         service: "Servei",
+        requiresLot: "Requereix lot",
       },
       sales: {
         savePvp: "Guardar PVP",
@@ -1866,6 +1869,7 @@ const ca = {
     stocks: { title: "Gestió de magatzems - Estocs" },
     stockMovements: { title: "Moviments de magatzem" },
     inventory: { title: "Inventari", count: "Recompte", saveMovementsAria: "Guardar moviments" },
+    lotTraceability: { closed: "Tancat", view: "Veure traçabilitat del lot" },
   },
   purchase: {
     fields: { type: "Tipus", period: "Període", creationDate: "Data d'alta", paymentDate: "Data de pagament", amount: "Import", recurring: "Recurrent", frequency: "Freqüència", paymentDay: "Dia de pagament", endDate: "Data de fi", description: "Descripció", disabled: "Desactivada", internalInvoiceNumber: "Núm. de factura interna", exercise: "Exercici", series: "Sèrie", supplier: "Proveïdor", supplierInvoiceNumber: "Núm. de factura del proveïdor", invoiceDate: "Data de factura", paymentMethod: "Forma de pagament", transportAmount: "Ports", withholdingTax: "% IRPF", discount: "% descompte", base: "Base", taxes: "Impostos", name: "Nom", commercialName: "Nom comercial", taxName: "Nom fiscal", phone: "Telèfon", startDate: "Data d'inici", minimumWeight: "Pes mínim (kg)", maximumWeight: "Pes màxim (kg)", minimumVolume: "Volum mínim (m³)", maximumVolume: "Volum màxim (m³)", minimumDistance: "Distància mínima (km)", maximumDistance: "Distància màxima (km)", price: "Preu (€)" },

@@ -125,6 +125,7 @@ export interface Reference {
   purchase: boolean;
   production: boolean;
   isService: boolean;
+  requiresLot: boolean;
   createdOn: Date;
   updatedOn: Date;
 }

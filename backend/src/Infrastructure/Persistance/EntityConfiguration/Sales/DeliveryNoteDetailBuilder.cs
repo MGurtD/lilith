@@ -52,6 +52,12 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
                 .HasColumnType("boolean");
 
             builder
+                .HasOne(b => b.Lot)
+                .WithMany()
+                .HasForeignKey(b => b.LotId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName($"PK_{TABLE_NAME}");
 

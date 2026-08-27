@@ -22,25 +22,16 @@ export interface LocationTypeOption {
   label: string;
 }
 
-type Translate = (key: string) => string;
+export const LOCATION_TYPE_OPTIONS: LocationTypeOption[] = [
+  { value: "Supply", label: "Subministrament" },
+  { value: "Receiving", label: "Recepció" },
+  { value: "Shipping", label: "Expedició" },
+  { value: "Storage", label: "Emmagatzematge" },
+];
 
-const LOCATION_TYPE_KEYS: Record<string, string> = {
-  Supply: "warehouse.locationTypes.supply",
-  Receiving: "warehouse.locationTypes.receiving",
-  Shipping: "warehouse.locationTypes.shipping",
-  Storage: "warehouse.locationTypes.storage",
-};
-
-export const getLocationTypeOptions = (t: Translate): LocationTypeOption[] =>
-  Object.entries(LOCATION_TYPE_KEYS).map(([value, key]) => ({ value, label: t(key) }));
-
-export const getLocationTypeLabel = (
-  value: string | null | undefined,
-  t: Translate,
-): string => {
+export const getLocationTypeLabel = (value: string | null | undefined): string => {
   if (!value) return "";
-  const key = LOCATION_TYPE_KEYS[value];
-  return key ? t(key) : value;
+  return LOCATION_TYPE_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
 };
 
 export interface Stock {
@@ -64,6 +55,127 @@ export interface StockListItem extends Stock {
   warehouseId: string;
   warehouseName: string;
   warehouseDescription: string;
+  lotId?: string | null;
+  lotCode?: string;
+  lotClosedDate?: string | null;
+}
+
+// Matèria primera: lot de traçabilitat associat a una referència
+export interface Lot {
+  id: string;
+  referenceId: string;
+  code: string;
+  supplierLotCode?: string | null;
+  expirationDate?: any;
+  closedDate?: any;
+  remainingQuantity: number;
+  comment?: string | null;
+}
+
+// Traçabilitat de lots: origen de compra d'una fulla de l'arbre "cap enrere"
+export interface PurchaseOrigin {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  supplierId: string;
+  supplierName: string;
+  receiptId: string;
+  receiptNumber: string;
+  receiptDate: any;
+}
+
+// Traçabilitat de lots: destí de venda d'una fulla de l'arbre "cap endavant"
+export interface SalesDestination {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  customerId: string;
+  customerName: string;
+  deliveryNoteId: string;
+  deliveryNoteNumber: string;
+  deliveryDate: any;
+}
+
+// Node recursiu de l'arbre de traçabilitat (backward i forward comparteixen forma)
+export interface LotTraceabilityNode {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+  children?: LotTraceabilityNode[];
+  purchaseOrigins?: PurchaseOrigin[];
+  salesDestinations?: SalesDestination[];
+  movements?: LotStockMovement[];
+}
+
+// Moviment d'estoc (aprovisionament, consum, producció...) associat a un lot de la traça
+export interface LotStockMovement {
+  movementId: string;
+  movementType: string;
+  quantity: number;
+  movementDate: any;
+  description: string;
+  locationId: string | null;
+  locationName: string;
+  entity?: string | null;
+  entityId?: string | null;
+  partnerName?: string | null;
+  documentNumber?: string | null;
+}
+
+export interface LotBackwardTraceability {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  root: LotTraceabilityNode;
+}
+
+export interface LotForwardTraceability {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  root: LotTraceabilityNode;
+}
+
+export interface RecallDeliveryNote {
+  deliveryNoteId: string;
+  deliveryNoteNumber: string;
+  deliveryDate: any;
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  quantity: number;
+}
+
+export interface RecallCustomer {
+  customerId: string;
+  customerName: string;
+  deliveryNotes: RecallDeliveryNote[];
+}
+
+export interface RecallReport {
+  lotId: string;
+  lotCode: string;
+  referenceId: string;
+  referenceCode: string;
+  referenceDescription: string;
+  totalAffectedDeliveryNotes: number;
+  totalAffectedQuantity: number;
+  affectedCustomers: RecallCustomer[];
 }
 
 export interface StockMovement {
@@ -74,6 +186,7 @@ export interface StockMovement {
   location: Location | null;
   referenceId: string;
   reference?: { id: string; code: string; description: string } | null;
+  lotId?: string | null;
   quantity: number;
   width: number;
   length: number;
@@ -94,6 +207,8 @@ export interface Inventory {
   locationName?: string; // Optional for UI purposes
   referenceId: string;
   referenceName?: string; // Optional for UI purposes
+  lotId?: string | null;
+  lotCode?: string;
   oldQuantity: number;
   newQuantity: number;
   width: number;
@@ -128,6 +243,8 @@ export interface StockResponse {
   height: number;
   diameter: number;
   thickness: number;
+  lotId?: string | null;
+  lotCode?: string | null;
 }
 
 export interface MoveStockToWorkcenterSupplyRequest {
@@ -170,4 +287,3 @@ export const StockMovementEntity = {
   Receipt: "Receipt",
   WorkOrder: "WorkOrder",
 } as const;
-

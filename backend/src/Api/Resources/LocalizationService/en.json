@@ -75,6 +75,7 @@
     "WorkOrderPhaseWithId": "Work order phase with ID {0}",
     "WorkOrderWithId": "Work order with ID {0}",
     "WorkMasterNotFound": "Work master not found",
+    "WorkOrderLotCodeRequired": "A lot code is required for the work order",
     "WorkMasterAlreadyExists": "Work master already exists",
     "WorkMasterPhaseNotFound": "Work master phase not found",
     "WorkMasterPhaseAlreadyExists": "Work master phase already exists",
@@ -118,6 +119,8 @@
     "StockInsufficientQuantity": "Insufficient stock quantity available",
     "QuantityMustBeGreaterThanZero": "Quantity must be greater than 0",
     "StockDefaultLocationNotDefined": "No default location defined in the project",
+    "LotClosed": "The lot is already closed and cannot be reopened",
+    "LotReferenceMismatch": "The selected lot does not belong to this reference",
     "StockDefaultLocationNotFound": "No default location found",
     "WorkcenterSupplyLocationNotFound": "Supply location not found for the workcenter",
     "ReferenceNotExistent": "Reference does not exist",
@@ -297,14 +300,6 @@
     "TableViewDeleted": "View deleted successfully",
     "TableViewNotFound": "View not found",
     "CannotDeleteDefaultView": "Cannot delete the default view",
-    "DefaultViewSet": "Default view set",
-    "EnterpriseActiveAlreadyExists": "An enabled Enterprise already exists. Disable it before enabling another one.",
-    "BrandingEnterpriseUnavailable": "No enabled Enterprise is available for branding management.",
-    "BrandingLogoRequired": "A logo file must be selected.",
-    "BrandingLogoInvalidSize": "The logo size must be between 1 byte and 2 MB.",
-    "BrandingLogoInvalidFormat": "The logo must be a valid PNG, JPEG, or WebP file.",
-    "BrandingLogoUploadFailed": "The logo could not be stored.",
-    "BrandingNameInvalid": "The brand name cannot exceed 60 characters.",
-    "BrandingPaletteInvalid": "The selected color palette is invalid."
+    "DefaultViewSet": "Default view set"
   }
 }
