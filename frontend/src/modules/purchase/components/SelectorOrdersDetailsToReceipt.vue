@@ -33,12 +33,23 @@
       </header>
     </template>
     <Column expander style="width: 5%" />
-    <Column header="" field="number" style="width: 85%">
+    <Column header="" field="number" style="width: 55%">
       <template #body="{ data }">
         <b
           >{{ referenceStore.getFullNameById(data.reference.id) }} |
           {{ data.description }}
         </b>
+      </template>
+    </Column>
+    <Column header="" field="lotId" style="width: 25%">
+      <template #body="{ data }">
+        <div v-if="referenceRequiresLot(data.reference.id)">
+          <SelectorLot
+            :reference-id="data.reference.id"
+            v-model="data.lotId"
+            @update:lotCode="(code) => (data.lotCode = code)"
+          />
+        </div>
       </template>
     </Column>
     <Column header="" field="number" style="width: 10%">
@@ -102,6 +113,7 @@ import {
   ReceiptOrderDetail,
   ReceiptOrderDetailGroup,
 } from "../types";
+import SelectorLot from "../../warehouse/components/SelectorLot.vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDate, getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../shared/store/reference";
@@ -117,6 +129,10 @@ const referenceStore = useReferenceStore();
 const expandedRows = ref({});
 const filterReference = ref("");
 const selectedOrderDetails = ref([] as Array<ReceiptOrderDetail>);
+
+const referenceRequiresLot = (referenceId: string) =>
+  referenceStore.references?.find((r) => r.id === referenceId)?.requiresLot ??
+  false;
 
 const props = defineProps<{
   receipt: Receipt;
@@ -234,6 +250,8 @@ const onSelectedClick = () => {
         (group.price / totalQuantity) * detail.pendingQuantity,
       );
 
+      const selectedLotCode = group.lotCode;
+
       receptionsRequest.receptions.push({
         receiptDetailId: getNewUuid(),
         purchaseOrderDetailId: detail.id,
@@ -243,6 +261,8 @@ const onSelectedClick = () => {
             ? (group.price / totalQuantity) * detail.pendingQuantity
             : 0,
         user: store.user?.username,
+        lotId: group.lotId ?? null,
+        lotCode: selectedLotCode,
       } as PurchaseOrderReceiptDetail);
     });
   });

@@ -141,6 +141,10 @@
                 <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.service') }}</label>
                 <Checkbox v-model="reference.isService" :binary="true" />
               </div>
+              <div class="mt-1">
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.requiresLot') }}</label>
+                <Checkbox v-model="reference.requiresLot" :binary="true" />
+              </div>
             </section>
           </form>
 

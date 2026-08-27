@@ -42,10 +42,10 @@ namespace Application.Services.Warehouse
 
             if (reference.CategoryName == ReferenceCategories.Service) return new GenericResponse(true, request);
 
-            // Comprovar si existeix un stock id per les dimensions i producte
+            // Comprovar si existeix un stock id per les dimensions, producte i lot
             var stock = GetByDimensions(movementLocation, request.ReferenceId,
                                         request.Width, request.Length, request.Height,
-                                        request.Diameter, request.Thickness);
+                                        request.Diameter, request.Thickness, request.LotId);
 
             if (request.MovementType == StockMovementType.OUTPUT)
             {
@@ -54,6 +54,14 @@ namespace Application.Services.Warehouse
             else if (request.MovementType == StockMovementType.INPUT)
             {
                 if (request.Quantity < 0) request.Quantity *= -1;
+            }
+
+            // Un lot tancat no pot tornar a rebre stock
+            if (request.LotId.HasValue && request.Quantity > 0)
+            {
+                var lot = await _unitOfWork.Lots.Get(request.LotId.Value);
+                if (lot != null && lot.ClosedDate != null)
+                    return new GenericResponse(false, _localizationService.GetLocalizedString("LotClosed"));
             }
 
             if (stock != null)
@@ -70,6 +78,7 @@ namespace Application.Services.Warehouse
                 {
                     ReferenceId = request.ReferenceId,
                     LocationId = movementLocation,
+                    LotId = request.LotId,
                     Quantity = request.Quantity,
                     Width = request.Width,
                     Length = request.Length,
@@ -82,6 +91,9 @@ namespace Application.Services.Warehouse
                 request.StockId = newStock.Id;
             }
 
+            if (request.LotId.HasValue)
+                await UpdateLotRemainingQuantityAsync(request.LotId.Value);
+
             request.LocationId = movementLocation;
             await _unitOfWork.StockMovements.Add(request);
             return new GenericResponse(true, request);
@@ -92,8 +104,16 @@ namespace Application.Services.Warehouse
             if (request.LocationId == null)
                 return new GenericResponse(false, _localizationService.GetLocalizedString("StockDefaultLocationNotDefined"));
 
-            // Comprovar si existeix stock de la referencia
-            var stock = (await _unitOfWork.Stocks.FindAsync(s => s.ReferenceId == request.ReferenceId))
+            // Un lot tancat no pot tornar a rebre stock
+            if (request.LotId.HasValue)
+            {
+                var lot = await _unitOfWork.Lots.Get(request.LotId.Value);
+                if (lot != null && lot.ClosedDate != null)
+                    return new GenericResponse(false, _localizationService.GetLocalizedString("LotClosed"));
+            }
+
+            // Comprovar si existeix stock de la referencia i lot
+            var stock = (await _unitOfWork.Stocks.FindAsync(s => s.ReferenceId == request.ReferenceId && s.LotId == request.LotId))
                            .FirstOrDefault();
 
             if (stock == null)
@@ -102,6 +122,7 @@ namespace Application.Services.Warehouse
                 {
                     ReferenceId = request.ReferenceId,
                     LocationId = request.LocationId.Value,
+                    LotId = request.LotId,
                     Quantity = request.Quantity,
                     Width = request.Width,
                     Length = request.Length,
@@ -121,6 +142,9 @@ namespace Application.Services.Warehouse
 
                 request.StockId = stock.Id;
             }
+
+            if (request.LotId.HasValue)
+                await UpdateLotRemainingQuantityAsync(request.LotId.Value);
 
             await _unitOfWork.StockMovements.Add(request);
             return new GenericResponse(true, request);
@@ -149,7 +173,7 @@ namespace Application.Services.Warehouse
             var stockLocationId = stockMovement.LocationId ?? _defaultLocationId.Value;
             var stock = GetByDimensions(stockLocationId, stockMovement.ReferenceId,
                                         stockMovement.Width, stockMovement.Length, stockMovement.Height,
-                                        stockMovement.Diameter, stockMovement.Thickness);
+                                        stockMovement.Diameter, stockMovement.Thickness, stockMovement.LotId);
 
             if (stock == null)
                 return new GenericResponse(false, _localizationService.GetLocalizedString("StockNotFound"));
@@ -157,11 +181,14 @@ namespace Application.Services.Warehouse
             stock.Quantity += -1 * stockMovement.Quantity;
             await _unitOfWork.Stocks.Update(stock);
 
+            if (stockMovement.LotId.HasValue)
+                await UpdateLotRemainingQuantityAsync(stockMovement.LotId.Value);
+
             await _unitOfWork.StockMovements.Remove(stockMovement);
             return new GenericResponse(true);
         }
 
-        private Stock? GetByDimensions(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness)
+        private Stock? GetByDimensions(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness, Guid? lotId)
         {
             return _unitOfWork.Stocks.Find(
                 p => p.LocationId == locationId &&
@@ -170,8 +197,25 @@ namespace Application.Services.Warehouse
                      p.Length == length &&
                      p.Height == height &&
                      p.Diameter == diameter &&
-                     p.Thickness == thickness
+                     p.Thickness == thickness &&
+                     p.LotId == lotId
             ).FirstOrDefault();
+        }
+
+        // Recalcula Lot.RemainingQuantity sumant tot l'estoc del lot a totes les ubicacions; el tanca si arriba a 0 (mai el reobre).
+        private async Task UpdateLotRemainingQuantityAsync(Guid lotId)
+        {
+            var lot = await _unitOfWork.Lots.Get(lotId);
+            if (lot == null) return;
+
+            var lotStocks = await _unitOfWork.Stocks.FindAsync(s => s.LotId == lotId);
+            var total = lotStocks.Sum(s => s.Quantity);
+
+            lot.RemainingQuantity = total;
+            if (total == 0 && lot.ClosedDate == null)
+                lot.ClosedDate = DateTime.Now;
+
+            await _unitOfWork.Lots.Update(lot);
         }
     }
 }

@@ -35,7 +35,6 @@ public static class ApplicationServicesSetup
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
-        services.AddScoped<IBrandingService, BrandingService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
         services.AddScoped<IReferenceService, ReferenceService>();
@@ -53,13 +52,16 @@ public static class ApplicationServicesSetup
         services.AddScoped<IDeliveryNoteReportService, DeliveryNoteReportService>();
         services.AddScoped<IPurchaseOrderReportService, PurchaseOrderReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
+        services.AddScoped<IBrandingService, BrandingService>();
         services.AddScoped<IEnterpriseService, EnterpriseService>();
         services.AddScoped<IWorkOrderService, WorkOrderService>();
         services.AddScoped<IWorkOrderReportService, WorkOrderReportService>();
         services.AddScoped<IMetricsService, MetricsService>();
         services.AddScoped<IWorkcenterShiftService, WorkcenterShiftService>();
         services.AddScoped<IStockService, StockService>();
+        services.AddScoped<ILotTraceabilityService, LotTraceabilityService>();
         services.AddScoped<IStockMovementService, StockMovementService>();
+        services.AddScoped<ILotService, LotService>();
         services.AddScoped<IVerifactuIntegrationService, VerifactuIntegrationService>();
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<IMenuItemService, MenuItemService>();
@@ -84,6 +86,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();
+        services.AddScoped<IParameterService, ParameterService>();
 
         // Production services - Group A Simple CRUD
         services.AddScoped<ISiteService, SiteService>();

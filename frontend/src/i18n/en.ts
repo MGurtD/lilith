@@ -9,6 +9,7 @@ const en = {
     "estoc-disponible": "Available stock",
     "ubicacio": "Location",
     "mesures": "Measurements",
+    "lot": "Lot",
     "disponible": "Available",
     "quantitat": "Quantity",
     "retornar": "Return",
@@ -246,6 +247,7 @@ const en = {
         cognom: "Surname",
         color: "Color",
         comentariFabriacio: "Manufacturing comment",
+        codiLot: "Lot code",
         comentariFabricacio: "Manufacturing comment",
         confirmar: "Confirm",
         consum: "Consumption",
@@ -1628,6 +1630,7 @@ const en = {
         purchase: "Purchases",
         production: "Production",
         service: "Service",
+        requiresLot: "Requires lot",
       },
       sales: {
         savePvp: "Save RRP",
@@ -1840,6 +1843,7 @@ const en = {
     stocks: { title: "Warehouse management - Stock" },
     stockMovements: { title: "Warehouse movements" },
     inventory: { title: "Inventory", count: "Count", saveMovementsAria: "Save movements" },
+    lotTraceability: { closed: "Closed", view: "View lot traceability" },
   },
   purchase: {
     fields: { type: "Type", period: "Period", creationDate: "Creation date", paymentDate: "Payment date", amount: "Amount", recurring: "Recurring", frequency: "Frequency", paymentDay: "Payment day", endDate: "End date", description: "Description", disabled: "Disabled", internalInvoiceNumber: "Internal invoice no.", exercise: "Financial year", series: "Series", supplier: "Supplier", supplierInvoiceNumber: "Supplier invoice no.", invoiceDate: "Invoice date", paymentMethod: "Payment method", transportAmount: "Freight", withholdingTax: "% withholding tax", discount: "% discount", base: "Base", taxes: "Taxes", name: "Name", commercialName: "Trading name", taxName: "Legal name", phone: "Phone", startDate: "Start date", minimumWeight: "Minimum weight (kg)", maximumWeight: "Maximum weight (kg)", minimumVolume: "Minimum volume (m³)", maximumVolume: "Maximum volume (m³)", minimumDistance: "Minimum distance (km)", maximumDistance: "Maximum distance (km)", price: "Price (€)" },

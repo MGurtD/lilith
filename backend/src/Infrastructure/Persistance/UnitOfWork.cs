@@ -100,6 +100,7 @@ namespace Infrastructure.Persistance
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
         public IStockMovementRepository StockMovements { get; private set; } = new StockMovementRepository(context);
+        public ILotRepository Lots { get; private set; } = new LotRepository(context);
 
         public async Task<int> CompleteAsync()
         {
@@ -109,4 +110,3 @@ namespace Infrastructure.Persistance
         public void Dispose() => context.Dispose();
     }
 }
-

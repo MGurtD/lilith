@@ -36,5 +36,19 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
                 .OrderByDescending(sm => sm.MovementDate)
                 .ToList();
         }
+
+        public async Task<List<StockMovement>> GetByLotIds(IEnumerable<Guid> lotIds)
+        {
+            var lotIdList = lotIds.ToList();
+            if (lotIdList.Count == 0)
+                return [];
+
+            return await dbSet
+                .Include(sm => sm.Location)
+                .AsNoTracking()
+                .Where(sm => sm.LotId.HasValue && lotIdList.Contains(sm.LotId.Value))
+                .OrderBy(sm => sm.MovementDate)
+                .ToListAsync();
+        }
     }
 }

@@ -8,6 +8,8 @@ namespace Domain.Entities.Warehouse
         public Reference? Reference { get; set;}
         public Guid LocationId {get; set;}
         public Location? Location {get; set;}
+        public Guid? LotId { get; set; }
+        public Lot? Lot { get; set; }
         public int Quantity { get; set; }
         public decimal Width { get; set; }
         public decimal Length { get; set; }

@@ -16,9 +16,9 @@
   >
     <template #prepend>
       <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          t("warehouse.fields.location")
-        }}</label>
+        <label class="filter-label table-filter-prepend-label">
+          {{ t("warehouse.fields.location") }}
+        </label>
         <DropdownWarehousesWithLocations label="" v-model="filter.locationId" />
       </div>
     </template>
@@ -32,12 +32,11 @@
         @click="saveMovement"
       />
     </template>
-    <template #body-newQuantity="slotProps">
-      <BaseInput
-        label=""
-        id="newQuantity"
-        v-model="slotProps.data.newQuantity"
-      />
+    <template #body-lotCode="{ data }">
+      {{ data.lotCode || "-" }}
+    </template>
+    <template #body-newQuantity="{ data }">
+      <BaseInput label="" id="newQuantity" v-model="data.newQuantity" />
     </template>
   </Table>
   <Dialog :closable="true" v-model:visible="isDialogVisible" :modal="true">
@@ -47,6 +46,7 @@
     />
   </Dialog>
 </template>
+
 <script setup lang="ts">
 import BaseInput from "../../../components/BaseInput.vue";
 import {
@@ -59,12 +59,13 @@ import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
-
+import { useWarehouseStore } from "../store/warehouse";
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
@@ -73,11 +74,11 @@ import { getNewUuid } from "../../../utils/functions";
 const store = useStore();
 const toast = useToast();
 const { t, locale } = useI18n();
-
 const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
+const warehouseStore = useWarehouseStore();
 
 const filter = ref({
   referenceName: "",
@@ -100,6 +101,11 @@ const columns = computed<Column[]>(() => [
     field: "referenceName",
     header: t("warehouse.fields.reference"),
     style: "width: 28%",
+  },
+  {
+    field: "lotCode",
+    header: t("common.lot"),
+    style: "width: 10%",
   },
   {
     field: "locationName",
@@ -158,7 +164,7 @@ const refreshData = async () => {
   await stockStore.fetchStocks();
   inventoryStore.inventories = [];
   stockStore.stocks?.forEach((stock) => {
-    let invent = {
+    const invent = {
       id: getNewUuid(),
       stockId: stock.id,
       movementType: "bal",
@@ -166,6 +172,8 @@ const refreshData = async () => {
       locationName: stock.locationName,
       referenceId: stock.referenceId,
       referenceName: stock.referenceDisplay,
+      lotId: stock.lotId,
+      lotCode: stock.lotCode,
       oldQuantity: stock.quantity,
       newQuantity: stock.quantity,
       width: stock.width,
@@ -206,9 +214,10 @@ const isDialogVisible = ref(false);
 const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
-  inventory.referenceName = referenceStore.getFullNameById(
-    inventory.referenceId,
-  );
+  inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
+  inventory.locationName = inventory.locationId
+    ? warehouseStore.getLocationName(inventory.locationId)
+    : undefined;
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };
@@ -219,8 +228,10 @@ const newMovement = () => {
     id: getNewUuid(),
     stockId: getNewUuid(),
     movementType: "",
-    locationId: null,
+    locationId: filter.value.locationId ?? null,
     referenceId: "",
+    lotId: null,
+    lotCode: "",
     oldQuantity: 0,
     newQuantity: 0,
     width: 0,
@@ -233,10 +244,10 @@ const newMovement = () => {
 };
 
 const saveMovement = async () => {
-  const promises = [] as Array<Promise<boolean>>;
+  const promises = [] as Array<Promise<GenericResponse<StockMovement>>>;
 
   inventoryStore.inventories
-    ?.filter((el) => el.newQuantity != el.oldQuantity)
+    ?.filter((el) => el.newQuantity !== el.oldQuantity)
     .forEach((m) => {
       const isOutput = m.newQuantity < m.oldQuantity;
       const stock: StockMovement = {
@@ -246,6 +257,7 @@ const saveMovement = async () => {
         locationId: m.locationId || null,
         location: null,
         referenceId: m.referenceId,
+        lotId: m.lotId,
         quantity: m.newQuantity - m.oldQuantity,
         width: m.width,
         length: m.length,
@@ -262,8 +274,8 @@ const saveMovement = async () => {
     });
 
   const results = await Promise.all(promises);
-  // Check if all promises resolved successfully
-  if (results.filter((p) => p === true).length === promises.length) {
+  const failed = results.filter((result) => !result.result);
+  if (failed.length === 0) {
     toast.add({
       severity: "success",
       summary: t("warehouse.messages.inventoryCreated"),
@@ -272,10 +284,14 @@ const saveMovement = async () => {
 
     refreshData();
   } else {
+    const detail = Array.from(
+      new Set(failed.flatMap((result) => result.errors ?? [])),
+    ).join(" ");
     toast.add({
       severity: "error",
       summary: t("warehouse.messages.inventoryMovementError"),
-      life: 5000,
+      detail: detail || undefined,
+      life: 7000,
     });
   }
 };

@@ -75,6 +75,7 @@
     "WorkOrderPhaseWithId": "Fase de ordre de fabricació amb ID {0}",
     "WorkOrderWithId": "Ordre de fabricació amb ID {0}",
     "WorkMasterNotFound": "Ruta de fabricació inexistent",
+    "WorkOrderLotCodeRequired": "Cal indicar un codi de lot per a l'ordre de fabricació",
     "WorkMasterAlreadyExists": "Ruta de fabricació existent",
     "WorkMasterPhaseNotFound": "Fase de la ruta de fabricació inexistent",
     "WorkMasterPhaseAlreadyExists": "Fase de la ruta de fabricació existent",
@@ -118,6 +119,8 @@
     "StockInsufficientQuantity": "Quantitat insuficient d'stock disponible",
     "QuantityMustBeGreaterThanZero": "La quantitat ha de ser superior a 0",
     "StockDefaultLocationNotDefined": "No hi ha una ubicació per defecte definida al projecte",
+    "LotClosed": "El lot ja està tancat i no es pot reobrir",
+    "LotReferenceMismatch": "El lot seleccionat no pertany a aquesta referència",
     "StockDefaultLocationNotFound": "No hi ha una ubicació per defecte",
     "WorkcenterSupplyLocationNotFound": "No s'ha trobat la ubicació d'aprovisionament per al centre de treball",
     "ReferenceNotExistent": "Referència no existent",
@@ -297,14 +300,6 @@
     "TableViewDeleted": "Vista eliminada correctament",
     "TableViewNotFound": "Vista no trobada",
     "CannotDeleteDefaultView": "No es pot eliminar la vista per defecte",
-    "DefaultViewSet": "Vista per defecte establerta",
-    "EnterpriseActiveAlreadyExists": "Ja existeix una Enterprise habilitada. Desactiveu-la abans d'habilitar-ne una altra.",
-    "BrandingEnterpriseUnavailable": "No hi ha cap Enterprise habilitada disponible per gestionar el branding.",
-    "BrandingLogoRequired": "Cal seleccionar un fitxer de logotip.",
-    "BrandingLogoInvalidSize": "El logotip ha de tenir una mida d'entre 1 byte i 2 MB.",
-    "BrandingLogoInvalidFormat": "El logotip ha de ser un fitxer PNG, JPEG o WebP vàlid.",
-    "BrandingLogoUploadFailed": "No s'ha pogut desar el logotip.",
-    "BrandingNameInvalid": "El nom comercial no pot superar els 60 caràcters.",
-    "BrandingPaletteInvalid": "La paleta de color seleccionada no és vàlida."
+    "DefaultViewSet": "Vista per defecte establerta"
   }
 }
