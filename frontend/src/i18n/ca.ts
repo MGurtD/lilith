@@ -1428,6 +1428,7 @@ const ca = {
       messages: {
         tagDeleted: "Etiqueta eliminada correctament",
         tagSaved: "Etiqueta desada correctament",
+        tagSaveFailed: "No s'ha pogut desar l'etiqueta",
         dependentStatus: "Estat dependent",
         dependentStatusDetail: "L'estat {name} forma part d'una transició",
         created: "Cicle de vida creat correctament",
@@ -1497,6 +1498,21 @@ const ca = {
         cancel: "Cancel·lar",
         confirm: "Confirmar",
         invalidForm: "Formulari invàlid",
+        colors: {
+          none: "Cap",
+          info: "Blau",
+          secondary: "Gris",
+          help: "Lila",
+          contrast: "Negre",
+          warn: "Taronja",
+          success: "Verd",
+          danger: "Vermell",
+        },
+        validation: {
+          nameRequired: "El nom és obligatori",
+          nameMax: "El nom no pot superar els 250 caràcters",
+          descriptionMax: "La descripció no pot superar els 250 caràcters",
+        },
       },
     },
     paymentMethods: {

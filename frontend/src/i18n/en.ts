@@ -1402,6 +1402,7 @@ const en = {
       messages: {
         tagDeleted: "Tag deleted successfully",
         tagSaved: "Tag saved successfully",
+        tagSaveFailed: "The tag could not be saved",
         dependentStatus: "Dependent status",
         dependentStatusDetail: "Status {name} is part of a transition",
         created: "Lifecycle created successfully",
@@ -1471,6 +1472,21 @@ const en = {
         cancel: "Cancel",
         confirm: "Confirm",
         invalidForm: "Invalid form",
+        colors: {
+          none: "None",
+          info: "Blue",
+          secondary: "Gray",
+          help: "Purple",
+          contrast: "Black",
+          warn: "Orange",
+          success: "Green",
+          danger: "Red",
+        },
+        validation: {
+          nameRequired: "Name is required",
+          nameMax: "Name cannot exceed 250 characters",
+          descriptionMax: "Description cannot exceed 250 characters",
+        },
       },
     },
     paymentMethods: {
