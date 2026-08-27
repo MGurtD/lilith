@@ -1,27 +1,25 @@
 using Application.Contracts;
-using Application.Contracts.Persistance.Repositories.Purchase;
 using Application.Services.Production;
 using Application.Services.System;
+using Application.Tests.TestData;
+using Application.Tests.TestSupport;
 using Domain.Entities;
-using Domain.Entities.Auth;
-using Domain.Entities.Production;
-using Domain.Entities.Purchase;
-using Domain.Entities.Sales;
-using Domain.Entities.Shared;
-using Domain.Entities.Transport;
-using Domain.Entities.Warehouse;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using System.Linq.Expressions;
+using NSubstitute;
 using Xunit;
+using SystemFile = System.IO.File;
 
 namespace Application.Tests.Services.System;
 
+/// <summary>
+/// Unit tests for <see cref="BrandingService"/> and its interaction with
+/// <see cref="EnterpriseService"/>.
+/// </summary>
 public class BrandingServiceTests
 {
-    private static readonly byte[] PngHeader =
-    [137, 80, 78, 71, 13, 10, 26, 10];
+    private static readonly byte[] PngHeader = [137, 80, 78, 71, 13, 10, 26, 10];
 
     [Fact]
     public async Task GetCurrent_returns_branding_from_the_single_enabled_enterprise()
@@ -29,10 +27,10 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
+            var enterprise = EnterpriseBuilder.Default();
             enterprise.BrandName = "  Acme  ";
             enterprise.PrimaryColor = "  InDiGo  ";
-            var sut = BuildSut(new FakeUnitOfWork(enterprise), root);
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
 
             var response = await sut.GetCurrent();
 
@@ -53,11 +51,11 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var sut = BuildSut(new FakeUnitOfWork(enterprise), root);
+            var enterprise = EnterpriseBuilder.Default();
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
 
             var invalid = await sut.UpdateCurrent(new BrandingUpdateRequest("A".PadRight(61, 'x'), "blue"));
-            var valid = await sut.UpdateCurrent(new BrandingUpdateRequest("  Acme  ", "  TeAL  "));
+            var valid   = await sut.UpdateCurrent(new BrandingUpdateRequest("  Acme  ", "  TeAL  "));
 
             Assert.False(invalid.Result);
             Assert.True(valid.Result);
@@ -71,14 +69,14 @@ public class BrandingServiceTests
     }
 
     [Theory]
-    [InlineData("BLACK", BrandingPalette.Black)]
-    [InlineData("BLUE", BrandingPalette.Blue)]
-    [InlineData("indigo", BrandingPalette.Indigo)]
+    [InlineData("BLACK",   BrandingPalette.Black)]
+    [InlineData("BLUE",    BrandingPalette.Blue)]
+    [InlineData("indigo",  BrandingPalette.Indigo)]
     [InlineData("EMERALD", BrandingPalette.Emerald)]
-    [InlineData("teal", BrandingPalette.Teal)]
-    [InlineData("VIOLET", BrandingPalette.Violet)]
-    [InlineData("orange", BrandingPalette.Orange)]
-    [InlineData("ROSE", BrandingPalette.Rose)]
+    [InlineData("teal",    BrandingPalette.Teal)]
+    [InlineData("VIOLET",  BrandingPalette.Violet)]
+    [InlineData("orange",  BrandingPalette.Orange)]
+    [InlineData("ROSE",    BrandingPalette.Rose)]
     public async Task UpdateCurrent_accepts_and_normalizes_each_allowed_palette_key(
         string primaryColor,
         string expectedPalette)
@@ -86,8 +84,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var sut = BuildSut(new FakeUnitOfWork(enterprise), root);
+            var enterprise = EnterpriseBuilder.Default();
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
 
             var response = await sut.UpdateCurrent(new BrandingUpdateRequest("Acme", primaryColor));
 
@@ -108,8 +106,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var sut = BuildSut(new FakeUnitOfWork(enterprise), root);
+            var enterprise = EnterpriseBuilder.Default();
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
 
             var response = await sut.UpdateCurrent(new BrandingUpdateRequest("Acme", primaryColor));
 
@@ -132,9 +130,9 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
+            var enterprise = EnterpriseBuilder.Default();
             enterprise.PrimaryColor = primaryColor;
-            var sut = BuildSut(new FakeUnitOfWork(enterprise), root);
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
 
             var response = await sut.GetCurrent();
 
@@ -152,8 +150,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
             var sut = BuildSut(uow, root);
             using var stream = new MemoryStream(PngHeader);
             var file = NewFormFile(stream, "logo.png", "image/png");
@@ -178,23 +176,23 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
             var sut = BuildSut(uow, root);
 
-            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main, NewFormFile(new MemoryStream(PngHeader), "main.png", "image/png"));
-            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Sidebar, NewFormFile(new MemoryStream(PngHeader), "sidebar.png", "image/png"));
-            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main, NewFormFile(new MemoryStream(PngHeader), "main-replacement.png", "image/png"));
-            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Sidebar, NewFormFile(new MemoryStream(PngHeader), "sidebar-replacement.png", "image/png"));
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,    NewFormFile(new MemoryStream(PngHeader), "main.png",              "image/png"));
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Sidebar, NewFormFile(new MemoryStream(PngHeader), "sidebar.png",           "image/png"));
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,    NewFormFile(new MemoryStream(PngHeader), "main-replacement.png",  "image/png"));
+            await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Sidebar, NewFormFile(new MemoryStream(PngHeader), "sidebar-replacement.png","image/png"));
 
             Assert.Equal(2, uow.FilesStore.Store.Count);
-            Assert.Contains(uow.FilesStore.Store, file => file.Entity == "EnterpriseBranding:main");
-            Assert.Contains(uow.FilesStore.Store, file => file.Entity == "EnterpriseBranding:sidebar");
-            Assert.Equal(enterprise.LogoMainFileId, uow.FilesStore.Store.Single(file => file.Entity == "EnterpriseBranding:main").Id);
-            Assert.Equal(enterprise.LogoSidebarFileId, uow.FilesStore.Store.Single(file => file.Entity == "EnterpriseBranding:sidebar").Id);
+            Assert.Contains(uow.FilesStore.Store, f => f.Entity == "EnterpriseBranding:main");
+            Assert.Contains(uow.FilesStore.Store, f => f.Entity == "EnterpriseBranding:sidebar");
+            Assert.Equal(enterprise.LogoMainFileId,    uow.FilesStore.Store.Single(f => f.Entity == "EnterpriseBranding:main").Id);
+            Assert.Equal(enterprise.LogoSidebarFileId, uow.FilesStore.Store.Single(f => f.Entity == "EnterpriseBranding:sidebar").Id);
 
             var response = await sut.GetCurrent();
-            Assert.Equal(enterprise.LogoMainFileId?.ToString("N"), response.MainLogoVersion);
+            Assert.Equal(enterprise.LogoMainFileId?.ToString("N"),    response.MainLogoVersion);
             Assert.Equal(enterprise.LogoSidebarFileId?.ToString("N"), response.SidebarLogoVersion);
             Assert.NotEqual(response.MainLogoVersion, response.SidebarLogoVersion);
         }
@@ -210,14 +208,14 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
+            var enterprise = EnterpriseBuilder.Default();
             var path = Path.Combine(root, "EnterpriseBranding", "legacy.png");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            await global::System.IO.File.WriteAllBytesAsync(path, PngHeader);
+            await SystemFile.WriteAllBytesAsync(path, PngHeader);
             var legacyFile = NewBrandingFile(enterprise.Id, path, "EnterpriseBranding");
-            enterprise.LogoMainFileId = legacyFile.Id;
+            enterprise.LogoMainFileId    = legacyFile.Id;
             enterprise.LogoSidebarFileId = legacyFile.Id;
-            var uow = new FakeUnitOfWork(enterprise);
+            var uow = new BrandingTestContext(enterprise);
             uow.FilesStore.Store.Add(legacyFile);
 
             var response = await BuildSut(uow, root).GetCurrent();
@@ -239,12 +237,12 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
             var sut = BuildSut(uow, root);
 
             await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,
-                NewFormFile(new MemoryStream(PngHeader), "main.png", "image/png"));
+                NewFormFile(new MemoryStream(PngHeader), "main.png",             "image/png"));
             var first = await sut.GetCurrent();
 
             await sut.UploadLogo(enterprise.Id, BrandingLogoSlot.Main,
@@ -269,16 +267,16 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
+            var enterprise = EnterpriseBuilder.Default();
             var outsidePath = Path.Combine(Path.GetTempPath(), $"lilith-invalid-branding-{Guid.NewGuid():N}.png");
-            await global::System.IO.File.WriteAllBytesAsync(outsidePath, PngHeader);
+            await SystemFile.WriteAllBytesAsync(outsidePath, PngHeader);
             try
             {
-                var mainFile = NewBrandingFile(enterprise.Id, outsidePath, "EnterpriseBranding:main");
+                var mainFile    = NewBrandingFile(enterprise.Id, outsidePath, "EnterpriseBranding:main");
                 var sidebarFile = NewBrandingFile(enterprise.Id, Path.Combine(root, "missing.png"), "EnterpriseBranding:sidebar");
-                enterprise.LogoMainFileId = mainFile.Id;
+                enterprise.LogoMainFileId    = mainFile.Id;
                 enterprise.LogoSidebarFileId = sidebarFile.Id;
-                var uow = new FakeUnitOfWork(enterprise);
+                var uow = new BrandingTestContext(enterprise);
                 uow.FilesStore.Store.AddRange([mainFile, sidebarFile]);
 
                 var response = await BuildSut(uow, root).GetCurrent();
@@ -290,8 +288,8 @@ public class BrandingServiceTests
             }
             finally
             {
-                if (global::System.IO.File.Exists(outsidePath))
-                    global::System.IO.File.Delete(outsidePath);
+                if (SystemFile.Exists(outsidePath))
+                    SystemFile.Delete(outsidePath);
             }
         }
         finally
@@ -303,30 +301,31 @@ public class BrandingServiceTests
     [Fact]
     public async Task Enterprise_update_preserves_persisted_branding_fields()
     {
-        var enterprise = NewEnterprise();
-        enterprise.BrandName = "Current brand";
-        enterprise.PrimaryColor = "#123456";
-        enterprise.LogoMainFileId = Guid.NewGuid();
-        enterprise.LogoSidebarFileId = Guid.NewGuid();
-        var request = NewEnterprise();
-        request.Id = enterprise.Id;
-        request.Name = "Updated enterprise";
-        request.BrandName = "Stale brand";
-        request.PrimaryColor = "#FFFFFF";
-        request.LogoMainFileId = Guid.NewGuid();
+        var enterprise = EnterpriseBuilder.Default();
+        enterprise.BrandName          = "Current brand";
+        enterprise.PrimaryColor       = "#123456";
+        enterprise.LogoMainFileId     = Guid.NewGuid();
+        enterprise.LogoSidebarFileId  = Guid.NewGuid();
+
+        var request = EnterpriseBuilder.Default();
+        request.Id               = enterprise.Id;
+        request.Name             = "Updated enterprise";
+        request.BrandName        = "Stale brand";
+        request.PrimaryColor     = "#FFFFFF";
+        request.LogoMainFileId   = Guid.NewGuid();
         request.LogoSidebarFileId = Guid.NewGuid();
 
         var service = new EnterpriseService(
-            new FakeUnitOfWork(enterprise),
-            new FakeLocalizationService(),
-            new FakeBrandingService());
+            new BrandingTestContext(enterprise).UnitOfWork,
+            NullLocalizationService.Instance,
+            Substitute.For<IBrandingService>());
 
         var response = await service.Update(request);
 
         Assert.True(response.Result);
         Assert.Equal("Current brand", request.BrandName);
-        Assert.Equal("#123456", request.PrimaryColor);
-        Assert.Equal(enterprise.LogoMainFileId, request.LogoMainFileId);
+        Assert.Equal("#123456",        request.PrimaryColor);
+        Assert.Equal(enterprise.LogoMainFileId,    request.LogoMainFileId);
         Assert.Equal(enterprise.LogoSidebarFileId, request.LogoSidebarFileId);
     }
 
@@ -336,8 +335,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
             var sut = BuildSut(uow, root);
             using var stream = new MemoryStream([1, 2, 3]);
             var file = NewFormFile(stream, "logo.png", "image/png");
@@ -361,8 +360,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
             var response = await BuildSut(uow, root).UploadLogo(enterprise.Id, BrandingLogoSlot.Main, null);
 
             Assert.False(response.Result);
@@ -382,8 +381,8 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise)
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise)
             {
                 CommitException = new InvalidOperationException("database unavailable")
             };
@@ -410,8 +409,9 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
-            var uow = new FakeUnitOfWork(enterprise);
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
+            // After commit succeeds, make FindAsync throw to simulate a post-commit DB read failure.
             uow.AfterCommit = () => uow.EnterprisesStore.ThrowOnFindAsync = true;
             var sut = BuildSut(uow, root);
             using var stream = new MemoryStream(PngHeader);
@@ -423,7 +423,7 @@ public class BrandingServiceTests
             Assert.Null(response.Content);
             var committedFile = Assert.Single(uow.FilesStore.Store);
             Assert.Equal(committedFile.Id, enterprise.LogoMainFileId);
-            Assert.True(global::System.IO.File.Exists(committedFile.Path));
+            Assert.True(SystemFile.Exists(committedFile.Path));
         }
         finally
         {
@@ -437,16 +437,16 @@ public class BrandingServiceTests
         var root = CreateTempDirectory();
         try
         {
-            var enterprise = NewEnterprise();
+            var enterprise = EnterpriseBuilder.Default();
             var referencedPath = Path.Combine(root, "EnterpriseBranding", "referenced.png");
-            var orphanedPath = Path.Combine(root, "EnterpriseBranding", "orphaned.png");
-            var sidebarPath = Path.Combine(root, "EnterpriseBranding", "sidebar.png");
+            var orphanedPath   = Path.Combine(root, "EnterpriseBranding", "orphaned.png");
+            var sidebarPath    = Path.Combine(root, "EnterpriseBranding", "sidebar.png");
             Directory.CreateDirectory(Path.GetDirectoryName(referencedPath)!);
-            await global::System.IO.File.WriteAllBytesAsync(referencedPath, PngHeader);
-            await global::System.IO.File.WriteAllBytesAsync(orphanedPath, PngHeader);
-            await global::System.IO.File.WriteAllBytesAsync(sidebarPath, PngHeader);
+            await SystemFile.WriteAllBytesAsync(referencedPath, PngHeader);
+            await SystemFile.WriteAllBytesAsync(orphanedPath,   PngHeader);
+            await SystemFile.WriteAllBytesAsync(sidebarPath,    PngHeader);
 
-            var uow = new FakeUnitOfWork(enterprise);
+            var uow = new BrandingTestContext(enterprise);
             uow.FilesStore.Store.AddRange(
             [
                 NewBrandingFile(enterprise.Id, referencedPath),
@@ -459,9 +459,9 @@ public class BrandingServiceTests
 
             Assert.True(response.Result);
             Assert.Empty(uow.FilesStore.Store);
-            Assert.False(global::System.IO.File.Exists(referencedPath));
-            Assert.False(global::System.IO.File.Exists(orphanedPath));
-            Assert.False(global::System.IO.File.Exists(sidebarPath));
+            Assert.False(SystemFile.Exists(referencedPath));
+            Assert.False(SystemFile.Exists(orphanedPath));
+            Assert.False(SystemFile.Exists(sidebarPath));
         }
         finally
         {
@@ -469,39 +469,35 @@ public class BrandingServiceTests
         }
     }
 
-    private static BrandingService BuildSut(FakeUnitOfWork uow, string root) =>
+    // -------- helpers --------
+
+    private static BrandingService BuildSut(BrandingTestContext context, string root) =>
         new(
-            uow,
+            context.UnitOfWork,
             Options.Create(new AppSettings
             {
                 FileManagment = new FileManagmentSettings { UploadPath = root }
             }),
-            new FakeLocalizationService(),
+            NullLocalizationService.Instance,
             NullLogger<BrandingService>.Instance);
-
-    private static Enterprise NewEnterprise() => new()
-    {
-        Name = "Test Enterprise",
-        Disabled = false,
-    };
 
     private static Domain.Entities.File NewBrandingFile(
         Guid enterpriseId,
         string path,
         string entity = "EnterpriseBranding") => new()
     {
-        Entity = entity,
-        EntityId = enterpriseId,
-        Type = FileType.Image,
-        Path = path,
+        Entity       = entity,
+        EntityId     = enterpriseId,
+        Type         = FileType.Image,
+        Path         = path,
         OriginalName = Path.GetFileName(path),
-        Size = PngHeader.Length,
+        Size         = PngHeader.Length,
     };
 
     private static FormFile NewFormFile(Stream stream, string fileName, string contentType) =>
         new(stream, 0, stream.Length, "file", fileName)
         {
-            Headers = new HeaderDictionary(),
+            Headers     = new HeaderDictionary(),
             ContentType = contentType,
         };
 
@@ -518,224 +514,4 @@ public class BrandingServiceTests
             Directory.Delete(path, recursive: true);
     }
 
-    private sealed class FakeUnitOfWork : IUnitOfWork
-    {
-        public FakeRepository<Enterprise> EnterprisesStore { get; }
-        public FakeRepository<Domain.Entities.File> FilesStore { get; } = new();
-        public Exception? CommitException { get; init; }
-        public Action? AfterCommit { get; set; }
-        public int CompleteCallCount { get; private set; }
-
-        public FakeUnitOfWork(Enterprise enterprise)
-        {
-            EnterprisesStore = new FakeRepository<Enterprise>();
-            EnterprisesStore.Store.Add(enterprise);
-        }
-
-        public async Task<int> CompleteAsync()
-        {
-            CompleteCallCount++;
-            if (CommitException is not null)
-                throw CommitException;
-
-            EnterprisesStore.Commit();
-            FilesStore.Commit();
-            AfterCommit?.Invoke();
-            await Task.CompletedTask;
-            return 2;
-        }
-
-        public void Dispose() { }
-
-        public IRepository<Role, Guid> Roles => UnusedRepository<Role>.Instance;
-        public IRepository<User, Guid> Users => UnusedRepository<User>.Instance;
-        public IRepository<ApiKey, Guid> ApiKeys => UnusedRepository<ApiKey>.Instance;
-        public IRepository<UserRefreshToken, Guid> UserRefreshTokens => UnusedRepository<UserRefreshToken>.Instance;
-        public IRepository<UserFilter, Guid> UserFilters => UnusedRepository<UserFilter>.Instance;
-        public IRepository<UserTableView, Guid> UserTableViews => UnusedRepository<UserTableView>.Instance;
-        public IRepository<Profile, Guid> Profiles => UnusedRepository<Profile>.Instance;
-        public IRepository<MenuItem, Guid> MenuItems => UnusedRepository<MenuItem>.Instance;
-        public IRepository<MenuItemTranslation, Guid> MenuItemTranslations => UnusedRepository<MenuItemTranslation>.Instance;
-        public IRepository<ProfileMenuItem, Guid> ProfileMenuItems => UnusedRepository<ProfileMenuItem>.Instance;
-        public IRepository<Domain.Entities.File, Guid> Files => FilesStore;
-        public IRepository<Parameter, Guid> Parameters => UnusedRepository<Parameter>.Instance;
-        public IRepository<Exercise, Guid> Exercices => UnusedRepository<Exercise>.Instance;
-        public IRepository<Tax, Guid> Taxes => UnusedRepository<Tax>.Instance;
-        public IRepository<PaymentMethod, Guid> PaymentMethods => UnusedRepository<PaymentMethod>.Instance;
-        public ILifecycleRepository Lifecycles => throw new NotImplementedException();
-        public ILifecycleTagRepository LifecycleTags => throw new NotImplementedException();
-        public IRepository<StatusLifecycleTag, Guid> StatusLifecycleTags => UnusedRepository<StatusLifecycleTag>.Instance;
-        public IRepository<SupplierType, Guid> SupplierTypes => UnusedRepository<SupplierType>.Instance;
-        public ISupplierRepository Suppliers => throw new NotImplementedException();
-        public IPurchaseOrderRepository PurchaseOrders => throw new NotImplementedException();
-        public IPurchaseInvoiceRepository PurchaseInvoices => throw new NotImplementedException();
-        public IRepository<PurchaseInvoiceDueDate, Guid> PurchaseInvoiceDueDates => UnusedRepository<PurchaseInvoiceDueDate>.Instance;
-        public IRepository<InvoiceSerie, Guid> InvoiceSeries => UnusedRepository<InvoiceSerie>.Instance;
-        public IRepository<ExpenseType, Guid> ExpenseTypes => UnusedRepository<ExpenseType>.Instance;
-        public IExpenseRepository Expenses => throw new NotImplementedException();
-        public IReceiptRepository Receipts => throw new NotImplementedException();
-        public IRepository<ReferenceFormat, Guid> ReferenceFormats => UnusedRepository<ReferenceFormat>.Instance;
-        public IContractReader<ConsolidatedExpense> ConsolidatedExpenses => throw new NotImplementedException();
-        public ITransportRateRepository TransportRates => throw new NotImplementedException();
-        public IRepository<TransportRateDetail, Guid> TransportRateDetails => UnusedRepository<TransportRateDetail>.Instance;
-        public IPurchaseRateRepository PurchaseRates => throw new NotImplementedException();
-        public IRepository<PurchaseRateDetail, Guid> PurchaseRateDetails => UnusedRepository<PurchaseRateDetail>.Instance;
-        public IRepository<CustomerType, Guid> CustomerTypes => UnusedRepository<CustomerType>.Instance;
-        public ICustomerRepository Customers => throw new NotImplementedException();
-        public IRepository<Reference, Guid> References => UnusedRepository<Reference>.Instance;
-        public ISalesOrderHeaderRepository SalesOrderHeaders => throw new NotImplementedException();
-        public ISalesOrderDetailRepository SalesOrderDetails => throw new NotImplementedException();
-        public ISalesInvoiceRepository SalesInvoices => throw new NotImplementedException();
-        public IRepository<SalesInvoiceVerifactuRequest, Guid> VerifactuRequests => UnusedRepository<SalesInvoiceVerifactuRequest>.Instance;
-        public IDeliveryNoteRepository DeliveryNotes => throw new NotImplementedException();
-        public IBudgetRepository Budgets => throw new NotImplementedException();
-        public IContractReader<ConsolidatedIncomes> ConsolidatedIncomes => throw new NotImplementedException();
-        public IRepository<Enterprise, Guid> Enterprises => EnterprisesStore;
-        public IRepository<Site, Guid> Sites => UnusedRepository<Site>.Instance;
-        public IAreaRepository Areas => throw new NotImplementedException();
-        public IRepository<WorkcenterType, Guid> WorkcenterTypes => UnusedRepository<WorkcenterType>.Instance;
-        public IWorkcenterRepository Workcenters => throw new NotImplementedException();
-        public IRepository<WorkcenterCost, Guid> WorkcenterCosts => UnusedRepository<WorkcenterCost>.Instance;
-        public IRepository<Operator, Guid> Operators => UnusedRepository<Operator>.Instance;
-        public IRepository<OperatorType, Guid> OperatorTypes => UnusedRepository<OperatorType>.Instance;
-        public IMachineStatusRepository MachineStatuses => throw new NotImplementedException();
-        public IRepository<Shift, Guid> Shifts => UnusedRepository<Shift>.Instance;
-        public IRepository<ShiftDetail, Guid> ShiftDetails => UnusedRepository<ShiftDetail>.Instance;
-        public IWorkMasterRepository WorkMasters => throw new NotImplementedException();
-        public IWorkOrderRepository WorkOrders => throw new NotImplementedException();
-        public IProductionPartRepository ProductionParts => throw new NotImplementedException();
-        public IWorkcenterShiftRepository WorkcenterShifts => throw new NotImplementedException();
-        public IContractReader<DetailedWorkOrder> DetailedWorkOrders => throw new NotImplementedException();
-        public IContractReader<ProductionCost> ProductionCosts => throw new NotImplementedException();
-        public IContractReader<WorkcenterShiftHistoricalOperator> WorkcenterShiftHistoricalOperators => throw new NotImplementedException();
-        public IWorkcenterProfitPercentageRepository WorkcenterProfitPercentages => throw new NotImplementedException();
-        public IPhaseTemplateRepository PhaseTemplates => throw new NotImplementedException();
-        public IWarehouseRepository Warehouses => throw new NotImplementedException();
-        public IRepository<WorkcenterLocation, Guid> WorkcenterLocations => UnusedRepository<WorkcenterLocation>.Instance;
-        public IRepository<ReferenceType, Guid> ReferenceTypes => UnusedRepository<ReferenceType>.Instance;
-        public IRepository<Stock, Guid> Stocks => UnusedRepository<Stock>.Instance;
-        public IStockMovementRepository StockMovements => throw new NotImplementedException();
-        public ILotRepository Lots => throw new NotImplementedException();
-    }
-
-    private sealed class FakeRepository<TEntity> : IRepository<TEntity, Guid>
-        where TEntity : class
-    {
-        public List<TEntity> Store { get; } = new();
-        private readonly List<TEntity> _pending = new();
-        public bool ThrowOnFindAsync { get; set; }
-
-        public Task<TEntity?> Get(Guid id) =>
-            Task.FromResult(Store.FirstOrDefault(entity => ((Entity)(object)entity).Id == id));
-
-        public Task<IEnumerable<TEntity>> GetAll() => Task.FromResult<IEnumerable<TEntity>>(Store);
-
-        public Task<List<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
-        {
-            if (ThrowOnFindAsync)
-                throw new InvalidOperationException("response read failed");
-            return Task.FromResult(Store.AsQueryable().Where(predicate).ToList());
-        }
-
-        public Task<List<TEntity>> FindAsyncWithQueryParams(
-            Expression<Func<TEntity, bool>> predicate,
-            Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeFunc) =>
-            Task.FromResult(Store.AsQueryable().Where(predicate).ToList());
-
-        public IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate) =>
-            Store.AsQueryable().Where(predicate).ToList();
-
-        public Task<bool> Exists(Guid id) => Task.FromResult(Store.Any(entity => ((Entity)(object)entity).Id == id));
-
-        public Task Add(TEntity entity)
-        {
-            Store.Add(entity);
-            return Task.CompletedTask;
-        }
-
-        public Task AddWithoutSave(TEntity entity)
-        {
-            _pending.Add(entity);
-            return Task.CompletedTask;
-        }
-
-        public Task AddRange(IEnumerable<TEntity> entities)
-        {
-            Store.AddRange(entities);
-            return Task.CompletedTask;
-        }
-
-        public Task AddRangeWithoutSave(IEnumerable<TEntity> entities)
-        {
-            _pending.AddRange(entities);
-            return Task.CompletedTask;
-        }
-
-        public Task Update(TEntity entity) => Task.CompletedTask;
-
-        public bool UpdateWithoutSave(TEntity entity) => true;
-
-        public Task Remove(TEntity entity)
-        {
-            Store.Remove(entity);
-            return Task.CompletedTask;
-        }
-
-        public Task RemoveRange(IEnumerable<TEntity> entities)
-        {
-            foreach (var entity in entities)
-                Store.Remove(entity);
-            return Task.CompletedTask;
-        }
-
-        public Task SaveChanges() => Task.CompletedTask;
-
-        public void Commit()
-        {
-            Store.AddRange(_pending);
-            _pending.Clear();
-        }
-    }
-
-    private sealed class UnusedRepository<TEntity> : IRepository<TEntity, Guid>
-        where TEntity : class
-    {
-        public static UnusedRepository<TEntity> Instance { get; } = new();
-        public Task<TEntity?> Get(Guid id) => throw new NotImplementedException();
-        public Task<IEnumerable<TEntity>> GetAll() => throw new NotImplementedException();
-        public Task<List<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate) => throw new NotImplementedException();
-        public Task<List<TEntity>> FindAsyncWithQueryParams(Expression<Func<TEntity, bool>> predicate, Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeFunc) => throw new NotImplementedException();
-        public IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate) => throw new NotImplementedException();
-        public Task<bool> Exists(Guid id) => throw new NotImplementedException();
-        public Task Add(TEntity entity) => throw new NotImplementedException();
-        public Task AddWithoutSave(TEntity entity) => throw new NotImplementedException();
-        public Task AddRange(IEnumerable<TEntity> entities) => throw new NotImplementedException();
-        public Task AddRangeWithoutSave(IEnumerable<TEntity> entities) => throw new NotImplementedException();
-        public Task Update(TEntity entity) => throw new NotImplementedException();
-        public bool UpdateWithoutSave(TEntity entity) => throw new NotImplementedException();
-        public Task Remove(TEntity entity) => throw new NotImplementedException();
-        public Task RemoveRange(IEnumerable<TEntity> entities) => throw new NotImplementedException();
-        public Task SaveChanges() => throw new NotImplementedException();
-    }
-
-    private sealed class FakeLocalizationService : ILocalizationService
-    {
-        public string GetLocalizedString(string key, params object[] arguments) => key;
-        public string GetLocalizedStringForCulture(string key, string culture, params object[] arguments) => key;
-        public Dictionary<string, string> GetAllTranslations() => new();
-        public Dictionary<string, string> GetAllTranslationsForCulture(string culture) => new();
-        public string[] GetSupportedCultures() => [];
-    }
-
-    private sealed class FakeBrandingService : IBrandingService
-    {
-        public Task<BrandingResponse> GetCurrent() => Task.FromResult(BrandingResponse.Default);
-        public Task<BrandingLogoContent?> GetCurrentLogo(BrandingLogoSlot slot) => Task.FromResult<BrandingLogoContent?>(null);
-        public Task<GenericResponse> UpdateCurrent(BrandingUpdateRequest request) => Task.FromResult(new GenericResponse(true));
-        public Task<GenericResponse> UploadCurrentLogo(BrandingLogoSlot slot, IFormFile? file) => Task.FromResult(new GenericResponse(true));
-        public Task<GenericResponse> RemoveCurrentLogo(BrandingLogoSlot slot) => Task.FromResult(new GenericResponse(true));
-        public Task<GenericResponse> UploadLogo(Guid enterpriseId, BrandingLogoSlot slot, IFormFile? file) => Task.FromResult(new GenericResponse(true));
-        public Task<GenericResponse> RemoveLogo(Guid enterpriseId, BrandingLogoSlot slot) => Task.FromResult(new GenericResponse(true));
-        public Task<GenericResponse> RemoveEnterpriseFiles(Guid enterpriseId) => Task.FromResult(new GenericResponse(true));
-    }
 }
