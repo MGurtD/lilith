@@ -273,8 +273,10 @@ const deleteSalesOrder = async (order: SalesOrderHeader) => {
   if (!response.result) {
     toast.add({
       severity: "error",
-      summary: t("sales.detail.messages.orderDeleteError"),
-      detail: response.errors?.[0] ?? t("sales.detail.messages.orderDeleteFailed"),
+      summary: t("sales.deliveryNotes.messages.orderDeleteError"),
+      detail:
+        response.errors?.[0] ??
+        t("sales.deliveryNotes.messages.orderDeleteFailed"),
       life: 6000,
     });
   }
