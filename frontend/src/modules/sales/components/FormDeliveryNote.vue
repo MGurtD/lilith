@@ -20,6 +20,7 @@
               optionValue="id"
               optionLabel="comercialName"
               class="w-full"
+              :disabled="lockHeader"
               :class="{
                 'p-invalid': validation.errors.customerId,
               }"
@@ -47,6 +48,7 @@
             label="Estat"
             :statusId="deliveryNote.statusId"
             v-model="deliveryNote.statusId"
+            :disabled="lockStatus"
             :class="{
               'p-invalid': validation.errors.statusId,
             }"
@@ -58,6 +60,7 @@
             v-model="deliveryNote.deliveryDate"
             dateFormat="dd/mm/yy"
             class="mt-2"
+            :disabled="lockHeader"
           />
         </div>
         <div class="mt-2">
@@ -85,10 +88,12 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { BaseInputType } from "../../../types/component";
-import { convertDateTimeToJSON, formatDate } from "../../../utils/functions";
+import { formatDate } from "../../../utils/functions";
 
 const props = defineProps<{
   deliveryNote: DeliveryNote;
+  lockHeader?: boolean;
+  lockStatus?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -131,11 +136,6 @@ const validate = () => {
 const submitForm = async () => {
   validate();
   if (validation.value.result) {
-    if (props.deliveryNote.deliveryDate) {
-      props.deliveryNote.deliveryDate = convertDateTimeToJSON(
-        props.deliveryNote.deliveryDate,
-      );
-    }
     emit("submit", props.deliveryNote);
   } else {
     let errors = "";

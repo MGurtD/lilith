@@ -14,6 +14,8 @@ using Infrastructure.Persistance.Repositories.Purchase; // contains LifecycleRep
 using Infrastructure.Persistance.Repositories.Sales;
 using Infrastructure.Persistance.Repositories.Warehouse;
 using Infrastructure.Persistance.Repositories.Transport;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Infrastructure.Persistance
 {
@@ -99,6 +101,12 @@ namespace Infrastructure.Persistance
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
         public IStockMovementRepository StockMovements { get; private set; } = new StockMovementRepository(context);
+
+        public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        {
+            var transaction = await context.Database.BeginTransactionAsync(isolationLevel);
+            return new UnitOfWorkTransaction(transaction);
+        }
 
         public async Task<int> CompleteAsync()
         {

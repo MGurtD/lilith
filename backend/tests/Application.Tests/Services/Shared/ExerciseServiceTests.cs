@@ -12,6 +12,7 @@ using Domain.Entities.Shared;
 using Domain.Entities.Transport;
 using Domain.Entities.Warehouse;
 using Xunit;
+using System.Data;
 
 namespace Application.Tests.Services.Shared;
 
@@ -66,6 +67,7 @@ public class ExerciseServiceTests
     {
         public IRepository<Exercise, Guid> Exercices { get; } = new ExerciseRepository(exercise);
 
+        public Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted) => throw new NotImplementedException();
         public Task<int> CompleteAsync() => Task.FromResult(0);
         public void Dispose() { }
 

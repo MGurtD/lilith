@@ -13,7 +13,7 @@ namespace Application.Contracts
         IEnumerable<DeliveryNote> GetByStatusAndCustomer(Guid statusId, Guid customerId);
         IEnumerable<DeliveryNote> GetBetweenDatesAndCustomer(DateTime startDate, DateTime endDate, Guid customerId);
         IEnumerable<DeliveryNote> GetBySalesInvoice(Guid salesInvoiceId);
-        IEnumerable<DeliveryNote> GetDeliveryNotesToInvoice(Guid customerId);
+        Task<IEnumerable<DeliveryNote>> GetDeliveryNotesToInvoice(Guid customerId);
         Task<IEnumerable<DeliveryNote>> GetByReferenceId(Guid referenceId);
 
         Task<GenericResponse> Create(CreateHeaderRequest createRequest);

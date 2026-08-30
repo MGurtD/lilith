@@ -4,6 +4,7 @@ using Domain.Entities;
 using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using NSubstitute;
+using System.Data;
 using System.Linq.Expressions;
 using Xunit;
 
@@ -29,6 +30,8 @@ public class DeliveryNoteServiceAddOrderTests
         Assert.False(result.Result,
             "AddOrder hauria de retornar error quan l'albarà ja és Entregat.");
         Assert.Empty(uow.AddedDeliveryNoteDetails);
+        await uow.Transaction.Received(1).RollbackAsync();
+        await uow.Transaction.DidNotReceive().CommitAsync();
     }
 
     [Fact(DisplayName = "AddOrder en albarà pendent ha de tenir èxit")]
@@ -48,6 +51,7 @@ public class DeliveryNoteServiceAddOrderTests
         var result = await sut.AddOrder(deliveryNote.Id, order);
 
         Assert.True(result.Result);
+        await uow.Transaction.Received(1).CommitAsync();
     }
 
     [Fact(DisplayName = "Bug 2 – AddOrder ha d'usar l'estat persistit de la comanda, no el del DTO")]
@@ -384,6 +388,7 @@ public class DeliveryNoteServiceAddOrderTests
     private sealed class TestContext
     {
         public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
+        public IUnitOfWorkTransaction Transaction { get; } = Substitute.For<IUnitOfWorkTransaction>();
         public ISalesOrderService SalesOrderService { get; } = Substitute.For<ISalesOrderService>();
         public List<DeliveryNoteDetail> AddedDeliveryNoteDetails { get; } = [];
         public List<DeliveryNoteDetail> RemovedDeliveryNoteDetails { get; } = [];
@@ -452,6 +457,9 @@ public class DeliveryNoteServiceAddOrderTests
             UnitOfWork.SalesOrderHeaders.Returns(salesOrderRepository);
             UnitOfWork.DeliveryNotes.Returns(deliveryNoteRepository);
             UnitOfWork.Lifecycles.Returns(lifecycles);
+            UnitOfWork
+                .BeginTransactionAsync(IsolationLevel.Serializable)
+                .Returns(Transaction);
 
             SalesOrderService
                 .Update(Arg.Any<SalesOrderHeader>())
