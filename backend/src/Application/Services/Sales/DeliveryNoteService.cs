@@ -4,6 +4,7 @@ using Domain.Entities.Production;
 using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
+using System.Data;
 
 namespace Application.Services.Sales
 {
@@ -72,10 +73,18 @@ namespace Application.Services.Sales
             return deliveryNotes;
         }
 
-        public IEnumerable<DeliveryNote> GetDeliveryNotesToInvoice(Guid customerId)
+        public async Task<IEnumerable<DeliveryNote>> GetDeliveryNotesToInvoice(Guid customerId)
         {
-            var deliveryNotes = unitOfWork.DeliveryNotes.Find(p => p.SalesInvoiceId == null && p.CustomerId == customerId);
-            return deliveryNotes;
+            var deliveredStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                StatusConstants.Lifecycles.DeliveryNote,
+                StatusConstants.Statuses.Entregat);
+            if (deliveredStatus == null)
+                return [];
+
+            return unitOfWork.DeliveryNotes.Find(p =>
+                p.SalesInvoiceId == null &&
+                p.CustomerId == customerId &&
+                p.StatusId == deliveredStatus.Id);
         }
 
         public async Task<IEnumerable<DeliveryNote>> GetByReferenceId(Guid referenceId)
@@ -139,8 +148,62 @@ namespace Application.Services.Sales
 
         public async Task<GenericResponse> Update(DeliveryNote deliveryNote)
         {
-            // Netejar dependencies per evitar col·lisions de EF
+            var persistedDeliveryNote = await unitOfWork.DeliveryNotes.Get(deliveryNote.Id);
+            if (persistedDeliveryNote == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", deliveryNote.Id));
+
+            var deliveredStatus = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+            if (deliveredStatus == null || deliveredStatus.Disabled)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+            if (persistedDeliveryNote.StatusId == deliveredStatus.Id)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotEditDelivered"));
+            if (persistedDeliveryNote.SalesInvoiceId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotEditInvoiced"));
+            if (deliveryNote.StatusId != persistedDeliveryNote.StatusId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteInvalidStatusTransition"));
+            if (deliveryNote.SalesInvoiceId != persistedDeliveryNote.SalesInvoiceId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteInvoiceLinkCannotBeChanged"));
+
+            return await UpdateInternal(deliveryNote);
+        }
+
+        public async Task<GenericResponse> Remove(Guid id)
+        {
+            return await ExecuteInTransaction(() => RemoveInternal(id));
+        }
+
+        private async Task<GenericResponse> RemoveInternal(Guid id)
+        {
+            var deliveryNote = await unitOfWork.DeliveryNotes.Get(id);
+            if (deliveryNote == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", id));
+
+            var deliveredStatus = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+            if (deliveredStatus == null || deliveredStatus.Disabled)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+            if (deliveryNote.StatusId == deliveredStatus.Id)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotDeleteDelivered"));
+            if (deliveryNote.SalesInvoiceId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotDeleteInvoiced"));
+            if (unitOfWork.SalesOrderHeaders.Find(order => order.DeliveryNoteId == id).Any())
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotDeleteHasOrders"));
+
+            var detailIds = deliveryNote.Details.Select(detail => detail.Id).ToHashSet();
+            var hasInvoiceDetails = detailIds.Count > 0 && unitOfWork.SalesInvoices.InvoiceDetails
+                .Find(detail => detail.DeliveryNoteDetailId.HasValue
+                    && detailIds.Contains(detail.DeliveryNoteDetailId.Value))
+                .Any();
+            if (hasInvoiceDetails)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotDeleteHasInvoiceDetails"));
+
+            await unitOfWork.DeliveryNotes.Remove(deliveryNote);
+            return new GenericResponse(true);
+        }
+
+        private async Task<GenericResponse> UpdateInternal(DeliveryNote deliveryNote)
+        {
             deliveryNote.Details?.Clear();
+            deliveryNote.SalesInvoice = null;
 
             var exists = await unitOfWork.DeliveryNotes.Exists(deliveryNote.Id);
             if (!exists)
@@ -150,42 +213,61 @@ namespace Application.Services.Sales
             return new GenericResponse(true);
         }
 
-        public async Task<GenericResponse> Remove(Guid id)
-        {
-            var deliveryNotes = await unitOfWork.DeliveryNotes.Get(id);
-            if (deliveryNotes == null)
-                return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", id));
-
-            await unitOfWork.DeliveryNotes.Remove(deliveryNotes);
-            return new GenericResponse(true);
-        }
-
         public async Task<GenericResponse> Deliver(DeliveryNote deliveryNote)
         {
-            var warehouseResponse = await RetriveFromWarehose(deliveryNote);
-            if (!warehouseResponse.Result) return warehouseResponse;
+            return await ExecuteInTransaction(async () =>
+            {
+                var persistedDeliveryNote = await unitOfWork.DeliveryNotes.Get(deliveryNote.Id);
+                if (persistedDeliveryNote == null)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteNotFound", deliveryNote.Id));
 
-            var orderServiceResponse = await salesOrderService.Deliver(deliveryNote.Id);
-            if (!orderServiceResponse.Result) return orderServiceResponse;
+                var deliveredStatus = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+                if (deliveredStatus == null || deliveredStatus.Disabled)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+                if (persistedDeliveryNote.StatusId == deliveredStatus.Id)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteAlreadyDelivered"));
 
-            deliveryNote.DeliveryDate ??= DateTime.Now;
-            await Update(deliveryNote);
+                var warehouseResponse = await RetriveFromWarehose(persistedDeliveryNote);
+                if (!warehouseResponse.Result) return warehouseResponse;
 
-            return new GenericResponse(true);
+                var orderServiceResponse = await salesOrderService.Deliver(deliveryNote.Id);
+                if (!orderServiceResponse.Result) return orderServiceResponse;
+
+                deliveryNote.StatusId = deliveredStatus.Id;
+                deliveryNote.SalesInvoiceId = persistedDeliveryNote.SalesInvoiceId;
+                deliveryNote.DeliveryDate ??= DateTime.Now;
+                return await UpdateInternal(deliveryNote);
+            });
         }
 
         public async Task<GenericResponse> UnDeliver(DeliveryNote deliveryNote)
         {
-            var warehouseResponse = await ReturnToWarehose(deliveryNote);
-            if (!warehouseResponse.Result) return warehouseResponse;
+            return await ExecuteInTransaction(async () =>
+            {
+                var persistedDeliveryNote = await unitOfWork.DeliveryNotes.Get(deliveryNote.Id);
+                if (persistedDeliveryNote == null)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteNotFound", deliveryNote.Id));
 
-            var orderServiceResponse = await salesOrderService.UnDeliver(deliveryNote.Id);
-            if (!orderServiceResponse.Result) return orderServiceResponse;
+                var deliveredStatus = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+                if (deliveredStatus == null || deliveredStatus.Disabled)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+                if (persistedDeliveryNote.StatusId != deliveredStatus.Id)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteNotDelivered"));
+                if (persistedDeliveryNote.SalesInvoiceId.HasValue)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCannotUndeliverInvoiced"));
+                if (deliveryNote.StatusId == deliveredStatus.Id)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusUnchanged"));
 
-            deliveryNote.DeliveryDate = null;
-            await Update(deliveryNote);
+                var warehouseResponse = await ReturnToWarehose(persistedDeliveryNote);
+                if (!warehouseResponse.Result) return warehouseResponse;
 
-            return new GenericResponse(true);
+                var orderServiceResponse = await salesOrderService.UnDeliver(deliveryNote.Id);
+                if (!orderServiceResponse.Result) return orderServiceResponse;
+
+                deliveryNote.SalesInvoiceId = persistedDeliveryNote.SalesInvoiceId;
+                deliveryNote.DeliveryDate = null;
+                return await UpdateInternal(deliveryNote);
+            });
         }
 
         public async Task<GenericResponse> Invoice(Guid salesInvoiceId)
@@ -220,55 +302,76 @@ namespace Application.Services.Sales
 
         private async Task<GenericResponse> RetriveFromWarehose(DeliveryNote deliveryNote)
         {
-            foreach (var detail in deliveryNote.Details)
+            var description = localizationService.GetLocalizedString("Movement.AlbaranDescription", deliveryNote.Number);
+            var movements = deliveryNote.Details.Select(detail =>
             {
                 detail.Reference = null;
-
-                var stockMovement = new StockMovement
+                return new StockMovement
                 {
                     MovementDate = DateTime.Now,
                     CreatedOn = DateTime.Now,
                     MovementType = StockMovementType.OUTPUT,
-                    Description = localizationService.GetLocalizedString("Movement.AlbaranDescription", deliveryNote.Number),
+                    Description = description,
                     ReferenceId = detail.ReferenceId,
                     Quantity = detail.Quantity,
                 };
-                var response = await stockMovementService.Create(stockMovement);
-                if (!response.Result) return response;
-            }
+            }).ToList();
 
-            return new GenericResponse(true);
+            return await stockMovementService.ApplyDeliveryNoteStockBatch(movements);
         }
 
         private async Task<GenericResponse> ReturnToWarehose(DeliveryNote deliveryNote)
         {
-            foreach (var detail in deliveryNote.Details)
+            var description = localizationService.GetLocalizedString("Movement.ReturnDescription", deliveryNote.Number);
+            var movements = deliveryNote.Details.Select(detail =>
             {
                 detail.Reference = null;
-
-                var stockMovement = new StockMovement
+                return new StockMovement
                 {
                     MovementDate = DateTime.Now,
                     CreatedOn = DateTime.Now,
                     MovementType = StockMovementType.INPUT,
-                    Description = localizationService.GetLocalizedString("Movement.ReturnDescription", deliveryNote.Number),
+                    Description = description,
                     ReferenceId = detail.ReferenceId,
                     Quantity = detail.Quantity,
                 };
-                var response = await stockMovementService.Create(stockMovement);
-                if (!response.Result) return response;
-            }
+            }).ToList();
 
-            return new GenericResponse(true);
+            return await stockMovementService.ApplyDeliveryNoteStockBatch(movements);
         }
 
         public async Task<GenericResponse> AddOrder(Guid deliveryNoteId, SalesOrderHeader order)
         {
+            return await ExecuteInTransaction(() => AddOrderInternal(deliveryNoteId, order));
+        }
+
+        private async Task<GenericResponse> AddOrderInternal(Guid deliveryNoteId, SalesOrderHeader order)
+        {
+            // Carregar l'albarà persistit per validar el seu estat real
+            var persistedDeliveryNote = await unitOfWork.DeliveryNotes.Get(deliveryNoteId);
+            if (persistedDeliveryNote == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteNotFound", deliveryNoteId));
+
+            // Validar que l'albarà no estigui entregat
+            var entregat = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+            if (entregat == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+            if (persistedDeliveryNote.StatusId == entregat.Id)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteAlreadyDelivered"));
+
+            // Validar que l'albarà no estigui facturat
+            if (persistedDeliveryNote.SalesInvoiceId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteIsInvoiced"));
+
             // Guard d'idempotència: llegir l'estat real de la comanda a la BD
             // per evitar duplicats quan dues pestanyes envien la mateixa comanda simultàniament
             var currentOrder = unitOfWork.SalesOrderHeaders.Find(o => o.Id == order.Id).FirstOrDefault();
             if (currentOrder == null)
                 return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderNotFound"));
+
+            // Validar que el client de la comanda coincideixi amb el de l'albarà
+            if (currentOrder.CustomerId != persistedDeliveryNote.CustomerId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteCustomerMismatch"));
 
             if (currentOrder.DeliveryNoteId.HasValue && currentOrder.DeliveryNoteId.Value == deliveryNoteId)
                 return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderAlreadyInThisNote"));
@@ -276,9 +379,9 @@ namespace Application.Services.Sales
             if (currentOrder.DeliveryNoteId.HasValue && currentOrder.DeliveryNoteId.Value != deliveryNoteId)
                 return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderAlreadyAssigned"));
 
-            // Crear lines de l'albarà segons les línies de la comanda
+            // Crear línies de l'albarà a partir dels SalesOrderDetails persistits (no del DTO)
             var deliveryNoteDetails = new List<DeliveryNoteDetail>();
-            foreach (var salesDetail in order.SalesOrderDetails)
+            foreach (var salesDetail in currentOrder.SalesOrderDetails)
             {
                 var deliveryNoteDetail = new DeliveryNoteDetail
                 {
@@ -289,26 +392,102 @@ namespace Application.Services.Sales
             }
             await unitOfWork.DeliveryNotes.Details.AddRange(deliveryNoteDetails);
 
-            // Associar albarà a comanda per evitar la selecció d'altres comandes
-            order.DeliveryNoteId = deliveryNoteId;
-            await salesOrderService.Update(order);
+            // Associar albarà a comanda actualitzant NOMÉS DeliveryNoteId sobre l'entitat persistida,
+            // conservant el StatusId real (p. ex. ComandaServida) sense sobreescriure'l amb el del DTO
+            currentOrder.DeliveryNoteId = deliveryNoteId;
+            var updateOrderResponse = await salesOrderService.Update(currentOrder);
+            if (!updateOrderResponse.Result) return updateOrderResponse;
 
             return new GenericResponse(true, deliveryNoteDetails);
         }
 
         public async Task<GenericResponse> RemoveOrder(Guid deliveryNoteId, SalesOrderHeader order)
         {
-            var detailIds = order.SalesOrderDetails.Select(d => d.Id).ToList();
+            return await ExecuteInTransaction(() => RemoveOrderInternal(deliveryNoteId, order));
+        }
 
-            var deliveryNoteDetails = unitOfWork.DeliveryNotes.Details.Find(d => d.SalesOrderDetailId != null && detailIds.Contains(d.SalesOrderDetailId.Value));
-            // Eliminar en bloc
+        private async Task<GenericResponse> RemoveOrderInternal(Guid deliveryNoteId, SalesOrderHeader order)
+        {
+            // Carregar l'albarà persistit per validar el seu estat real
+            var persistedDeliveryNote = await unitOfWork.DeliveryNotes.Get(deliveryNoteId);
+            if (persistedDeliveryNote == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteNotFound", deliveryNoteId));
+
+            // Validar que l'albarà no estigui entregat
+            var entregat = await unitOfWork.Lifecycles.GetStatusByName(lifecycleName, StatusConstants.Statuses.Entregat);
+            if (entregat == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteStatusNotFound"));
+            if (persistedDeliveryNote.StatusId == entregat.Id)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteAlreadyDelivered"));
+
+            // Validar que l'albarà no estigui facturat
+            if (persistedDeliveryNote.SalesInvoiceId.HasValue)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteIsInvoiced"));
+
+            // Carregar la comanda persistida per validar la relació exacta
+            var currentOrder = unitOfWork.SalesOrderHeaders.Find(o => o.Id == order.Id).FirstOrDefault();
+            if (currentOrder == null)
+                return new GenericResponse(false, localizationService.GetLocalizedString("SalesOrderNotFound"));
+
+            // Validar que la comanda pertany exactament a aquest albarà
+            if (!currentOrder.DeliveryNoteId.HasValue || currentOrder.DeliveryNoteId.Value != deliveryNoteId)
+                return new GenericResponse(false, localizationService.GetLocalizedString("DeliveryNoteOrderNotRelated"));
+
+            var orderStatus = await unitOfWork.Lifecycles.GetStatusByName(
+                StatusConstants.Lifecycles.SalesOrder,
+                StatusConstants.Statuses.Comanda);
+            if (orderStatus == null || orderStatus.Disabled)
+                return new GenericResponse(false, localizationService.GetLocalizedString("StatusNotFound", StatusConstants.Statuses.Comanda));
+
+            // Obtenir els IDs dels detalls persistits de la comanda
+            var persistedDetailIds = currentOrder.SalesOrderDetails.Select(d => d.Id).ToHashSet();
+
+            // Eliminar NOMÉS els DeliveryNoteDetails d'aquest albarà que estan lligats als detalls persistits
+            var deliveryNoteDetails = unitOfWork.DeliveryNotes.Details
+                .Find(d => d.DeliveryNoteId == deliveryNoteId
+                           && d.SalesOrderDetailId != null
+                           && persistedDetailIds.Contains(d.SalesOrderDetailId.Value))
+                .ToList();
+
             await unitOfWork.DeliveryNotes.Details.RemoveRange(deliveryNoteDetails);
 
-            // Alliberar la comanda perquè sigui assignable de nou a un albarà
-            order.DeliveryNoteId = null;
-            await salesOrderService.Update(order);
+            // Alliberar i normalitzar la comanda perquè sigui assignable de nou.
+            currentOrder.DeliveryNoteId = null;
+            currentOrder.StatusId = orderStatus.Id;
+            currentOrder.UnDeliver();
+            foreach (var detail in currentOrder.SalesOrderDetails)
+            {
+                var updateDetailResponse = await salesOrderService.UpdateDetail(detail);
+                if (!updateDetailResponse.Result) return updateDetailResponse;
+            }
+
+            var updateOrderResponse = await salesOrderService.Update(currentOrder);
+            if (!updateOrderResponse.Result) return updateOrderResponse;
 
             return new GenericResponse(true, deliveryNoteDetails);
+        }
+
+        private async Task<GenericResponse> ExecuteInTransaction(
+            Func<Task<GenericResponse>> operation)
+        {
+            await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
+            try
+            {
+                var response = await operation();
+                if (!response.Result)
+                {
+                    await transaction.RollbackAsync();
+                    return response;
+                }
+
+                await transaction.CommitAsync();
+                return response;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         private async Task<GenericResponse> ValidateCreateInvoiceRequest(CreateHeaderRequest createInvoiceRequest)

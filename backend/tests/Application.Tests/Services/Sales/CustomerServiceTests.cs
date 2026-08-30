@@ -13,6 +13,7 @@ using Domain.Entities.Warehouse;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Linq.Expressions;
 using Xunit;
+using System.Data;
 
 namespace Application.Tests.Services.Sales;
 
@@ -210,6 +211,7 @@ public class CustomerServiceTests
             CustomersStore = new FakeCustomerRepository(seed);
 
         public Task<int> CompleteAsync() => Task.FromResult(0);
+        public Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted) => throw new NotImplementedException();
         public void Dispose() { }
 
         // All other repositories throw on access — they are never reached by

@@ -572,14 +572,20 @@ const addDeliveryNotes = async (deliveryNotes: Array<DeliveryNote>) => {
   }
 
   dialogOptions.visible = false;
-  loadDetails();
+  await loadDetails();
 };
 const deleteDeliveryNote = async (deliveryNote: DeliveryNote) => {
   await invoiceStore.RemoveDeliveryNote(invoice.value!.id, deliveryNote);
-  loadDetails();
+  await loadDetails();
+  toast.add({
+    severity: "success",
+    summary: "Albarà desassignat",
+    detail: "L'albarà s'ha desassignat correctament de la factura",
+    life: 4000,
+  });
 };
 const loadDetails = async () => {
-  lifecycleStore.fetchOneByName("SalesInvoice");
+  await invoiceStore.GetById(invoiceId.value);
   await deliveryNoteStore.GetByInvoiceId(invoiceId.value);
 };
 

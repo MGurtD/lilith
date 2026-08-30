@@ -54,9 +54,9 @@ namespace Api.Controllers.Purchase
         }
 
         [HttpGet("ToInvoice")]
-        public IActionResult GetDeliveryNotesToInvoice(Guid customerId)
+        public async Task<IActionResult> GetDeliveryNotesToInvoice(Guid customerId)
         {
-            var salesOrderHeaders = service.GetDeliveryNotesToInvoice(customerId);
+            var salesOrderHeaders = await service.GetDeliveryNotesToInvoice(customerId);
             return Ok(salesOrderHeaders.OrderBy(e => e.Number));
         }
 
@@ -101,18 +101,15 @@ namespace Api.Controllers.Purchase
             if (deliveredStatus == null) 
                 return NotFound(new GenericResponse(false, $"Estat '{StatusConstants.Statuses.Entregat}' inexistent" ));
 
-            var warehouseResponse = new GenericResponse(true);
+            GenericResponse response;
             if (deliveryNote.StatusId != deliveredStatus.Id && request.StatusId == deliveredStatus.Id)
-                warehouseResponse = await service.Deliver(request);
-            if (deliveryNote.StatusId == deliveredStatus.Id && request.StatusId != deliveredStatus.Id)
-                warehouseResponse = await service.UnDeliver(request);
+                response = await service.Deliver(request);
+            else if (deliveryNote.StatusId == deliveredStatus.Id && request.StatusId != deliveredStatus.Id)
+                response = await service.UnDeliver(request);
+            else
+                response = await service.Update(request);
 
-            var globalResponse = new GenericResponse(true);
-            if (warehouseResponse.Result)
-                globalResponse = await service.Update(request);
-
-            if (globalResponse.Result && warehouseResponse.Result) return Ok(globalResponse);
-            else return BadRequest(globalResponse);
+            return response.Result ? Ok(response) : BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

@@ -623,31 +623,40 @@ namespace Application.Services.Sales
 
         private async Task<GenericResponse> ChangeDeliveryStatus(Guid deliveryNoteId, bool isDelivered)
         {
-            var orders = GetByDeliveryNoteId(deliveryNoteId);
-            if (orders == null)
+            var operation = isDelivered ? "Deliver" : "UnDeliver";
+            var orderQuery = GetByDeliveryNoteId(deliveryNoteId);
+            if (orderQuery == null)
                 return new GenericResponse(true, localizationService.GetLocalizedString("StatusTransitionNotFound"));
+            var orders = orderQuery.ToList();
 
             var statusResponse = await GetStatusId(isDelivered ? StatusConstants.Statuses.ComandaServida : StatusConstants.Statuses.Comanda);
             if (!statusResponse.Result) return statusResponse;
 
-            foreach (var order in orders.ToList())
+            foreach (var order in orders)
             {
-                // Actualitzar flag de 'servida' en els detalls
                 foreach (var detail in order.SalesOrderDetails)
                 {
-                    detail.IsDelivered = isDelivered;
-                    await UpdateDetail(detail);
+                    PrepareDeliveryFlag(detail, isDelivered);
                 }
 
-                // Canviar estat de la comanda
                 order.StatusId = (Guid)statusResponse.Content!;
-                // Asociar albarà
                 if (order.DeliveryNoteId == null && isDelivered) order.DeliveryNoteId = deliveryNoteId;
-                await Update(order);
+                order.SalesOrderDetails.Clear();
+                unitOfWork.SalesOrderHeaders.UpdateWithoutSave(order);
             }
 
+            await unitOfWork.CompleteAsync();
             return new GenericResponse(true);
         }
+
+        private void PrepareDeliveryFlag(SalesOrderDetail detail, bool isDelivered)
+        {
+            detail.IsDelivered = isDelivered;
+            detail.Reference = null;
+            detail.SalesOrderHeader = null;
+            unitOfWork.SalesOrderDetails.UpdateWithoutSave(detail);
+        }
+
 
         #endregion
 
