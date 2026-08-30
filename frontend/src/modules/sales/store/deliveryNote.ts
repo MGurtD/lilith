@@ -112,9 +112,6 @@ export const useDeliveryNoteStore = defineStore({
       order: SalesOrderHeader,
     ): Promise<GenericResponse<any>> {
       const response = await SalesServices.DeliveryNote.AddOrder(id, order);
-      if (response.result) {
-        await this.GetDetailsById(id);
-      }
       return response;
     },
     async DeleteOrder(
@@ -122,7 +119,6 @@ export const useDeliveryNoteStore = defineStore({
       order: SalesOrderHeader,
     ): Promise<GenericResponse<any>> {
       const response = await SalesServices.DeliveryNote.DeleteOrder(id, order);
-      await this.GetDetailsById(id);
       return response;
     },
   },

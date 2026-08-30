@@ -268,6 +268,8 @@ const ca = {
         ddMmAa: "dd/mm/aa...",
         desactivat: "Desactivat",
         descarregar: "Descarregar",
+        descarregarExcel: "Descarregar Excel",
+        descarregarPdf: "Descarregar PDF",
         descripcio: "Descripció",
         deshabilitat: "Deshabilitat",
         diametreMm: "Diàmetre mm",
@@ -945,7 +947,7 @@ const ca = {
     deliveryNotes: {
       title: "Albarans d'entrega",
       createTitle: "Crear albarà",
-      messages: { createError: "Error en crear l'albarà", confirmDelete: "Estàs segur que vols eliminar l'albarà?" },
+      messages: { createError: "Error en crear l'albarà", confirmDelete: "Estàs segur que vols eliminar l'albarà?", orderDeleteError: "Error en eliminar la comanda", orderDeleteFailed: "No s'ha pogut eliminar la comanda" },
     },
     invoiceAccounting: {
       title: "Comptabilització de factures de venda",

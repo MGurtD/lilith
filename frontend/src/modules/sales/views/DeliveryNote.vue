@@ -5,6 +5,7 @@
     :model="items"
     :size="'small'"
     class="grid_add_row_button"
+    :disabled="!canSave"
   />
 
   <FormDeliveryNote
@@ -12,6 +13,8 @@
     class="mt-3 mb-3"
     ref="deliveryNoteForm"
     :deliveryNote="deliveryNote"
+    :lock-header="isDelivered || isInvoiced"
+    :lock-status="isInvoiced"
     @submit="onDeliveryNoteSubmit"
   />
 
@@ -68,10 +71,7 @@ import { useCustomersStore } from "../store/customers";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
 import { DeliveryNote, SalesOrderHeader } from "../types";
-import {
-  createBlobAndDownloadFile,
-  formatDate,
-} from "../../../utils/functions";
+import { createBlobAndDownloadFile } from "../../../utils/functions";
 import { useSalesOrderStore } from "../store/order";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import Services from "../services";
@@ -136,6 +136,21 @@ const canModifyDetails = computed(() => {
   return deliveredStatus.id !== initialStatusId.value;
 });
 
+const isDelivered = computed(() => {
+  const deliveredStatus = lifecycleStore.lifecycle?.statuses?.find(
+    (status) => status.name === "Entregat"
+  );
+  return deliveredStatus?.id === initialStatusId.value;
+});
+
+const isInvoiced = computed(() => !!deliveryNote.value?.salesInvoiceId);
+
+const canSave = computed(() => {
+  if (isInvoiced.value) return false;
+  if (!isDelivered.value) return true;
+  return deliveryNote.value?.statusId !== initialStatusId.value;
+});
+
 const loadView = async () => {
   const id = route.params.id as string;
   await deliveryNoteStore.GetById(id);
@@ -152,12 +167,6 @@ const loadView = async () => {
   if (deliveryNote.value) {
     formMode.value = FormActionMode.EDIT;
     pageTitle = `${t("sales.deliveryNotes.title")} ${deliveryNote.value.number}`;
-
-    if (deliveryNote.value.deliveryDate) {
-      deliveryNote.value.deliveryDate = formatDate(
-        deliveryNote.value.deliveryDate
-      );
-    }
   }
 
   store.setMenuItem({
@@ -237,9 +246,7 @@ const addSalesOrdersToDeliveryNote = async (
           severity: "error",
           summary: t("sales.detail.messages.orderAddError"),
           detail:
-            typeof response.content === "string"
-              ? response.content
-              : t("sales.detail.messages.orderAddFailed"),
+            response.errors?.[0] ?? t("sales.detail.messages.orderAddFailed"),
           life: 6000,
         });
         continue;
@@ -251,6 +258,7 @@ const addSalesOrdersToDeliveryNote = async (
         );
     }
 
+    await deliveryNoteStore.GetById(deliveryNote.value!.id);
     await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
   } finally {
     isAddingOrders.value = false;
@@ -258,7 +266,21 @@ const addSalesOrdersToDeliveryNote = async (
 };
 
 const deleteSalesOrder = async (order: SalesOrderHeader) => {
-  await deliveryNoteStore.DeleteOrder(deliveryNote.value!.id, order);
+  const response = await deliveryNoteStore.DeleteOrder(
+    deliveryNote.value!.id,
+    order
+  );
+  if (!response.result) {
+    toast.add({
+      severity: "error",
+      summary: t("sales.deliveryNotes.messages.orderDeleteError"),
+      detail:
+        response.errors?.[0] ??
+        t("sales.deliveryNotes.messages.orderDeleteFailed"),
+      life: 6000,
+    });
+  }
+  await deliveryNoteStore.GetById(deliveryNote.value!.id);
   await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
 };
 

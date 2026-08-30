@@ -268,6 +268,8 @@ const en = {
         ddMmAa: "dd/mm/yy...",
         desactivat: "Disabled",
         descarregar: "Download",
+        descarregarExcel: "Download Excel",
+        descarregarPdf: "Download PDF",
         descripcio: "Description",
         deshabilitat: "Disabled",
         diametreMm: "Diameter mm",
@@ -925,7 +927,7 @@ const en = {
     },
     deliveryNotes: {
       title: "Delivery notes", createTitle: "Create delivery note",
-      messages: { createError: "Error creating delivery note", confirmDelete: "Are you sure you want to delete the delivery note?" },
+      messages: { createError: "Error creating delivery note", confirmDelete: "Are you sure you want to delete the delivery note?", orderDeleteError: "Error deleting sales order", orderDeleteFailed: "The sales order could not be removed" },
     },
     invoiceAccounting: {
       title: "Sales invoice accounting", filters: { showManaged: "Managed" }, columns: { baseAmount: "Base amount" },

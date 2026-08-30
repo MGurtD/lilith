@@ -3,6 +3,7 @@
     :label="t('production.components.guardar')"
     @click="handleSubmit"
     :model="items"
+    :loading="reportDownloading"
     :size="'small'"
     class="grid_add_row_button"
   />
@@ -113,6 +114,7 @@ import { PrimeIcons } from "@primevue/core/api";
 
 const props = defineProps<{
   workorder: WorkOrder;
+  reportDownloading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -127,18 +129,18 @@ const statusTransitionsDropdown = ref<InstanceType<
   typeof DropdownLifecycleStatusTransitions
 > | null>(null);
 
-const items = [
+const items = computed(() => [
   {
-    label: t("production.components.descarregar"),
-    icon: PrimeIcons.FILE_WORD,
+    label: t("production.components.descarregarExcel"),
+    icon: PrimeIcons.FILE_EXCEL,
     command: () => emit("download"),
   },
   {
-    label: t("production.components.imprimirPdf"),
+    label: t("production.components.descarregarPdf"),
     icon: PrimeIcons.FILE_PDF,
     command: () => emit("downloadPdf"),
   },
-];
+]);
 
 const dateRange = computed({
   get(): Date[] {
