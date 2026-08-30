@@ -6,6 +6,7 @@ using Application.Tests.TestSupport;
 using Domain.Entities.Sales;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using System.Data;
 using System.Linq.Expressions;
 using Xunit;
 
@@ -178,6 +179,8 @@ public class CustomerServiceTests
 
         var uow = Substitute.For<IUnitOfWork>();
         uow.Customers.Returns(customerRepository);
+        uow.BeginTransactionAsync(Arg.Any<IsolationLevel>())
+           .Returns(Task.FromResult(Substitute.For<IUnitOfWorkTransaction>()));
 
         var localization = new KeyedLocalizationService(LocalizationKeys);
         var sut = new CustomerService(

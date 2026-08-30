@@ -168,8 +168,8 @@ namespace Api.Controllers.Sales
         {
             var response = await service.AddDeliveryNote(id, deliveryNote);
 
-            if (response.Result) return Ok();
-            else return BadRequest(response.Errors);
+            if (response.Result) return Ok(response);
+            else return BadRequest(response);
         }
 
         [HttpPost("{id:guid}/RemoveDeliveryNote")]

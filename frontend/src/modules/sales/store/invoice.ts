@@ -161,26 +161,20 @@ export const useSalesInvoiceStore = defineStore({
     async AddDeliveryNote(
       id: string,
       deliveryNote: DeliveryNote,
-    ): Promise<GenericResponse<any>> {
-      const response = await SalesService.SalesInvoice.AddDeliveryNote(
+    ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
+      return await SalesService.SalesInvoice.AddDeliveryNote(
         id,
         deliveryNote,
       );
-      this.GetDetailsById(id);
-      this.GetHeaderById(id);
-      return response;
     },
     async RemoveDeliveryNote(
       id: string,
       deliveryNote: DeliveryNote,
-    ): Promise<GenericResponse<any>> {
-      const response = await SalesService.SalesInvoice.RemoveDeliveryNote(
+    ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
+      return await SalesService.SalesInvoice.RemoveDeliveryNote(
         id,
         deliveryNote,
       );
-      this.GetDetailsById(id);
-      this.GetHeaderById(id);
-      return response;
     },
 
     async CreateInvoiceDetail(
