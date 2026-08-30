@@ -12,6 +12,7 @@ public class WorkOrderReportResponse : ReportResponse
     public required List<WorkOrderPhaseBillOfMaterialsReportDto> BillOfMaterials { get; set; }
 
     public WorkOrderReportResponse() : base() { }
+    public WorkOrderReportResponse(string languageCode) : base(languageCode) { }
 }
 
 public class WorkOrderReportDto
@@ -47,6 +48,7 @@ public class WorkOrderPhaseDetailReportDto
 
 public class WorkOrderPhaseBillOfMaterialsReportDto
 {
+    public required string PhaseCode { get; set; }
     public required string ReferenceCode { get; set; }
     public required string ReferenceDescription { get; set; }
     public required decimal Quantity { get; set; }

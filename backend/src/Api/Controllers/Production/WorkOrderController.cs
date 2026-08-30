@@ -8,7 +8,7 @@ namespace Api.Controllers.Production
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService) : ControllerBase
+    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService, IWorkOrderPdfService pdfService) : ControllerBase
     {
         [HttpPost("CreateFromWorkMaster")]
         public async Task<IActionResult> CreateFromWorkMaster([FromBody] CreateWorkOrderDto request)
@@ -150,6 +150,18 @@ namespace Api.Controllers.Production
         {
             var reportData = await reportService.GetReportById(id);
             return Ok(reportData);
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPdf(Guid id)
+        {
+            var reportData = await reportService.GetReportById(id);
+            return reportData is null
+                ? NotFound()
+                : File(pdfService.Generate(reportData), "application/pdf", $"OrdreFabricacio_{reportData.Order.Code}.pdf");
         }
 
         [HttpGet("{id:guid}")]

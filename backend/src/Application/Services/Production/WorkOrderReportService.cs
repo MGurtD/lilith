@@ -1,4 +1,5 @@
 using Application.Contracts;
+using System.Globalization;
 
 namespace Application.Services.Production
 {
@@ -20,6 +21,17 @@ namespace Application.Services.Production
             var operatorTypes = await unitOfWork.OperatorTypes.FindAsync(ot => !ot.Disabled);
             var workcenterTypes = await unitOfWork.WorkcenterTypes.FindAsync(wt => !wt.Disabled);
             var workcenters = await unitOfWork.Workcenters.FindAsync(wc => !wc.Disabled);
+            var activePhases = workOrder.Phases
+                .Where(p => !p.Disabled)
+                .OrderBy(p => p.CodeAsNumber)
+                .ToList();
+            var materialReferenceIds = activePhases
+                .SelectMany(p => p.BillOfMaterials.Where(b => !b.Disabled))
+                .Select(b => b.ReferenceId)
+                .Distinct()
+                .ToList();
+            var materialReferences = await unitOfWork.References.FindAsync(r => materialReferenceIds.Contains(r.Id));
+            var materialReferencesById = materialReferences.ToDictionary(r => r.Id);
 
             var orderDto = new WorkOrderReportDto()
             {
@@ -35,7 +47,7 @@ namespace Application.Services.Production
 
             var phaseDtos = new List<WorkOrderPhaseReportDto>();
             var bomDtos = new List<WorkOrderPhaseBillOfMaterialsReportDto>();
-            foreach (var phase in workOrder.Phases.Where(p => !p.Disabled).OrderBy(p => p.CodeAsNumber))
+            foreach (var phase in activePhases)
             {
                 var detailDtos = new List<WorkOrderPhaseDetailReportDto>();
                 foreach (var detail in phase.Details.Where(d => !d.Disabled).OrderBy(d => d.Order))
@@ -51,11 +63,11 @@ namespace Application.Services.Production
 
                 foreach (var bom in phase.BillOfMaterials.Where(b => !b.Disabled))
                 {
-                    var bomReference = await unitOfWork.References.Get(bom.ReferenceId);
-                    if (bomReference != null)
+                    if (materialReferencesById.TryGetValue(bom.ReferenceId, out var bomReference))
                     {
                         bomDtos.Add(new WorkOrderPhaseBillOfMaterialsReportDto()
                         {
+                            PhaseCode = phase.Code,
                             ReferenceCode = bomReference.Code,
                             ReferenceDescription = bomReference.Description,
                             Quantity = bom.Quantity,
@@ -83,7 +95,7 @@ namespace Application.Services.Production
                 });
             }
 
-            return new WorkOrderReportResponse()
+            return new WorkOrderReportResponse(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)
             {
                 Site = site,
                 Enterprise = enterprise,

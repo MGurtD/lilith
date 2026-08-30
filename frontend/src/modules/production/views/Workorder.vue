@@ -4,6 +4,7 @@
       v-if="workorder"
       ref="workorderForm"
       :workorder="workorder"
+      :report-downloading="reportDownloading"
       @submit="onWorkorderSubmit"
       @download="printReport"
       @download-pdf="printPdf"
@@ -212,6 +213,7 @@ const id = ref("");
 const activeTab = ref("0");
 const stockMovementsLoaded = ref(false);
 const workorderForm = ref<InstanceType<typeof FormWorkorder> | null>(null);
+const reportDownloading = ref(false);
 
 watch(activeTab, async (newTab) => {
   if (newTab === "3" && !stockMovementsLoaded.value && id.value) {
@@ -363,35 +365,55 @@ const deleteProductionPart = async (productionPart: ProductionPart) => {
 };
 
 const printReport = async () => {
-  const workOrderReport = await Services.WorkOrder.GetReportDataById(
-    workorder.value!.id,
-  );
+  if (reportDownloading.value) return;
 
-  if (workOrderReport) {
+  reportDownloading.value = true;
+  try {
+    const workOrderReport = await Services.WorkOrder.GetReportDataById(
+      workorder.value!.id,
+    );
+    if (!workOrderReport) throw new Error("Work order report data is empty");
+
     const fileName = `OrdreFabricacio_${workorder.value?.code}.xlsx`;
-
-    const reportService = new ReportService();
-    const report = await reportService.Download(
+    const report = await new ReportService().Download(
       workOrderReport,
       REPORTS.WorkOrder,
       fileName,
     );
+    if (!report) throw new Error("Excel report download is empty");
 
-    if (report) {
-      createBlobAndDownloadFile(fileName, report);
-    } else {
-      toast.add({
-        severity: "warn",
-        summary: pt("Error"),
-        detail: t("production.messages.workorderReportError"),
-      });
-    }
+    createBlobAndDownloadFile(fileName, report);
+  } catch {
+    toast.add({
+      severity: "warn",
+      summary: pt("Error"),
+      detail: t("production.messages.workorderReportError"),
+    });
+  } finally {
+    reportDownloading.value = false;
   }
 };
 const printPdf = async () => {
-  const report = await Services.WorkOrder.DownloadPdf(workorder.value!.id);
-  if (report) {
-    createBlobAndDownloadFile(`OrdreFabricacio_${workorder.value?.code}.pdf`, report);
+  if (reportDownloading.value) return;
+
+  reportDownloading.value = true;
+  try {
+    const report = await Services.WorkOrder.DownloadPdf(workorder.value!.id);
+    if (!report) throw new Error("PDF report download is empty");
+
+    createBlobAndDownloadFile(
+      `OrdreFabricacio_${workorder.value?.code}.pdf`,
+      report,
+      "application/pdf",
+    );
+  } catch {
+    toast.add({
+      severity: "warn",
+      summary: pt("Error"),
+      detail: t("production.messages.workorderReportError"),
+    });
+  } finally {
+    reportDownloading.value = false;
   }
 };
 
