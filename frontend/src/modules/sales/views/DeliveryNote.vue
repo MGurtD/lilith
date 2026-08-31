@@ -5,7 +5,6 @@
     :model="items"
     :size="'small'"
     class="grid_add_row_button"
-    :disabled="!canSave"
   />
 
   <FormDeliveryNote
@@ -137,12 +136,6 @@ const isDelivered = computed(() => {
 });
 
 const isInvoiced = computed(() => !!deliveryNote.value?.salesInvoiceId);
-
-const canSave = computed(() => {
-  if (isInvoiced.value) return false;
-  if (!isDelivered.value) return true;
-  return deliveryNote.value?.statusId !== initialStatusId.value;
-});
 
 const loadView = async () => {
   const id = route.params.id as string;
