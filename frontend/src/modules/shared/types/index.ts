@@ -1,5 +1,10 @@
 import { Customer } from "../../sales/types";
 
+export interface Country {
+  name: string;
+  code: string;
+}
+
 export interface PaymentMethod {
   id: string;
   name: string;
