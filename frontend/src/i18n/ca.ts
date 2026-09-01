@@ -268,6 +268,8 @@ const ca = {
         ddMmAa: "dd/mm/aa...",
         desactivat: "Desactivat",
         descarregar: "Descarregar",
+        descarregarExcel: "Descarregar Excel",
+        descarregarPdf: "Descarregar PDF",
         descripcio: "Descripció",
         deshabilitat: "Deshabilitat",
         diametreMm: "Diàmetre mm",

@@ -268,6 +268,8 @@ const es = {
         ddMmAa: "dd/mm/aa...",
         desactivat: "Desactivado",
         descarregar: "Descargar",
+        descarregarExcel: "Descargar Excel",
+        descarregarPdf: "Descargar PDF",
         descripcio: "Descripción",
         deshabilitat: "Deshabilitado",
         diametreMm: "Diámetro mm",

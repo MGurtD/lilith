@@ -30,6 +30,7 @@ public static class ApplicationServicesSetup
         services.AddSingleton<ISalesOrderPdfService, SalesOrderPdfService>();
         services.AddSingleton<IDeliveryNotePdfService, DeliveryNotePdfService>();
         services.AddSingleton<IPurchaseOrderPdfService, PurchaseOrderPdfService>();
+        services.AddScoped<IWorkOrderPdfService, WorkOrderPdfService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
