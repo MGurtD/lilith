@@ -15,8 +15,10 @@
         <Table
           preset="crud-list"
           :columns="supplierColumns"
-          :items="supplierStore.suppliers ?? []"
-          :filter-config="[]"
+          :items="filteredSuppliers"
+          :filter-config="supplierFilterConfig"
+          v-model:filter-values="supplierFilter"
+          :filter-body-width="supplierFilterBodyWidth"
           :show-filter-actions="false"
           delete-column-width="5%"
           show-delete-column
@@ -24,11 +26,7 @@
           @row-click="editSupplier"
           @create="createButtonClick"
           @delete="deleteSupplier"
-        >
-          <template #prepend>
-            <span class="text-900 font-bold">{{ t("purchase.suppliers.title") }}</span>
-          </template>
-        </Table>
+        />
       </TabPanel>
       <TabPanel value="1">
         <Table
@@ -58,6 +56,10 @@ import {
   ColumnType,
   type Column,
 } from "../../../components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -77,6 +79,47 @@ const router = useRouter();
 const store = useStore();
 const supplierStore = useSuppliersStore();
 const { t } = useI18n();
+
+const supplierFilter = ref({
+  name: "",
+  supplierTypeId: "",
+});
+
+const supplierFilterBodyWidth: FilterBodyWidth = {
+  desktop: "50%",
+  tablet: "75%",
+};
+
+const supplierFilterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "name",
+    label: t("purchase.fields.name"),
+    type: "text",
+    placeholder: t("purchase.fields.name"),
+    size: "lg",
+  },
+  {
+    key: "supplierTypeId",
+    label: t("purchase.fields.type"),
+    type: "select",
+    options: supplierStore.supplierTypes ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("purchase.fields.type"),
+    size: "md",
+  },
+]);
+
+const filteredSuppliers = computed(() => {
+  const name = supplierFilter.value.name.trim().toLocaleLowerCase();
+  const supplierTypeId = supplierFilter.value.supplierTypeId;
+
+  return (supplierStore.suppliers ?? []).filter(
+    (supplier) =>
+      (!name || supplier.comercialName.toLocaleLowerCase().includes(name)) &&
+      (!supplierTypeId || supplier.supplierTypeId === supplierTypeId),
+  );
+});
 
 const supplierColumns = computed<Column[]>(() => [
   {
