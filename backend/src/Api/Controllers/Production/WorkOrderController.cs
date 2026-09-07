@@ -213,6 +213,15 @@ namespace Api.Controllers.Production
                 return NotFound();
         }        
 
+        [HttpGet("Phase/{id:guid}/Rejections")]
+        [SwaggerOperation("GetWorkOrderPhaseRejections")]
+        [ProducesResponseType(typeof(IEnumerable<WorkOrderPhaseRejectionDisplayDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWorkOrderPhaseRejections(Guid id)
+        {
+            var rejections = await phaseService.GetPhaseRejections(id);
+            return Ok(rejections);
+        }
+
         [HttpGet("Phase/External")]
         [SwaggerOperation("GetExternalWorkOrderPhase")]
         [ProducesResponseType(StatusCodes.Status200OK)]

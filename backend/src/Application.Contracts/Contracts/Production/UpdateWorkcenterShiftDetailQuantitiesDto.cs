@@ -15,4 +15,6 @@ public class UpdateWorkcenterShiftDetailQuantitiesDto
 
     [Range(0, double.MaxValue, ErrorMessage = "Las unidades NOK deben ser mayores o iguales a 0.")]
     public decimal QuantityKo { get; set; }
+
+    public List<WorkOrderPhaseRejectionDto> Rejections { get; set; } = [];
 }

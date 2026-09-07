@@ -94,6 +94,7 @@ public static class ApplicationServicesSetup
         services.AddScoped<IAreaService, AreaService>();
         services.AddScoped<IWorkcenterTypeService, WorkcenterTypeService>();
         services.AddScoped<IOperatorTypeService, OperatorTypeService>();
+        services.AddScoped<IRejectionReasonService, RejectionReasonService>();
         services.AddScoped<IMachineStatusService, MachineStatusService>();
         services.AddScoped<IShiftService, ShiftService>();
         services.AddScoped<IShiftDetailService, ShiftDetailService>();

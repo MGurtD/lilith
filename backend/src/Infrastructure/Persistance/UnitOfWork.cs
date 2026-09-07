@@ -83,6 +83,8 @@ namespace Infrastructure.Persistance
         public IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; private set; } = new Repository<WorkcenterCost, Guid>(context);
         public IRepository<Operator, Guid> Operators { get; private set; } = new Repository<Operator, Guid>(context);
         public IRepository<OperatorType, Guid> OperatorTypes { get; private set; } = new Repository<OperatorType, Guid>(context);
+        public IRepository<RejectionReason, Guid> RejectionReasons { get; private set; } = new Repository<RejectionReason, Guid>(context);
+        public IRepository<WorkOrderPhaseRejection, Guid> WorkOrderPhaseRejections { get; private set; } = new Repository<WorkOrderPhaseRejection, Guid>(context);
         public IMachineStatusRepository MachineStatuses { get; private set; } = new MachineStatusRepository(context);
         public IRepository<Shift, Guid> Shifts { get; private set; } = new Repository<Shift, Guid>(context);
         public IRepository<ShiftDetail, Guid> ShiftDetails { get; private set; } = new Repository<ShiftDetail, Guid>(context);

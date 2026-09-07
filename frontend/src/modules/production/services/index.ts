@@ -6,6 +6,7 @@ import {
   MachineStatusReason,
   Operator,
   OperatorType,
+  RejectionReason,
   WorkcenterCost,
   WorkcenterShiftGroup,
   WorkcenterProfitPercentage,
@@ -67,6 +68,7 @@ export class MachineStatusService extends BaseService<MachineStatus> {
 export class MachineStatusReasonService extends BaseService<MachineStatusReason> {}
 export class OperatorService extends BaseService<Operator> {}
 export class OperatorTypeService extends BaseService<OperatorType> {}
+export class RejectionReasonService extends BaseService<RejectionReason> {}
 
 export default {
   Enterprise: new EnterpriseService("/Enterprise"),
@@ -78,6 +80,7 @@ export default {
   MachineStatus: new MachineStatusService("/MachineStatus"),
   MachineStatusReason: new MachineStatusReasonService("/MachineStatus/Reason"),
   OperatorType: new OperatorTypeService("/OperatorType"),
+  RejectionReason: new RejectionReasonService("/RejectionReason"),
   Operator: new OperatorService("/Operator"),
   WorkMaster: new WorkMasterService("/WorkMaster"),
   WorkMasterPhase: new WorkMasterPhaseService("/WorkMaster/Phase"),
