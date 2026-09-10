@@ -1850,11 +1850,12 @@ const es = {
       validation: { supplierCodeRequired: "El código es obligatorio", supplierPriceRequired: "El precio es obligatorio", supplyDaysRequired: "Los días de suministro son obligatorios" },
       messages: { invalidForm: "Formulario no válido", creation: "Creación de referencia", alreadyExists: "La referencia ya existe", confirmDelete: "¿Seguro que quieres eliminar la referencia?" },
     },
-    purchaseRate: { fields: { name: "Nombre", validFrom: "Fecha de inicio", validTo: "Fecha de fin" }, actions: { save: "Guardar" } },
+    purchaseRate: { fields: { name: "Nombre", validFrom: "Fecha de inicio", validTo: "Fecha de fin" }, actions: { save: "Guardar" }, validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", startDateRequired: "La fecha de inicio es obligatoria", endDateRequired: "La fecha de fin es obligatoria", endDateOnOrAfterStart: "La fecha de fin debe ser igual o posterior a la fecha de inicio" } },
     purchaseRateDetail: { fields: { reference: "Referencia", calculationType: "Tipo de cálculo", from: "Desde", to: "Hasta", price: "Precio (€)" }, placeholders: { selectReference: "Selecciona una referencia" }, actions: { save: "Guardar" }, calculationTypes: { units: "Unidades", volume: "Volumen", weight: "Peso" } },
     transportRates: {
       title: "Tarifas de transporte", details: "Detalles", dialogs: { createRate: "Nueva tarifa de transporte", editRate: "Editar tarifa de transporte", createDetail: "Nuevo detalle de tarifa", editDetail: "Editar detalle de tarifa" },
       columns: { name: "Nombre", description: "Descripción", validFrom: "Desde", validTo: "Hasta", minimumWeight: "Peso mín.", maximumWeight: "Peso máx.", minimumVolume: "Vol. mín.", maximumVolume: "Vol. máx.", minimumDistance: "Dist. mín.", maximumDistance: "Dist. máx.", price: "Precio" },
+      validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", descriptionRequired: "La descripción es obligatoria", descriptionMaxLength: "La descripción no puede superar los 250 caracteres", startDateRequired: "La fecha de inicio es obligatoria", endDateRequired: "La fecha de fin es obligatoria", endDateOnOrAfterStart: "La fecha de fin debe ser igual o posterior a la fecha de inicio" },
       messages: { rateCreated: "Tarifa creada", rateUpdated: "Tarifa actualizada", confirmDeleteRate: "¿Seguro que quieres eliminar la tarifa?", rateDeleted: "Tarifa eliminada", detailCreated: "Detalle creado", detailUpdated: "Detalle actualizado", confirmDeleteDetail: "¿Seguro que quieres eliminar el detalle?", detailDeleted: "Detalle eliminado" },
     },
     purchaseRates: {
@@ -1900,10 +1901,6 @@ const es = {
       columns: { base: "Base", tax: "% IVA", taxAmount: "Cuota de IVA" },
       actions: { add: "Añadir", update: "Modificar", delete: "Eliminar" },
       validation: { baseAmountRequired: "El importe base es obligatorio" },
-    },
-    purchaseInvoiceStatus: {
-      fields: { name: "Nombre del estado", disabled: "Desactivado" },
-      validation: { nameRequired: "El nombre del estado es obligatorio", nameMaxLength: "El nombre del estado no puede superar los 50 caracteres", descriptionRequired: "La descripción del estado es obligatoria", descriptionMaxLength: "La descripción del estado no puede superar los 250 caracteres" },
     },
     orders: {
       title: "Pedidos de compra", filters: { period: "Período" }, placeholders: { selectPeriod: "Selecciona un período" }, dialogs: { create: "Crear pedido" }, messages: { selectPeriod: "Selecciona un período", confirmDelete: "¿Seguro que quieres eliminar el pedido {number}?" },

@@ -1,89 +1,25 @@
-<template>
-  <form v-if="detail">
-    <section class="three-columns">
-      <div>
-        <DropdownReference
-          :label="t('purchase.orderDetail.fields.purchaseReference')"
-          v-model="detail.referenceId"
-          :fullName="true"
-          :disabled="detail.receivedQuantity > 0"
-          @update:modelValue="getReferenceInfo"
-        ></DropdownReference>
-      </div>
-      <div>
-        <DropdownLifecycleStatusTransitions
-          :label="t('purchase.order.fields.status')"
-          :statusId="detail.statusId"
-          v-model="detail.statusId"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("purchase.orderDetail.fields.expectedReceiptDate") }}</label>
-        <DatePicker
-          :label="t('purchase.orderDetail.fields.expectedReceiptDate')"
-          v-model="detail.expectedReceiptDate"
-          dateFormat="dd/mm/yy"
-        />
-      </div>
-    </section>
-    <section>
-      <div>
-        <BaseInput
-          :type="BaseInputType.TEXT"
-          :label="t('purchase.orderDetail.fields.description')"
-          id="description"
-          v-model="detail.description"
-        />
-      </div>
-    </section>
-
-    <section class="three-columns mt-2">
-      <div>
-        <BaseInput
-          :disabled="detail.receivedQuantity > 0"
-          :type="BaseInputType.NUMERIC"
-          :label="t('purchase.orderDetail.fields.quantity')"
-          v-model="detail.quantity"
-          @input="calculateAmount"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          :label="t('purchase.orderDetail.fields.price')"
-          v-model="detail.amount"
-          :disabled="detail.receivedQuantity > 0"
-        />
-      </div>
-    </section>
-
-    <Button
-      :label="t('purchase.order.actions.create')"
-      @click="submitForm"
-      style="float: right"
-      :size="'small'"
-      class="mt-2"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
-import DropdownReference from "../../shared/components/DropdownReference.vue";
-import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
-import { ref, watch } from "vue";
-import { PurchaseOrderDetail, PurchaseOrder } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import PurchaseServices from "../services";
+import * as Yup from "yup";
+import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
 import SharedServices from "../../shared/services";
 import { useReferenceStore } from "../../shared/store/reference";
+import { ReferenceCategoryEnum } from "../../shared/types";
+import PurchaseServices from "../services";
+import type { PurchaseOrder, PurchaseOrderDetail } from "../types";
 
 const props = defineProps<{
   detail: PurchaseOrderDetail;
@@ -91,97 +27,226 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", detail: PurchaseOrderDetail): void;
-  (e: "cancel"): void;
+  (event: "submit", detail: PurchaseOrderDetail): void;
 }>();
 
-const toast = useToast();
-const { t } = useI18n();
-
-const schema = Yup.object().shape({
-  quantity: Yup.number().min(1).required(t("purchase.orderDetail.validation.quantityMinimum")),
-  referenceId: Yup.string().required(t("purchase.orderDetail.validation.referenceRequired")),
-  description: Yup.string().required(t("purchase.orderDetail.validation.descriptionRequired")),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
 const referenceStore = useReferenceStore();
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.detail);
-};
+const { t } = useI18n();
+const form = ref<{
+  setFieldValue: (name: string, value: unknown) => void;
+} | null>(null);
+const unitPrice = ref(props.detail.unitPrice);
+const latestQuantity = ref(props.detail.quantity);
+let referenceRequestSequence = 0;
 
 watch(
-  () => props.detail.quantity,
-  async (newValue) => {
-    if (newValue) {
-      calculateAmount();
-    }
+  () => props.detail,
+  (detail) => {
+    referenceRequestSequence += 1;
+    unitPrice.value = detail.unitPrice;
+    latestQuantity.value = detail.quantity;
   },
+  { immediate: true },
 );
 
-const getReferenceInfo = async (id: string | null) => {
-  if (id == null || props.order.supplierId == "") {
-    return;
-  }
+const calculateAmount = (
+  referenceId: string,
+  quantity: number,
+): number | undefined => {
+  const reference = referenceStore.references?.find(
+    (item) => item.id === referenceId,
+  );
+  if (!reference) return undefined;
 
-  var supplierReference =
+  return reference.categoryName === ReferenceCategoryEnum.SERVICE
+    ? unitPrice.value
+    : quantity * unitPrice.value;
+};
+
+const updateCalculatedAmount = (
+  referenceId: string,
+  quantity: number,
+): void => {
+  const amount = calculateAmount(referenceId, quantity);
+  if (amount !== undefined) form.value?.setFieldValue("amount", amount);
+};
+
+const updateQuantity = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  latestQuantity.value = finiteNumberValue(value, latestQuantity.value);
+  updateCalculatedAmount(
+    stringValue(values.referenceId, props.detail.referenceId),
+    latestQuantity.value,
+  );
+};
+
+const addDays = (days: number): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date;
+};
+
+const loadReferenceInfo = async (referenceId: string | null): Promise<void> => {
+  const requestSequence = ++referenceRequestSequence;
+  if (referenceId === null || props.order.supplierId === "") return;
+
+  const supplierReference =
     await PurchaseServices.Supplier.getSupplierReferenceBySupplierIdAndReferenceId(
       props.order.supplierId,
-      id,
+      referenceId,
     );
+  if (requestSequence !== referenceRequestSequence) return;
+
   if (supplierReference) {
-    props.detail.unitPrice = supplierReference.supplierPrice;
-    props.detail.expectedReceiptDate = addDays(supplierReference.supplyDays);
-    props.detail.description = supplierReference.supplierDescription;
+    unitPrice.value = supplierReference.supplierPrice;
+    form.value?.setFieldValue(
+      "expectedReceiptDate",
+      addDays(supplierReference.supplyDays),
+    );
+    form.value?.setFieldValue(
+      "description",
+      supplierReference.supplierDescription,
+    );
   } else {
-    const reference = await SharedServices.Reference.getById(id);
+    const reference = await SharedServices.Reference.getById(referenceId);
+    if (requestSequence !== referenceRequestSequence) return;
+
     if (reference) {
-      props.detail.unitPrice = reference.price;
-      props.detail.description = reference.description;
+      unitPrice.value = reference.price;
+      form.value?.setFieldValue("description", reference.description);
     }
   }
 
-  calculateAmount();
+  updateCalculatedAmount(referenceId, latestQuantity.value);
 };
 
-function addDays(days: number) {
-  let currentDate = new Date(); // Get the current date
-  currentDate.setDate(currentDate.getDate() + days); // Add the specified number of days
-  return currentDate;
-}
-
-const calculateAmount = () => {
-  const reference = referenceStore.references!.find(
-    (r) => r.id == props.detail.referenceId,
-  );
-  if (reference) {
-    if (reference.categoryName == "Service") {
-      props.detail.amount = props.detail.unitPrice;
-    } else {
-      props.detail.amount = props.detail.quantity * props.detail.unitPrice;
-    }
-  }
+const updateReference = (
+  value: string | null,
+  setValue: (value: unknown) => void,
+): void => {
+  setValue(value);
+  void loadReferenceInfo(value);
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.detail);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("purchase.messages.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "referenceId",
+        label: t("purchase.orderDetail.fields.purchaseReference"),
+        type: FormFieldType.Custom,
+        disabled: props.detail.receivedQuantity > 0,
+        validation: Yup.string().required(
+          t("purchase.orderDetail.validation.referenceRequired"),
+        ),
+      },
+      {
+        name: "statusId",
+        label: t("purchase.order.fields.status"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "expectedReceiptDate",
+        label: t("purchase.orderDetail.fields.expectedReceiptDate"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "description",
+        label: t("purchase.orderDetail.fields.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("purchase.orderDetail.validation.descriptionRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "quantity",
+        label: t("purchase.orderDetail.fields.quantity"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        disabled: props.detail.receivedQuantity > 0,
+        onChange: updateQuantity,
+        validation: Yup.number()
+          .min(1, t("purchase.orderDetail.validation.quantityMinimum"))
+          .required(t("purchase.orderDetail.validation.quantityMinimum")),
+      },
+      {
+        name: "amount",
+        label: t("purchase.orderDetail.fields.price"),
+        type: FormFieldType.Currency,
+        props: {
+          currency: "EUR",
+          locale: "en-US",
+          minFractionDigits: 2,
+        },
+        disabled: props.detail.receivedQuantity > 0,
+      },
+    ],
+  },
+]);
+
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.detail,
+    referenceId: stringValue(values.referenceId, props.detail.referenceId),
+    statusId: stringValue(values.statusId, props.detail.statusId),
+    expectedReceiptDate: dateValue(
+      values.expectedReceiptDate,
+      props.detail.expectedReceiptDate,
+    ),
+    description: stringValue(values.description, props.detail.description),
+    quantity: finiteNumberValue(values.quantity, props.detail.quantity),
+    unitPrice: finiteNumberValue(unitPrice.value, props.detail.unitPrice),
+    amount: finiteNumberValue(values.amount, props.detail.amount),
+  });
 };
 </script>
+
+<template>
+  <Form ref="form" :rows="rows" :initial-values="detail" @submit="submit">
+    <template #field-referenceId="{ value, setValue, disabled }">
+      <DropdownReference
+        label=""
+        :model-value="typeof value === 'string' ? value : null"
+        :full-name="true"
+        :disabled="disabled"
+        @update:model-value="updateReference($event, setValue)"
+      />
+    </template>
+
+    <template #field-statusId="{ value, setValue, disabled }">
+      <DropdownLifecycleStatusTransitions
+        label=""
+        :status-id="detail.statusId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #actions="{ submit: submitForm, loading, disabled }">
+      <Button
+        type="button"
+        :label="t('purchase.order.actions.create')"
+        :loading="loading"
+        :disabled="disabled"
+        size="small"
+        class="mt-2"
+        style="float: right"
+        @click="submitForm"
+      />
+    </template>
+  </Form>
+</template>

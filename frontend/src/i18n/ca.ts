@@ -1907,11 +1907,12 @@ const ca = {
       validation: { supplierCodeRequired: "El codi és obligatori", supplierPriceRequired: "El preu és obligatori", supplyDaysRequired: "Els dies de subministrament són obligatoris" },
       messages: { invalidForm: "Formulari invàlid", creation: "Creació de referència", alreadyExists: "La referència ja existeix", confirmDelete: "Segur que vols eliminar la referència?" },
     },
-    purchaseRate: { fields: { name: "Nom", validFrom: "Data d'inici", validTo: "Data de fi" }, actions: { save: "Desar" } },
+    purchaseRate: { fields: { name: "Nom", validFrom: "Data d'inici", validTo: "Data de fi" }, actions: { save: "Desar" }, validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", startDateRequired: "La data d'inici és obligatòria", endDateRequired: "La data de fi és obligatòria", endDateOnOrAfterStart: "La data de fi ha de ser igual o posterior a la data d'inici" } },
     purchaseRateDetail: { fields: { reference: "Referència", calculationType: "Tipus de càlcul", from: "Des de", to: "Fins a", price: "Preu (€)" }, placeholders: { selectReference: "Selecciona una referència" }, actions: { save: "Desar" }, calculationTypes: { units: "Unitats", volume: "Volum", weight: "Pes" } },
     transportRates: {
       title: "Tarifes de transport", details: "Detalls", dialogs: { createRate: "Nova tarifa de transport", editRate: "Edita la tarifa de transport", createDetail: "Nou detall de tarifa", editDetail: "Edita el detall de tarifa" },
       columns: { name: "Nom", description: "Descripció", validFrom: "Des de", validTo: "Fins a", minimumWeight: "Pes mín.", maximumWeight: "Pes màx.", minimumVolume: "Vol. mín.", maximumVolume: "Vol. màx.", minimumDistance: "Dist. mín.", maximumDistance: "Dist. màx.", price: "Preu" },
+      validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", descriptionRequired: "La descripció és obligatòria", descriptionMaxLength: "La descripció no pot superar els 250 caràcters", startDateRequired: "La data d'inici és obligatòria", endDateRequired: "La data de fi és obligatòria", endDateOnOrAfterStart: "La data de fi ha de ser igual o posterior a la data d'inici" },
       messages: { rateCreated: "Tarifa creada", rateUpdated: "Tarifa actualitzada", confirmDeleteRate: "Segur que vols eliminar la tarifa?", rateDeleted: "Tarifa eliminada", detailCreated: "Detall creat", detailUpdated: "Detall actualitzat", confirmDeleteDetail: "Segur que vols eliminar el detall?", detailDeleted: "Detall eliminat" },
     },
     purchaseRates: {
@@ -1957,10 +1958,6 @@ const ca = {
       columns: { base: "Base", tax: "% IVA", taxAmount: "Quota d'IVA" },
       actions: { add: "Afegir", update: "Modificar", delete: "Eliminar" },
       validation: { baseAmountRequired: "L'import base és obligatori" },
-    },
-    purchaseInvoiceStatus: {
-      fields: { name: "Nom de l'estat", disabled: "Desactivat" },
-      validation: { nameRequired: "El nom de l'estat és obligatori", nameMaxLength: "El nom de l'estat no pot superar els 50 caràcters", descriptionRequired: "La descripció de l'estat és obligatòria", descriptionMaxLength: "La descripció de l'estat no pot superar els 250 caràcters" },
     },
     orders: {
       title: "Comandes de compra", filters: { period: "Període" }, placeholders: { selectPeriod: "Selecciona un període" }, dialogs: { create: "Crear comanda" }, messages: { selectPeriod: "Selecciona un període", confirmDelete: "Segur que vols eliminar la comanda {number}?" },

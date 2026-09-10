@@ -82,6 +82,7 @@ Load the matching skill for specialized workflows:
 
 - `adding-backend-entity`
 - `frontend-crud`
+- `frontend-form`
 - `backend-localization`
 - `audit-frontend-localization`
 - `translate-frontend-view`

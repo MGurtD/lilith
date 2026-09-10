@@ -22,7 +22,7 @@ export const useReceiptsStore = defineStore({
     setNewReceipt(id: string) {
       this.receipt = {
         id: id,
-        date: "",
+        date: new Date(),
         details: [],
         disabled: false,
         exerciseId: "",
