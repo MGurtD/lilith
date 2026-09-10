@@ -23,7 +23,7 @@ export const useOrderStore = defineStore({
       this.order = {
         id: id,
         disabled: false,
-        date: "",
+        date: new Date(),
         exerciseId: "",
         statusId: "",
         supplierId: "",
@@ -55,6 +55,23 @@ export const useOrderStore = defineStore({
         if (data.date) {
           data.date = new Date(data.date) as any;
         }
+        data.details = data.details.map((detail) => {
+          const expectedReceiptDate = detail.expectedReceiptDate as
+            | Date
+            | string
+            | null
+            | undefined;
+
+          return {
+            ...detail,
+            expectedReceiptDate:
+              expectedReceiptDate instanceof Date
+                ? expectedReceiptDate
+                : expectedReceiptDate
+                  ? new Date(expectedReceiptDate)
+                  : null,
+          };
+        });
       }
       this.order = data;
     },

@@ -1871,7 +1871,15 @@ const ca = {
     stocks: { title: "Gestió de magatzems - Estocs" },
     stockMovements: { title: "Moviments de magatzem" },
     inventory: { title: "Inventari", count: "Recompte", saveMovementsAria: "Guardar moviments" },
-    lotTraceability: { closed: "Tancat", view: "Veure traçabilitat del lot" },
+    lotTraceability: {
+      title: "Traçabilitat de lots", closed: "Tancat", view: "Veure traçabilitat del lot",
+      fields: { reference: "Referència", lot: "Lot", description: "Descripció", quantity: "Quantitat", date: "Data", purchaseOriginMovements: "Origen de compra / moviments", salesDestinationMovements: "Destí de venda / moviments", deliveryNote: "Albarà" },
+      placeholders: { selectLot: "Selecciona un lot..." },
+      tabs: { backward: "Cap enrere (des d'un lot venut)", forward: "Cap endavant (des d'un lot de compra)" },
+      empty: { backward: "Selecciona un lot venut per veure'n la traçabilitat cap enrere.", forward: "Selecciona un lot de compra per veure'n la traçabilitat cap endavant." },
+      recall: { title: "Informe de retirada", affectedDeliveryNotes: "{count} albarans afectats", affectedUnits: "{count} unitats afectades", noAffectedCustomers: "Aquest lot no ha arribat a cap client." },
+      messages: { lotNotFound: "No s'ha trobat el lot" },
+    },
   },
   purchase: {
     fields: { type: "Tipus", period: "Període", creationDate: "Data d'alta", paymentDate: "Data de pagament", amount: "Import", recurring: "Recurrent", frequency: "Freqüència", paymentDay: "Dia de pagament", endDate: "Data de fi", description: "Descripció", disabled: "Desactivada", internalInvoiceNumber: "Núm. de factura interna", exercise: "Exercici", series: "Sèrie", supplier: "Proveïdor", supplierInvoiceNumber: "Núm. de factura del proveïdor", invoiceDate: "Data de factura", paymentMethod: "Forma de pagament", transportAmount: "Ports", withholdingTax: "% IRPF", discount: "% descompte", base: "Base", taxes: "Impostos", name: "Nom", commercialName: "Nom comercial", taxName: "Nom fiscal", phone: "Telèfon", startDate: "Data d'inici", minimumWeight: "Pes mínim (kg)", maximumWeight: "Pes màxim (kg)", minimumVolume: "Volum mínim (m³)", maximumVolume: "Volum màxim (m³)", minimumDistance: "Distància mínima (km)", maximumDistance: "Distància màxima (km)", price: "Preu (€)" },
@@ -1907,11 +1915,12 @@ const ca = {
       validation: { supplierCodeRequired: "El codi és obligatori", supplierPriceRequired: "El preu és obligatori", supplyDaysRequired: "Els dies de subministrament són obligatoris" },
       messages: { invalidForm: "Formulari invàlid", creation: "Creació de referència", alreadyExists: "La referència ja existeix", confirmDelete: "Segur que vols eliminar la referència?" },
     },
-    purchaseRate: { fields: { name: "Nom", validFrom: "Data d'inici", validTo: "Data de fi" }, actions: { save: "Desar" } },
+    purchaseRate: { fields: { name: "Nom", validFrom: "Data d'inici", validTo: "Data de fi" }, actions: { save: "Desar" }, validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", startDateRequired: "La data d'inici és obligatòria", endDateRequired: "La data de fi és obligatòria", endDateOnOrAfterStart: "La data de fi ha de ser igual o posterior a la data d'inici" } },
     purchaseRateDetail: { fields: { reference: "Referència", calculationType: "Tipus de càlcul", from: "Des de", to: "Fins a", price: "Preu (€)" }, placeholders: { selectReference: "Selecciona una referència" }, actions: { save: "Desar" }, calculationTypes: { units: "Unitats", volume: "Volum", weight: "Pes" } },
     transportRates: {
       title: "Tarifes de transport", details: "Detalls", dialogs: { createRate: "Nova tarifa de transport", editRate: "Edita la tarifa de transport", createDetail: "Nou detall de tarifa", editDetail: "Edita el detall de tarifa" },
       columns: { name: "Nom", description: "Descripció", validFrom: "Des de", validTo: "Fins a", minimumWeight: "Pes mín.", maximumWeight: "Pes màx.", minimumVolume: "Vol. mín.", maximumVolume: "Vol. màx.", minimumDistance: "Dist. mín.", maximumDistance: "Dist. màx.", price: "Preu" },
+      validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", descriptionRequired: "La descripció és obligatòria", descriptionMaxLength: "La descripció no pot superar els 250 caràcters", startDateRequired: "La data d'inici és obligatòria", endDateRequired: "La data de fi és obligatòria", endDateOnOrAfterStart: "La data de fi ha de ser igual o posterior a la data d'inici" },
       messages: { rateCreated: "Tarifa creada", rateUpdated: "Tarifa actualitzada", confirmDeleteRate: "Segur que vols eliminar la tarifa?", rateDeleted: "Tarifa eliminada", detailCreated: "Detall creat", detailUpdated: "Detall actualitzat", confirmDeleteDetail: "Segur que vols eliminar el detall?", detailDeleted: "Detall eliminat" },
     },
     purchaseRates: {
@@ -1957,10 +1966,6 @@ const ca = {
       columns: { base: "Base", tax: "% IVA", taxAmount: "Quota d'IVA" },
       actions: { add: "Afegir", update: "Modificar", delete: "Eliminar" },
       validation: { baseAmountRequired: "L'import base és obligatori" },
-    },
-    purchaseInvoiceStatus: {
-      fields: { name: "Nom de l'estat", disabled: "Desactivat" },
-      validation: { nameRequired: "El nom de l'estat és obligatori", nameMaxLength: "El nom de l'estat no pot superar els 50 caràcters", descriptionRequired: "La descripció de l'estat és obligatòria", descriptionMaxLength: "La descripció de l'estat no pot superar els 250 caràcters" },
     },
     orders: {
       title: "Comandes de compra", filters: { period: "Període" }, placeholders: { selectPeriod: "Selecciona un període" }, dialogs: { create: "Crear comanda" }, messages: { selectPeriod: "Selecciona un període", confirmDelete: "Segur que vols eliminar la comanda {number}?" },

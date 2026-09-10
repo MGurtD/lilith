@@ -1845,7 +1845,15 @@ const en = {
     stocks: { title: "Warehouse management - Stock" },
     stockMovements: { title: "Warehouse movements" },
     inventory: { title: "Inventory", count: "Count", saveMovementsAria: "Save movements" },
-    lotTraceability: { closed: "Closed", view: "View lot traceability" },
+    lotTraceability: {
+      title: "Lot traceability", closed: "Closed", view: "View lot traceability",
+      fields: { reference: "Reference", lot: "Lot", description: "Description", quantity: "Quantity", date: "Date", purchaseOriginMovements: "Purchase origin / movements", salesDestinationMovements: "Sales destination / movements", deliveryNote: "Delivery note" },
+      placeholders: { selectLot: "Select a lot..." },
+      tabs: { backward: "Backward (from a sold lot)", forward: "Forward (from a purchased lot)" },
+      empty: { backward: "Select a sold lot to view its backward traceability.", forward: "Select a purchased lot to view its forward traceability." },
+      recall: { title: "Recall report", affectedDeliveryNotes: "{count} affected delivery notes", affectedUnits: "{count} affected units", noAffectedCustomers: "This lot has not reached any customers." },
+      messages: { lotNotFound: "Lot not found" },
+    },
   },
   purchase: {
     fields: { type: "Type", period: "Period", creationDate: "Creation date", paymentDate: "Payment date", amount: "Amount", recurring: "Recurring", frequency: "Frequency", paymentDay: "Payment day", endDate: "End date", description: "Description", disabled: "Disabled", internalInvoiceNumber: "Internal invoice no.", exercise: "Financial year", series: "Series", supplier: "Supplier", supplierInvoiceNumber: "Supplier invoice no.", invoiceDate: "Invoice date", paymentMethod: "Payment method", transportAmount: "Freight", withholdingTax: "% withholding tax", discount: "% discount", base: "Base", taxes: "Taxes", name: "Name", commercialName: "Trading name", taxName: "Legal name", phone: "Phone", startDate: "Start date", minimumWeight: "Minimum weight (kg)", maximumWeight: "Maximum weight (kg)", minimumVolume: "Minimum volume (m³)", maximumVolume: "Maximum volume (m³)", minimumDistance: "Minimum distance (km)", maximumDistance: "Maximum distance (km)", price: "Price (€)" },
@@ -1881,11 +1889,12 @@ const en = {
       validation: { supplierCodeRequired: "Code is required", supplierPriceRequired: "Price is required", supplyDaysRequired: "Supply days are required" },
       messages: { invalidForm: "Invalid form", creation: "Reference creation", alreadyExists: "The reference already exists", confirmDelete: "Are you sure you want to delete the reference?" },
     },
-    purchaseRate: { fields: { name: "Name", validFrom: "Start date", validTo: "End date" }, actions: { save: "Save" } },
+    purchaseRate: { fields: { name: "Name", validFrom: "Start date", validTo: "End date" }, actions: { save: "Save" }, validation: { nameRequired: "Name is required", nameMaxLength: "Name cannot exceed 250 characters", startDateRequired: "Start date is required", endDateRequired: "End date is required", endDateOnOrAfterStart: "End date must be the same as or later than the start date" } },
     purchaseRateDetail: { fields: { reference: "Reference", calculationType: "Calculation type", from: "From", to: "To", price: "Price (€)" }, placeholders: { selectReference: "Select a reference" }, actions: { save: "Save" }, calculationTypes: { units: "Units", volume: "Volume", weight: "Weight" } },
     transportRates: {
       title: "Transport rates", details: "Details", dialogs: { createRate: "New transport rate", editRate: "Edit transport rate", createDetail: "New rate detail", editDetail: "Edit rate detail" },
       columns: { name: "Name", description: "Description", validFrom: "From", validTo: "To", minimumWeight: "Min. weight", maximumWeight: "Max. weight", minimumVolume: "Min. volume", maximumVolume: "Max. volume", minimumDistance: "Min. distance", maximumDistance: "Max. distance", price: "Price" },
+      validation: { nameRequired: "Name is required", nameMaxLength: "Name cannot exceed 250 characters", descriptionRequired: "Description is required", descriptionMaxLength: "Description cannot exceed 250 characters", startDateRequired: "Start date is required", endDateRequired: "End date is required", endDateOnOrAfterStart: "End date must be the same as or later than the start date" },
       messages: { rateCreated: "Rate created", rateUpdated: "Rate updated", confirmDeleteRate: "Are you sure you want to delete the rate?", rateDeleted: "Rate deleted", detailCreated: "Detail created", detailUpdated: "Detail updated", confirmDeleteDetail: "Are you sure you want to delete the detail?", detailDeleted: "Detail deleted" },
     },
     purchaseRates: {
@@ -1931,10 +1940,6 @@ const en = {
       columns: { base: "Base", tax: "% VAT", taxAmount: "VAT amount" },
       actions: { add: "Add", update: "Update", delete: "Delete" },
       validation: { baseAmountRequired: "The base amount is required" },
-    },
-    purchaseInvoiceStatus: {
-      fields: { name: "Status name", disabled: "Disabled" },
-      validation: { nameRequired: "The status name is required", nameMaxLength: "The status name cannot exceed 50 characters", descriptionRequired: "The status description is required", descriptionMaxLength: "The status description cannot exceed 250 characters" },
     },
     orders: {
       title: "Purchase orders", filters: { period: "Period" }, placeholders: { selectPeriod: "Select a period" }, dialogs: { create: "Create purchase order" }, messages: { selectPeriod: "Select a period", confirmDelete: "Are you sure you want to delete purchase order {number}?" },

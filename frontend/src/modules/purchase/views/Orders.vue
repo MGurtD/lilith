@@ -52,12 +52,13 @@
   <Dialog
     v-model:visible="dialogOptions.visible"
     :header="dialogOptions.title"
-    :closable="dialogOptions.closable"
+    :closable="dialogOptions.closable && !creating"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreatePurchaseDocument
       :create-request="createRequest"
+      :loading="creating"
       @submit="create"
     />
   </Dialog>
@@ -151,6 +152,7 @@ const dialogOptions = reactive({
   position: "center",
   modal: true,
 } as DialogOptions);
+const creating = ref(false);
 
 const setCurrentYear = () => {
   const now = new Date();
@@ -226,11 +228,19 @@ const generateNewRequest = (): CreatePurchaseDocumentRequest => {
     date: new Date(),
   };
 };
-const create = async () => {
-  const created = await ordersStore.create(createRequest.value);
-  dialogOptions.visible = false;
-  if (created)
-    router.push({ path: `/purchase-orders/${createRequest.value.id}` });
+const create = async (request: CreatePurchaseDocumentRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const created = await ordersStore.create(request);
+    if (!created) return;
+
+    dialogOptions.visible = false;
+    router.push({ path: `/purchase-orders/${request.id}` });
+  } finally {
+    creating.value = false;
+  }
 };
 
 const edit = (row: DataTableRowClickEvent) => {

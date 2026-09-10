@@ -157,17 +157,18 @@ const rowContactClick = (row: DataTableRowClickEvent) => {
       "grid_delete_column_button"
     )
   ) {
-    selectedReference.value = row.data;
+    selectedReference.value = { ...(row.data as SupplierReference) };
     formMode.value = FormActionMode.EDIT;
     dialogVisible.value = true;
   }
 };
 
-const submitForm = () => {
-  const reference = selectedReference.value as SupplierReference;
+const submitForm = (reference: SupplierReference) => {
   if (formMode.value === FormActionMode.CREATE) {
-    var exists = supplierStore.supplierReferences?.find(
-      (r) => r.referenceId === reference.referenceId
+    const exists = props.supplierReferences.some(
+      (item) =>
+        item.referenceId === reference.referenceId &&
+        item.supplierId === reference.supplierId,
     );
     if (exists) {
       toast.add({

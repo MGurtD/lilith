@@ -43,9 +43,6 @@ const loadView = async () => {
   } else {
     formMode.value = FormActionMode.EDIT;
 
-    expense.value.creationDate = new Date(expense.value.creationDate);
-    expense.value.endDate = new Date(expense.value.endDate);
-    expense.value.paymentDate = new Date(expense.value.paymentDate);
   }
 
   setMenuTitle();
@@ -58,8 +55,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = expense.value as Expense;
+const submitForm = async (data: Expense) => {
   let result = false;
   let message = "";
 

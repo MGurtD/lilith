@@ -1,348 +1,540 @@
+<script setup lang="ts">
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import DropdownLifecycleStatusTransitions from "@/modules/shared/components/DropdownLifecycleStatusTransitions.vue";
+import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
+import { computed, onMounted, onUnmounted, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useToast } from "primevue/usetoast";
+import * as Yup from "yup";
+import { usePurchaseMasterDataStore } from "../store/purchase";
+import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
+import type {
+  PurchaseInvoice,
+  PurchaseInvoiceCalculatedValues,
+  PurchaseInvoiceDueDate,
+} from "../types";
+
+type PurchaseInvoiceCalculationFormValues = PurchaseInvoiceCalculatedValues &
+  Pick<
+    PurchaseInvoice,
+    "transportAmount" | "discountPercentage" | "extraTaxPercentatge"
+  >;
+
+const props = defineProps<{
+  purchaseInvoice: PurchaseInvoice;
+}>();
+
+const emit = defineEmits<{
+  (event: "submit", purchaseInvoice: PurchaseInvoice): void;
+  (
+    event: "calculated",
+    values: Partial<PurchaseInvoiceCalculatedValues>,
+  ): void;
+  (event: "due-dates-change", dueDates: PurchaseInvoiceDueDate[]): void;
+}>();
+
+const purchaseStore = usePurchaseInvoiceStore();
+const purchaseMasterData = usePurchaseMasterDataStore();
+const toast = useToast();
+const { t } = useI18n();
+const form = shallowRef<{
+  submit: () => void;
+  setFieldValue: (name: string, value: unknown) => void;
+  setValues: (values: FormValues) => void;
+} | null>(null);
+let calculationsReady = false;
+let suppressCalculations = false;
+let dueDateRequestSequence = 0;
+let mountTimer: ReturnType<typeof setTimeout> | undefined;
+
+const createInitialValues = (invoice: PurchaseInvoice): FormValues => ({
+  id: invoice.id,
+  number: invoice.number,
+  exerciceId: invoice.exerciceId,
+  purchaseInvoiceSerieId: invoice.purchaseInvoiceSerieId,
+  statusId: invoice.statusId,
+  supplierId: invoice.supplierId,
+  supplierNumber: invoice.supplierNumber,
+  purchaseInvoiceDate: invoice.purchaseInvoiceDate,
+  paymentMethodId: invoice.paymentMethodId,
+  transportAmount: invoice.transportAmount,
+  extraTaxPercentatge: invoice.extraTaxPercentatge,
+  discountPercentage: invoice.discountPercentage,
+  baseAmount: invoice.baseAmount,
+  subtotal: invoice.subtotal,
+  taxAmount: invoice.taxAmount,
+  grossAmount: invoice.grossAmount,
+  netAmount: invoice.netAmount,
+  discountAmount: invoice.discountAmount,
+  extraTaxAmount: invoice.extraTaxAmount,
+});
+
+const initialValues = shallowRef<FormValues>(
+  createInitialValues(props.purchaseInvoice),
+);
+const latestCalculationValues = shallowRef<FormValues>({
+  ...initialValues.value,
+});
+
+watch(
+  () => props.purchaseInvoice,
+  (invoice) => {
+    dueDateRequestSequence += 1;
+    initialValues.value = createInitialValues(invoice);
+    latestCalculationValues.value = { ...initialValues.value };
+  },
+);
+
+const numberProps = {
+  locale: "en-US",
+  minFractionDigits: 0,
+} as const;
+const currencyProps = {
+  currency: "EUR",
+  locale: "en-US",
+  minFractionDigits: 2,
+} as const;
+
+const getBaseAmountFromImports = (): number =>
+  props.purchaseInvoice.purchaseInvoiceImports.reduce(
+    (total, item) => total + (item.baseAmount ?? 0),
+    0,
+  );
+
+const getTaxAmountFromImports = (): number =>
+  props.purchaseInvoice.purchaseInvoiceImports.reduce(
+    (total, item) => total + item.taxAmount,
+    0,
+  );
+
+const invoiceValues = (values: Readonly<FormValues>): PurchaseInvoice => ({
+  ...props.purchaseInvoice,
+  number: stringValue(values.number, props.purchaseInvoice.number),
+  exerciceId: stringValue(
+    values.exerciceId,
+    props.purchaseInvoice.exerciceId,
+  ),
+  purchaseInvoiceSerieId: stringValue(
+    values.purchaseInvoiceSerieId,
+    props.purchaseInvoice.purchaseInvoiceSerieId,
+  ),
+  statusId: stringValue(values.statusId, props.purchaseInvoice.statusId),
+  supplierId: stringValue(values.supplierId, props.purchaseInvoice.supplierId),
+  supplierNumber: stringValue(
+    values.supplierNumber,
+    props.purchaseInvoice.supplierNumber,
+  ),
+  purchaseInvoiceDate: dateValue(
+    values.purchaseInvoiceDate,
+    props.purchaseInvoice.purchaseInvoiceDate,
+  ),
+  paymentMethodId: stringValue(
+    values.paymentMethodId,
+    props.purchaseInvoice.paymentMethodId,
+  ),
+  transportAmount: finiteNumberValue(
+    values.transportAmount,
+    props.purchaseInvoice.transportAmount,
+  ),
+  extraTaxPercentatge: finiteNumberValue(
+    values.extraTaxPercentatge,
+    props.purchaseInvoice.extraTaxPercentatge,
+  ),
+  discountPercentage: finiteNumberValue(
+    values.discountPercentage,
+    props.purchaseInvoice.discountPercentage,
+  ),
+  baseAmount: finiteNumberValue(
+    values.baseAmount,
+    props.purchaseInvoice.baseAmount,
+  ),
+  subtotal: finiteNumberValue(values.subtotal, props.purchaseInvoice.subtotal),
+  taxAmount: finiteNumberValue(
+    values.taxAmount,
+    props.purchaseInvoice.taxAmount,
+  ),
+  grossAmount: finiteNumberValue(
+    values.grossAmount,
+    props.purchaseInvoice.grossAmount,
+  ),
+  netAmount: finiteNumberValue(
+    values.netAmount,
+    props.purchaseInvoice.netAmount,
+  ),
+  discountAmount: finiteNumberValue(
+    values.discountAmount,
+    props.purchaseInvoice.discountAmount,
+  ),
+  extraTaxAmount: finiteNumberValue(
+    values.extraTaxAmount,
+    props.purchaseInvoice.extraTaxAmount,
+  ),
+});
+
+const applyCalculatedValues = (
+  values: Readonly<FormValues>,
+  formValues: PurchaseInvoiceCalculationFormValues,
+  calculated: PurchaseInvoiceCalculatedValues,
+): FormValues => {
+  suppressCalculations = true;
+  try {
+    form.value?.setValues(formValues);
+  } finally {
+    suppressCalculations = false;
+  }
+  const nextValues = { ...values, ...formValues };
+  latestCalculationValues.value = nextValues;
+  emit("calculated", calculated);
+  return nextValues;
+};
+
+const calculateAmounts = async (
+  values: Readonly<FormValues> = latestCalculationValues.value,
+): Promise<void> => {
+  latestCalculationValues.value = { ...values };
+  if (!calculationsReady) return;
+
+  const requestSequence = ++dueDateRequestSequence;
+  const baseAmount = getBaseAmountFromImports();
+  const taxAmount = getTaxAmountFromImports();
+  const rawTransportAmount = finiteNumberValue(values.transportAmount, 0);
+  const rawDiscountPercentage = finiteNumberValue(
+    values.discountPercentage,
+    0,
+  );
+  const extraTaxPercentatge = finiteNumberValue(
+    values.extraTaxPercentatge,
+    0,
+  );
+  const transportAmount = rawTransportAmount
+    ? Number(rawTransportAmount.toFixed(2))
+    : 0;
+  const discountPercentage = rawDiscountPercentage
+    ? Number(rawDiscountPercentage.toFixed(2))
+    : 0;
+  const subtotal = baseAmount + transportAmount;
+  const extraTaxAmount = subtotal * (extraTaxPercentatge / 100);
+  const grossAmount = subtotal + taxAmount - extraTaxAmount;
+  const discountAmount = (grossAmount * discountPercentage) / 100;
+  const netAmount = Number((grossAmount - discountAmount).toFixed(2));
+  const calculated: PurchaseInvoiceCalculatedValues = {
+    baseAmount,
+    subtotal,
+    taxAmount,
+    grossAmount,
+    netAmount,
+    discountAmount,
+    extraTaxAmount,
+  };
+  const calculationFormValues: PurchaseInvoiceCalculationFormValues = {
+    ...calculated,
+    transportAmount,
+    discountPercentage,
+    extraTaxPercentatge,
+  };
+  const currentValues = applyCalculatedValues(
+    values,
+    calculationFormValues,
+    calculated,
+  );
+  const invoice = invoiceValues(currentValues);
+  const dueDateInvoice = {
+    ...invoice,
+    purchaseInvoiceDate: convertDateTimeToJSON(
+      new Date(invoice.purchaseInvoiceDate),
+    ),
+  };
+  const dueDates = await purchaseStore.GetDueDates(dueDateInvoice);
+  if (requestSequence !== dueDateRequestSequence || !dueDates) return;
+
+  emit("due-dates-change", dueDates);
+};
+
+const calculateOnChange = (
+  _value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  if (suppressCalculations) return;
+  void calculateAmounts(values);
+};
+
+const updateSupplier = (
+  _value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  latestCalculationValues.value = { ...values };
+  const supplierId = stringValue(values.supplierId, "");
+  const supplier = purchaseMasterData.masterData.suppliers?.find(
+    (item) => item.id === supplierId,
+  );
+  if (supplier) {
+    form.value?.setFieldValue("paymentMethodId", supplier.paymentMethodId);
+  }
+};
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "number",
+        label: t("purchase.fields.internalInvoiceNumber"),
+        type: FormFieldType.Text,
+        disabled: true,
+      },
+      {
+        name: "exerciceId",
+        label: t("purchase.fields.exercise"),
+        type: FormFieldType.Select,
+        props: {
+          options: purchaseMasterData.masterData.exercises ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("purchase.validation.exerciseRequired"),
+        ),
+      },
+      {
+        name: "purchaseInvoiceSerieId",
+        label: t("purchase.fields.series"),
+        type: FormFieldType.Select,
+        props: {
+          options: purchaseMasterData.masterData.series ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+      },
+      {
+        name: "statusId",
+        label: t("common.status"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("purchase.validation.statusRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "supplierId",
+        label: t("purchase.fields.supplier"),
+        type: FormFieldType.Select,
+        props: {
+          options: purchaseMasterData.masterData.suppliers ?? [],
+          optionValue: "id",
+          optionLabel: "comercialName",
+        },
+        onChange: updateSupplier,
+        validation: Yup.string().required(
+          t("purchase.validation.supplierRequired"),
+        ),
+      },
+      {
+        name: "supplierNumber",
+        label: t("purchase.fields.supplierInvoiceNumber"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "purchaseInvoiceDate",
+        label: t("purchase.fields.invoiceDate"),
+        type: FormFieldType.Date,
+        onChange: calculateOnChange,
+      },
+      {
+        name: "paymentMethodId",
+        label: t("purchase.fields.paymentMethod"),
+        type: FormFieldType.Select,
+        props: {
+          options: purchaseMasterData.masterData.paymentMethods ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        onChange: calculateOnChange,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "transportAmount",
+        label: t("purchase.fields.transportAmount"),
+        type: FormFieldType.Currency,
+        props: currencyProps,
+        onChange: calculateOnChange,
+      },
+      {
+        name: "extraTaxPercentatge",
+        label: t("purchase.fields.withholdingTax"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        onChange: calculateOnChange,
+      },
+      {
+        name: "discountPercentage",
+        label: t("purchase.fields.discount"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        onChange: calculateOnChange,
+      },
+    ],
+  },
+  {
+    section: "summary",
+    fields: [
+      { name: "baseAmount", label: "", type: FormFieldType.Custom },
+      { name: "subtotal", label: "", type: FormFieldType.Custom },
+      { name: "taxAmount", label: "", type: FormFieldType.Custom },
+      { name: "grossAmount", label: "", type: FormFieldType.Custom },
+      { name: "netAmount", label: "", type: FormFieldType.Custom },
+      { name: "discountAmount", label: "", type: FormFieldType.Custom },
+      { name: "extraTaxAmount", label: "", type: FormFieldType.Custom },
+    ],
+  },
+]);
+
+onMounted(() => {
+  mountTimer = setTimeout(() => {
+    calculationsReady = true;
+    if (props.purchaseInvoice.purchaseInvoiceImports.length > 0) {
+      const taxAmount = getTaxAmountFromImports();
+      form.value?.setFieldValue("taxAmount", taxAmount);
+      latestCalculationValues.value = {
+        ...latestCalculationValues.value,
+        taxAmount,
+      };
+      emit("calculated", { taxAmount });
+    }
+  }, 500);
+});
+
+onUnmounted(() => {
+  if (mountTimer !== undefined) clearTimeout(mountTimer);
+  dueDateRequestSequence += 1;
+});
+
+const validateImports = (): boolean => {
+  if (props.purchaseInvoice.purchaseInvoiceImports.length > 0) return true;
+
+  toast.add({
+    severity: "warn",
+    summary: t("purchase.messages.invalidForm"),
+    detail: t("purchase.validation.invoiceImportsRequired"),
+    life: 5000,
+  });
+  return false;
+};
+
+const submit = (values: FormValues): void => {
+  if (!validateImports()) return;
+  emit("submit", invoiceValues(values));
+};
+
+const submitForm = (): void => form.value?.submit();
+const calcAmounts = (): void => {
+  void calculateAmounts();
+};
+const getSupplierId = (): string =>
+  stringValue(
+    latestCalculationValues.value.supplierId,
+    props.purchaseInvoice.supplierId,
+  );
+
+defineExpose({ submitForm, calcAmounts, getSupplierId });
+</script>
+
 <template>
-  <div>
-    <form v-if="purchaseInvoice">
-      <section class="four-columns">
-        <BaseInput
-          :label="$t('purchase.fields.internalInvoiceNumber')"
-          id="number"
-          v-model="purchaseInvoice.number"
-          disabled
-        />
-        <div>
-          <label class="block text-900 mb-2">{{ $t("purchase.fields.exercise") }}</label>
-          <Select
-            v-model="purchaseInvoice.exerciceId"
-            :options="purchaseMasterData.masterData.exercises"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            :class="{
-              'p-invalid': validation.errors.exerciseId,
-            }"
-          />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">{{ $t("purchase.fields.series") }}</label>
-          <Select
-            v-model="purchaseInvoice.purchaseInvoiceSerieId"
-            :options="purchaseMasterData.masterData.series"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            :class="{
-              'p-invalid': validation.errors.purchaseInvoiceSerieId,
-            }"
-          />
-        </div>
-        <div>
-          <DropdownLifecycleStatusTransitions
-            :label="$t('common.status')"
-            :statusId="purchaseInvoice.statusId"
-            v-model="purchaseInvoice.statusId"
-            :class="{
-              'p-invalid': validation.errors.statusId,
-            }"
-          />
-        </div>
-      </section>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="initialValues"
+    :show-submit="false"
+    :show-cancel="false"
+    @submit="submit"
+  >
+    <template #field-statusId="{ value, setValue, disabled }">
+      <DropdownLifecycleStatusTransitions
+        label=""
+        :status-id="purchaseInvoice.statusId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
 
-      <section class="four-columns">
-        <div class="mt-1">
-          <label class="block text-900 mb-2">{{ $t("purchase.fields.supplier") }}</label>
-          <Select
-            v-model="purchaseInvoice.supplierId"
-            :options="purchaseMasterData.masterData.suppliers"
-            optionValue="id"
-            optionLabel="comercialName"
-            @change="setSupplierPaymentMethod"
-            class="w-full"
-            :class="{
-              'p-invalid': validation.errors.supplierId,
-            }"
-          />
-        </div>
-        <div class="mt-1">
-          <BaseInput
-            :label="$t('purchase.fields.supplierInvoiceNumber')"
-            id="supplierNumber"
-            v-model="purchaseInvoice.supplierNumber"
-          />
-        </div>
-        <div class="mt-1">
-          <label class="block text-900 mb-2">{{ $t("purchase.fields.invoiceDate") }}</label>
-          <DatePicker
-            id="purchaseInvoiceDate"
-            v-model="purchaseInvoice.purchaseInvoiceDate"
-            @date-select="calcAmounts()"
-          />
-        </div>
-        <div class="mt-1">
-          <label class="block text-900 mb-2">{{ $t("purchase.fields.paymentMethod") }}</label>
-          <Select
-            v-model="purchaseInvoice.paymentMethodId"
-            :options="purchaseMasterData.masterData.paymentMethods"
-            optionValue="id"
-            optionLabel="name"
-            class="w-full"
-            :class="{
-              'p-invalid': validation.errors.paymentmethod,
-            }"
-            @update:modelValue="calcAmounts()"
-          />
-        </div>
-      </section>
-
-      <section class="four-columns">
-        <div class="mt-1">
-          <BaseInput
-            :type="BaseInputType.CURRENCY"
-            :label="$t('purchase.fields.transportAmount')"
-            id="transportAmount"
-            v-model="purchaseInvoice.transportAmount"
-            @update:modelValue="calcAmounts()"
-          />
-        </div>
-        <div class="mt-1">
-          <BaseInput
-            :type="BaseInputType.NUMERIC"
-            :label="$t('purchase.fields.withholdingTax')"
-            id="extraTaxPercentatge"
-            v-model="purchaseInvoice.extraTaxPercentatge"
-            @update:modelValue="calcAmounts()"
-          />
-        </div>
-        <div class="mt-1">
-          <BaseInput
-            :type="BaseInputType.NUMERIC"
-            :label="$t('purchase.fields.discount')"
-            id="discountPercentage"
-            v-model="purchaseInvoice.discountPercentage"
-            @update:modelValue="calcAmounts()"
-          />
-        </div>
-      </section>
-
-      <section class="four-columns mb-2">
+    <template #section-summary="{ values }">
+      <section class="summary-grid mb-2">
         <div class="cost-card">
           <div class="cost-card-icon"><i class="pi pi-file" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">{{ $t("purchase.fields.base") }}</span>
-            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.baseAmount) }}</span>
+            <span class="cost-card-label">{{ t("purchase.fields.base") }}</span>
+            <span class="cost-card-value">
+              {{
+                formatCurrency(
+                  finiteNumberValue(
+                    values.baseAmount,
+                    purchaseInvoice.baseAmount,
+                  ),
+                )
+              }}
+            </span>
           </div>
         </div>
         <div class="cost-card">
           <div class="cost-card-icon"><i class="pi pi-receipt" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">{{ $t("purchase.fields.taxes") }}</span>
-            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.taxAmount) }}</span>
+            <span class="cost-card-label">{{ t("purchase.fields.taxes") }}</span>
+            <span class="cost-card-value">
+              {{
+                formatCurrency(
+                  finiteNumberValue(
+                    values.taxAmount,
+                    purchaseInvoice.taxAmount,
+                  ),
+                )
+              }}
+            </span>
           </div>
         </div>
         <div class="cost-card cost-card-total">
           <div class="cost-card-icon"><i class="pi pi-calculator" /></div>
           <div class="cost-card-content">
-            <span class="cost-card-label">{{ $t("common.total") }}</span>
-            <span class="cost-card-value">{{ formatCurrency(purchaseInvoice.netAmount) }}</span>
+            <span class="cost-card-label">{{ t("common.total") }}</span>
+            <span class="cost-card-value">
+              {{
+                formatCurrency(
+                  finiteNumberValue(
+                    values.netAmount,
+                    purchaseInvoice.netAmount,
+                  ),
+                )
+              }}
+            </span>
           </div>
         </div>
       </section>
-    </form>
-  </div>
+    </template>
+  </Form>
 </template>
-<script setup lang="ts">
-import { onMounted, ref } from "vue";
-import BaseInput from "@/components/BaseInput.vue";
-import DropdownLifecycleStatusTransitions from "@/modules/shared/components/DropdownLifecycleStatusTransitions.vue";
-import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
-import { usePurchaseMasterDataStore } from "../store/purchase";
-import { PurchaseInvoice, PurchaseInvoiceDueDate } from "../types";
-import * as Yup from "yup";
-import { FormValidation, FormValidationResult } from "@/utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
-import { BaseInputType } from "@/types/component";
-import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
-import { useI18n } from "vue-i18n";
-const emit = defineEmits<{
-  (e: "submit", purchaseInvoice: PurchaseInvoice): void;
-  (e: "cancel"): void;
-}>();
 
-const purchaseStore = usePurchaseInvoiceStore();
-const { t } = useI18n();
-const purchaseMasterData = usePurchaseMasterDataStore();
-const { purchaseInvoice } = storeToRefs(purchaseStore);
-
-onMounted(() => {
-  setTimeout(() => {
-    if (
-      purchaseInvoice.value &&
-      purchaseInvoice.value.purchaseInvoiceImports.length > 0
-    ) {
-      purchaseInvoice.value.taxAmount = getTaxAmountFromImports();
-    }
-  }, 500);
-});
-
-const schema = Yup.object().shape({
-  exerciceId: Yup.string().required(t("purchase.validation.exerciseRequired")),
-  supplierId: Yup.string().required(t("purchase.validation.supplierRequired")),
-  statusId: Yup.string().required(t("purchase.validation.statusRequired")),
-});
-
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(purchaseInvoice.value);
-};
-
-const validateImports = () => {
-  if (purchaseInvoice.value?.purchaseInvoiceImports.length === 0) {
-    toast.add({
-      severity: "warn",
-      summary: t("purchase.messages.invalidForm"),
-      detail: t("purchase.validation.invoiceImportsRequired"),
-      life: 5000,
-    });
-    return false;
-  }
-  return true;
-};
-
-let hasBeenMounted = false;
-onMounted(() => {
-  setTimeout(() => {
-    hasBeenMounted = true;
-  }, 500);
-});
-
-const toast = useToast();
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    if (!validateImports()) return;
-
-    emit("submit", purchaseInvoice.value!);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("purchase.messages.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-const setSupplierPaymentMethod = () => {
-  const supplier = purchaseMasterData.masterData.suppliers?.find(
-    (s) => s.id === purchaseInvoice.value?.supplierId,
-  );
-  if (supplier) {
-    purchaseInvoice.value!.paymentMethodId = supplier.paymentMethodId;
-    calcAmounts();
-  }
-};
-
-const calcAmounts = async () => {
-  if (!hasBeenMounted) return;
-
-  if (purchaseInvoice.value) {
-    let baseAmount: number = 0;
-    let transportAmount: number = 0;
-    let subtotal: number = 0;
-    let taxAmount: number = 0;
-    let netAmount: number = 0;
-    let discountAmount: number = 0;
-    let discountPercentage: number = 0;
-    let grossAmount: number = 0;
-    let extraTaxPercentage: number = 0;
-    let extraTaxAmount: number = 0;
-
-    baseAmount = getBaseAmountFromImports();
-    taxAmount = getTaxAmountFromImports();
-
-    if (purchaseInvoice.value.transportAmount) {
-      transportAmount = parseFloat(
-        purchaseInvoice.value.transportAmount.toFixed(2),
-      );
-    }
-    if (purchaseInvoice.value.discountPercentage) {
-      discountPercentage = parseFloat(
-        purchaseInvoice.value.discountPercentage.toFixed(2),
-      );
-    }
-    if (purchaseInvoice.value.extraTaxPercentatge) {
-      extraTaxPercentage = purchaseInvoice.value.extraTaxPercentatge;
-    }
-
-    subtotal = (baseAmount + transportAmount) * 1;
-    extraTaxAmount = subtotal * (extraTaxPercentage / 100);
-    grossAmount = subtotal + taxAmount * 1 - extraTaxAmount * 1;
-    discountAmount = (grossAmount * (1 * discountPercentage)) / 100;
-    netAmount = parseFloat((grossAmount - discountAmount).toFixed(2));
-
-    purchaseInvoice.value.baseAmount = baseAmount;
-    purchaseInvoice.value.transportAmount = transportAmount;
-    purchaseInvoice.value.subtotal = subtotal;
-    purchaseInvoice.value.taxAmount = taxAmount;
-    purchaseInvoice.value.grossAmount = grossAmount;
-    purchaseInvoice.value.netAmount = netAmount;
-    purchaseInvoice.value.discountPercentage = discountPercentage;
-    purchaseInvoice.value.discountAmount = discountAmount;
-    purchaseInvoice.value.extraTaxPercentatge = extraTaxPercentage;
-    purchaseInvoice.value.extraTaxAmount = extraTaxAmount;
-
-    const invoice = Object.assign({}, purchaseInvoice.value);
-    invoice.purchaseInvoiceDate = convertDateTimeToJSON(
-      invoice.purchaseInvoiceDate,
-    );
-
-    // Calcular venciments
-    purchaseInvoice.value.purchaseInvoiceDueDates =
-      (await purchaseStore.GetDueDates(
-        invoice,
-      )) as Array<PurchaseInvoiceDueDate>;
-  }
-};
-
-const getBaseAmountFromImports = (): number => {
-  let baseAmount = 0;
-  if (purchaseInvoice.value) {
-    purchaseInvoice.value.purchaseInvoiceImports.forEach(
-      (i) => (baseAmount += i.baseAmount!),
-    );
-  }
-  return baseAmount;
-};
-
-const getTaxAmountFromImports = (): number => {
-  let taxAmount = 0;
-  if (purchaseInvoice.value) {
-    purchaseInvoice.value.purchaseInvoiceImports.forEach(
-      (i) => (taxAmount += i.taxAmount),
-    );
-  }
-  return taxAmount;
-};
-
-// Methods exposed for the parent components
-defineExpose({
-  submitForm,
-  calcAmounts,
-});
-</script>
 <style scoped>
-.save_button {
-  position: absolute;
-  top: 0;
-  right: 1rem;
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .cost-card {
@@ -404,5 +596,11 @@ defineExpose({
 
 .cost-card-total .cost-card-value {
   color: var(--p-primary-700, #1d4ed8);
+}
+
+@media (max-width: 767px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

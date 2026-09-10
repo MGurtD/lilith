@@ -58,8 +58,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = purchaseInvoiceSerie.value as InvoiceSerie;
+const submitForm = async (data: InvoiceSerie) => {
   let result = false;
   let message = "";
 

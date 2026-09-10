@@ -96,8 +96,8 @@ const setPageTitle = () => {
 watch(locale, setPageTitle);
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = reference.value as Reference;
+const submitForm = async (submittedReference: Reference) => {
+  const data = submittedReference;
   let result = false;
   let message = "";
 

@@ -4,12 +4,14 @@
       <template #content>
         <section class="three-columns">
           <DropdownReference
-            label="Referència"
+            :label="t('warehouse.lotTraceability.fields.reference')"
             :fullName="true"
             v-model="filter.referenceId"
           />
           <div class="mb-2">
-            <label class="block text-900 mb-2">Lot</label>
+            <label class="block text-900 mb-2">{{
+              t("warehouse.lotTraceability.fields.lot")
+            }}</label>
             <Select
               showClear
               filter
@@ -17,7 +19,9 @@
               :options="lots"
               :loading="lotsLoading"
               :disabled="!filter.referenceId"
-              placeholder="Selecciona un lot..."
+              :placeholder="
+                t('warehouse.lotTraceability.placeholders.selectLot')
+              "
               optionValue="id"
               optionLabel="code"
               class="w-full"
@@ -26,7 +30,7 @@
           </div>
           <div class="flex align-items-end mb-2">
             <Button
-              label="Informe de recall"
+              :label="t('warehouse.lotTraceability.recall.title')"
               icon="pi pi-exclamation-triangle"
               severity="warn"
               :disabled="!filter.lotId"
@@ -40,8 +44,12 @@
 
     <Tabs v-model:value="activeTab">
       <TabList>
-        <Tab value="backward">Cap enrere (des d'un lot venut)</Tab>
-        <Tab value="forward">Cap endavant (des d'un lot de compra)</Tab>
+        <Tab value="backward">{{
+          t("warehouse.lotTraceability.tabs.backward")
+        }}</Tab>
+        <Tab value="forward">{{
+          t("warehouse.lotTraceability.tabs.forward")
+        }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="backward">
@@ -51,30 +59,49 @@
             scrollable
             tableStyle="min-width: 60rem"
           >
-            <Column expander field="lotCode" header="Lot" style="width: 18%" />
+            <Column
+              expander
+              field="lotCode"
+              :header="t('warehouse.lotTraceability.fields.lot')"
+              style="width: 18%"
+            />
             <Column
               field="referenceCode"
-              header="Referència"
+              :header="t('warehouse.lotTraceability.fields.reference')"
               style="width: 14%"
             />
             <Column
               field="referenceDescription"
-              header="Descripció"
+              :header="t('warehouse.lotTraceability.fields.description')"
               style="width: 22%"
             />
-            <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Data" style="width: 10%">
+            <Column
+              field="quantity"
+              :header="t('warehouse.lotTraceability.fields.quantity')"
+              style="width: 10%"
+            />
+            <Column
+              :header="t('warehouse.lotTraceability.fields.date')"
+              style="width: 10%"
+            >
               <template #body="slotProps">
                 {{ traceabilityRowDate(slotProps.node.data) }}
               </template>
             </Column>
-            <Column header="Origen de compra / moviments" style="width: 26%">
+            <Column
+              :header="
+                t('warehouse.lotTraceability.fields.purchaseOriginMovements')
+              "
+              style="width: 26%"
+            >
               <template #body="slotProps">
                 <span
                   v-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
-                  <TagMovementType :movementType="slotProps.node.data.movementType" />
+                  <TagMovementType
+                    :movementType="slotProps.node.data.movementType"
+                  />
                   <span>
                     {{ slotProps.node.data.locationName }}
                     <template v-if="slotProps.node.data.partnerName">
@@ -88,7 +115,7 @@
               </template>
             </Column>
             <template #empty>
-              Selecciona un lot venut per veure'n la traçabilitat cap enrere.
+              {{ t("warehouse.lotTraceability.empty.backward") }}
             </template>
           </TreeTable>
         </TabPanel>
@@ -99,30 +126,49 @@
             scrollable
             tableStyle="min-width: 60rem"
           >
-            <Column expander field="lotCode" header="Lot" style="width: 18%" />
+            <Column
+              expander
+              field="lotCode"
+              :header="t('warehouse.lotTraceability.fields.lot')"
+              style="width: 18%"
+            />
             <Column
               field="referenceCode"
-              header="Referència"
+              :header="t('warehouse.lotTraceability.fields.reference')"
               style="width: 14%"
             />
             <Column
               field="referenceDescription"
-              header="Descripció"
+              :header="t('warehouse.lotTraceability.fields.description')"
               style="width: 22%"
             />
-            <Column field="quantity" header="Quantitat" style="width: 10%" />
-            <Column header="Data" style="width: 10%">
+            <Column
+              field="quantity"
+              :header="t('warehouse.lotTraceability.fields.quantity')"
+              style="width: 10%"
+            />
+            <Column
+              :header="t('warehouse.lotTraceability.fields.date')"
+              style="width: 10%"
+            >
               <template #body="slotProps">
                 {{ traceabilityRowDate(slotProps.node.data) }}
               </template>
             </Column>
-            <Column header="Destí de venda / moviments" style="width: 26%">
+            <Column
+              :header="
+                t('warehouse.lotTraceability.fields.salesDestinationMovements')
+              "
+              style="width: 26%"
+            >
               <template #body="slotProps">
                 <span
                   v-if="slotProps.node.data.kind === 'movement'"
                   class="movement-row"
                 >
-                  <TagMovementType :movementType="slotProps.node.data.movementType" />
+                  <TagMovementType
+                    :movementType="slotProps.node.data.movementType"
+                  />
                   <span>
                     {{ slotProps.node.data.locationName }}
                     <template v-if="slotProps.node.data.partnerName">
@@ -136,8 +182,7 @@
               </template>
             </Column>
             <template #empty>
-              Selecciona un lot de compra per veure'n la traçabilitat cap
-              endavant.
+              {{ t("warehouse.lotTraceability.empty.forward") }}
             </template>
           </TreeTable>
         </TabPanel>
@@ -146,27 +191,36 @@
 
     <Panel
       v-if="lotTraceabilityStore.recall"
-      header="Informe de recall"
+      :header="t('warehouse.lotTraceability.recall.title')"
       toggleable
       class="mt-3"
     >
       <div class="mb-3">
-        <strong>Lot:</strong> {{ lotTraceabilityStore.recall.lotCode }} —
+        <strong>{{ t("warehouse.lotTraceability.fields.lot") }}:</strong>
+        {{ lotTraceabilityStore.recall.lotCode }} —
         {{ lotTraceabilityStore.recall.referenceCode }} -
         {{ lotTraceabilityStore.recall.referenceDescription }}
       </div>
       <div class="flex gap-2 mb-3">
         <Tag
           severity="warn"
-          :value="`${lotTraceabilityStore.recall.totalAffectedDeliveryNotes} albarans afectats`"
+          :value="
+            t('warehouse.lotTraceability.recall.affectedDeliveryNotes', {
+              count: lotTraceabilityStore.recall.totalAffectedDeliveryNotes,
+            })
+          "
         />
         <Tag
           severity="danger"
-          :value="`${lotTraceabilityStore.recall.totalAffectedQuantity} unitats afectades`"
+          :value="
+            t('warehouse.lotTraceability.recall.affectedUnits', {
+              count: lotTraceabilityStore.recall.totalAffectedQuantity,
+            })
+          "
         />
       </div>
       <p v-if="lotTraceabilityStore.recall.affectedCustomers.length === 0">
-        Aquest lot no ha arribat a cap client.
+        {{ t("warehouse.lotTraceability.recall.noAffectedCustomers") }}
       </p>
       <Panel
         v-for="customer in lotTraceabilityStore.recall.affectedCustomers"
@@ -176,15 +230,27 @@
         class="mb-2"
       >
         <DataTable :value="customer.deliveryNotes" size="small">
-          <Column field="deliveryNoteNumber" header="Albarà" />
-          <Column header="Data">
+          <Column
+            field="deliveryNoteNumber"
+            :header="t('warehouse.lotTraceability.fields.deliveryNote')"
+          />
+          <Column :header="t('warehouse.lotTraceability.fields.date')">
             <template #body="slotProps">{{
               formatDate(slotProps.data.deliveryDate)
             }}</template>
           </Column>
-          <Column field="lotCode" header="Lot" />
-          <Column field="referenceCode" header="Referència" />
-          <Column field="quantity" header="Quantitat" />
+          <Column
+            field="lotCode"
+            :header="t('warehouse.lotTraceability.fields.lot')"
+          />
+          <Column
+            field="referenceCode"
+            :header="t('warehouse.lotTraceability.fields.reference')"
+          />
+          <Column
+            field="quantity"
+            :header="t('warehouse.lotTraceability.fields.quantity')"
+          />
         </DataTable>
       </Panel>
     </Panel>
@@ -195,13 +261,14 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import { useStore } from "../../../store";
+import { useI18n } from "vue-i18n";
+import { useStore } from "@/store";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useLotTraceabilityStore } from "../store/lotTraceability";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import TagMovementType from "../../../components/TagMovementType.vue";
 import Services from "../services";
-import { formatDate, formatDateTime } from "../../../utils/functions";
+import { formatDate, formatDateTime } from "@/utils/functions";
 import { Lot, LotTraceabilityNode } from "../types";
 
 interface TraceabilityTreeRowData {
@@ -226,6 +293,7 @@ interface TraceabilityTreeRow {
 
 const store = useStore();
 const toast = useToast();
+const { t, locale } = useI18n();
 const route = useRoute();
 const referenceStore = useReferenceStore();
 const lotTraceabilityStore = useLotTraceabilityStore();
@@ -241,7 +309,9 @@ const lotsLoading = ref(false);
 const pendingLotIdFromQuery = ref<string | undefined>(undefined);
 
 const traceabilityRowDate = (data: TraceabilityTreeRowData): string =>
-  data.kind === "movement" && data.movementDate ? formatDateTime(data.movementDate) : "";
+  data.kind === "movement" && data.movementDate
+    ? formatDateTime(data.movementDate)
+    : "";
 
 const buildMovementRows = (
   node: LotTraceabilityNode,
@@ -331,7 +401,7 @@ const forwardTreeData = computed(() =>
 const notifyLotNotFound = () => {
   toast.add({
     severity: "warn",
-    summary: "No s'ha trobat el lot",
+    summary: t("warehouse.lotTraceability.messages.lotNotFound"),
     life: 5000,
   });
 };
@@ -395,11 +465,18 @@ const onRecall = async () => {
   if (!result) notifyLotNotFound();
 };
 
-onMounted(async () => {
+const setMenuItem = () => {
   store.setMenuItem({
     icon: PrimeIcons.SITEMAP,
-    title: "Traçabilitat de lots",
+    title: t("warehouse.lotTraceability.title"),
+    backButtonVisible: true,
   });
+};
+
+watch(locale, setMenuItem);
+
+onMounted(async () => {
+  setMenuItem();
 
   await referenceStore.fetchReferences();
 

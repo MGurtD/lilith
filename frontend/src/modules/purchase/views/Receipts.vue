@@ -53,12 +53,13 @@
   <Dialog
     v-model:visible="dialogOptions.visible"
     :header="dialogOptions.title"
-    :closable="dialogOptions.closable"
+    :closable="dialogOptions.closable && !creatingReceipt"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreatePurchaseDocument
       :create-request="createRequest"
+      :loading="creatingReceipt"
       @submit="createReceipt"
     />
   </Dialog>
@@ -157,6 +158,7 @@ const dialogOptions = reactive({
   position: "center",
   modal: true,
 } as DialogOptions);
+const creatingReceipt = ref(false);
 
 const setCurrentYear = () => {
   const now = new Date();
@@ -238,10 +240,19 @@ const generateNewRequest = (): CreatePurchaseDocumentRequest => {
     date: new Date(),
   };
 };
-const createReceipt = async () => {
-  const created = await receiptsStore.createReceipt(createRequest.value);
-  dialogOptions.visible = false;
-  if (created) router.push({ path: `/receipts/${createRequest.value.id}` });
+const createReceipt = async (request: CreatePurchaseDocumentRequest) => {
+  if (creatingReceipt.value) return;
+
+  creatingReceipt.value = true;
+  try {
+    const created = await receiptsStore.createReceipt(request);
+    if (!created) return;
+
+    dialogOptions.visible = false;
+    router.push({ path: `/receipts/${request.id}` });
+  } finally {
+    creatingReceipt.value = false;
+  }
 };
 
 const editReceipt = (row: DataTableRowClickEvent) => {

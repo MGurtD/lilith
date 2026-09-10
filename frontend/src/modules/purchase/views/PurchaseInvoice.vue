@@ -18,6 +18,8 @@
           ref="purchaseInvoiceForm"
           :purchaseInvoice="purchaseInvoice"
           @submit="onInvoiceSubmit"
+          @calculated="applyCalculatedValues"
+          @due-dates-change="applyDueDates"
         />
         <Tabs value="0">
           <TabList>
@@ -180,7 +182,13 @@ import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
 import SplitButton from "primevue/splitbutton";
 import type { MenuItem } from "primevue/menuitem";
-import { PurchaseInvoice, PurchaseInvoiceImport, Receipt } from "../types";
+import type {
+  PurchaseInvoice,
+  PurchaseInvoiceCalculatedValues,
+  PurchaseInvoiceDueDate,
+  PurchaseInvoiceImport,
+  Receipt,
+} from "../types";
 import { FormActionMode } from "../../../types/component";
 import {
   convertDateTimeToJSON,
@@ -201,7 +209,11 @@ import { useReceiptsStore } from "../store/receipt";
 import { cloneDeep, round } from "lodash";
 import { useI18n } from "vue-i18n";
 
-const purchaseInvoiceForm = ref();
+const purchaseInvoiceForm = ref<{
+  submitForm: () => void;
+  calcAmounts: () => void;
+  getSupplierId: () => string;
+} | null>(null);
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -214,6 +226,7 @@ const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
 const { t } = useI18n();
 const { purchaseInvoice } = storeToRefs(purchaseInvoiceStore);
+const calculatedValues = ref<Partial<PurchaseInvoiceCalculatedValues>>({});
 
 const dialogTitle = computed(() => {
   if (receiptsStore.selectorReceipts) {
@@ -242,7 +255,9 @@ const editedDueDatesTotal = computed(() =>
 );
 const dueDatesDifference = computed(() => {
   if (!purchaseInvoice.value) return 0;
-  return round(purchaseInvoice.value.netAmount, 2) - editedDueDatesTotal.value;
+  const netAmount =
+    calculatedValues.value.netAmount ?? purchaseInvoice.value.netAmount;
+  return round(netAmount, 2) - editedDueDatesTotal.value;
 });
 
 // SplitButton items (dynamic visibility for edit due dates)
@@ -263,6 +278,7 @@ const splitButtonItems = computed<MenuItem[]>(() => {
 });
 
 const loadView = async () => {
+  calculatedValues.value = {};
   const invoiceId = route.params.id as string;
   let pageTitle = "";
 
@@ -280,9 +296,6 @@ const loadView = async () => {
       number: purchaseInvoice.value.number,
     });
 
-    purchaseInvoice.value.purchaseInvoiceDate = new Date(
-      purchaseInvoice.value.purchaseInvoiceDate,
-    );
   }
   // Get associated receipts
   receiptsStore.fetchByInvoice(invoiceId);
@@ -318,8 +331,19 @@ onMounted(async () => {
 });
 
 const submitForm = () => {
-  const form = purchaseInvoiceForm.value as any;
-  form.submitForm();
+  purchaseInvoiceForm.value?.submitForm();
+};
+
+const applyCalculatedValues = (
+  values: Partial<PurchaseInvoiceCalculatedValues>,
+) => {
+  calculatedValues.value = { ...calculatedValues.value, ...values };
+};
+
+const applyDueDates = (dueDates: PurchaseInvoiceDueDate[]) => {
+  if (purchaseInvoice.value) {
+    purchaseInvoice.value.purchaseInvoiceDueDates = dueDates;
+  }
 };
 
 // Invoice imports
@@ -327,12 +351,12 @@ const openInvoiceImportForm = (
   formMode: FormActionMode,
   invoiceImport: PurchaseInvoiceImport,
 ) => {
-  if (formMode === FormActionMode.CREATE) {
-    invoiceImport.id = getNewUuid();
-  }
-
-  invoiceImport.purchaseInvoiceId = purchaseInvoice.value!.id;
-  selectedInvoiceImport.value = invoiceImport;
+  selectedInvoiceImport.value = {
+    ...invoiceImport,
+    id:
+      formMode === FormActionMode.CREATE ? getNewUuid() : invoiceImport.id,
+    purchaseInvoiceId: purchaseInvoice.value!.id,
+  };
   formInvoiceMode.value = formMode;
   isDialogVisible.value = true;
 };
@@ -369,16 +393,32 @@ const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
 };
 
 const onInvoiceImportSubmit = async (invoiceImport: PurchaseInvoiceImport) => {
-  // When is a new record, work in memory to send a composed object to the backend
+  let saved = true;
+
   if (formInvoiceMode.value === FormActionMode.CREATE) {
     if (formMode.value === FormActionMode.EDIT) {
-      await purchaseInvoiceStore.CreateInvoiceImport(invoiceImport);
+      saved = await purchaseInvoiceStore.CreateInvoiceImport(invoiceImport);
     }
-
-    purchaseInvoice.value?.purchaseInvoiceImports.push(invoiceImport);
   } else if (formInvoiceMode.value === FormActionMode.EDIT) {
     if (formMode.value === FormActionMode.EDIT) {
-      await purchaseInvoiceStore.UpdateInvoiceImport(invoiceImport);
+      saved = await purchaseInvoiceStore.UpdateInvoiceImport(invoiceImport);
+    }
+  }
+
+  if (!saved || !purchaseInvoice.value) return;
+
+  if (formInvoiceMode.value === FormActionMode.CREATE) {
+    purchaseInvoice.value.purchaseInvoiceImports.push(invoiceImport);
+  } else {
+    const index = purchaseInvoice.value.purchaseInvoiceImports.findIndex(
+      (item) => item.id === invoiceImport.id,
+    );
+    if (index >= 0) {
+      purchaseInvoice.value.purchaseInvoiceImports.splice(
+        index,
+        1,
+        invoiceImport,
+      );
     }
   }
 
@@ -399,17 +439,17 @@ const deleteInvoiceImport = async (invoiceImport: PurchaseInvoiceImport) => {
 };
 
 const closeDialogAndCalcAmounts = () => {
-  const form = purchaseInvoiceForm.value as any;
-  form.calcAmounts();
+  purchaseInvoiceForm.value?.calcAmounts();
   isDialogVisible.value = false;
 };
 
 const onReceiptAdd = async () => {
   if (!purchaseInvoice.value) return;
 
-  await receiptsStore.fetchInvoiceableBySupplier(
-    purchaseInvoice.value.supplierId,
-  );
+  const supplierId =
+    purchaseInvoiceForm.value?.getSupplierId() ??
+    purchaseInvoice.value.supplierId;
+  await receiptsStore.fetchInvoiceableBySupplier(supplierId);
   isDialogVisible.value = true;
 };
 
@@ -451,7 +491,10 @@ const startEditDueDates = () => {
 
 const confirmEditDueDates = async () => {
   if (!purchaseInvoice.value) return;
-  const invoiceTotal = round(purchaseInvoice.value.netAmount, 2);
+  const invoiceTotal = round(
+    calculatedValues.value.netAmount ?? purchaseInvoice.value.netAmount,
+    2,
+  );
   const dueTotal = round(
     editingDueDates.value.reduce((acc, d) => acc + d.amount, 0),
     2,

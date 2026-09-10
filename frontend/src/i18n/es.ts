@@ -1814,7 +1814,15 @@ const es = {
     stocks: { title: "Gestión de almacenes - Existencias" },
     stockMovements: { title: "Movimientos de almacén" },
     inventory: { title: "Inventario", count: "Recuento", saveMovementsAria: "Guardar movimientos" },
-    lotTraceability: { closed: "Cerrado", view: "Ver trazabilidad del lote" },
+    lotTraceability: {
+      title: "Trazabilidad de lotes", closed: "Cerrado", view: "Ver trazabilidad del lote",
+      fields: { reference: "Referencia", lot: "Lote", description: "Descripción", quantity: "Cantidad", date: "Fecha", purchaseOriginMovements: "Origen de compra / movimientos", salesDestinationMovements: "Destino de venta / movimientos", deliveryNote: "Albarán" },
+      placeholders: { selectLot: "Selecciona un lote..." },
+      tabs: { backward: "Hacia atrás (desde un lote vendido)", forward: "Hacia delante (desde un lote de compra)" },
+      empty: { backward: "Selecciona un lote vendido para consultar su trazabilidad hacia atrás.", forward: "Selecciona un lote de compra para consultar su trazabilidad hacia delante." },
+      recall: { title: "Informe de retirada", affectedDeliveryNotes: "{count} albaranes afectados", affectedUnits: "{count} unidades afectadas", noAffectedCustomers: "Este lote no ha llegado a ningún cliente." },
+      messages: { lotNotFound: "No se ha encontrado el lote" },
+    },
   },
   purchase: {
     fields: { type: "Tipo", period: "Período", creationDate: "Fecha de alta", paymentDate: "Fecha de pago", amount: "Importe", recurring: "Recurrente", frequency: "Frecuencia", paymentDay: "Día de pago", endDate: "Fecha de fin", description: "Descripción", disabled: "Desactivada", internalInvoiceNumber: "N.º de factura interna", exercise: "Ejercicio", series: "Serie", supplier: "Proveedor", supplierInvoiceNumber: "N.º de factura del proveedor", invoiceDate: "Fecha de factura", paymentMethod: "Forma de pago", transportAmount: "Portes", withholdingTax: "% IRPF", discount: "% descuento", base: "Base", taxes: "Impuestos", name: "Nombre", commercialName: "Nombre comercial", taxName: "Nombre fiscal", phone: "Teléfono", startDate: "Fecha de inicio", minimumWeight: "Peso mínimo (kg)", maximumWeight: "Peso máximo (kg)", minimumVolume: "Volumen mínimo (m³)", maximumVolume: "Volumen máximo (m³)", minimumDistance: "Distancia mínima (km)", maximumDistance: "Distancia máxima (km)", price: "Precio (€)" },
@@ -1850,11 +1858,12 @@ const es = {
       validation: { supplierCodeRequired: "El código es obligatorio", supplierPriceRequired: "El precio es obligatorio", supplyDaysRequired: "Los días de suministro son obligatorios" },
       messages: { invalidForm: "Formulario no válido", creation: "Creación de referencia", alreadyExists: "La referencia ya existe", confirmDelete: "¿Seguro que quieres eliminar la referencia?" },
     },
-    purchaseRate: { fields: { name: "Nombre", validFrom: "Fecha de inicio", validTo: "Fecha de fin" }, actions: { save: "Guardar" } },
+    purchaseRate: { fields: { name: "Nombre", validFrom: "Fecha de inicio", validTo: "Fecha de fin" }, actions: { save: "Guardar" }, validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", startDateRequired: "La fecha de inicio es obligatoria", endDateRequired: "La fecha de fin es obligatoria", endDateOnOrAfterStart: "La fecha de fin debe ser igual o posterior a la fecha de inicio" } },
     purchaseRateDetail: { fields: { reference: "Referencia", calculationType: "Tipo de cálculo", from: "Desde", to: "Hasta", price: "Precio (€)" }, placeholders: { selectReference: "Selecciona una referencia" }, actions: { save: "Guardar" }, calculationTypes: { units: "Unidades", volume: "Volumen", weight: "Peso" } },
     transportRates: {
       title: "Tarifas de transporte", details: "Detalles", dialogs: { createRate: "Nueva tarifa de transporte", editRate: "Editar tarifa de transporte", createDetail: "Nuevo detalle de tarifa", editDetail: "Editar detalle de tarifa" },
       columns: { name: "Nombre", description: "Descripción", validFrom: "Desde", validTo: "Hasta", minimumWeight: "Peso mín.", maximumWeight: "Peso máx.", minimumVolume: "Vol. mín.", maximumVolume: "Vol. máx.", minimumDistance: "Dist. mín.", maximumDistance: "Dist. máx.", price: "Precio" },
+      validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", descriptionRequired: "La descripción es obligatoria", descriptionMaxLength: "La descripción no puede superar los 250 caracteres", startDateRequired: "La fecha de inicio es obligatoria", endDateRequired: "La fecha de fin es obligatoria", endDateOnOrAfterStart: "La fecha de fin debe ser igual o posterior a la fecha de inicio" },
       messages: { rateCreated: "Tarifa creada", rateUpdated: "Tarifa actualizada", confirmDeleteRate: "¿Seguro que quieres eliminar la tarifa?", rateDeleted: "Tarifa eliminada", detailCreated: "Detalle creado", detailUpdated: "Detalle actualizado", confirmDeleteDetail: "¿Seguro que quieres eliminar el detalle?", detailDeleted: "Detalle eliminado" },
     },
     purchaseRates: {
@@ -1900,10 +1909,6 @@ const es = {
       columns: { base: "Base", tax: "% IVA", taxAmount: "Cuota de IVA" },
       actions: { add: "Añadir", update: "Modificar", delete: "Eliminar" },
       validation: { baseAmountRequired: "El importe base es obligatorio" },
-    },
-    purchaseInvoiceStatus: {
-      fields: { name: "Nombre del estado", disabled: "Desactivado" },
-      validation: { nameRequired: "El nombre del estado es obligatorio", nameMaxLength: "El nombre del estado no puede superar los 50 caracteres", descriptionRequired: "La descripción del estado es obligatoria", descriptionMaxLength: "La descripción del estado no puede superar los 250 caracteres" },
     },
     orders: {
       title: "Pedidos de compra", filters: { period: "Período" }, placeholders: { selectPeriod: "Selecciona un período" }, dialogs: { create: "Crear pedido" }, messages: { selectPeriod: "Selecciona un período", confirmDelete: "¿Seguro que quieres eliminar el pedido {number}?" },

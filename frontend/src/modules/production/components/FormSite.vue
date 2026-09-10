@@ -83,6 +83,7 @@
     <LocationFields
       :model-value="site"
       :validation-errors="validation.errors"
+      @update:model-value="updateLocation"
     />
 
     <div class="flex justify-content-end">
@@ -107,10 +108,15 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import type { LocationData } from "@/types";
 
 const props = defineProps<{
   site: Site;
 }>();
+
+const updateLocation = (location: LocationData): void => {
+  Object.assign(props.site, location);
+};
 
 const emit = defineEmits<{
   (e: "submit", site: Site): void;
