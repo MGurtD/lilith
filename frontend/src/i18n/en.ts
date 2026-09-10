@@ -1845,7 +1845,15 @@ const en = {
     stocks: { title: "Warehouse management - Stock" },
     stockMovements: { title: "Warehouse movements" },
     inventory: { title: "Inventory", count: "Count", saveMovementsAria: "Save movements" },
-    lotTraceability: { closed: "Closed", view: "View lot traceability" },
+    lotTraceability: {
+      title: "Lot traceability", closed: "Closed", view: "View lot traceability",
+      fields: { reference: "Reference", lot: "Lot", description: "Description", quantity: "Quantity", date: "Date", purchaseOriginMovements: "Purchase origin / movements", salesDestinationMovements: "Sales destination / movements", deliveryNote: "Delivery note" },
+      placeholders: { selectLot: "Select a lot..." },
+      tabs: { backward: "Backward (from a sold lot)", forward: "Forward (from a purchased lot)" },
+      empty: { backward: "Select a sold lot to view its backward traceability.", forward: "Select a purchased lot to view its forward traceability." },
+      recall: { title: "Recall report", affectedDeliveryNotes: "{count} affected delivery notes", affectedUnits: "{count} affected units", noAffectedCustomers: "This lot has not reached any customers." },
+      messages: { lotNotFound: "Lot not found" },
+    },
   },
   purchase: {
     fields: { type: "Type", period: "Period", creationDate: "Creation date", paymentDate: "Payment date", amount: "Amount", recurring: "Recurring", frequency: "Frequency", paymentDay: "Payment day", endDate: "End date", description: "Description", disabled: "Disabled", internalInvoiceNumber: "Internal invoice no.", exercise: "Financial year", series: "Series", supplier: "Supplier", supplierInvoiceNumber: "Supplier invoice no.", invoiceDate: "Invoice date", paymentMethod: "Payment method", transportAmount: "Freight", withholdingTax: "% withholding tax", discount: "% discount", base: "Base", taxes: "Taxes", name: "Name", commercialName: "Trading name", taxName: "Legal name", phone: "Phone", startDate: "Start date", minimumWeight: "Minimum weight (kg)", maximumWeight: "Maximum weight (kg)", minimumVolume: "Minimum volume (m³)", maximumVolume: "Maximum volume (m³)", minimumDistance: "Minimum distance (km)", maximumDistance: "Maximum distance (km)", price: "Price (€)" },

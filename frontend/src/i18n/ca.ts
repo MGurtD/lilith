@@ -1871,7 +1871,15 @@ const ca = {
     stocks: { title: "Gestió de magatzems - Estocs" },
     stockMovements: { title: "Moviments de magatzem" },
     inventory: { title: "Inventari", count: "Recompte", saveMovementsAria: "Guardar moviments" },
-    lotTraceability: { closed: "Tancat", view: "Veure traçabilitat del lot" },
+    lotTraceability: {
+      title: "Traçabilitat de lots", closed: "Tancat", view: "Veure traçabilitat del lot",
+      fields: { reference: "Referència", lot: "Lot", description: "Descripció", quantity: "Quantitat", date: "Data", purchaseOriginMovements: "Origen de compra / moviments", salesDestinationMovements: "Destí de venda / moviments", deliveryNote: "Albarà" },
+      placeholders: { selectLot: "Selecciona un lot..." },
+      tabs: { backward: "Cap enrere (des d'un lot venut)", forward: "Cap endavant (des d'un lot de compra)" },
+      empty: { backward: "Selecciona un lot venut per veure'n la traçabilitat cap enrere.", forward: "Selecciona un lot de compra per veure'n la traçabilitat cap endavant." },
+      recall: { title: "Informe de retirada", affectedDeliveryNotes: "{count} albarans afectats", affectedUnits: "{count} unitats afectades", noAffectedCustomers: "Aquest lot no ha arribat a cap client." },
+      messages: { lotNotFound: "No s'ha trobat el lot" },
+    },
   },
   purchase: {
     fields: { type: "Tipus", period: "Període", creationDate: "Data d'alta", paymentDate: "Data de pagament", amount: "Import", recurring: "Recurrent", frequency: "Freqüència", paymentDay: "Dia de pagament", endDate: "Data de fi", description: "Descripció", disabled: "Desactivada", internalInvoiceNumber: "Núm. de factura interna", exercise: "Exercici", series: "Sèrie", supplier: "Proveïdor", supplierInvoiceNumber: "Núm. de factura del proveïdor", invoiceDate: "Data de factura", paymentMethod: "Forma de pagament", transportAmount: "Ports", withholdingTax: "% IRPF", discount: "% descompte", base: "Base", taxes: "Impostos", name: "Nom", commercialName: "Nom comercial", taxName: "Nom fiscal", phone: "Telèfon", startDate: "Data d'inici", minimumWeight: "Pes mínim (kg)", maximumWeight: "Pes màxim (kg)", minimumVolume: "Volum mínim (m³)", maximumVolume: "Volum màxim (m³)", minimumDistance: "Distància mínima (km)", maximumDistance: "Distància màxima (km)", price: "Preu (€)" },

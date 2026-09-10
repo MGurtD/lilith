@@ -1814,7 +1814,15 @@ const es = {
     stocks: { title: "Gestión de almacenes - Existencias" },
     stockMovements: { title: "Movimientos de almacén" },
     inventory: { title: "Inventario", count: "Recuento", saveMovementsAria: "Guardar movimientos" },
-    lotTraceability: { closed: "Cerrado", view: "Ver trazabilidad del lote" },
+    lotTraceability: {
+      title: "Trazabilidad de lotes", closed: "Cerrado", view: "Ver trazabilidad del lote",
+      fields: { reference: "Referencia", lot: "Lote", description: "Descripción", quantity: "Cantidad", date: "Fecha", purchaseOriginMovements: "Origen de compra / movimientos", salesDestinationMovements: "Destino de venta / movimientos", deliveryNote: "Albarán" },
+      placeholders: { selectLot: "Selecciona un lote..." },
+      tabs: { backward: "Hacia atrás (desde un lote vendido)", forward: "Hacia delante (desde un lote de compra)" },
+      empty: { backward: "Selecciona un lote vendido para consultar su trazabilidad hacia atrás.", forward: "Selecciona un lote de compra para consultar su trazabilidad hacia delante." },
+      recall: { title: "Informe de retirada", affectedDeliveryNotes: "{count} albaranes afectados", affectedUnits: "{count} unidades afectadas", noAffectedCustomers: "Este lote no ha llegado a ningún cliente." },
+      messages: { lotNotFound: "No se ha encontrado el lote" },
+    },
   },
   purchase: {
     fields: { type: "Tipo", period: "Período", creationDate: "Fecha de alta", paymentDate: "Fecha de pago", amount: "Importe", recurring: "Recurrente", frequency: "Frecuencia", paymentDay: "Día de pago", endDate: "Fecha de fin", description: "Descripción", disabled: "Desactivada", internalInvoiceNumber: "N.º de factura interna", exercise: "Ejercicio", series: "Serie", supplier: "Proveedor", supplierInvoiceNumber: "N.º de factura del proveedor", invoiceDate: "Fecha de factura", paymentMethod: "Forma de pago", transportAmount: "Portes", withholdingTax: "% IRPF", discount: "% descuento", base: "Base", taxes: "Impuestos", name: "Nombre", commercialName: "Nombre comercial", taxName: "Nombre fiscal", phone: "Teléfono", startDate: "Fecha de inicio", minimumWeight: "Peso mínimo (kg)", maximumWeight: "Peso máximo (kg)", minimumVolume: "Volumen mínimo (m³)", maximumVolume: "Volumen máximo (m³)", minimumDistance: "Distancia mínima (km)", maximumDistance: "Distancia máxima (km)", price: "Precio (€)" },
