@@ -1,4 +1,39 @@
 const en = {
+  dataMigration: {
+    title: "Data import / export",
+    description:
+      "Download a template, fill it in and upload it to import data, or export existing data to Excel.",
+    entitiesTitle: "Available entities",
+    selectAll: "Select all",
+    downloadTemplate: "Download template",
+    import: "Import",
+    export: "Export",
+    noEntities: "No entities available.",
+    entities: {
+      customer: "Customers",
+    },
+    messages: {
+      noSelection: "Select at least one entity.",
+      templateError: "Could not generate the template.",
+      exportError: "Could not export the data.",
+      importError: "Could not import the file.",
+      importDone: "Import finished: {inserted} inserted, {skipped} skipped.",
+    },
+    report: {
+      title: "Import result",
+      total: "Total",
+      inserted: "Inserted",
+      skipped: "Skipped",
+      sheet: "Sheet",
+      row: "Row",
+      code: "Code",
+      reason: "Reason",
+      statusSuccess: "Imported",
+      statusPartial: "Partially imported",
+      statusFailed: "Not imported",
+      noErrors: "All rows were imported successfully.",
+    },
+  },
   plant: {
     "motiu": "Reason:",
     "no-hi-ha-motius-disponibles-per-aquest-estat": "No reasons are available for this status",
