@@ -1,4 +1,4 @@
-﻿using Application.Contracts;
+using Application.Contracts;
 using Domain.Entities;
 using Domain.Entities.Shared;
 using Microsoft.AspNetCore.Mvc;
@@ -203,8 +203,10 @@ namespace Api.Controllers.Shared
                 var location = Url.Action(nameof(GetTagById), new { id = request.Id }) ?? $"/Tag/{request.Id}";
                 return Created(location, response.Content);
             }
-            else if (response.Errors.Any(e => e.Contains("already exists")))
+            else if (response.ErrorCode == LifecycleTagErrorCodes.AlreadyExists)
                 return Conflict(response);
+            else if (response.ErrorCode == LifecycleTagErrorCodes.LifecycleNotFound)
+                return NotFound(response);
             else
                 return BadRequest(response);
         }
@@ -219,9 +221,9 @@ namespace Api.Controllers.Shared
             var response = await lifecycleService.UpdateTag(request);
             if (response.Result)
                 return Ok(response.Content);
-            else if (response.Errors.Any(e => e.Contains("already exists")))
+            else if (response.ErrorCode == LifecycleTagErrorCodes.AlreadyExists)
                 return Conflict(response);
-            else if (response.Errors.Any(e => e.Contains("not found")))
+            else if (response.ErrorCode == LifecycleTagErrorCodes.NotFound)
                 return NotFound(response);
             else
                 return BadRequest(response);

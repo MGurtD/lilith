@@ -1,147 +1,99 @@
 <template>
-  <DataTable
-    :value="filteredExpenses"
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="filteredExpenses"
+    :filter-config="[]"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="Expenses"
     class="p-datatable-sm small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sortMode="multiple"
     paginator
     :rows="25"
+    delete-column-width="5%"
+    show-delete-column
+    @filter="filterExpense"
+    @clear="clearFilter"
+    @create="createButtonClick"
+    @delete="deleteExpense"
     @row-click="editExpense"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterExpense"
-        @clear="clearFilter"
-        @create="createButtonClick"
+    <template #prepend>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.fields.period") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.placeholders.selectPeriod')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.type") }}</label>
-            <Select
-              v-model="filter.expenseTypeId"
-              :options="expenseStore.expenseTypes"
-              optionValue="id"
-              optionLabel="name"
-              class="w-full"
-              :placeholder="t('purchase.placeholders.allExpenseTypes')"
-              showClear
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.fields.frequency") }}</label
-            >
-            <Select
-              v-model="filter.frecuency"
-              :options="frequencyOptions"
-              optionValue="id"
-              optionLabel="name"
-              class="w-full"
-              :placeholder="t('purchase.placeholders.allFrequencies')"
-              showClear
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column :header="t('purchase.fields.type')" style="width: 15%">
-      <template #body="slotProps">
-        {{ getExpenseTypeNameById(slotProps.data.expenseTypeId) }}
-      </template>
-    </Column>
-    <Column
-      field="description"
-      :header="t('purchase.fields.description')"
-      style="width: 40%"
-      sortable
-    ></Column>
-    <Column
-      field="paymentDate"
-      :header="t('purchase.fields.paymentDate')"
-      style="width: 20%"
-      sortable
-    >
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.paymentDate) }}
-      </template>
-    </Column>
-    <Column field="amount" :header="t('purchase.fields.amount')" style="width: 15%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.amount) }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.fields.frequency')" style="width: 12%">
-      <template #body="slotProps">
-        {{
-          getFrequencyName(slotProps.data.frecuency, slotProps.data.recurring)
-        }}
-      </template>
-    </Column>
-    <Column :header="t('purchase.fields.recurring')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.recurring" :showColor="false" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteExpense($event, slotProps.data)"
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.fields.period") }}</label
+        >
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="t('purchase.placeholders.selectPeriod')"
+          showIcon
+          class="w-full"
+          size="small"
         />
-      </template>
-    </Column>
-    <template #footer
-      ><div class="expenses-footer-total">
-        {{ t("purchase.expenses.visibleTotal", { amount: formatCurrency(totalAmount) }) }}
-      </div></template
-    >
-  </DataTable>
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--md"
+      >
+        <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.type") }}</label>
+        <Select
+          v-model="filter.expenseTypeId"
+          :options="expenseStore.expenseTypes"
+          optionValue="id"
+          optionLabel="name"
+          class="w-full"
+          :placeholder="t('purchase.placeholders.allExpenseTypes')"
+          showClear
+          size="small"
+        />
+      </div>
+      <div
+        class="table-filter-prepend-field table-filter-prepend-field--sm"
+      >
+        <label class="filter-label table-filter-prepend-label"
+          >{{ t("purchase.fields.frequency") }}</label
+        >
+        <Select
+          v-model="filter.frecuency"
+          :options="frequencyOptions"
+          optionValue="id"
+          optionLabel="name"
+          class="w-full"
+          :placeholder="t('purchase.placeholders.allFrequencies')"
+          showClear
+          size="small"
+        />
+      </div>
+    </template>
+
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
+import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { formatDate, formatDateForQueryParameter, formatCurrency, getNewUuid } from "../../../utils/functions";
+import { formatDateForQueryParameter, formatCurrency, getNewUuid } from "../../../utils/functions";
 import { Expense } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useI18n } from "vue-i18n";
 import { useUserFilterStore } from "../../../store/userfilter";
-import TableFilter from "../../../components/tables/TableFilter.vue";
 import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
@@ -151,6 +103,43 @@ const userFilterStore = useUserFilterStore();
 const toast = useToast();
 const confirm = useConfirm();
 const { t, locale } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "expenseTypeId",
+    header: t("purchase.fields.type"),
+    columnType: ColumnType.Lookup,
+    resolver: getExpenseTypeNameById,
+    style: "width: 18%",
+  },
+  {
+    field: "description",
+    header: t("purchase.fields.description"),
+    sortable: true,
+    style: "width: 34%",
+  },
+  {
+    field: "paymentDate",
+    header: t("purchase.fields.paymentDate"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 18%",
+  },
+  {
+    field: "frecuency",
+    header: t("purchase.fields.frequency"),
+    resolver: resolveFrequency,
+    style: "width: 15%",
+  },
+  {
+    field: "amount",
+    header: t("purchase.fields.amount"),
+    columnType: ColumnType.Currency,
+    total: "sum",
+    totalFormat: formatCurrency,
+    style: "width: 10%; text-align: right",
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
@@ -168,6 +157,19 @@ const frequencyOptions = computed(() => [
   { id: 6, name: t("purchase.frequency.halfYearly") },
   { id: 12, name: t("purchase.frequency.yearly") },
 ]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: t("purchase.fields.period"),
+      frecuency: t("purchase.fields.frequency"),
+    },
+    valueResolvers: {
+      frecuency: (value) =>
+        typeof value === "number" ? getFrequencyName(value, value !== 0) : "",
+    },
+  }),
+);
 
 const setMenuTitle = () => {
   store.setMenuItem({
@@ -198,12 +200,6 @@ const filteredExpenses = computed(() => {
   }
 
   return expenses;
-});
-
-const totalAmount = computed(() => {
-  let total = 0;
-  filteredExpenses.value.forEach((expense) => (total += expense.amount));
-  return total;
 });
 
 const getUserFilter = () => {
@@ -277,18 +273,11 @@ const createButtonClick = () => {
 };
 
 const editExpense = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/expense/${row.data.id}` });
-  }
+  router.push({ path: `/expense/${row.data.id}` });
 };
 
-const deleteExpense = (event: any, expense: Expense) => {
+const deleteExpense = (expense: Expense) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteExpense"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -322,12 +311,10 @@ const getFrequencyName = (frequency: number, recurring: boolean) => {
     frequencyOptions.value.find((option) => option.id === frequency)?.name ?? "-"
   );
 };
-</script>
 
-<style scoped>
-.expenses-footer-total {
-  display: flex;
-  justify-content: flex-end;
-  font-weight: 600;
-}
-</style>
+const resolveFrequency = (value: unknown, data: unknown): string => {
+  if (typeof value !== "number" || !data || typeof data !== "object") return "";
+  const recurring = (data as Expense).recurring;
+  return getFrequencyName(value, recurring);
+};
+</script>

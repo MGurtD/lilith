@@ -22,6 +22,9 @@ namespace Application.Contracts
         [Required]
         public decimal Price { get; set; }
 
+        public Guid? LotId { get; set; }
+        public string? LotCode { get; set; }
+
         public decimal UnitPrice {
             get => Quantity > 0 ? Price / Quantity : 0;
         }

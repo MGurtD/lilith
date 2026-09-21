@@ -6,7 +6,7 @@
     <Select
       showClear
       filter
-      :options="COUNTRIES"
+      :options="countries"
       :placeholder="placeholder || 'Selecciona un país'"
       optionValue="code"
       optionLabel="name"
@@ -19,12 +19,12 @@
       <template #value="slotProps">
         <div v-if="slotProps.value" class="flex align-items-center gap-2">
           <img
-            :src="getFlagUrl(slotProps.value)"
+            :src="countryStore.getFlagUrl(slotProps.value)"
             :alt="slotProps.value"
             style="width: 20px; height: 15px"
             loading="lazy"
           />
-          <span>{{ getCountryByCode(slotProps.value)?.name }}</span>
+          <span>{{ countryStore.getCountryByCode(slotProps.value)?.name }}</span>
         </div>
         <span v-else>
           {{ slotProps.placeholder }}
@@ -33,7 +33,7 @@
       <template #option="slotProps">
         <div class="flex align-items-center gap-2">
           <img
-            :src="getFlagUrl(slotProps.option.code)"
+            :src="countryStore.getFlagUrl(slotProps.option.code)"
             :alt="slotProps.option.name"
             style="width: 20px; height: 15px"
             loading="lazy"
@@ -45,11 +45,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import {
-  COUNTRIES,
-  getCountryByCode,
-  getFlagUrl,
-} from "../data/countries";
+import { storeToRefs } from "pinia";
+import { useCountryStore } from "../store/country";
+
+const countryStore = useCountryStore();
+const { countries } = storeToRefs(countryStore);
 
 defineProps<{
   label: string;

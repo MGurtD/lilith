@@ -53,7 +53,7 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";
-import { Location, LocationTypeOption, getLocationTypeOptions } from "../types";
+import { Location, LOCATION_TYPE_OPTIONS } from "../types";
 import * as Yup from "yup";
 import {
   FormValidation,
@@ -73,7 +73,7 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
-const locationTypeOptions = computed<LocationTypeOption[]>(() => getLocationTypeOptions(t));
+const locationTypeOptions = LOCATION_TYPE_OPTIONS;
 
 const schema = computed(() => Yup.object().shape({
   name: Yup.string()

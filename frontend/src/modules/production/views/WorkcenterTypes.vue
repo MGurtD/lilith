@@ -1,67 +1,67 @@
 <template>
-  <DataTable
-    :value="plantmodelStore.workcenterTypes"
-    tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
+  <Table
+    :items="plantmodelStore.workcenterTypes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ pt("Tipus de màquina") }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ pt("Tipus de màquina") }}</span>
     </template>
-    <Column field="name" :header="pt('Nom')" style="width: 25%"></Column>
-    <Column field="description" :header="pt('Descripció')" style="width: 50%"></Column>
-    <Column field="profitPercentage" :header="pt('% Benefici')" style="width: 10%">
-      <template #body="slotProps">
-        {{ slotProps.data.profitPercentage }} %
-      </template>
-    </Column>
-    <Column :header="pt('Desactivat')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
-const pt = (key: string): string => t(`production.ui.${key}`);
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { WorkcenterType } from "../types";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: pt("Nom"),
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: pt("Descripció"),
+    style: "width: 50%",
+  },
+  {
+    field: "profitPercentage",
+    header: pt("% Benefici"),
+    resolver: (value) => (typeof value === "number" ? `${value} %` : ""),
+    style: "width: 10%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivat"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
 
 onMounted(async () => {
   await plantmodelStore.fetchWorkcenterTypes();
@@ -77,17 +77,10 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/workcentertype/${row.data.id}` });
-  }
+  router.push({ path: `/workcentertype/${row.data.id}` });
 };
-const deleteButton = (event: any, entity: WorkcenterType) => {
+const deleteButton = (entity: WorkcenterType) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("production.messages.confirmDeleteWorkcenterType", {
       name: entity.name,
     }),

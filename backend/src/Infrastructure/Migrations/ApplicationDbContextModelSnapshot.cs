@@ -17,7 +17,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -2138,6 +2138,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<Guid?>("DefaultProducedLotId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("Disabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bool")
@@ -2214,6 +2217,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_WorkOrder");
+
+                    b.HasIndex("DefaultProducedLotId");
 
                     b.HasIndex("ExerciseId");
 
@@ -3442,6 +3447,9 @@ namespace Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal");
 
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Quantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -3483,6 +3491,8 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK_ReceiptDetails");
+
+                    b.HasIndex("LotId");
 
                     b.HasIndex("ReceiptId");
 
@@ -4579,6 +4589,9 @@ namespace Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
@@ -4609,6 +4622,8 @@ namespace Infrastructure.Migrations
                         .HasName("PK_DeliveryNoteDetails");
 
                     b.HasIndex("DeliveryNoteId");
+
+                    b.HasIndex("LotId");
 
                     b.HasIndex("ReferenceId");
 
@@ -5707,6 +5722,11 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("ReferenceTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("RequiresLot")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("Sales")
                         .HasColumnType("boolean");
 
@@ -6154,6 +6174,65 @@ namespace Infrastructure.Migrations
                     b.ToTable("Locations", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Warehouse.Lot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClosedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar")
+                        .HasDefaultValue("");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("Disabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bool")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("ExpirationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RemainingQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("SupplierLotCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar");
+
+                    b.Property<DateTime>("UpdatedOn")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceId", "Code")
+                        .IsUnique()
+                        .HasFilter("\"ClosedDate\" IS NULL AND \"Code\" <> ''");
+
+                    b.ToTable("Lot");
+                });
+
             modelBuilder.Entity("Domain.Entities.Warehouse.Stock", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6184,6 +6263,9 @@ namespace Infrastructure.Migrations
                     b.Property<Guid>("LocationId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
@@ -6206,9 +6288,13 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("PK_Stocks");
 
+                    b.HasIndex("LotId");
+
                     b.HasIndex("ReferenceId");
 
                     b.HasIndex(new[] { "LocationId", "ReferenceId" }, "idx_Location_Reference");
+
+                    b.HasIndex(new[] { "LocationId", "ReferenceId", "LotId" }, "idx_Location_Reference_Lot");
 
                     b.ToTable("Stocks", (string)null);
                 });
@@ -6255,6 +6341,9 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("LocationId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("LotId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("MovementDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -6292,6 +6381,8 @@ namespace Infrastructure.Migrations
                     b.HasIndex("ReferenceId");
 
                     b.HasIndex(new[] { "Entity", "EntityId" }, "idx_entity_entityid");
+
+                    b.HasIndex(new[] { "LotId" }, "idx_lotid");
 
                     b.HasIndex(new[] { "MovementType" }, "idx_movementtype");
 
@@ -6648,6 +6739,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Production.WorkOrder", b =>
                 {
+                    b.HasOne("Domain.Entities.Warehouse.Lot", "DefaultProducedLot")
+                        .WithMany()
+                        .HasForeignKey("DefaultProducedLotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Domain.Entities.Exercise", "Exercise")
                         .WithMany()
                         .HasForeignKey("ExerciseId")
@@ -6671,6 +6767,8 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("WorkMasterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("DefaultProducedLot");
 
                     b.Navigation("Exercise");
 
@@ -7120,6 +7218,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Purchase.ReceiptDetail", b =>
                 {
+                    b.HasOne("Domain.Entities.Warehouse.Lot", "Lot")
+                        .WithMany()
+                        .HasForeignKey("LotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Domain.Entities.Purchase.Receipt", "Receipt")
                         .WithMany("Details")
                         .HasForeignKey("ReceiptId")
@@ -7135,6 +7238,8 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Warehouse.StockMovement", "StockMovement")
                         .WithMany()
                         .HasForeignKey("StockMovementId");
+
+                    b.Navigation("Lot");
 
                     b.Navigation("Receipt");
 
@@ -7370,6 +7475,11 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Entities.Warehouse.Lot", "Lot")
+                        .WithMany()
+                        .HasForeignKey("LotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Domain.Entities.Shared.Reference", "Reference")
                         .WithMany()
                         .HasForeignKey("ReferenceId")
@@ -7381,6 +7491,8 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("SalesOrderDetailId");
 
                     b.Navigation("DeliveryNote");
+
+                    b.Navigation("Lot");
 
                     b.Navigation("Reference");
 
@@ -7731,6 +7843,17 @@ namespace Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Entities.Warehouse.Lot", b =>
+                {
+                    b.HasOne("Domain.Entities.Shared.Reference", "Reference")
+                        .WithMany()
+                        .HasForeignKey("ReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Reference");
+                });
+
             modelBuilder.Entity("Domain.Entities.Warehouse.Stock", b =>
                 {
                     b.HasOne("Domain.Entities.Warehouse.Location", "Location")
@@ -7738,6 +7861,11 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("LocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Domain.Entities.Warehouse.Lot", "Lot")
+                        .WithMany()
+                        .HasForeignKey("LotId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Shared.Reference", "Reference")
                         .WithMany()
@@ -7747,6 +7875,8 @@ namespace Infrastructure.Migrations
 
                     b.Navigation("Location");
 
+                    b.Navigation("Lot");
+
                     b.Navigation("Reference");
                 });
 
@@ -7755,6 +7885,11 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Warehouse.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
+
+                    b.HasOne("Domain.Entities.Warehouse.Lot", "Lot")
+                        .WithMany()
+                        .HasForeignKey("LotId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Domain.Entities.Shared.Reference", "Reference")
                         .WithMany()
@@ -7769,6 +7904,8 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Location");
+
+                    b.Navigation("Lot");
 
                     b.Navigation("Reference");
 

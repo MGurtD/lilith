@@ -1,49 +1,32 @@
 <template>
-  <DataTable
-    :value="warehouseStore.warehouses"
+  <Table
+    :items="warehouseStore.warehouses ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ t("warehouse.fields.warehouse") }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{
+        t("warehouse.fields.warehouse")
+      }}</span>
     </template>
-    <Column field="name" :header="t('warehouse.fields.name')" style="width: 25%"></Column>
-    <Column field="description" :header="t('common.description')" style="width: 50%"></Column>
-    <Column :header="t('warehouse.fields.disabled')" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useWarehouseStore } from "../store/warehouse";
 import { usePlantModelStore } from "../../production/store/plantmodel";
-import { onMounted, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -58,6 +41,25 @@ const toast = useToast();
 const confirm = useConfirm();
 const warehouseStore = useWarehouseStore();
 const plantmodelStore = usePlantModelStore();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("warehouse.fields.name"),
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("warehouse.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 20%",
+  },
+]);
 
 const setMenuTitle = () => {
   store.setMenuItem({
@@ -78,19 +80,14 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/warehouse/${row.data.id}` });
-  }
+  router.push({ path: `/warehouse/${row.data.id}` });
 };
 
-const deleteButton = (event: any, warehouse: Warehouse) => {
+const deleteButton = (warehouse: Warehouse) => {
   confirm.require({
-    target: event.currentTarget,
-    message: t("warehouse.messages.confirmDeleteWarehouse", { name: warehouse.name }),
+    message: t("warehouse.messages.confirmDeleteWarehouse", {
+      name: warehouse.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

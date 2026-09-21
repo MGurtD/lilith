@@ -9,7 +9,7 @@ namespace Application.Contracts
         Task<GenericResponse> Update(Stock request);
         Task<GenericResponse> Delete(Stock request);
         Task<IEnumerable<StockListItemResponse>> GetAll(Guid? locationId, Guid? referenceId);
-        Stock? GetByDimensions(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness);
+        Stock? GetByDimensionsAndLot(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness, Guid? lotId);
         Task<IEnumerable<StockResponse>> GetStockByWorkOrderPhaseBillOfMaterialsId(Guid id);
     }
 }

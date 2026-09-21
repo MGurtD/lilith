@@ -64,6 +64,11 @@
                 </div>
               </template>
             </Column>
+            <Column :header='$t("plant.lot")' style="min-width: 120px">
+              <template #body="slotProps">
+                <span>{{ slotProps.data.lotCode || "—" }}</span>
+              </template>
+            </Column>
             <Column
               field="quantity"
               :header='$t("plant.disponible")'
@@ -139,6 +144,11 @@
                     {{ measure }}
                   </span>
                 </div>
+              </template>
+            </Column>
+            <Column :header='$t("plant.lot")' style="min-width: 120px">
+              <template #body="slotProps">
+                <span>{{ slotProps.data.lotCode || "—" }}</span>
               </template>
             </Column>
             <Column

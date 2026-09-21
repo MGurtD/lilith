@@ -1,57 +1,29 @@
 <template>
-  <DataTable
-    :value="plantmodelStore.areas"
+  <Table
+    :items="plantmodelStore.areas ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ t("production.areas.title") }}</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          :aria-label="t('production.actions.create')"
-          :title="t('production.actions.create')"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("production.areas.title") }}</span>
     </template>
-    <Column field="name" :header="t('production.fields.name')" style="width: 25%"></Column>
-    <Column field="description" :header="t('common.description')" style="width: 50%"></Column>
-    <Column :header="t('production.areas.visibleInPlant')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.isVisibleInPlant" />
-      </template>
-    </Column>
-    <Column :header="t('production.fields.disabled')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          :aria-label="t('production.actions.delete')"
-          :title="t('production.actions.delete')"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
-import { onMounted, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -66,7 +38,36 @@ const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
 const { t, locale } = useI18n();
 
-const setMenuTitle = () => store.setMenuItem({ icon: PrimeIcons.CALENDAR, title: t("production.areas.menuTitle") });
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("production.fields.name"),
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "isVisibleInPlant",
+    header: t("production.areas.visibleInPlant"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+  {
+    field: "disabled",
+    header: t("production.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const setMenuTitle = () =>
+  store.setMenuItem({
+    icon: PrimeIcons.CALENDAR,
+    title: t("production.areas.menuTitle"),
+  });
 
 onMounted(async () => {
   await plantmodelStore.fetchAreas();
@@ -79,17 +80,10 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/area/${row.data.id}` });
-  }
+  router.push({ path: `/area/${row.data.id}` });
 };
-const deleteButton = (event: any, area: Area) => {
+const deleteButton = (area: Area) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("production.messages.confirmDeleteArea", { name: area.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",

@@ -307,6 +307,7 @@ export interface CreateWorkOrderDto {
   plannedQuantity: number;
   plannedDate: any;
   comment: string;
+  lotCode?: string;
 }
 
 export interface ValidatePreviousPhaseQuantityRequest {

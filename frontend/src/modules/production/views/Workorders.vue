@@ -1,42 +1,40 @@
 <template>
-  <TableWorkorders
-    :workorders="filteredWorkorders"
-    @edit="editRow"
+  <Table
+    :items="workOrderStore.workorders ?? []"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-labels="filterMetadata.filterLabels"
+    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    :filter-body-width="filterBodyWidth"
+    page="Workorders"
+    preset="crud-list"
+    tableStyle="min-width: 100%"
+    sort-mode="multiple"
+    show-delete-column
+    @filter="filterData"
+    @clear="cleanFilter"
+    @create="createButtonClick"
     @delete="deleteButton"
+    @row-click="editRow"
   >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterData"
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ pt("Període") }}</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="pt('Seleccioni un període')"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">{{
+          pt("Període")
+        }}</label>
+        <DatePicker
+          v-model="filter.dates"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          :placeholder="pt('Seleccioni un període')"
+          showIcon
+          class="w-full"
+          size="small"
+        />
+      </div>
     </template>
-  </TableWorkorders>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -52,16 +50,18 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import { createTableViewFilterMetadata } from "@/components/tables/table-view-filter-metadata";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
 import FormCreateWorkorder from "../components/FormCreateWorkorder.vue";
-import TableWorkorders from "../components/TableWorkorders.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import { useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
+import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useReferenceStore } from "../../shared/store/reference";
@@ -92,6 +92,74 @@ const lifecycleStore = useLifecyclesStore();
 const customersStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "code",
+    header: t("production.components.codi"),
+    style: "width: 15%",
+  },
+  {
+    field: "referenceId",
+    header: t("production.components.referencia"),
+    columnType: ColumnType.Lookup,
+    resolver: referenceStore.getFullNameById,
+    style: "width: 40%",
+  },
+  {
+    field: "reference.customerId",
+    header: t("production.components.client"),
+    columnType: ColumnType.Lookup,
+    resolver: customersStore.getCustomerNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "statusId",
+    header: t("production.components.estat"),
+    columnType: ColumnType.Lookup,
+    resolver: lifecycleStore.getStatusNameById,
+    style: "width: 10%",
+  },
+  {
+    field: "plannedDate",
+    header: t("production.components.dataPrevista"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 12%",
+  },
+  {
+    field: "order",
+    header: t("production.components.prioritat"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "plannedQuantity",
+    header: t("production.components.quantitat"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+]);
+
+const filterMetadata = computed(() =>
+  createTableViewFilterMetadata(columns.value, {
+    labels: {
+      dates: pt("Període"),
+      customerId: pt("Client"),
+      referenceId: pt("Referència"),
+    },
+    valueResolvers: {
+      customerId: (value) =>
+        typeof value === "string"
+          ? (customersStore.getCustomerNameById(value) ?? "")
+          : "",
+      referenceId: (value) =>
+        typeof value === "string"
+          ? (referenceStore.getFullNameById(value) ?? "")
+          : "",
+    },
+  }),
+);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -156,9 +224,6 @@ const cleanFilter = () => {
   setCurrentYear();
   userFilterStore.removeFilter("Workorders", "");
 };
-const filteredWorkorders = computed(() => {
-  return workOrderStore.workorders ?? [];
-});
 const filterData = async () => {
   if (
     filter.value.dates &&
@@ -220,8 +285,8 @@ onMounted(async () => {
   if (!filter.value.dates) setCurrentYear();
   filterData();
 });
-onUnmounted(() => {
-  userFilterStore.addFilter("Workorders", "", filter.value);
+onBeforeRouteLeave(async () => {
+  await userFilterStore.addFilter("Workorders", "", filter.value);
 });
 
 const getUserFilter = () => {
@@ -244,8 +309,8 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const editRow = (workorder: WorkOrder) => {
-  router.push({ path: `/workorder/${workorder.id}` });
+const editRow = (row: DataTableRowClickEvent) => {
+  router.push({ path: `/workorder/${row.data.id}` });
 };
 
 const createWorkOrder = async () => {

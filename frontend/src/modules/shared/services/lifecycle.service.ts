@@ -1,4 +1,5 @@
 import BaseService from "../../../api/base.service";
+import { GenericResponse } from "../../../types";
 import {
   Lifecycle,
   Status,
@@ -6,6 +7,23 @@ import {
   LifecycleTag,
   AvailableStatusTransitionDto,
 } from "../types";
+
+const validateTagWriteStatus = (status: number) =>
+  status >= 200 && status < 500 && status !== 401;
+
+const isGenericResponse = (
+  value: unknown,
+): value is GenericResponse<LifecycleTag> => {
+  if (typeof value !== "object" || value === null) return false;
+
+  const response = value as Partial<GenericResponse<LifecycleTag>>;
+  return typeof response.result === "boolean" && Array.isArray(response.errors);
+};
+
+const toFailedTagResponse = (value: unknown): GenericResponse<LifecycleTag> =>
+  isGenericResponse(value)
+    ? value
+    : { result: false, errors: [], content: null };
 
 export default class LifecycleService extends BaseService<Lifecycle> {
   async getByName(name: string): Promise<Lifecycle | undefined> {
@@ -99,29 +117,50 @@ export default class LifecycleService extends BaseService<Lifecycle> {
     }
   }
 
-  async createTag(lifecycleId: string, tag: LifecycleTag): Promise<boolean> {
+  async createTag(
+    lifecycleId: string,
+    tag: LifecycleTag,
+  ): Promise<GenericResponse<LifecycleTag>> {
     try {
       const response = await this.apiClient.post(
         `${this.resource}/Tag/Lifecycle/${lifecycleId}`,
-        tag
+        tag,
+        { validateStatus: validateTagWriteStatus },
       );
-      return response.status === 201;
+      if (response.status === 201) {
+        return {
+          result: true,
+          errors: [],
+          content: response.data as LifecycleTag,
+        };
+      }
+
+      return toFailedTagResponse(response.data);
     } catch (err) {
       console.error("Error creating lifecycle tag:", err);
-      return false;
+      return { result: false, errors: [], content: null };
     }
   }
 
-  async updateTag(tag: LifecycleTag): Promise<boolean> {
+  async updateTag(tag: LifecycleTag): Promise<GenericResponse<LifecycleTag>> {
     try {
       const response = await this.apiClient.put(
         `${this.resource}/Tag/${tag.id}`,
-        tag
+        tag,
+        { validateStatus: validateTagWriteStatus },
       );
-      return response.status === 200;
+      if (response.status === 200) {
+        return {
+          result: true,
+          errors: [],
+          content: response.data as LifecycleTag,
+        };
+      }
+
+      return toFailedTagResponse(response.data);
     } catch (err) {
       console.error("Error updating lifecycle tag:", err);
-      return false;
+      return { result: false, errors: [], content: null };
     }
   }
 

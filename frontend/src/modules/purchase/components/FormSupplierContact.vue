@@ -1,141 +1,125 @@
-<template>
-  <form v-if="contact">
-    <section class="three-columns">
-      <BaseInput
-        :label="t('purchase.supplierContact.fields.firstName')"
-        id="firstName"
-        v-model="contact.firstName"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.firstName,
-        }"
-      ></BaseInput>
-      <BaseInput
-        :label="t('purchase.supplierContact.fields.lastName')"
-        id="lastName"
-        v-model="contact.lastName"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.lastName,
-        }"
-      ></BaseInput>
-      <BaseInput
-        :label="t('purchase.supplierContact.fields.charge')"
-        id="charge"
-        v-model="contact.charge"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.charge,
-        }"
-      ></BaseInput>
-    </section>
-    <section class="three-columns">
-      <BaseInput
-        class="mb-2"
-        :label="t('purchase.supplierContact.fields.email')"
-        id="email"
-        v-model="contact.email"
-        :class="{
-          'p-invalid': validation.errors.email,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="t('purchase.supplierContact.fields.phone')"
-        id="phone"
-        v-model="contact.phone"
-        :class="{
-          'p-invalid': validation.errors.phone,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ t("purchase.supplierContact.fields.default") }}</label>
-        <Checkbox v-model="contact.default" class="w-full" :binary="true" />
-      </div>
-    </section>
-    <div>
-      <label class="block text-900 mb-2">{{ t("purchase.supplierContact.fields.observations") }}</label>
-      <Textarea v-model="contact.observations" class="w-full" />
-    </div>
-
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button :label="t('purchase.supplierContact.actions.save')" @click="submitForm" />
-      <Button :label="t('purchase.supplierContact.actions.cancel')" severity="secondary" @click="cancel" />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { SupplierContact } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { SupplierContact } from "../types";
 
 const props = defineProps<{
   contact: SupplierContact;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", contact: SupplierContact): void;
-  (e: "cancel"): void;
+  (event: "submit", contact: SupplierContact): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
 const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  firstName: Yup.string()
-    .required(() => t("purchase.supplierContact.validation.firstNameRequired"))
-    .max(250, () => t("purchase.supplierContact.validation.firstNameMaxLength")),
-  lastName: Yup.string()
-    .required(() => t("purchase.supplierContact.validation.lastNameRequired"))
-    .max(250, () => t("purchase.supplierContact.validation.lastNameMaxLength")),
-  charge: Yup.string(),
-  email: Yup.string()
-    .required(() => t("purchase.supplierContact.validation.emailRequired"))
-    .email(() => t("purchase.supplierContact.validation.emailInvalid")),
-  phone: Yup.string()
-    .required(() => t("purchase.supplierContact.validation.phoneRequired"))
-    .max(15, () => t("purchase.supplierContact.validation.phoneMaxLength")),
-  phoneExtension: Yup.string(),
-  observations: Yup.string(),
-  disabled: Yup.boolean().required(),
-  default: Yup.boolean().required(),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "firstName",
+        label: t("purchase.supplierContact.fields.firstName"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .trim()
+          .required(t("purchase.supplierContact.validation.firstNameRequired"))
+          .max(
+            250,
+            t("purchase.supplierContact.validation.firstNameMaxLength"),
+          ),
+      },
+      {
+        name: "lastName",
+        label: t("purchase.supplierContact.fields.lastName"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .trim()
+          .required(t("purchase.supplierContact.validation.lastNameRequired"))
+          .max(
+            250,
+            t("purchase.supplierContact.validation.lastNameMaxLength"),
+          ),
+      },
+      {
+        name: "charge",
+        label: t("purchase.supplierContact.fields.charge"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "email",
+        label: t("purchase.supplierContact.fields.email"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .trim()
+          .required(t("purchase.supplierContact.validation.emailRequired"))
+          .email(t("purchase.supplierContact.validation.emailInvalid")),
+      },
+      {
+        name: "phone",
+        label: t("purchase.supplierContact.fields.phone"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .trim()
+          .required(t("purchase.supplierContact.validation.phoneRequired"))
+          .max(15, t("purchase.supplierContact.validation.phoneMaxLength")),
+      },
+      {
+        name: "default",
+        label: t("purchase.supplierContact.fields.default"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+        validation: Yup.boolean().required(),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "observations",
+        label: t("purchase.supplierContact.fields.observations"),
+        type: FormFieldType.Textarea,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.contact);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.contact);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("purchase.supplierContact.messages.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-const cancel = () => {
-  emit("cancel");
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.contact,
+    firstName: stringValue(values.firstName, "").trim(),
+    lastName: stringValue(values.lastName, "").trim(),
+    charge: stringValue(values.charge, "").trim(),
+    email: stringValue(values.email, "").trim(),
+    phone: stringValue(values.phone, "").trim(),
+    observations: stringValue(values.observations, ""),
+    default: booleanValue(values.default, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="contact"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

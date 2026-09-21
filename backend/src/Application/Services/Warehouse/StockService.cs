@@ -31,7 +31,7 @@ namespace Application.Services.Warehouse
             return await unitOfWork.Warehouses.GetStockList(locationId, referenceId);
         }
 
-        public Stock? GetByDimensions(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness)
+        public Stock? GetByDimensionsAndLot(Guid locationId, Guid referenceId, decimal width, decimal length, decimal height, decimal diameter, decimal thickness, Guid? lotId)
         {
             var stocks = unitOfWork.Stocks.Find(
                 p => p.LocationId == locationId &&
@@ -40,7 +40,8 @@ namespace Application.Services.Warehouse
                     p.Length == length &&
                     p.Height == height &&
                     p.Diameter == diameter &&
-                    p.Thickness == thickness
+                    p.Thickness == thickness &&
+                    p.LotId == lotId
             ).FirstOrDefault();
             return stocks;
         }
@@ -66,11 +67,12 @@ namespace Application.Services.Warehouse
                         s.Width, s.Length, s.Height, s.Diameter, s.Thickness,
                         bom.Width, bom.Length, bom.Height, bom.Diameter, bom.Thickness));
 
-                    // Ordenar per merma ascendent (la proposta amb menys merma primer)
+                    // Ordenar per merma ascendent (la proposta amb menys merma primer) i, com a criteri secundari, FIFO (Lot.CreatedOn ascendent)
                     stock = stock.OrderBy(s => stockFilter.CalculateWaste(
                         s.Width, s.Length, s.Height, s.Diameter, s.Thickness,
                         bom.Width, bom.Length, bom.Height, bom.Diameter, bom.Thickness,
-                        bom.Quantity) ?? decimal.MaxValue);
+                        bom.Quantity) ?? decimal.MaxValue)
+                        .ThenBy(s => s.LotCreatedOn ?? DateTime.MaxValue);
                 }
             }
 

@@ -1,7 +1,12 @@
 <template>
   <div>
-    <DataTable
-      :value="groupedSaturation"
+    <Table
+      :items="groupedSaturation"
+      :columns="columns"
+      :filter-config="filterConfig"
+      v-model:filter-values="filter"
+      :filter-body-width="filterBodyWidth"
+      :show-create="false"
       :paginator="groupedSaturation && groupedSaturation.length > 10"
       :rows="20"
       :rowsPerPageOptions="[10, 25, 50]"
@@ -10,81 +15,34 @@
       tableStyle="min-width: 100%"
       sortField="totalEstimatedTime"
       :sortOrder="-1"
+      @filter="filterData"
+      @clear="cleanFilter"
     >
-      <template #header>
+      <template #action-prepend>
         <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
+          v-if="workingDaysInfo"
+          class="flex align-items-center gap-2 text-700 mr-2"
         >
-          <div class="datatable-filter">
-            <div class="filter-field">
-              <ExerciseDatePicker
-                :exercises="exerciseStore.exercises"
-                @range-selected="filterData"
-              />
-            </div>
-          </div>
-          <div
-            v-if="workingDaysInfo"
-            class="flex align-items-center gap-2 text-700"
-          >
-            <i :class="PrimeIcons.CALENDAR" class="text-primary"></i>
-            <span class="font-semibold">{{ workingDaysInfo }}</span>
-          </div>
-          <div class="datatable-buttons">
-            <Button
-              class="datatable-button mr-2"
-              :icon="PrimeIcons.FILTER"
-              rounded
-              raised
-              @click="filterData"
-            />
-            <Button
-              class="datatable-button mr-2"
-              :icon="PrimeIcons.FILTER_SLASH"
-              rounded
-              raised
-              @click="cleanFilter"
-            />
-          </div>
+          <i :class="PrimeIcons.CALENDAR" class="text-primary"></i>
+          <span class="font-semibold">{{ workingDaysInfo }}</span>
         </div>
       </template>
-      <Column
-        field="workcenterTypeName"
-        :header="pt('Tipus Centre Treball')"
-        sortable
-        style="width: 40%"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.workcenterTypeName }}
-          <span class="text-500 ml-2"
-            >({{ slotProps.data.workcenterCount }} centres)</span
-          >
-        </template>
-      </Column>
-      <Column
-        field="totalEstimatedTime"
-        :header="pt('Temps Total Estimat')"
-        sortable
-        style="width: 30%"
-      >
-        <template #body="slotProps">
-          {{ formatTime(slotProps.data.totalEstimatedTime) }}
-        </template>
-      </Column>
-      <Column :header="pt('Detall')" style="width: 30%">
-        <template #body="slotProps">
-          <Button
-            :icon="PrimeIcons.SEARCH"
-            rounded
-            outlined
-            severity="info"
-            @click="showDetail(slotProps.data)"
-            :label="pt('Veure detall')"
-            size="small"
-          />
-        </template>
-      </Column>
-    </DataTable>
+      <template #body-workcenterTypeName="{ data }">
+        {{ data.workcenterTypeName }}
+        <span class="text-500 ml-2">({{ data.workcenterCount }} centres)</span>
+      </template>
+      <template #body-detailAction="{ data }">
+        <Button
+          :icon="PrimeIcons.SEARCH"
+          rounded
+          outlined
+          severity="info"
+          @click.stop="showDetail(data)"
+          :label="pt('Veure detall')"
+          size="small"
+        />
+      </template>
+    </Table>
 
     <!-- Dialog de detall -->
     <Dialog
@@ -93,10 +51,12 @@
       :style="{ width: '80vw' }"
       :modal="true"
     >
-      <DataTable
-        :value="selectedDetails"
+      <Table
+        :items="selectedDetails"
+        :columns="detailColumns"
+        :show-filters="false"
         sortMode="multiple"
-        :multiSortMeta="[
+        :multi-sort-meta="[
           { field: 'workOrderPriority', order: 1 },
           { field: 'workOrderPlannedDate', order: 1 },
         ]"
@@ -104,66 +64,18 @@
         class="p-datatable-sm"
         :paginator="selectedDetails && selectedDetails.length > 10"
         :rows="20"
-      >
-        <Column
-          field="workOrderCode"
-          :header="pt('Ordre Treball')"
-          sortable
-          style="width: 12%"
-        ></Column>
-        <Column
-          field="workOrderPriority"
-          :header="pt('Prioritat')"
-          sortable
-          style="width: 8%"
-        ></Column>
-        <Column
-          field="workOrderPlannedDate"
-          :header="pt('Data Plan.')"
-          sortable
-          style="width: 12%"
-        >
-          <template #body="slotProps">
-            {{
-              new Date(slotProps.data.workOrderPlannedDate).toLocaleDateString(
-                "ca-ES",
-              )
-            }}
-          </template>
-        </Column>
-        <Column
-          field="phaseCode"
-          :header="pt('Codi Fase')"
-          sortable
-          style="width: 8%"
-        ></Column>
-        <Column
-          field="phaseDescription"
-          :header="pt('Descripció Fase')"
-          style="width: 25%"
-        ></Column>
-        <Column
-          field="plannedQuantity"
-          :header="pt('Quantitat')"
-          sortable
-          style="width: 10%"
-        ></Column>
-        <Column
-          field="estimatedTime"
-          :header="pt('Temps Estimat')"
-          sortable
-          style="width: 15%"
-        >
-          <template #body="slotProps">
-            {{ formatTime(slotProps.data.estimatedTime) }}
-          </template>
-        </Column>
-      </DataTable>
+      />
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -175,7 +87,6 @@ import { ref, computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { formatDateForQueryParameter } from "../../../utils/functions";
-import ExerciseDatePicker from "../../../components/ExerciseDatePicker.vue";
 import type { WorkcenterTypeSaturation } from "../types";
 
 const plantModelStore = usePlantModelStore();
@@ -189,6 +100,92 @@ const { workcenterTypeSaturation } = storeToRefs(plantModelStore);
 const detailDialogVisible = ref(false);
 const selectedDetails = ref<WorkcenterTypeSaturation[]>([]);
 const selectedWorkcenterTypeName = ref("");
+
+const filterBodyWidth: FilterBodyWidth = { desktop: "30%", tablet: "50%" };
+
+const filter = ref({
+  dates: undefined as Array<Date> | undefined,
+});
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: pt("Període"),
+    type: "date-range",
+    placeholder: pt("Selecciona un període vàlid"),
+    size: "md",
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "workcenterTypeName",
+    header: pt("Tipus Centre Treball"),
+    sortable: true,
+    style: "width: 40%",
+  },
+  {
+    field: "totalEstimatedTime",
+    header: pt("Temps Total Estimat"),
+    sortable: true,
+    resolver: (value) => (typeof value === "number" ? formatTime(value) : ""),
+    style: "width: 30%",
+  },
+  {
+    field: "detailAction",
+    header: pt("Detall"),
+    style: "width: 30%",
+    truncate: false,
+  },
+]);
+
+const detailColumns = computed<Column[]>(() => [
+  {
+    field: "workOrderCode",
+    header: pt("Ordre Treball"),
+    sortable: true,
+    style: "width: 12%",
+  },
+  {
+    field: "workOrderPriority",
+    header: pt("Prioritat"),
+    sortable: true,
+    columnType: ColumnType.Number,
+    style: "width: 8%",
+  },
+  {
+    field: "workOrderPlannedDate",
+    header: pt("Data Plan."),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 12%",
+  },
+  {
+    field: "phaseCode",
+    header: pt("Codi Fase"),
+    sortable: true,
+    style: "width: 8%",
+  },
+  {
+    field: "phaseDescription",
+    header: pt("Descripció Fase"),
+    style: "width: 25%",
+  },
+  {
+    field: "plannedQuantity",
+    header: pt("Quantitat"),
+    sortable: true,
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "estimatedTime",
+    header: pt("Temps Estimat"),
+    sortable: true,
+    resolver: (value) => (typeof value === "number" ? formatTime(value) : ""),
+    style: "width: 15%",
+  },
+]);
 
 // Computed property to group data by workcenterTypeId
 const groupedSaturation = computed(() => {
@@ -255,12 +252,12 @@ const calculateWorkingDays = (startDate: Date, endDate: Date): number => {
 
 // Computed property for working days information
 const workingDaysInfo = computed(() => {
-  if (!store.exercisePicker.dates || store.exercisePicker.dates.length !== 2) {
+  if (!filter.value.dates?.[0] || !filter.value.dates[1]) {
     return null;
   }
 
-  const startDate = store.exercisePicker.dates[0];
-  const endDate = store.exercisePicker.dates[1];
+  const startDate = filter.value.dates[0];
+  const endDate = filter.value.dates[1];
   const workingDays = calculateWorkingDays(startDate, endDate);
 
   const hoursPerDay = 8; // Hores per torn
@@ -283,7 +280,7 @@ const formatTime = (minutes: number): string => {
 
 // Filter data based on selected date range
 const filterData = async () => {
-  if (!store.exercisePicker.dates || store.exercisePicker.dates.length !== 2) {
+  if (!filter.value.dates?.[0] || !filter.value.dates[1]) {
     toast.add({
       severity: "info",
       summary: pt("Filtre invàlid"),
@@ -293,15 +290,15 @@ const filterData = async () => {
     return;
   }
 
-  const startDate = formatDateForQueryParameter(store.exercisePicker.dates[0]);
-  const endDate = formatDateForQueryParameter(store.exercisePicker.dates[1]);
+  const startDate = formatDateForQueryParameter(filter.value.dates[0]);
+  const endDate = formatDateForQueryParameter(filter.value.dates[1]);
 
   await plantModelStore.fetchWorkcenterTypeSaturation(startDate, endDate);
 };
 
 // Clean filter and reset to default
 const cleanFilter = () => {
-  store.cleanExercisePicker();
+  filter.value.dates = undefined;
   plantModelStore.workcenterTypeSaturation = undefined;
 };
 
@@ -321,10 +318,9 @@ const setCurrentYear = () => {
   const currentExercise = exerciseStore.exercises?.find((e) => e.name === year);
 
   if (currentExercise) {
-    store.exercisePicker.exercise = currentExercise;
-    store.exercisePicker.dates = [
-      new Date(store.exercisePicker.exercise.startDate),
-      new Date(store.exercisePicker.exercise.endDate),
+    filter.value.dates = [
+      new Date(currentExercise.startDate),
+      new Date(currentExercise.endDate),
     ];
   }
 };
@@ -343,7 +339,7 @@ onMounted(async () => {
 
   // Set default date range and fetch data
   setCurrentYear();
-  if (store.exercisePicker.dates && store.exercisePicker.dates.length === 2) {
+  if (filter.value.dates?.[0] && filter.value.dates[1]) {
     await filterData();
   }
 });

@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, useSlots, useAttrs, ref, watch, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  useSlots,
+  useAttrs,
+  ref,
+  watch,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
@@ -14,6 +22,7 @@ import type { DataTableRowClickEvent } from "primevue/datatable";
 import { useStore } from "@/store";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
+import { resolveFieldValue } from "./field-value";
 import {
   formatDate,
   formatDateTime,
@@ -72,9 +81,17 @@ const props = withDefaults(
     filterValues?: any;
     filterBodyWidth?: FilterBodyWidth;
     showFilters?: boolean;
+    showFilterActions?: boolean;
+    showFilterAction?: boolean | null;
+    showClearAction?: boolean | null;
     showCreate?: boolean;
     page?: string;
+    showSelectionColumn?: boolean;
+    selectionColumnWidth?: string;
+    showRowReorderColumn?: boolean;
+    rowReorderColumnWidth?: string;
     showDeleteColumn?: boolean;
+    deleteColumnWidth?: string;
     canDelete?: (item: any) => boolean;
     attachmentConfig?: AttachmentConfig | null;
     preset?: TablePreset;
@@ -91,8 +108,20 @@ const props = withDefaults(
     scrollHeight?: string;
     sortField?: string;
     sortOrder?: number;
+    multiSortMeta?: Array<{ field: string; order: 1 | -1 }>;
   }>(),
-  { showFilters: true, showCreate: true, paginator: null, scrollable: null },
+  {
+    showFilters: true,
+    showFilterActions: true,
+    showFilterAction: null,
+    showClearAction: null,
+    showCreate: true,
+    selectionColumnWidth: "3rem",
+    rowReorderColumnWidth: "3rem",
+    deleteColumnWidth: "3%",
+    paginator: null,
+    scrollable: null,
+  },
 );
 
 const resolvedDataTableProps = computed(() => {
@@ -102,12 +131,21 @@ const resolvedDataTableProps = computed(() => {
   if (props.dataKey !== undefined) explicit.dataKey = props.dataKey;
   if (props.stripedRows !== undefined) explicit.stripedRows = props.stripedRows;
   if (props.rowHover !== undefined) explicit.rowHover = props.rowHover;
-  if (props.selectionMode !== undefined) explicit.selectionMode = props.selectionMode;
-  if (props.rowGroupMode !== undefined) explicit.rowGroupMode = props.rowGroupMode;
-  if (props.expandedRows !== undefined) explicit.expandedRows = props.expandedRows;
+  if (props.selectionMode !== undefined)
+    explicit.selectionMode = props.selectionMode;
+  if (props.rowGroupMode !== undefined)
+    explicit.rowGroupMode = props.rowGroupMode;
+  if (props.expandedRows !== undefined)
+    explicit.expandedRows = props.expandedRows;
   // Exclude paginator, rows, scrollable, scrollHeight, sortField, sortOrder from the spread —
   // they are bound explicitly in the template to avoid PrimeVue reactivity issues.
-  const { paginator: _p, rows: _r, scrollable: _s, scrollHeight: _sh, ...presetRest } = preset;
+  const {
+    paginator: _p,
+    rows: _r,
+    scrollable: _s,
+    scrollHeight: _sh,
+    ...presetRest
+  } = preset;
   return { ...presetRest, ...explicit, ...attrs };
 });
 
@@ -128,7 +166,7 @@ const resolvedSortField = computed(() => {
   if (isMultipleSort.value) return undefined;
   const field = activeViewId.value
     ? activeSortConfig.value?.field
-    : props.sortField ?? activeSortConfig.value?.field;
+    : (props.sortField ?? activeSortConfig.value?.field);
   return field ? field : undefined;
 });
 const resolvedSortOrder = computed(() => {
@@ -136,16 +174,19 @@ const resolvedSortOrder = computed(() => {
   if (!resolvedSortField.value) return undefined;
   return activeViewId.value
     ? activeSortConfig.value?.order
-    : props.sortOrder ?? activeSortConfig.value?.order;
+    : (props.sortOrder ?? activeSortConfig.value?.order);
 });
 const resolvedMultiSortMeta = computed(() => {
   if (!isMultipleSort.value) return undefined;
+  if (!activeViewId.value && props.multiSortMeta?.length) {
+    return props.multiSortMeta;
+  }
   const field = activeViewId.value
     ? activeSortConfig.value?.field
-    : props.sortField ?? activeSortConfig.value?.field;
+    : (props.sortField ?? activeSortConfig.value?.field);
   const order = activeViewId.value
     ? activeSortConfig.value?.order
-    : props.sortOrder ?? activeSortConfig.value?.order;
+    : (props.sortOrder ?? activeSortConfig.value?.order);
   if (!field || order === undefined) return undefined;
   return [{ field, order: order as 1 | -1 }];
 });
@@ -155,26 +196,29 @@ const resolvedMultiSortMeta = computed(() => {
 const sortKey = computed(() => {
   if (isMultipleSort.value) {
     const meta = resolvedMultiSortMeta.value;
-    return `multi_${meta?.[0]?.field ?? ''}_${meta?.[0]?.order ?? ''}`;
+    return `multi_${meta?.map((item) => `${item.field}_${item.order}`).join("_") ?? ""}`;
   }
-  return `${resolvedSortField.value ?? ''}_${resolvedSortOrder.value ?? ''}`;
+  return `${resolvedSortField.value ?? ""}_${resolvedSortOrder.value ?? ""}`;
 });
 
 const resolvedRows = computed(() => {
   if (props.rows !== undefined) return props.rows;
-  if (props.preset) return PRESET_DEFAULTS[props.preset].rows as number | undefined;
+  if (props.preset)
+    return PRESET_DEFAULTS[props.preset].rows as number | undefined;
   return undefined;
 });
 
 const resolvedScrollable = computed(() => {
   if (props.scrollable !== null) return props.scrollable;
-  if (props.preset) return PRESET_DEFAULTS[props.preset].scrollable as boolean | undefined;
+  if (props.preset)
+    return PRESET_DEFAULTS[props.preset].scrollable as boolean | undefined;
   return undefined;
 });
 
 const resolvedScrollHeight = computed(() => {
   if (props.scrollHeight !== undefined) return props.scrollHeight;
-  if (props.preset) return PRESET_DEFAULTS[props.preset].scrollHeight as string | undefined;
+  if (props.preset)
+    return PRESET_DEFAULTS[props.preset].scrollHeight as string | undefined;
   return undefined;
 });
 
@@ -212,7 +256,9 @@ const store = useStore();
 const viewStore = useUserTableViewStore();
 const { t } = useI18n();
 
-const attachmentViewer = ref<InstanceType<typeof TableAttachmentViewer> | null>(null);
+const attachmentViewer = ref<InstanceType<typeof TableAttachmentViewer> | null>(
+  null,
+);
 
 function openAttachments(item: unknown): void {
   attachmentViewer.value?.open(item);
@@ -278,7 +324,11 @@ function onSortConfigUpdate(sortConfig: SortConfig | null) {
 // Build the columns payload to persist: only the fields needed to
 // reconstruct visibility + order. Mirrors what TableViewConfig.buildViewConfig
 // does on save (filters out columns that don't carry user choices).
-function buildColumnsPayload(): Array<{ field: string; visible?: boolean; order?: number }> {
+function buildColumnsPayload(): Array<{
+  field: string;
+  visible?: boolean;
+  order?: number;
+}> {
   return appliedColumns.value
     .filter((col) => col.order !== undefined || col.visible === false)
     .map((col) => ({
@@ -349,7 +399,7 @@ async function loadDefaultView() {
   await viewStore.fetchViews(userId, props.page);
 
   const userViews = viewStore.views.filter(
-    (v) => v.userId === userId && v.page === props.page
+    (v) => v.userId === userId && v.page === props.page,
   );
 
   const defaultView =
@@ -394,23 +444,30 @@ async function provisionDefaultOnFirstVisit() {
 }
 
 // Watch for user authentication to load default view after page refresh
-watch(() => store.user?.id, (newUserId, oldUserId) => {
-  if (newUserId && props.page && newUserId !== oldUserId) {
-    ensureDefaultAndLoad();
-  }
-}, { immediate: true });
+watch(
+  () => store.user?.id,
+  (newUserId, oldUserId) => {
+    if (newUserId && props.page && newUserId !== oldUserId) {
+      ensureDefaultAndLoad();
+    }
+  },
+  { immediate: true },
+);
 
 // --- Filter persistence ---
 onMounted(async () => {
   if (props.page) {
     // If no user yet, trigger load when user becomes available
     if (!store.user?.id) {
-      const unwatch = watch(() => store.user?.id, (userId) => {
-        if (userId) {
-          unwatch();
-          ensureDefaultAndLoad();
-        }
-      });
+      const unwatch = watch(
+        () => store.user?.id,
+        (userId) => {
+          if (userId) {
+            unwatch();
+            ensureDefaultAndLoad();
+          }
+        },
+      );
     } else {
       await ensureDefaultAndLoad();
     }
@@ -439,31 +496,39 @@ onUnmounted(() => {
   }
 });
 
-watch(() => props.columns, (newColumns) => {
-  if (props.page && activeViewId.value) {
-    const view = viewStore.views.find((v) => v.id === activeViewId.value);
-    if (view) {
-      appliedColumns.value = viewStore.applyView(view, newColumns);
+watch(
+  () => props.columns,
+  (newColumns) => {
+    if (props.page && activeViewId.value) {
+      const view = viewStore.views.find((v) => v.id === activeViewId.value);
+      if (view) {
+        appliedColumns.value = viewStore.applyView(view, newColumns);
+      } else {
+        appliedColumns.value = [...newColumns];
+      }
     } else {
       appliedColumns.value = [...newColumns];
     }
-  } else {
-    appliedColumns.value = [...newColumns];
-  }
-}, { deep: true });
+  },
+  { deep: true },
+);
 
 // Watch for user-driven changes to column visibility or order applied
 // through TableViewConfig. The dialog mutates `appliedColumns` via its
 // own local state and applies it back through onApplyViewConfig — but
 // we also catch manual mutations here so any path that flips a column
 // off or reorders it marks the state dirty for the row-click save.
-watch(appliedColumns, () => {
-  if (props.page && activeViewId.value !== "") {
-    // Skip the initial assignment that loadDefaultView performs
-    // (stateDirty is already false there). Other changes are user-driven.
-    markStateDirty();
-  }
-}, { deep: true });
+watch(
+  appliedColumns,
+  () => {
+    if (props.page && activeViewId.value !== "") {
+      // Skip the initial assignment that loadDefaultView performs
+      // (stateDirty is already false there). Other changes are user-driven.
+      markStateDirty();
+    }
+  },
+  { deep: true },
+);
 
 // --- Columns with visibility and order ---
 
@@ -479,7 +544,9 @@ const visibleColumns = computed(() => {
 
 // --- Totals ---
 
-const columnsWithTotal = computed(() => visibleColumns.value.filter((c) => c.total));
+const columnsWithTotal = computed(() =>
+  visibleColumns.value.filter((c) => c.total),
+);
 
 const hasFooter = computed(
   () =>
@@ -493,7 +560,7 @@ function aggregate(
   kind: Aggregation,
 ): number {
   const nums = items
-    .map((i) => i[field])
+    .map((item) => resolveFieldValue(item, field))
     .filter((v): v is number => typeof v === "number");
   if (nums.length === 0) return 0;
   switch (kind) {
@@ -506,9 +573,10 @@ function aggregate(
     case "max":
       return Math.max(...nums);
     case "count":
-      return items.filter(
-        (i) => i[field] !== undefined && i[field] !== null,
-      ).length;
+      return items.filter((item) => {
+        const value = resolveFieldValue(item, field);
+        return value !== undefined && value !== null;
+      }).length;
   }
 }
 
@@ -528,7 +596,11 @@ function formatTotal(col: Column): string {
 // --- Filter slot helpers ---
 
 function isFilterSlot(name: string | number | symbol): boolean {
-  return typeof name === "string" && name.startsWith("filter-");
+  return (
+    typeof name === "string" &&
+    name.startsWith("filter-") &&
+    name !== "filter-append"
+  );
 }
 
 function filterSlotName(name: string | number | symbol): string {
@@ -548,16 +620,49 @@ function hasValue(value: unknown): boolean {
 // Used by the default/typed body templates so the rendered text matches
 // what consumers see, regardless of columnType.
 function formatCellValue(col: Column, data: any): string {
-  const value = data[col.field];
+  const value = resolveCellValue(col, data);
   switch (col.columnType) {
-    case ColumnType.Date: return formatDate(value);
-    case ColumnType.DateTime: return formatDateTime(value);
-    case ColumnType.Time: return formatTime(value);
-    case ColumnType.Currency: return formatCurrency(value);
-    case ColumnType.Lookup: return col.resolver?.(value) ?? "";
-    case ColumnType.Number: return String(value);
-    default: return String(value ?? "");
+    case ColumnType.Date:
+      return typeof value === "string" || value instanceof Date
+        ? formatDate(value)
+        : "";
+    case ColumnType.DateTime:
+      return typeof value === "string"
+        ? formatDateTime(value)
+        : value instanceof Date
+          ? formatDateTime(value.toISOString())
+          : "";
+    case ColumnType.Time:
+      return typeof value === "string" || value instanceof Date
+        ? formatTime(value)
+        : "";
+    case ColumnType.Currency:
+      return typeof value === "number" ? formatCurrency(value) : "";
+    case ColumnType.Lookup:
+      return String(value ?? "");
+    case ColumnType.Number:
+      return String(value);
+    default:
+      return String(value ?? "");
   }
+}
+
+function resolveCellValue(col: Column, data: unknown): unknown {
+  const value = resolveFieldValue(data, col.field);
+  if (!col.resolver) return value;
+  if (col.columnType === ColumnType.Lookup && typeof value !== "string") {
+    return undefined;
+  }
+  return col.resolver(value, data);
+}
+
+function resolveBooleanValue(
+  data: unknown,
+  field: string,
+): boolean | null | undefined {
+  const value = resolveFieldValue(data, field);
+  if (typeof value === "boolean" || value === null) return value;
+  return undefined;
 }
 </script>
 
@@ -577,10 +682,7 @@ function formatCellValue(col: Column, data: any): string {
     @row-click="onRowClick"
   >
     <!-- TableFilter embedded in DataTable's native header slot -->
-    <template
-      v-if="showFilters && filterConfig"
-      #header
-    >
+    <template v-if="showFilters && filterConfig" #header>
       <TableFilter
         :key="clearKey"
         :config="filterConfig"
@@ -588,6 +690,8 @@ function formatCellValue(col: Column, data: any): string {
         :body-width="filterBodyWidth"
         :show-title="false"
         :show-action-labels="false"
+        :show-filter-action="showFilterAction ?? showFilterActions"
+        :show-clear-action="showClearAction ?? showFilterActions"
         :show-create="showCreate"
         embedded
         @update:model-value="emit('update:filterValues', $event)"
@@ -599,12 +703,17 @@ function formatCellValue(col: Column, data: any): string {
         <template v-if="slots.prepend" #prepend>
           <slot name="prepend" />
         </template>
+        <template v-if="slots['filter-append']" #filter-append>
+          <slot name="filter-append" />
+        </template>
         <template v-if="slots.append" #append>
           <slot name="append" />
         </template>
-        <!-- Table view config button as first action -->
-        <template v-if="page" #action-prepend>
+        <!-- Consumer actions and table view config appear before standard actions -->
+        <template v-if="slots['action-prepend'] || page" #action-prepend>
+          <slot name="action-prepend" />
           <Button
+            v-if="page"
             icon="pi pi-cog"
             size="small"
             text
@@ -627,6 +736,31 @@ function formatCellValue(col: Column, data: any): string {
       </TableFilter>
     </template>
 
+    <!-- Selection system column -->
+    <Column
+      v-if="showSelectionColumn"
+      selectionMode="multiple"
+      :exportable="false"
+      :style="{
+        width: selectionColumnWidth,
+        minWidth: selectionColumnWidth,
+        maxWidth: selectionColumnWidth,
+      }"
+    />
+
+    <!-- Row reorder system column -->
+    <Column
+      v-if="showRowReorderColumn"
+      rowReorder
+      :reorderableColumn="false"
+      :headerStyle="{ width: rowReorderColumnWidth }"
+      :style="{
+        width: rowReorderColumnWidth,
+        minWidth: rowReorderColumnWidth,
+        maxWidth: rowReorderColumnWidth,
+      }"
+    />
+
     <!-- Dynamic columns -->
     <template v-for="col in visibleColumns" :key="col.field">
       <ProgressColumn
@@ -646,36 +780,46 @@ function formatCellValue(col: Column, data: any): string {
         :header="col.header"
         :sortable="col.sortable || activeSortConfig?.field === col.field"
         :style="col.style"
-        :pt="col.truncate !== false ? { bodyCell: { class: 'truncate-cell' } } : undefined"
+        :frozen="col.frozen"
+        :pt="
+          col.truncate !== false
+            ? { bodyCell: { class: 'truncate-cell' } }
+            : undefined
+        "
       >
-      <!-- Custom body slot from consumer takes priority -->
-      <template v-if="slots[`body-${col.field}`]" #body="slotProps">
-        <slot :name="`body-${col.field}`" v-bind="slotProps" />
-      </template>
+        <!-- Custom body slot from consumer takes priority -->
+        <template v-if="slots[`body-${col.field}`]" #body="slotProps">
+          <slot :name="`body-${col.field}`" v-bind="slotProps" />
+        </template>
 
-      <!-- Boolean: not affected by truncation (its own component) -->
-      <template v-else-if="col.columnType === ColumnType.Boolean" #body="slotProps">
-        <BooleanColumn
-          :value="slotProps.data[col.field]"
-          :show-color="col.showColor"
-        />
-      </template>
-      <!-- Default + all text-typed columns: route through TruncatedCell.
+        <!-- Boolean: not affected by truncation (its own component) -->
+        <template
+          v-else-if="col.columnType === ColumnType.Boolean"
+          #body="slotProps"
+        >
+          <BooleanColumn
+            :value="resolveBooleanValue(slotProps.data, col.field)"
+            :show-color="col.showColor"
+          />
+        </template>
+        <!-- Default + all text-typed columns: route through TruncatedCell.
            Default is true; opt out per column with `truncate: false`. -->
-      <template v-else #body="slotProps">
-        <TruncatedCell
-          v-if="hasValue(slotProps.data[col.field])"
-          :value="formatCellValue(col, slotProps.data)"
-          :truncate="col.truncate !== false"
-        />
-      </template>
+        <template v-else #body="slotProps">
+          <TruncatedCell
+            v-if="hasValue(resolveCellValue(col, slotProps.data))"
+            :value="formatCellValue(col, slotProps.data)"
+            :truncate="col.truncate !== false"
+          />
+        </template>
       </Column>
     </template>
 
     <!-- Read-only attachment action column -->
     <Column
       v-if="attachmentConfig"
-      :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }"
+      :pt="{
+        bodyCell: { style: 'padding: 0 !important; position: relative;' },
+      }"
       style="width: 3rem; min-width: 3rem; max-width: 3rem"
     >
       <template #body="slotProps">
@@ -689,7 +833,17 @@ function formatCellValue(col: Column, data: any): string {
       </template>
     </Column>
     <!-- Delete action column -->
-    <Column v-if="showDeleteColumn" :pt="{ bodyCell: { style: 'padding: 0 !important; position: relative;' } }" style="width: 3rem; min-width: 3rem; max-width: 3rem">
+    <Column
+      v-if="showDeleteColumn"
+      :pt="{
+        bodyCell: { style: 'padding: 0 !important; position: relative;' },
+      }"
+      :style="{
+        width: deleteColumnWidth,
+        minWidth: deleteColumnWidth,
+        maxWidth: deleteColumnWidth,
+      }"
+    >
       <template #body="slotProps">
         <div
           v-if="canDelete ? canDelete(slotProps.data) : true"
@@ -705,7 +859,19 @@ function formatCellValue(col: Column, data: any): string {
     <!-- Footer totals row (only if any column has total or footer slot) -->
     <ColumnGroup v-if="hasFooter" type="footer">
       <Row>
-        <Column v-for="col in visibleColumns" :key="col.field">
+        <Column
+          v-if="showRowReorderColumn"
+          :style="{
+            width: rowReorderColumnWidth,
+            minWidth: rowReorderColumnWidth,
+            maxWidth: rowReorderColumnWidth,
+          }"
+        />
+        <Column
+          v-for="col in visibleColumns"
+          :key="col.field"
+          :style="col.style"
+        >
           <template #footer>
             <slot
               v-if="slots[`footer-${col.field}`]"
@@ -714,9 +880,21 @@ function formatCellValue(col: Column, data: any): string {
             <span v-else-if="col.total">{{ formatTotal(col) }}</span>
           </template>
         </Column>
-        <Column v-if="attachmentConfig" class="attachment-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
+        <Column
+          v-if="attachmentConfig"
+          class="attachment-column"
+          style="width: 3rem; min-width: 3rem; max-width: 3rem"
+        />
         <!-- Empty footer cell for delete column alignment -->
-        <Column v-if="showDeleteColumn" class="delete-column" style="width: 3rem; min-width: 3rem; max-width: 3rem" />
+        <Column
+          v-if="showDeleteColumn"
+          class="delete-column"
+          :style="{
+            width: deleteColumnWidth,
+            minWidth: deleteColumnWidth,
+            maxWidth: deleteColumnWidth,
+          }"
+        />
       </Row>
     </ColumnGroup>
 
@@ -770,7 +948,9 @@ function formatCellValue(col: Column, data: any): string {
   justify-content: center;
   color: var(--p-primary-color);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .attachment-cell:hover {
@@ -781,7 +961,6 @@ function formatCellValue(col: Column, data: any): string {
   font-size: 0.9rem;
   pointer-events: none;
 }
-
 
 .delete-cell {
   position: absolute;
@@ -794,7 +973,9 @@ function formatCellValue(col: Column, data: any): string {
   justify-content: center;
   color: #ef4444;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .delete-cell:hover {

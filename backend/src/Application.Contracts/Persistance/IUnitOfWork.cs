@@ -8,6 +8,7 @@ using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
 using Domain.Entities.Transport;
+using System.Data;
 
 namespace Application.Contracts
 {
@@ -91,8 +92,10 @@ namespace Application.Contracts
         IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
+        ILotRepository Lots { get; }
         IStockMovementRepository StockMovements { get; }
 
+        Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
         Task<int> CompleteAsync();
         void Dispose();
     }

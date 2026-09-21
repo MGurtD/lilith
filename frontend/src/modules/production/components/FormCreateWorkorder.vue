@@ -36,6 +36,14 @@
       <label class="block text-900 mb-2">{{ t("production.components.comentariFabriacio") }}</label>
       <Textarea class="w-full" v-model="createWorkOrderDto.comment" />
     </div>
+    <div v-if="referenceRequiresLot" class="mt-2">
+      <BaseInput
+        class="mb-2 w-full"
+        :label="t('production.components.codiLot')"
+        v-model="lotCodeModel"
+        :type="BaseInputType.TEXT"
+      ></BaseInput>
+    </div>
     <br />
     <div>
       <Button :label="t('production.components.crear')" style="float: right" @click="submitForm"></Button>
@@ -47,7 +55,7 @@
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { CreateWorkOrderDto, WorkMaster } from "../types";
 import * as Yup from "yup";
 import {
@@ -73,6 +81,24 @@ const emit = defineEmits<{
 const workMasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
 const toast = useToast();
+
+const referenceRequiresLot = computed(() => {
+  const workMaster = workMasterStore.workmasters?.find(
+    (wm) => wm.id === props.createWorkOrderDto.workMasterId,
+  );
+  if (!workMaster) return false;
+  return (
+    referenceStore.references?.find((r) => r.id === workMaster.referenceId)
+      ?.requiresLot ?? false
+  );
+});
+
+const lotCodeModel = computed({
+  get: () => props.createWorkOrderDto.lotCode ?? "",
+  set: (value: string) => {
+    props.createWorkOrderDto.lotCode = value;
+  },
+});
 
 const formatWorkMasterLabel = (workMaster: WorkMaster) => {
   const referenceName = referenceStore.getShortNameById(workMaster.referenceId);

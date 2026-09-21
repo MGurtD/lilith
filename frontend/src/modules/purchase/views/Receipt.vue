@@ -1,6 +1,6 @@
 <template>
   <main v-if="receipt">
-    <FormReceipt @submit="submitForm" />
+    <FormReceipt :receipt="receipt" @submit="submitForm" />
     <br />
     <Tabs value="0">
       <TabList>
@@ -113,9 +113,9 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useRoute } from "vue-router";
 import { useStore } from "../../../store";
-import { AddReceptionsRequest, ReceiptDetail } from "../types";
+import type { AddReceptionsRequest, Receipt, ReceiptDetail } from "../types";
 import { GenericResponse } from "../../../types";
-import { formatDate, getNewUuid } from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import { Reference, ReferenceCategoryEnum } from "../../shared/types";
 import router from "../../../router";
@@ -151,10 +151,6 @@ const loadView = async () => {
   lifecycleStore.fetchOneByName("Receipts");
   referenceStore.fetchReferencesByModule("purchase");
   referenceTypeStore.fetchActive();
-  if (receipt.value) {
-    receipt.value.date = formatDate(receipt.value.date);
-  }
-
   setMenuItem();
 };
 
@@ -176,11 +172,14 @@ const hasToBlockDetailCreation = computed(() => {
   return receipt.value?.statusId === warehouseStatus.id;
 });
 
-const submitForm = async () => {
+const submitForm = async (submittedReceipt: Receipt) => {
   let result = false;
   let message = "";
   if (receipt.value) {
-    result = await receiptStore.updateReceipt(receipt.value.id, receipt.value);
+    result = await receiptStore.updateReceipt(
+      submittedReceipt.id,
+      submittedReceipt,
+    );
     message = t("purchase.receipt.messages.updated");
 
     if (result) {
@@ -258,13 +257,11 @@ const submitDetailForm = (detail: ReceiptDetail) => {
 
 const addDetail = async (detail: ReceiptDetail) => {
   const response = await receiptStore.createReceiptDetail(detail);
-  receipt.value!.date = formatDate(receipt.value!.date);
   if (!response.result) showResponseErrorToast(response);
 };
 
 const editDetail = async (detail: ReceiptDetail) => {
   const response = await receiptStore.updateReceiptDetail(detail.id, detail);
-  receipt.value!.date = formatDate(receipt.value!.date);
   if (!response.result) showResponseErrorToast(response);
 };
 
@@ -276,7 +273,6 @@ const removeDetail = async (detail: ReceiptDetail) => {
     rejectIcon: "pi pi-times",
     accept: async () => {
       const response = await receiptStore.deleteReceiptDetail(detail.id);
-      receipt.value!.date = formatDate(receipt.value!.date);
       if (!response.result) showResponseErrorToast(response);
     },
   });

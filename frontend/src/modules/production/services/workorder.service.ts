@@ -25,11 +25,13 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     }
   }
 
-  async GetReportDataById(id: string) {
+  async GetReportDataById(
+    id: string,
+  ): Promise<Record<string, unknown> | undefined> {
     const endpoint = `${this.resource}/Report/${id}`;
     const response = await this.apiClient.get(endpoint);
     if (response.status === 200) {
-      return response.data;
+      return response.data as Record<string, unknown>;
     }
   }
 

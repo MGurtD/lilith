@@ -1,122 +1,61 @@
 <template>
-  <DataTable
+  <Table
+    :columns="columns"
+    :items="purchaseInvoiceStore.purchaseInvoices ?? []"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-create="false"
+    show-selection-column
+    selection-column-width="2%"
+    preset="crud-list"
+    page="PurchaseInvoicesByDates"
     class="small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sortMode="multiple"
-    :value="purchaseInvoiceStore.purchaseInvoices"
+    :selection-mode="'multiple'"
     v-model:selection="selectedInvoices"
+    @filter="filterInvoices"
+    @clear="clearFilter"
   >
-      <template #header>
-        <TableFilter
-          :config="filterConfig"
-          :body-width="filterBodyWidth"
-          v-model="filter"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-create="false"
-          embedded
-          @filter="filterInvoices"
-          @clear="clearFilter"
-        >
-          <template #prepend>
-            <div
-              class="table-filter-prepend-field table-filter-prepend-field--md"
-            >
-              <label class="filter-label table-filter-prepend-label"
-                >{{ t("purchase.purchaseInvoicesByDates.filters.period") }}</label
-              >
-              <DatePicker
-                v-model="filter.dates"
-                :numberOfMonths="2"
-                selectionMode="range"
-                dateFormat="dd/mm/yy"
-                size="small"
-                class="w-full"
-              />
-            </div>
-          </template>
-          <template #append>
-            <Button
-              :icon="PrimeIcons.CHECK"
-              :disabled="selectedInvoices.length === 0"
-              rounded
-              raised
-              severity="success"
-              size="small"
-              @click="updateSelectedInvoiceStatusToManaged"
-            />
-          </template>
-        </TableFilter>
-      </template>
-      <Column selectionMode="multiple" style="width: 2%"></Column>
-      <Column
-        field="number"
-        :header="t('purchase.purchaseInvoicesByDates.columns.number')"
-        sortable
-        style="width: 10%"
-      ></Column>
-      <Column :header="t('purchase.purchaseInvoicesByDates.columns.supplier')" style="width: 15%">
-        <template #body="slotProps">
-          {{ getSupplierNameById(slotProps.data.supplierId) }}
-        </template>
-      </Column>
-      <Column
-        :header="t('purchase.purchaseInvoicesByDates.columns.supplierInvoiceNumber')"
-        style="width: 12%"
-        field="supplierNumber"
-      ></Column>
-      <Column :header="t('purchase.purchaseInvoicesByDates.columns.status')" style="width: 15%">
-        <template #body="slotProps">
-          <span
-            :class="{
-              'managed-status': isManagedStatus(slotProps.data.statusId),
-            }"
-          >
-            {{ getStatusNameById(slotProps.data.statusId) }}
-          </span>
-        </template>
-      </Column>
-      <Column
-        :header="t('purchase.purchaseInvoicesByDates.columns.date')"
-        field="purchaseInvoiceDate"
-        sortable
-        style="width: 15%"
-      >
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.purchaseInvoiceDate) }}
-        </template>
-      </Column>
-      <Column :header="t('purchase.purchaseInvoicesByDates.columns.dueDate')" style="width: 15%">
-        <template #body="slotProps">
-          {{ getLastDueDate(slotProps.data) }}
-        </template>
-      </Column>
-      <Column field="baseAmount" :header="t('purchase.purchaseInvoicesByDates.columns.baseAmount')" style="width: 15%">
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.baseAmount) }}
-        </template>
-      </Column>
-      <Column style="width: 2%">
-        <template #body="slotProps">
-          <i
-            :class="PrimeIcons.DOWNLOAD"
-            class="download_column"
-            @click="downloadInvoices(slotProps.data)"
-          />
-        </template>
-      </Column>
-  </DataTable>
+    <template #append>
+      <Button
+        :icon="PrimeIcons.CHECK"
+        :disabled="selectedInvoices.length === 0"
+        rounded
+        raised
+        severity="success"
+        size="small"
+        @click="updateSelectedInvoiceStatusToManaged"
+      />
+    </template>
+    <template #body-_status="{ data }">
+      <span :class="{ 'managed-status': isManagedStatus(data.statusId) }">
+        {{ getStatusNameById(data.statusId) }}
+      </span>
+    </template>
+    <template #body-_dueDate="{ data }">
+      {{ getLastDueDate(data) }}
+    </template>
+    <template #body-download="{ data }">
+      <i
+        :class="PrimeIcons.DOWNLOAD"
+        class="download_column"
+        @click="downloadInvoices(data)"
+      />
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import TableFilter, {
+import {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
@@ -124,7 +63,6 @@ import { PurchaseInvoice, PurchaseInvoiceUpdateStatues } from "../types";
 import SharedServices from "../../../services";
 import {
   createBlobAndDownloadFile,
-  formatCurrency,
   formatDate,
   formatDateForQueryParameter,
 } from "../../../utils/functions";
@@ -149,6 +87,12 @@ const filterBodyWidth: FilterBodyWidth = {
 };
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
+    key: "dates",
+    label: t("purchase.purchaseInvoicesByDates.filters.period"),
+    type: "date-range",
+    size: "md",
+  },
+  {
     key: "supplierId",
     label: t("purchase.purchaseInvoicesByDates.filters.supplier"),
     type: "select",
@@ -156,7 +100,9 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
       label: supplier.comercialName,
       value: supplier.id,
     })),
-    placeholder: t("purchase.purchaseInvoicesByDates.placeholders.selectSupplier"),
+    placeholder: t(
+      "purchase.purchaseInvoicesByDates.placeholders.selectSupplier",
+    ),
     size: "lg",
   },
   {
@@ -165,6 +111,51 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
     type: "checkbox",
     size: "sm",
   },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.purchaseInvoicesByDates.columns.number"),
+    sortable: true,
+    style: "width: 10%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.purchaseInvoicesByDates.columns.supplier"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.purchaseInvoicesByDates.columns.supplierInvoiceNumber"),
+    style: "width: 12%",
+  },
+  {
+    field: "_status",
+    header: t("purchase.purchaseInvoicesByDates.columns.status"),
+    style: "width: 15%",
+  },
+  {
+    field: "purchaseInvoiceDate",
+    header: t("purchase.purchaseInvoicesByDates.columns.date"),
+    columnType: ColumnType.Date,
+    sortable: true,
+    style: "width: 15%",
+  },
+  {
+    field: "_dueDate",
+    header: t("purchase.purchaseInvoicesByDates.columns.dueDate"),
+    style: "width: 15%",
+  },
+  {
+    field: "baseAmount",
+    header: t("purchase.purchaseInvoicesByDates.columns.baseAmount"),
+    columnType: ColumnType.Currency,
+    style: "width: 15%",
+  },
+  { field: "download", header: "", style: "width: 2%" },
 ]);
 const selectedInvoices = ref([] as Array<PurchaseInvoice>);
 const lifecycleName = "PurchaseInvoice";
@@ -277,10 +268,15 @@ const updateSelectedInvoiceStatusToManaged = async () => {
     if (updated) {
       toast.add({
         severity: "success",
-        summary: t("purchase.purchaseInvoicesByDates.messages.accountingCompleted"),
-        detail: t("purchase.purchaseInvoicesByDates.messages.accountedInvoices", {
-          count: selectedInvoices.value.length,
-        }),
+        summary: t(
+          "purchase.purchaseInvoicesByDates.messages.accountingCompleted",
+        ),
+        detail: t(
+          "purchase.purchaseInvoicesByDates.messages.accountedInvoices",
+          {
+            count: selectedInvoices.value.length,
+          },
+        ),
         life: 5000,
       });
 
@@ -315,5 +311,4 @@ const downloadInvoices = async (invoice: PurchaseInvoice) => {
 .managed-status {
   color: green;
 }
-
 </style>

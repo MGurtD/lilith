@@ -1,11 +1,4 @@
 <template>
-  <Button
-    :icon="PrimeIcons.PLUS"
-    class="grid_add_row_button"
-    rounded
-    @click="createButtonClick"
-  />
-
   <Tabs v-model:value="selectedTabIndex">
     <TabList>
       <Tab value="0">
@@ -16,86 +9,87 @@
         <i :class="PrimeIcons.HASHTAG" class="mr-2"></i>
         <span>{{ $t("purchase.supplierTypes.title") }}</span>
       </Tab>
-    </TabList>
+      </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <DataTable
-          :value="supplierStore.suppliers"
+        <Table
+          preset="crud-list"
+          :columns="supplierColumns"
+          :items="filteredSuppliers"
+          :filter-config="supplierFilterConfig"
+          v-model:filter-values="supplierFilter"
+          :filter-body-width="supplierFilterBodyWidth"
+          :show-filter-actions="false"
+          delete-column-width="5%"
+          show-delete-column
           tableStyle="min-width: 100%"
-          scrollable
-          scrollHeight="flex"
           @row-click="editSupplier"
-        >
-          <Column
-            field="comercialName"
-            :header="$t('purchase.fields.commercialName')"
-            style="width: 20%"
-          ></Column>
-          <Column
-            field="taxName"
-            :header="$t('purchase.fields.taxName')"
-            style="width: 20%"
-          ></Column>
-          <Column field="vatNumber" header="CIF" style="width: 20%"></Column>
-          <Column field="phone" :header="$t('purchase.fields.phone')" style="width: 20%"></Column>
-          <Column :header="$t('purchase.fields.type')" style="width: 20%">
-            <template #body="slotProps">
-              <span>{{
-                getSupplierTypeName(slotProps.data.supplierTypeId)
-              }}</span>
-            </template>
-          </Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteSupplier($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+          @create="createButtonClick"
+          @delete="deleteSupplier"
+        />
       </TabPanel>
       <TabPanel value="1">
-        <DataTable
-          :value="supplierStore.supplierTypes"
+        <Table
+          preset="crud-list"
+          :columns="supplierTypeColumns"
+          :items="supplierStore.supplierTypes ?? []"
+          :filter-config="[]"
+          :show-filter-actions="false"
+          delete-column-width="5%"
+          show-delete-column
           tableStyle="min-width: 100%"
-          scrollable
-          scrollHeight="flex"
           @row-click="editSupplierType"
+          @create="createButtonClick"
+          @delete="deleteSupplierType"
         >
-          <Column field="name" :header="$t('purchase.fields.name')" style="width: 50%"></Column>
-          <Column
-            field="description"
-            :header="$t('purchase.fields.description')"
-            style="width: 50%"
-          ></Column>
-          <Column>
-            <template #body="slotProps">
-              <i
-                :class="PrimeIcons.TIMES"
-                class="grid_delete_column_button"
-                @click="deleteSupplierType($event, slotProps.data)"
-              />
-            </template>
-          </Column>
-        </DataTable>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ t("purchase.supplierTypes.title") }}</span>
+          </template>
+        </Table>
       </TabPanel>
     </TabPanels>
   </Tabs>
+
+  <Dialog
+    v-model:visible="supplierTypeDialogVisible"
+    :header="supplierTypeDialogTitle"
+    :closable="!supplierTypeSaving"
+    modal
+    :style="{ width: '80vw', maxWidth: '425px' }"
+    @hide="closeSupplierTypeDialog"
+  >
+    <FormSupplierType
+      v-if="selectedSupplierType"
+      :key="selectedSupplierType.id"
+      :supplier-type="selectedSupplierType"
+      :loading="supplierTypeSaving"
+      @submit="submitSupplierType"
+    />
+  </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type Column,
+} from "../../../components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useSuppliersStore } from "../store/suppliers";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { DataTableRowClickEvent } from "primevue/datatable";
-import { Supplier, SupplierType } from "../types";
+import type { DataTableRowClickEvent } from "primevue/datatable";
+import type { Supplier, SupplierType } from "../types";
 import { useStore } from "../../../store";
 import { useI18n } from "vue-i18n";
+import { FormActionMode } from "../../../types/component";
+import FormSupplierType from "../components/FormSupplierType.vue";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
@@ -104,6 +98,98 @@ const router = useRouter();
 const store = useStore();
 const supplierStore = useSuppliersStore();
 const { t } = useI18n();
+const supplierTypeDialogVisible = ref(false);
+const supplierTypeFormMode = ref(FormActionMode.CREATE);
+const selectedSupplierType = ref<SupplierType>();
+const supplierTypeSaving = ref(false);
+
+const supplierTypeDialogTitle = computed(() =>
+  supplierTypeFormMode.value === FormActionMode.CREATE
+    ? t("purchase.supplierTypes.createTitle")
+    : t("purchase.supplierTypes.detailTitle", {
+        name: selectedSupplierType.value?.name ?? "",
+      }),
+);
+
+const supplierFilter = ref({
+  name: "",
+  supplierTypeId: "",
+});
+
+const supplierFilterBodyWidth: FilterBodyWidth = {
+  desktop: "50%",
+  tablet: "75%",
+};
+
+const supplierFilterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "name",
+    label: t("purchase.fields.name"),
+    type: "text",
+    placeholder: t("purchase.fields.name"),
+    size: "lg",
+  },
+  {
+    key: "supplierTypeId",
+    label: t("purchase.fields.type"),
+    type: "select",
+    options: supplierStore.supplierTypes ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("purchase.fields.type"),
+    size: "md",
+  },
+]);
+
+const filteredSuppliers = computed(() => {
+  const name = supplierFilter.value.name.trim().toLocaleLowerCase();
+  const supplierTypeId = supplierFilter.value.supplierTypeId;
+
+  return (supplierStore.suppliers ?? []).filter(
+    (supplier) =>
+      (!name || supplier.comercialName.toLocaleLowerCase().includes(name)) &&
+      (!supplierTypeId || supplier.supplierTypeId === supplierTypeId),
+  );
+});
+
+const supplierColumns = computed<Column[]>(() => [
+  {
+    field: "comercialName",
+    header: t("purchase.fields.commercialName"),
+    style: "width: 19%",
+  },
+  {
+    field: "taxName",
+    header: t("purchase.fields.taxName"),
+    style: "width: 19%",
+  },
+  { field: "vatNumber", header: "CIF", style: "width: 19%" },
+  {
+    field: "phone",
+    header: t("purchase.fields.phone"),
+    style: "width: 19%",
+  },
+  {
+    field: "supplierTypeId",
+    header: t("purchase.fields.type"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierTypeName,
+    style: "width: 19%",
+  },
+]);
+
+const supplierTypeColumns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.fields.name"),
+    style: "width: 47.5%",
+  },
+  {
+    field: "description",
+    header: t("purchase.fields.description"),
+    style: "width: 47.5%",
+  },
+]);
 
 onMounted(async () => {
   await supplierStore.fetchSuppliers();
@@ -115,44 +201,70 @@ onMounted(async () => {
   });
 });
 
-const getSupplierTypeName = (id: string) => {
+function getSupplierTypeName(id: string): string {
   const supplierType = supplierStore.supplierTypes?.find((st) => st.id === id);
-  if (supplierType) {
-    return supplierType.name;
-  }
-};
+  return supplierType?.name ?? "";
+}
 
 const createButtonClick = () => {
   if (selectedTabIndex.value === "0") {
     router.push({ path: `/suppliers/${getNewUuid()}` });
   } else {
-    router.push({ path: `/supplier-types/${getNewUuid()}` });
+    supplierTypeFormMode.value = FormActionMode.CREATE;
+    selectedSupplierType.value = {
+      id: getNewUuid(),
+      name: "",
+      description: "",
+      disabled: false,
+    };
+    supplierTypeDialogVisible.value = true;
   }
 };
 
 const editSupplier = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/suppliers/${row.data.id}` });
-  }
+  router.push({ path: `/suppliers/${row.data.id}` });
 };
 
 const editSupplierType = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/supplier-types/${row.data.id}` });
+  supplierTypeFormMode.value = FormActionMode.EDIT;
+  selectedSupplierType.value = { ...(row.data as SupplierType) };
+  supplierTypeDialogVisible.value = true;
+};
+
+const submitSupplierType = async (supplierType: SupplierType) => {
+  if (supplierTypeSaving.value) return;
+
+  supplierTypeSaving.value = true;
+  try {
+    const created = supplierTypeFormMode.value === FormActionMode.CREATE;
+    const saved = created
+      ? await supplierStore.createSupplierType(supplierType)
+      : await supplierStore.updateSupplierType(supplierType.id, supplierType);
+
+    if (!saved) return;
+
+    toast.add({
+      severity: "success",
+      summary: t(
+        created
+          ? "purchase.messages.supplierTypeCreated"
+          : "purchase.messages.supplierTypeUpdated",
+      ),
+      life: 5000,
+    });
+    supplierTypeDialogVisible.value = false;
+  } finally {
+    supplierTypeSaving.value = false;
   }
 };
 
-const deleteSupplier = (event: any, supplier: Supplier) => {
+const closeSupplierTypeDialog = () => {
+  selectedSupplierType.value = undefined;
+  supplierTypeFormMode.value = FormActionMode.CREATE;
+};
+
+const deleteSupplier = (supplier: Supplier) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteSupplier", { name: supplier.comercialName }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
@@ -172,9 +284,8 @@ const deleteSupplier = (event: any, supplier: Supplier) => {
   });
 };
 
-const deleteSupplierType = (event: any, supplierType: SupplierType) => {
+const deleteSupplierType = (supplierType: SupplierType) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("purchase.messages.confirmDeleteSupplierType", { name: supplierType.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",

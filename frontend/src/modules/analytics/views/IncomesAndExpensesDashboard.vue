@@ -13,7 +13,9 @@
         @clear="clearFilter"
       >
         <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
+          <div
+            class="table-filter-prepend-field table-filter-prepend-field--md"
+          >
             <label class="filter-label table-filter-prepend-label">
               {{ t("analytics.cashflow.filters.period") }}
             </label>
@@ -95,8 +97,10 @@
         </div>
       </TabPanel>
       <TabPanel value="1">
-        <DataTable
-          :value="totals"
+        <Table
+          :items="totals"
+          :columns="columns"
+          :show-filters="false"
           class="small-datatable"
           tableStyle="min-width: 100%"
           scrollable
@@ -106,36 +110,18 @@
           :sortOrder="1"
           :rows="20"
         >
-          <Column
-            field="date"
-            :header="t('common.date')"
-            style="width: 15%"
-            sortable
-          >
-            <template #body="slotProps">
-              {{ formatDate(slotProps.data.date) }}
-            </template>
-          </Column>
-          <Column :header="t('common.type')" field="type" />
-          <Column :header="t('common.detail')" field="detail" />
-          <Column
-            :header="t('common.description')"
-            field="description"
-          />
-          <Column :header="t('common.total')" field="total">
-            <template #body="slotProps">
-              <span
-                :class="
-                  slotProps.data.source === 'income'
-                    ? 'text-green-600 font-semibold'
-                    : 'text-red-500 font-semibold'
-                "
-              >
-                {{ formatCurrency(slotProps.data.total) }}
-              </span>
-            </template>
-          </Column>
-        </DataTable>
+          <template #body-total="{ data }">
+            <span
+              :class="
+                data.source === 'income'
+                  ? 'text-green-600 font-semibold'
+                  : 'text-red-500 font-semibold'
+              "
+            >
+              {{ formatCurrency(data.total) }}
+            </span>
+          </template>
+        </Table>
       </TabPanel>
     </TabPanels>
   </Tabs>
@@ -148,10 +134,11 @@ import { useToast } from "primevue/usetoast";
 import TableFilter, {
   type FilterBodyWidth,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import { ColumnType, type Column } from "../../../components/tables/types";
 
 import {
   formatDateForQueryParameter,
-  formatDate,
   formatCurrency,
 } from "../../../utils/functions";
 
@@ -171,8 +158,7 @@ const toast = useToast();
 const currentYear = new Date().getFullYear();
 const filter = ref({
   dates: [new Date(currentYear, 0, 1), new Date(currentYear, 11, 31)] as
-    | Array<Date>
-    | undefined,
+    Array<Date> | undefined,
   consolidatedBy: undefined as string | undefined,
 });
 
@@ -180,6 +166,20 @@ const filterBodyWidth: FilterBodyWidth = {
   desktop: "28rem",
   tablet: "32rem",
 };
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "date",
+    header: t("common.date"),
+    style: "width: 15%",
+    sortable: true,
+    columnType: ColumnType.Date,
+  },
+  { field: "type", header: t("common.type") },
+  { field: "detail", header: t("common.detail") },
+  { field: "description", header: t("common.description") },
+  { field: "total", header: t("common.total") },
+]);
 
 const clearFilter = () => {
   filter.value.dates = [
@@ -218,7 +218,11 @@ watch(
 
 const filterDashboard = async () => {
   totals.value = [];
-  if (filter.value.dates && filter.value.dates.length === 2 && filter.value.dates[1]) {
+  if (
+    filter.value.dates &&
+    filter.value.dates.length === 2 &&
+    filter.value.dates[1]
+  ) {
     const startTime = formatDateForQueryParameter(filter.value.dates[0]);
     const endTime = formatDateForQueryParameter(filter.value.dates[1]);
 

@@ -20,6 +20,8 @@ namespace Domain.Entities.Warehouse
         public Location? Location { get; set; }
         public Guid ReferenceId { get; set; }
         public Reference? Reference { get; set; }
+        public Guid? LotId { get; set; }
+        public Lot? Lot { get; set; }
         public string Description { get; set; } = string.Empty;
         public string MovementType { get; set; } = string.Empty;
         public int Quantity { get; set; }
@@ -35,6 +37,7 @@ namespace Domain.Entities.Warehouse
         public void SetFromReceiptDetail(ReceiptDetail receiptDetail)
         {
             ReferenceId = receiptDetail.ReferenceId;
+            LotId = receiptDetail.LotId;
 
             Quantity = receiptDetail.Quantity;
             Width = receiptDetail.Width;

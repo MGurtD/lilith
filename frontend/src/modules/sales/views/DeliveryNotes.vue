@@ -14,7 +14,7 @@
     sort-field="number"
     :sort-order="1"
     showDeleteColumn
-    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
+    :canDelete="(item) => !item.salesInvoiceId && item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @filter="filterData"
     @clear="cleanFilter"
     @create="createButtonClick"

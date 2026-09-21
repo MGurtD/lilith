@@ -15,8 +15,11 @@ namespace Infrastructure
                 throw new Exception("'ConnectionString' configuration is not provided");
             }
 
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-            optionsBuilder.UseNpgsql(connectionString);
+            optionsBuilder.UseNpgsql(
+                connectionString,
+                options => options.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
             optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             
             return new ApplicationDbContext(optionsBuilder.Options);

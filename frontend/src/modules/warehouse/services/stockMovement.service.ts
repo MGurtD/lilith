@@ -1,20 +1,23 @@
 import { logException } from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
 import { StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 
 export class StockMovementService extends BaseService<StockMovement> {
-  async create(request: StockMovement): Promise<boolean> {
-    let result: boolean = false;
+  async createMovement(
+    request: StockMovement
+  ): Promise<GenericResponse<StockMovement>> {
     try {
       const endpoint = `${this.resource}`;
       const response = await this.apiClient.post(endpoint, request);
-      if (response.status === 200 || response.status === 201) {
-        result = true;
-      }
+      // Retornem el cos de GenericResponse tant en 2xx com en 4xx perquè qui
+      // truqui pugui inspeccionar `errors` (p. ex. "LotClosed"). apiClient
+      // tracta 200-404 com a resolt, així que un 400 arriba amb el cos intacte.
+      return response.data as GenericResponse<StockMovement>;
     } catch (err) {
       logException(err);
+      return { result: false, errors: ["Error de connexió"] };
     }
-    return result;
   }
 
   async getBetweenDates(

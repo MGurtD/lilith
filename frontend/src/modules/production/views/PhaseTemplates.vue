@@ -1,60 +1,22 @@
 <template>
-  <DataTable
-    :value="phaseTemplateStore.phaseTemplates"
+  <Table
+    :items="phaseTemplateStore.phaseTemplates ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="name"
     :sort-order="1"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">{{ t("phaseTemplates.title") }}</span>
-        <div class="datatable-buttons">
-          <Button
-            :icon="PrimeIcons.PLUS"
-            :aria-label="t('phaseTemplates.actions.create')"
-            :title="t('phaseTemplates.actions.create')"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("phaseTemplates.title") }}</span>
     </template>
-    <Column
-      field="name"
-      sortable
-      :header="t('phaseTemplates.fields.name')"
-      style="width: 30%"
-    ></Column>
-    <Column
-      field="description"
-      :header="t('common.description')"
-      style="width: 50%"
-    ></Column>
-    <Column :header="t('phaseTemplates.columns.disabled')" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          :aria-label="t('phaseTemplates.actions.delete')"
-          :title="t('phaseTemplates.actions.delete')"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -88,9 +50,11 @@
 </template>
 
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -108,6 +72,26 @@ const toast = useToast();
 const confirm = useConfirm();
 const phaseTemplateStore = usePhaseTemplateStore();
 const { t, locale } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("phaseTemplates.fields.name"),
+    sortable: true,
+    style: "width: 30%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("phaseTemplates.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
 
 const dialogOptions = reactive({
   visible: false,
@@ -137,13 +121,7 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/phasetemplate/${row.data.id}` });
-  }
+  router.push({ path: `/phasetemplate/${row.data.id}` });
 };
 
 const onCreateSubmit = async () => {
@@ -158,9 +136,8 @@ const onCreateSubmit = async () => {
     });
 };
 
-const deleteButton = (event: any, phaseTemplate: PhaseTemplate) => {
+const deleteButton = (phaseTemplate: PhaseTemplate) => {
   confirm.require({
-    target: event.currentTarget,
     message: t("phaseTemplates.messages.confirmDelete", {
       name: phaseTemplate.name,
     }),

@@ -31,7 +31,7 @@
       ></Column>
       <Column :header="t('common.type')" style="width: 15%">
         <template #body="slotProps">
-          {{ getLocationTypeLabel(slotProps.data.locationType, t) }}
+          {{ getLocationTypeLabel(slotProps.data.locationType) }}
         </template>
       </Column>
       <Column :header="t('warehouse.fields.disabled')" style="width: 10%">
@@ -72,7 +72,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import {
   Warehouse,
   Location,
-  getLocationTypeOptions,
+  LOCATION_TYPE_OPTIONS,
   getLocationTypeLabel,
 } from "../types";
 import { getNewUuid } from "../../../utils/functions";
@@ -104,7 +104,7 @@ interface TypeFilterOption {
 
 const typeFilterOptions = computed<TypeFilterOption[]>(() => [
   { value: null, label: t("warehouse.actions.all") },
-  ...getLocationTypeOptions(t),
+  ...LOCATION_TYPE_OPTIONS,
 ]);
 
 const filteredLocations = computed(() => {

@@ -147,7 +147,6 @@
         </div>
 
         <Textarea
-          ref="descripcioRef"
           id="descripcio"
           v-model="model.descripcio"
           rows="6"
@@ -250,7 +249,6 @@ import { nextTick, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import type Popover from "primevue/popover";
-import type Textarea from "primevue/textarea";
 import * as Yup from "yup";
 import BaseInput from "../../../components/BaseInput.vue";
 import MarkdownRenderer from "../../../components/help/MarkdownRenderer.vue";
@@ -266,113 +264,11 @@ const store = useSupportStore();
 const toast = useToast();
 
 const markdownHelp = ref<InstanceType<typeof Popover> | null>(null);
-const descripcioRef = ref<InstanceType<typeof Textarea> | null>(null);
 
 const model = reactive({
   resum: "",
   descripcio: "",
 });
-
-type MarkdownAction =
-  | "bold"
-  | "italic"
-  | "strike"
-  | "heading"
-  | "quote"
-  | "ulist"
-  | "olist"
-  | "link"
-  | "code"
-  | "codeblock";
-
-const getTextareaEl = (): HTMLTextAreaElement | null => {
-  const inst = descripcioRef.value as unknown as { $el?: HTMLTextAreaElement } | null;
-  return inst?.$el ?? null;
-};
-
-const applyMarkdown = async (action: MarkdownAction) => {
-  const textarea = getTextareaEl();
-  if (!textarea) return;
-
-  const value = model.descripcio;
-  const start = textarea.selectionStart ?? value.length;
-  const end = textarea.selectionEnd ?? value.length;
-  const selected = value.slice(start, end);
-
-  let newText = value;
-  let selStart = start;
-  let selEnd = end;
-
-  const wrap = (prefix: string, suffix: string, placeholder: string) => {
-    const inner = selected || placeholder;
-    const insert = `${prefix}${inner}${suffix}`;
-    newText = value.slice(0, start) + insert + value.slice(end);
-    selStart = start + prefix.length;
-    selEnd = selStart + inner.length;
-  };
-
-  const linePrefix = (prefix: string) => {
-    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-    const nextBreak = value.indexOf("\n", end);
-    const lineEnd = nextBreak === -1 ? value.length : nextBreak;
-    const block = value.slice(lineStart, lineEnd);
-    const transformed = block
-      .split("\n")
-      .map((line, i) => (prefix === "1. " ? `${i + 1}. ${line}` : `${prefix}${line}`))
-      .join("\n");
-    newText = value.slice(0, lineStart) + transformed + value.slice(lineEnd);
-    selStart = lineStart;
-    selEnd = lineStart + transformed.length;
-  };
-
-  switch (action) {
-    case "bold":
-      wrap("**", "**", "negreta");
-      break;
-    case "italic":
-      wrap("*", "*", "cursiva");
-      break;
-    case "strike":
-      wrap("~~", "~~", "ratllat");
-      break;
-    case "code":
-      wrap("`", "`", "codi");
-      break;
-    case "heading":
-      linePrefix("## ");
-      break;
-    case "quote":
-      linePrefix("> ");
-      break;
-    case "ulist":
-      linePrefix("- ");
-      break;
-    case "olist":
-      linePrefix("1. ");
-      break;
-    case "link": {
-      const inner = selected || "text";
-      const insert = `[${inner}](url)`;
-      newText = value.slice(0, start) + insert + value.slice(end);
-      selStart = start + 1 + inner.length + 2;
-      selEnd = selStart + 3;
-      break;
-    }
-    case "codeblock": {
-      const inner = selected || "codi";
-      const insert = "```\n" + inner + "\n```";
-      newText = value.slice(0, start) + insert + value.slice(end);
-      selStart = start + 4;
-      selEnd = selStart + inner.length;
-      break;
-    }
-  }
-
-  model.descripcio = newText;
-  await nextTick();
-  textarea.focus();
-  textarea.setSelectionRange(selStart, selEnd);
-};
 
 const schema = Yup.object().shape({
   resum: Yup.string()
@@ -386,6 +282,100 @@ const validation = ref<FormValidationResult>({ result: false, errors: {} });
 const validate = () => {
   const formValidation = new FormValidation(schema);
   validation.value = formValidation.validate(model);
+};
+
+type MarkdownAction =
+  | "bold"
+  | "italic"
+  | "strike"
+  | "heading"
+  | "quote"
+  | "ulist"
+  | "olist"
+  | "link"
+  | "code"
+  | "codeblock";
+
+const applyMarkdown = (action: MarkdownAction) => {
+  const textarea = document.getElementById(
+    "descripcio",
+  ) as HTMLTextAreaElement | null;
+  if (!textarea) return;
+
+  const value = model.descripcio;
+  const start = textarea.selectionStart ?? value.length;
+  const end = textarea.selectionEnd ?? value.length;
+  const selected = value.slice(start, end);
+
+  let replacement = selected;
+  let cursorStart = start;
+  let cursorEnd = end;
+
+  const wrap = (marker: string) => {
+    replacement = `${marker}${selected}${marker}`;
+    cursorStart = start + marker.length;
+    cursorEnd = cursorStart + selected.length;
+  };
+
+  const prefixLines = (prefix: string) => {
+    replacement = selected
+      .split("\n")
+      .map((line) => `${prefix}${line}`)
+      .join("\n");
+    cursorStart = start;
+    cursorEnd = start + replacement.length;
+  };
+
+  switch (action) {
+    case "bold":
+      wrap("**");
+      break;
+    case "italic":
+      wrap("*");
+      break;
+    case "strike":
+      wrap("~~");
+      break;
+    case "code":
+      wrap("`");
+      break;
+    case "heading":
+      prefixLines("# ");
+      break;
+    case "quote":
+      prefixLines("> ");
+      break;
+    case "ulist":
+      prefixLines("- ");
+      break;
+    case "olist":
+      replacement = selected
+        .split("\n")
+        .map((line, index) => `${index + 1}. ${line}`)
+        .join("\n");
+      cursorStart = start;
+      cursorEnd = start + replacement.length;
+      break;
+    case "link": {
+      const text = selected || "text";
+      replacement = `[${text}](url)`;
+      cursorStart = start + 1;
+      cursorEnd = start + 1 + text.length;
+      break;
+    }
+    case "codeblock":
+      replacement = `\`\`\`\n${selected}\n\`\`\``;
+      cursorStart = start + 4;
+      cursorEnd = cursorStart + selected.length;
+      break;
+  }
+
+  model.descripcio = value.slice(0, start) + replacement + value.slice(end);
+
+  nextTick(() => {
+    textarea.focus();
+    textarea.setSelectionRange(cursorStart, cursorEnd);
+  });
 };
 
 const submitForm = async () => {
@@ -432,50 +422,6 @@ const submitForm = async () => {
   border: 1px solid var(--p-surface-300);
   border-radius: var(--p-content-border-radius, 6px);
   background: var(--p-surface-50);
-}
-
-.md-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.2rem;
-  margin-bottom: 0.5rem;
-  padding: 0.25rem;
-  border: 1px solid var(--p-surface-300);
-  border-radius: var(--p-content-border-radius, 6px);
-  background: var(--p-surface-50);
-}
-
-.md-toolbar__sep {
-  width: 1px;
-  align-self: stretch;
-  margin: 0.15rem 0.25rem;
-  background: var(--p-surface-300);
-}
-
-.md-toolbar :deep(.md-tool) {
-  min-width: 2rem;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  font-size: 0.9rem;
-}
-
-.md-tool--bold {
-  font-weight: 700;
-}
-
-.md-tool--italic {
-  font-style: italic;
-}
-
-.md-tool--strike {
-  text-decoration: line-through;
-}
-
-.md-tool--codeblock {
-  font-size: 0.7rem !important;
-  letter-spacing: -1px;
 }
 
 .md-help-icon {

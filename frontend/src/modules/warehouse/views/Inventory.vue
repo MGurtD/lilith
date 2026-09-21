@@ -1,63 +1,44 @@
 <template>
-  <DataTable
-    :value="filteredInventories"
+  <Table
+    :items="filteredInventories"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
     :paginator="(inventoryStore.inventories?.length ?? 0) > 20"
     :rows="20"
+    @create="newMovement"
+    @clear="cleanFilter"
   >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @create="newMovement"
-        @clear="cleanFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">{{ t("warehouse.fields.location") }}</label>
-            <DropdownWarehousesWithLocations
-              label=""
-              v-model="filter.locationId"
-            />
-          </div>
-        </template>
-        <template #append>
-          <Button
-            :label="t('common.save')"
-            icon="pi pi-save"
-            size="small"
-            rounded
-            :aria-label="t('warehouse.inventory.saveMovementsAria')"
-            @click="saveMovement"
-          />
-        </template>
-      </TableFilter>
+    <template #prepend>
+      <div class="table-filter-prepend-field table-filter-prepend-field--md">
+        <label class="filter-label table-filter-prepend-label">
+          {{ t("warehouse.fields.location") }}
+        </label>
+        <DropdownWarehousesWithLocations label="" v-model="filter.locationId" />
+      </div>
     </template>
-    <Column field="referenceName" :header="t('warehouse.fields.reference')" style="width: 28%">
-    </Column>
-    <Column field="locationName" :header="t('warehouse.fields.location')"></Column>
-    <Column field="oldQuantity" :header="t('warehouse.fields.units')"></Column>
-    <Column :header="t('warehouse.inventory.count')" style="width: 12%">
-      <template #body="slotProps">
-        <BaseInput
-          label=""
-          id="newQuantity"
-          v-model="slotProps.data.newQuantity"
-        ></BaseInput>
-      </template>
-    </Column>
-    <Column field="width" :header="t('warehouse.fields.widthMmAxis')"></Column>
-    <Column field="length" :header="t('warehouse.fields.lengthMmAxis')"></Column>
-    <Column field="height" :header="t('warehouse.fields.heightMmAxis')"></Column>
-    <Column field="diameter" :header="t('warehouse.fields.diameterMm')"></Column>
-    <Column field="thickness" :header="t('warehouse.fields.thicknessMm')"></Column>
-  </DataTable>
+    <template #append>
+      <Button
+        :label="t('common.save')"
+        icon="pi pi-save"
+        size="small"
+        rounded
+        :aria-label="t('warehouse.inventory.saveMovementsAria')"
+        @click="saveMovement"
+      />
+    </template>
+    <template #body-lotCode="{ data }">
+      {{ data.lotCode || "-" }}
+    </template>
+    <template #body-newQuantity="{ data }">
+      <BaseInput label="" id="newQuantity" v-model="data.newQuantity" />
+    </template>
+  </Table>
   <Dialog :closable="true" v-model:visible="isDialogVisible" :modal="true">
     <FormInventoryNewMovements
       :newMovement="newStockMovement"
@@ -65,22 +46,26 @@
     />
   </Dialog>
 </template>
+
 <script setup lang="ts">
 import BaseInput from "../../../components/BaseInput.vue";
-import TableFilter, {
+import {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import type { Column } from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
-
+import { useWarehouseStore } from "../store/warehouse";
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
@@ -89,11 +74,11 @@ import { getNewUuid } from "../../../utils/functions";
 const store = useStore();
 const toast = useToast();
 const { t, locale } = useI18n();
-
 const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
+const warehouseStore = useWarehouseStore();
 
 const filter = ref({
   referenceName: "",
@@ -108,6 +93,52 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
     placeholder: t("warehouse.fields.reference"),
     size: "md",
     row: 0,
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "referenceName",
+    header: t("warehouse.fields.reference"),
+    style: "width: 28%",
+  },
+  {
+    field: "lotCode",
+    header: t("common.lot"),
+    style: "width: 10%",
+  },
+  {
+    field: "locationName",
+    header: t("warehouse.fields.location"),
+  },
+  {
+    field: "oldQuantity",
+    header: t("warehouse.fields.units"),
+  },
+  {
+    field: "newQuantity",
+    header: t("warehouse.inventory.count"),
+    style: "width: 12%",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
   },
 ]);
 
@@ -126,7 +157,6 @@ const setMenuTitle = () => {
 watch(locale, setMenuTitle, { immediate: true });
 
 onMounted(async () => {
-
   await refreshData();
 });
 
@@ -134,7 +164,7 @@ const refreshData = async () => {
   await stockStore.fetchStocks();
   inventoryStore.inventories = [];
   stockStore.stocks?.forEach((stock) => {
-    let invent = {
+    const invent = {
       id: getNewUuid(),
       stockId: stock.id,
       movementType: "bal",
@@ -142,6 +172,8 @@ const refreshData = async () => {
       locationName: stock.locationName,
       referenceId: stock.referenceId,
       referenceName: stock.referenceDisplay,
+      lotId: stock.lotId,
+      lotCode: stock.lotCode,
       oldQuantity: stock.quantity,
       newQuantity: stock.quantity,
       width: stock.width,
@@ -183,6 +215,9 @@ const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
   inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
+  inventory.locationName = inventory.locationId
+    ? warehouseStore.getLocationName(inventory.locationId)
+    : undefined;
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };
@@ -193,8 +228,10 @@ const newMovement = () => {
     id: getNewUuid(),
     stockId: getNewUuid(),
     movementType: "",
-    locationId: null,
+    locationId: filter.value.locationId ?? null,
     referenceId: "",
+    lotId: null,
+    lotCode: "",
     oldQuantity: 0,
     newQuantity: 0,
     width: 0,
@@ -207,10 +244,10 @@ const newMovement = () => {
 };
 
 const saveMovement = async () => {
-  const promises = [] as Array<Promise<boolean>>;
+  const promises = [] as Array<Promise<GenericResponse<StockMovement>>>;
 
   inventoryStore.inventories
-    ?.filter((el) => el.newQuantity != el.oldQuantity)
+    ?.filter((el) => el.newQuantity !== el.oldQuantity)
     .forEach((m) => {
       const isOutput = m.newQuantity < m.oldQuantity;
       const stock: StockMovement = {
@@ -220,6 +257,7 @@ const saveMovement = async () => {
         locationId: m.locationId || null,
         location: null,
         referenceId: m.referenceId,
+        lotId: m.lotId,
         quantity: m.newQuantity - m.oldQuantity,
         width: m.width,
         length: m.length,
@@ -236,8 +274,8 @@ const saveMovement = async () => {
     });
 
   const results = await Promise.all(promises);
-  // Check if all promises resolved successfully
-  if (results.filter((p) => p === true).length === promises.length) {
+  const failed = results.filter((result) => !result.result);
+  if (failed.length === 0) {
     toast.add({
       severity: "success",
       summary: t("warehouse.messages.inventoryCreated"),
@@ -246,10 +284,14 @@ const saveMovement = async () => {
 
     refreshData();
   } else {
+    const detail = Array.from(
+      new Set(failed.flatMap((result) => result.errors ?? [])),
+    ).join(" ");
     toast.add({
       severity: "error",
       summary: t("warehouse.messages.inventoryMovementError"),
-      life: 5000,
+      detail: detail || undefined,
+      life: 7000,
     });
   }
 };

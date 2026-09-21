@@ -65,3 +65,18 @@ public record UpdateMenuItemTranslationRowRequest(
     IReadOnlyList<MenuItemTranslationDto> Translations);
 
 public record UpdateMenuItemTranslationsResult(int UpdatedMenuItems, int UpdatedTranslations);
+
+public record MenuItemTransferDocument(
+    int Version,
+    IReadOnlyList<MenuItemTransferItem>? Items);
+
+public record MenuItemTransferItem(
+    string? Key,
+    string? ParentKey,
+    string? Icon,
+    string? Route,
+    int SortOrder,
+    bool Disabled,
+    IReadOnlyList<MenuItemTranslationDto>? Translations);
+
+public record MenuItemImportResult(int CreatedItems, int UpdatedItems, int UpdatedTranslations);

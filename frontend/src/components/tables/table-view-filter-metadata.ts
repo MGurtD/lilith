@@ -1,4 +1,4 @@
-import type { Column } from "./types";
+import { ColumnType, type Column } from "./types";
 
 export type FilterValueResolver = (value: unknown) => string;
 
@@ -23,10 +23,13 @@ export function createTableViewFilterMetadata(
 
   for (const column of columns) {
     const resolver = column.resolver;
-    if (!resolver) continue;
+    if (!resolver || column.columnType !== ColumnType.Lookup) continue;
 
-    filterValueResolvers[column.field] = (value) =>
-      typeof value === "string" ? resolver(value) : "";
+    filterValueResolvers[column.field] = (value) => {
+      if (typeof value !== "string") return "";
+      const resolved = resolver(value, undefined);
+      return typeof resolved === "string" ? resolved : "";
+    };
   }
 
   return {

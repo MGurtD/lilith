@@ -298,16 +298,27 @@ const onTagSubmit = async (tag: LifecycleTag) => {
     result = await lifecycleStore.updateTag(tag);
   }
 
-  if (result) {
-    toast.add({
-      severity: "success",
-      summary: t("shared.lifecycle.messages.tagSaved"),
-      life: 4000,
-    });
-    dialogOptions.visible = false;
-    selectedTag.value = undefined;
-    await loadView();
+  if (!result.result) {
+    if (result.errors.length > 0) {
+      toast.add({
+        severity: "warn",
+        summary: t("shared.lifecycle.messages.tagSaveFailed"),
+        detail: result.errors.join("\n"),
+        life: 10000,
+        closable: true,
+      });
+    }
+    return;
   }
+
+  toast.add({
+    severity: "success",
+    summary: t("shared.lifecycle.messages.tagSaved"),
+    life: 4000,
+  });
+  dialogOptions.visible = false;
+  selectedTag.value = undefined;
+  await loadView();
 };
 
 // Lifecycle submit

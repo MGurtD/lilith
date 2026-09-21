@@ -183,14 +183,14 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
         if (lifecycle is null)
         {
             var message = localizationService.GetLocalizedString("LifecycleNotFound", lifecycleId);
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.LifecycleNotFound);
         }
 
         // Validate name is provided
         if (string.IsNullOrWhiteSpace(tag.Name))
         {
             var message = localizationService.GetLocalizedString("LifecycleTagNameRequired");
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.NameRequired);
         }
 
         // Check if name already exists in this lifecycle
@@ -198,7 +198,7 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
         if (exists)
         {
             var message = localizationService.GetLocalizedString("LifecycleTagAlreadyExists", tag.Name);
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.AlreadyExists);
         }
 
         // Set lifecycle ID from parameter
@@ -214,14 +214,14 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
         if (existingTag is null)
         {
             var message = localizationService.GetLocalizedString("LifecycleTagNotFound", tag.Id);
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.NotFound);
         }
 
         // Validate name is provided
         if (string.IsNullOrWhiteSpace(tag.Name))
         {
             var message = localizationService.GetLocalizedString("LifecycleTagNameRequired");
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.NameRequired);
         }
 
         // Check if name already exists (excluding current tag)
@@ -229,7 +229,7 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
         if (nameExists)
         {
             var message = localizationService.GetLocalizedString("LifecycleTagAlreadyExists", tag.Name);
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.AlreadyExists);
         }
 
         await unitOfWork.LifecycleTags.Update(tag);
@@ -242,7 +242,7 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
         if (tag is null)
         {
             var message = localizationService.GetLocalizedString("LifecycleTagNotFound", id);
-            return new GenericResponse(false, message);
+            return new GenericResponse(false, message, errorCode: LifecycleTagErrorCodes.NotFound);
         }
 
         await unitOfWork.LifecycleTags.Remove(tag);

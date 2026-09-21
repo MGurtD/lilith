@@ -77,6 +77,12 @@ namespace Infrastructure.Persistance.EntityConfiguration.Sales
                 .HasColumnType("boolean");
 
             builder
+                .Property(b => b.RequiresLot)
+                .IsRequired()
+                .HasColumnType("boolean")
+                .HasDefaultValue(false);
+
+            builder
                    .HasOne(rc => rc.ReferenceType)
                    .WithMany(rc => rc.References)
                    .HasForeignKey(r => r.ReferenceTypeId)

@@ -81,6 +81,12 @@ namespace Infrastructure.Persistance.EntityConfiguration.Purchase
                               ApplicationDbContextConstants.PRICE_DECIMAL_SCALE);
 
             builder
+                .HasOne(b => b.Lot)
+                .WithMany()
+                .HasForeignKey(b => b.LotId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName($"PK_{TABLE_NAME}");
 

@@ -153,18 +153,18 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
   async AddDeliveryNote(
     id: string,
     deliveryNote: DeliveryNote
-  ): Promise<GenericResponse<any>> {
+  ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
     const endpoint = `${this.resource}/${id}/AddDeliveryNote`;
     const response = await this.apiClient.post(endpoint, deliveryNote);
-    return response.data as GenericResponse<any>;
+    return response.data as GenericResponse<Array<SalesInvoiceDetail>>;
   }
   async RemoveDeliveryNote(
     id: string,
     deliveryNote: DeliveryNote
-  ): Promise<GenericResponse<any>> {
+  ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
     const endpoint = `${this.resource}/${id}/RemoveDeliveryNote`;
     const response = await this.apiClient.post(endpoint, deliveryNote);
-    return response.data as GenericResponse<any>;
+    return response.data as GenericResponse<Array<SalesInvoiceDetail>>;
   }
 
   async CreateDetail(

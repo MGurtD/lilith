@@ -71,3 +71,9 @@ export interface UpdateMenuItemTranslationsResult {
   updatedMenuItems: number;
   updatedTranslations: number;
 }
+
+export interface MenuItemImportResult {
+  createdItems: number;
+  updatedItems: number;
+  updatedTranslations: number;
+}

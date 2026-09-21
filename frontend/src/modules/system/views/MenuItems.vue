@@ -14,6 +14,11 @@ import TableFilter, {
   type FilterBodyWidth,
 } from "@/components/tables/TableFilter.vue";
 import MenuItemTranslationMatrixDialog from "@/modules/system/components/MenuItemTranslationMatrixDialog.vue";
+import {
+  exportMenuItems,
+  importMenuItems,
+} from "@/modules/system/services/menuitem.service";
+import { createBlobAndDownloadFile } from "@/utils/functions";
 
 const router = useRouter();
 const appStore = useStore();
@@ -102,6 +107,9 @@ const treeData = computed<TreeNodeLocal[]>(() =>
 // PrimeVue TreeTable single selection requires selectionKeys binding for node-select to fire reliably
 const selectionKeys = ref<any>(null);
 const translationMatrixVisible = ref(false);
+const importInput = ref<HTMLInputElement | null>(null);
+const importing = ref(false);
+const exporting = ref(false);
 
 // Combined loading flag
 const loading = computed(
@@ -150,6 +158,63 @@ const remove = (node: any) => {
   });
 };
 
+const errorMessage = (error: unknown, fallbackKey: string) =>
+  error instanceof Error && error.message ? error.message : t(fallbackKey);
+
+const selectImportFile = () => importInput.value?.click();
+
+const importFile = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  importing.value = true;
+  try {
+    const result = await importMenuItems(file);
+    const refreshes: Promise<unknown>[] = [
+      menusStore.fetchAll(),
+      menusStore.fetchHierarchy(true),
+    ];
+    if (appStore.user) refreshes.push(appStore.loadUserMenus(appStore.user));
+    await Promise.allSettled(refreshes);
+    toast.add({
+      severity: "success",
+      summary: t("menuItems.transfer.imported", {
+        created: result.createdItems,
+        updated: result.updatedItems,
+      }),
+      life: 5000,
+    });
+  } catch (error: unknown) {
+    toast.add({
+      severity: "error",
+      summary: t("menuItems.transfer.importError"),
+      detail: errorMessage(error, "menuItems.transfer.importError"),
+      life: 6000,
+    });
+  } finally {
+    importing.value = false;
+    input.value = "";
+  }
+};
+
+const exportFile = async () => {
+  exporting.value = true;
+  try {
+    const { blob, fileName } = await exportMenuItems();
+    createBlobAndDownloadFile(fileName, blob, "application/json");
+  } catch (error: unknown) {
+    toast.add({
+      severity: "error",
+      summary: t("menuItems.transfer.exportError"),
+      detail: errorMessage(error, "menuItems.transfer.exportError"),
+      life: 6000,
+    });
+  } finally {
+    exporting.value = false;
+  }
+};
+
 onMounted(async () => {
   appStore.setMenuItem({
     icon: PrimeIcons.SITEMAP,
@@ -182,6 +247,35 @@ onMounted(async () => {
           @create="createNew"
         >
           <template #action-prepend>
+            <input
+              ref="importInput"
+              type="file"
+              accept=".json,application/json"
+              class="hidden"
+              @change="importFile"
+            />
+            <Button
+              icon="pi pi-file-import"
+              size="small"
+              rounded
+              severity="secondary"
+              :loading="importing"
+              :disabled="exporting"
+              :aria-label="t('menuItems.transfer.import')"
+              v-tooltip.top="t('menuItems.transfer.import')"
+              @click="selectImportFile"
+            />
+            <Button
+              icon="pi pi-file-export"
+              size="small"
+              rounded
+              severity="secondary"
+              :loading="exporting"
+              :disabled="importing"
+              :aria-label="t('menuItems.transfer.export')"
+              v-tooltip.top="t('menuItems.transfer.export')"
+              @click="exportFile"
+            />
             <Button
               icon="pi pi-language"
               size="small"

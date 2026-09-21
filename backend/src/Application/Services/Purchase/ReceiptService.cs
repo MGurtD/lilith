@@ -12,6 +12,7 @@ namespace Application.Services.Purchase
         IExerciseService exerciseService,
         IPurchaseOrderService orderService,
         IWorkOrderPhaseService workOrderPhaseService,
+        ILotService lotService,
         ILocalizationService localizationService
     ) : IReceiptService
     {
@@ -152,6 +153,9 @@ namespace Application.Services.Purchase
 
         public async Task<GenericResponse> AddDetail(ReceiptDetail detail)
         {
+            var lotResponse = await ResolveDetailLot(detail);
+            if (!lotResponse.Result) return lotResponse;
+
             detail.Reference = null;
 
             await unitOfWork.Receipts.Details.Add(detail);
@@ -164,9 +168,40 @@ namespace Application.Services.Purchase
             if (!exists)
                 return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", detail.Id));
 
+            var lotResponse = await ResolveDetailLot(detail);
+            if (!lotResponse.Result) return lotResponse;
+
             detail.Reference = null;
             await unitOfWork.Receipts.Details.Update(detail);
             return new GenericResponse(true);
+        }
+
+        // Resol el LotId del detall: valida el lot explicit contra la referencia, o el resol/crea per codi segons RequiresLot
+        private async Task<GenericResponse> ResolveDetailLot(ReceiptDetail detail, string? lotCode = null)
+        {
+            if (detail.LotId.HasValue)
+            {
+                var lot = await unitOfWork.Lots.Get(detail.LotId.Value);
+                if (lot == null)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("Common.IdNotExist", detail.LotId.Value));
+                if (lot.ReferenceId != detail.ReferenceId)
+                    return new GenericResponse(false, localizationService.GetLocalizedString("LotReferenceMismatch"));
+
+                return new GenericResponse(true, lot);
+            }
+
+            var reference = await unitOfWork.References.Get(detail.ReferenceId);
+            if (reference is { RequiresLot: false })
+            {
+                detail.LotId = null;
+                return new GenericResponse(true);
+            }
+
+            var response = await lotService.ResolveOrCreateLot(detail.ReferenceId, code: lotCode, supplierLotCode: null, expirationDate: null);
+            if (response.Result && response.Content is Lot resolvedLot)
+                detail.LotId = resolvedLot.Id;
+
+            return response;
         }
 
         public async Task<GenericResponse> RemoveDetail(Guid id)
@@ -285,7 +320,11 @@ namespace Application.Services.Purchase
                     Quantity = (int)reception.Quantity,
                     UnitPrice = reception.UnitPrice > 0 ? reception.UnitPrice : detail.UnitPrice,
                     Amount = reception.Price,
+                    LotId = reception.LotId
                 };
+                var lotResponse = await ResolveDetailLot(receiptDetail, reception.LotCode);
+                if (!lotResponse.Result) return lotResponse;
+
                 await unitOfWork.Receipts.Details.Add(receiptDetail);
 
                 // Afegir recepció a la comanda

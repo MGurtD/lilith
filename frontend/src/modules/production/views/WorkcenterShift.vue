@@ -1,135 +1,44 @@
 <template>
   <div>
-    <DataTable
+    <Table
       class="p-datatable-sm small-datatable"
       dataKey="key"
-      :value="workcenterShifts"
+      :items="workcenterShifts"
+      :columns="columns"
+      :filter-config="filterConfig"
+      v-model:filter-values="filter"
+      :filter-body-width="filterBodyWidth"
+      :show-create="false"
+      page="WorkcenterShift"
       :paginator="true"
-      :rows="20"
+      :rows="25"
       tableStyle="min-width: 100%"
       scrollable
       scrollHeight="flex"
       sortMode="multiple"
-    >
-      <template #header>
-        <TableFilter
-          :config="filterConfig"
-          v-model="filter"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-create="false"
-          :body-width="filterBodyWidth"
-          embedded
-          @filter="filterData"
-          @clear="cleanFilter"
-        >
-          <template #prepend>
-            <div
-              class="table-filter-prepend-field table-filter-prepend-field--lg"
-            >
-              <label class="filter-label table-filter-prepend-label"
-                >{{ pt("Període") }}</label
-              >
-              <DatePicker
-                v-model="filter.dates"
-                selectionMode="range"
-                dateFormat="dd/mm/yy"
-                showIcon
-                class="w-full"
-                size="small"
-              />
-            </div>
-          </template>
-        </TableFilter>
-      </template>
-      <Column field="workcenter" :header="pt('Centre de treball')" sortable> </Column>
-      <Column field="operator" :header="pt('Operari')" sortable> </Column>
-      <Column field="machineStatus" :header="pt('Estat del centre')"></Column>
-
-      <Column field="startTime" :header="pt('Inici')" sortable>
-        <template #body="slotProps">
-          {{ formatDateTimeUTCWithSeconds(slotProps.data.startTime) }}
-        </template>
-      </Column>
-      <Column field="endTime" :header="pt('Fi')" sortable>
-        <template #body="slotProps">
-          {{ formatDateTimeUTCWithSeconds(slotProps.data.endTime) }}
-        </template>
-      </Column>
-      <Column field="quantityOk" :header="pt('Quantitat OK')" />
-      <Column field="quantityKo" :header="pt('Quantitat KO')" />
-      <Column field="plannedQuantity" :header="pt('Quantitat Prevista')" />
-      <Column field="operatorCost" :header="pt('Cost Operari')">
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.operatorCost) }}
-        </template>
-      </Column>
-      <Column
-        field="estimatedOperatorCost"
-        :header="pt('Cost operari estimat (per OF)')"
-      >
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.estimatedOperatorCost) }}
-        </template>
-      </Column>
-      <Column field="workcenterCost" :header="pt('Cost centre')">
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.workcenterCost) }}
-        </template>
-      </Column>
-      <Column
-        field="estimatedMachineCost"
-        :header="pt('Cost centre estimat (per OF)')"
-      >
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.estimatedMachineCost) }}
-        </template>
-      </Column>
-      <Column field="totalCost" :header="pt('Cost Tall')">
-        <template #body="slotProps">
-          {{ formatCurrency(slotProps.data.totalCost) }}
-        </template>
-      </Column>
-      <Column field="totalHours" :header="pt('Hores')">
-        <template #body="slotProps">
-          {{ slotProps.data.totalHours.toFixed(2) }}
-        </template>
-      </Column>
-      <Column field="workOrderCode" :header="pt('Ordre de treball')" sortable></Column>
-      <Column field="workOrderPhaseCode" :header="pt('Fase')" sortable></Column>
-      <Column
-        field="workOrderPhaseDescription"
-        :header="pt('Descripcio fase')"
-      ></Column>
-      <Column field="referenceCode" :header="pt('Referencia')"></Column>
-      <Column
-        field="referenceDescription"
-        :header="pt('Descripcio referencia')"
-      ></Column>
-      <Column field="customerComercialName" :header="pt('Client')"></Column>
-    </DataTable>
+      @filter="filterData"
+      @clear="cleanFilter"
+    />
   </div>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type Column } from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useWorkcenterShiftStore } from "../store/workcentershift";
 import type {
   WorkcenterShiftHistorical,
   WorkcenterShiftRequest,
 } from "../types";
-import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import {
-  formatCurrency,
-  formatDateTimeUTCWithSeconds,
-} from "../../../utils/functions";
+import { formatDateTimeUTCWithSeconds } from "../../../utils/functions";
 import { useStore } from "@/store";
-import TableFilter, {
-  type FilterConfig,
-  type FilterBodyWidth,
+import type {
+  FilterConfig,
+  FilterBodyWidth,
 } from "../../../components/tables/TableFilter.vue";
 
 const store = useStore();
@@ -140,20 +49,80 @@ const workcenterShiftStore = useWorkcenterShiftStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
-const groupByOptions = [
-  { label: pt("Operari"), value: "Operator" },
-  { label: pt("Centre de treball"), value: "Workcenter" },
-  { label: pt("Ordre de treball"), value: "Workorder" },
-  { label: pt("Cap"), value: "None" },
-];
-
-const timeGroupByOptions = [
-  { label: pt("Dia"), value: "Day" },
-  { label: pt("Setmana"), value: "Week" },
-  { label: pt("Mes"), value: "Month" },
-  { label: pt("Any"), value: "Year" },
-  { label: pt("Cap"), value: "None" },
-];
+const columns = computed<Column[]>(() => [
+  { field: "workcenter", header: pt("Centre de treball"), sortable: true },
+  { field: "operator", header: pt("Operari"), sortable: true },
+  { field: "machineStatus", header: pt("Estat del centre") },
+  {
+    field: "startTime",
+    header: pt("Inici"),
+    sortable: true,
+    resolver: (value) =>
+      typeof value === "string" ? formatDateTimeUTCWithSeconds(value) : "",
+  },
+  {
+    field: "endTime",
+    header: pt("Fi"),
+    sortable: true,
+    resolver: (value) =>
+      typeof value === "string" ? formatDateTimeUTCWithSeconds(value) : "",
+  },
+  {
+    field: "quantityOk",
+    header: pt("Quantitat OK"),
+    columnType: ColumnType.Number,
+  },
+  {
+    field: "quantityKo",
+    header: pt("Quantitat KO"),
+    columnType: ColumnType.Number,
+  },
+  {
+    field: "plannedQuantity",
+    header: pt("Quantitat Prevista"),
+    columnType: ColumnType.Number,
+  },
+  {
+    field: "operatorCost",
+    header: pt("Cost Operari"),
+    columnType: ColumnType.Currency,
+  },
+  {
+    field: "estimatedOperatorCost",
+    header: pt("Cost operari estimat (per OF)"),
+    columnType: ColumnType.Currency,
+  },
+  {
+    field: "workcenterCost",
+    header: pt("Cost centre"),
+    columnType: ColumnType.Currency,
+  },
+  {
+    field: "estimatedMachineCost",
+    header: pt("Cost centre estimat (per OF)"),
+    columnType: ColumnType.Currency,
+  },
+  {
+    field: "totalCost",
+    header: pt("Cost Tall"),
+    columnType: ColumnType.Currency,
+  },
+  {
+    field: "totalHours",
+    header: pt("Hores"),
+    resolver: (value) => (typeof value === "number" ? value.toFixed(2) : ""),
+  },
+  {
+    field: "workOrderCode",
+    header: pt("Ordre de treball"),
+    sortable: true,
+  },
+  { field: "workOrderPhaseCode", header: pt("Fase"), sortable: true },
+  { field: "workOrderPhaseDescription", header: pt("Descripcio fase") },
+  { field: "referenceCode", header: pt("Referencia") },
+  { field: "referenceDescription", header: pt("Descripcio referencia") },
+  { field: "customerComercialName", header: pt("Client") },
+]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
@@ -161,12 +130,24 @@ const filter = ref({
   timeGroupBy: "None",
 });
 
-const filterConfig: Array<FilterConfig> = [
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: pt("Període"),
+    type: "date-range",
+    placeholder: pt("Seleccioni un període"),
+    size: "lg",
+  },
   {
     key: "groupBy",
     label: pt("Grup"),
     type: "select",
-    options: groupByOptions,
+    options: [
+      { label: pt("Operari"), value: "Operator" },
+      { label: pt("Centre de treball"), value: "Workcenter" },
+      { label: pt("Ordre de treball"), value: "Workorder" },
+      { label: pt("Cap"), value: "None" },
+    ],
     optionLabel: "label",
     optionValue: "value",
     size: "md",
@@ -176,13 +157,19 @@ const filterConfig: Array<FilterConfig> = [
     key: "timeGroupBy",
     label: pt("Grup per temps"),
     type: "select",
-    options: timeGroupByOptions,
+    options: [
+      { label: pt("Dia"), value: "Day" },
+      { label: pt("Setmana"), value: "Week" },
+      { label: pt("Mes"), value: "Month" },
+      { label: pt("Any"), value: "Year" },
+      { label: pt("Cap"), value: "None" },
+    ],
     optionLabel: "label",
     optionValue: "value",
     size: "md",
     row: 0,
   },
-];
+]);
 
 onMounted(async () => {
   store.setMenuItem({
@@ -193,7 +180,7 @@ onMounted(async () => {
 });
 
 const filterData = async () => {
-  if (filter.value.dates) {
+  if (filter.value.dates?.[0] && filter.value.dates[1]) {
     const startTime = filter.value.dates[0];
     const endTime = filter.value.dates[1];
 
