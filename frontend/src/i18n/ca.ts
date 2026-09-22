@@ -1784,22 +1784,20 @@ const ca = {
         code: "Codi",
         description: "Descripció",
         version: "Versió",
+        category: "Categoria",
         materialType: "Tipus de material",
         format: "Format",
-        client: "Client",
         tax: "Impost",
-        theoreticalCost: "Cost Teóric Fabricació",
-        lastCost: "Cost Última Fabricació / Compra",
         documentation: "Documentació",
         active: "Activa",
         sales: "Ventes",
         purchase: "Compres",
         production: "Producció",
         service: "Servei",
-        requiresLot: "Requereix lot",
       },
       sales: {
-        savePvp: "Guardar PVP",
+        clientLabel: "Client",
+        pvpLabel: "PVP",
         salesHistory: "Històric de ventes (albarans)",
         noSales: "Sense ventes registrades.",
         columns: {
@@ -1810,14 +1808,14 @@ const ca = {
           unitPrice: "Preu unitari",
           amount: "Import",
         },
-        pucLabel: "PUC (últim cost de compra)",
       },
       purchase: {
         pucLabel: "PUC (últim cost de compra)",
+        servicePriceLabel: "Preu servei",
+        transportPriceLabel: "Preu transport",
         tabs: {
           suppliers: "Proveïdors i tarifes",
           externalServices: "Tarifes de serveis externs",
-          transport: "Tarifes de transport",
           purchaseHistory: "Històric de compres",
         },
         suppliersTable: {
@@ -1832,6 +1830,7 @@ const ca = {
           },
         },
         externalServicesTable: {
+          title: "Tarifes de serveis externs",
           empty: "Sense tarifes de serveis externs.",
           columns: {
             supplier: "Proveïdor",
@@ -1842,16 +1841,6 @@ const ca = {
             from: "Des de",
             to: "Fins a",
             price: "Preu",
-          },
-        },
-        transportTable: {
-          empty: "Sense tarifes de transport.",
-          columns: {
-            supplier: "Proveïdor",
-            rate: "Tarifa",
-            description: "Descripció",
-            validFrom: "Vàlid des de",
-            validTo: "Vàlid fins a",
           },
         },
         purchaseHistoryTable: {
@@ -1865,8 +1854,16 @@ const ca = {
             amount: "Import",
           },
         },
+        externalServiceDialog: {
+          title: "Afegir tarifa de servei extern",
+          nameLabel: "Nom de la tarifa",
+          validFrom: "Vàlid des de",
+          validTo: "Vàlid fins a",
+        },
       },
       production: {
+        theoreticalCostLabel: "Cost Teòric Fabricació",
+        areaLabel: "Àrea de producció",
         workMastersTitle: "Rutes de fabricació",
         workMastersEmpty: "Sense rutes de fabricació.",
         workMastersColumns: {
@@ -1891,11 +1888,14 @@ const ca = {
         },
       },
       warehouse: {
+        requiresLotLabel: "Requereix lot",
+        requiresLotBlocked: "No es pot canviar la gestió de lots mentre l'estoc general (a tots els magatzems i ubicacions) no sigui 0",
         stockTitle: "Estoc per ubicació",
         stockEmpty: "Sense estoc.",
         stockColumns: {
           warehouse: "Magatzem",
           location: "Ubicació",
+          lot: "Lot",
           quantity: "Quantitat",
           width: "Ample",
           length: "Llarg",
@@ -1916,6 +1916,8 @@ const ca = {
       },
       messages: {
         loadError: "Error al carregar la vista",
+        saveReferenceFirst: "Desa la referència general per gestionar aquesta informació.",
+        pendingRatesError: "No s'han pogut desar totes les tarifes noves",
         selectSupplier: "Selecciona un proveïdor",
         confirmDeleteSupplier: "Està segur que vol eliminar el proveïdor seleccionat?",
         supplierSaved: "Proveïdor guardat",

@@ -1758,22 +1758,20 @@ const en = {
         code: "Code",
         description: "Description",
         version: "Version",
+        category: "Category",
         materialType: "Material type",
         format: "Format",
-        client: "Customer",
         tax: "Tax",
-        theoreticalCost: "Theoretical Manufacturing Cost",
-        lastCost: "Last Manufacturing / Purchase Cost",
         documentation: "Documentation",
         active: "Active",
         sales: "Sales",
         purchase: "Purchases",
         production: "Production",
         service: "Service",
-        requiresLot: "Requires lot",
       },
       sales: {
-        savePvp: "Save RRP",
+        clientLabel: "Customer",
+        pvpLabel: "RRP",
         salesHistory: "Sales history (delivery notes)",
         noSales: "No sales recorded.",
         columns: {
@@ -1784,14 +1782,14 @@ const en = {
           unitPrice: "Unit price",
           amount: "Amount",
         },
-        pucLabel: "LPC (last purchase cost)",
       },
       purchase: {
         pucLabel: "LPC (last purchase cost)",
+        servicePriceLabel: "Service price",
+        transportPriceLabel: "Transport price",
         tabs: {
           suppliers: "Suppliers & rates",
           externalServices: "External service rates",
-          transport: "Transport rates",
           purchaseHistory: "Purchase history",
         },
         suppliersTable: {
@@ -1806,6 +1804,7 @@ const en = {
           },
         },
         externalServicesTable: {
+          title: "External service rates",
           empty: "No external service rates.",
           columns: {
             supplier: "Supplier",
@@ -1816,16 +1815,6 @@ const en = {
             from: "From",
             to: "To",
             price: "Price",
-          },
-        },
-        transportTable: {
-          empty: "No transport rates.",
-          columns: {
-            supplier: "Supplier",
-            rate: "Rate",
-            description: "Description",
-            validFrom: "Valid from",
-            validTo: "Valid to",
           },
         },
         purchaseHistoryTable: {
@@ -1839,8 +1828,16 @@ const en = {
             amount: "Amount",
           },
         },
+        externalServiceDialog: {
+          title: "Add external service rate",
+          nameLabel: "Rate name",
+          validFrom: "Valid from",
+          validTo: "Valid to",
+        },
       },
       production: {
+        theoreticalCostLabel: "Theoretical Manufacturing Cost",
+        areaLabel: "Production area",
         workMastersTitle: "Manufacturing routes",
         workMastersEmpty: "No manufacturing routes.",
         workMastersColumns: {
@@ -1865,11 +1862,14 @@ const en = {
         },
       },
       warehouse: {
+        requiresLotLabel: "Requires lot",
+        requiresLotBlocked: "Lot management can't be changed while the overall stock (across all warehouses and locations) is not 0",
         stockTitle: "Stock by location",
         stockEmpty: "No stock.",
         stockColumns: {
           warehouse: "Warehouse",
           location: "Location",
+          lot: "Lot",
           quantity: "Quantity",
           width: "Width",
           length: "Length",
@@ -1890,6 +1890,8 @@ const en = {
       },
       messages: {
         loadError: "Error loading view",
+        saveReferenceFirst: "Save the general reference details to manage this information.",
+        pendingRatesError: "Not all new rates could be saved",
         selectSupplier: "Select a supplier",
         confirmDeleteSupplier: "Are you sure you want to delete the selected supplier?",
         supplierSaved: "Supplier saved",

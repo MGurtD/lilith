@@ -1727,22 +1727,20 @@ const es = {
         code: "Código",
         description: "Descripción",
         version: "Versión",
+        category: "Categoría",
         materialType: "Tipo de material",
         format: "Formato",
-        client: "Cliente",
         tax: "Impuesto",
-        theoreticalCost: "Coste Teórico Fabricación",
-        lastCost: "Coste Última Fabricación / Compra",
         documentation: "Documentación",
         active: "Activa",
         sales: "Ventas",
         purchase: "Compras",
         production: "Producción",
         service: "Servicio",
-        requiresLot: "Requiere lote",
       },
       sales: {
-        savePvp: "Guardar PVP",
+        clientLabel: "Cliente",
+        pvpLabel: "PVP",
         salesHistory: "Histórico de ventas (albaranes)",
         noSales: "Sin ventas registradas.",
         columns: {
@@ -1753,14 +1751,14 @@ const es = {
           unitPrice: "Precio unitario",
           amount: "Importe",
         },
-        pucLabel: "PUC (último coste de compra)",
       },
       purchase: {
         pucLabel: "PUC (último coste de compra)",
+        servicePriceLabel: "Precio servicio",
+        transportPriceLabel: "Precio transporte",
         tabs: {
           suppliers: "Proveedores y tarifas",
           externalServices: "Tarifas de servicios externos",
-          transport: "Tarifas de transporte",
           purchaseHistory: "Histórico de compras",
         },
         suppliersTable: {
@@ -1775,6 +1773,7 @@ const es = {
           },
         },
         externalServicesTable: {
+          title: "Tarifas de servicios externos",
           empty: "Sin tarifas de servicios externos.",
           columns: {
             supplier: "Proveedor",
@@ -1785,16 +1784,6 @@ const es = {
             from: "Desde",
             to: "Hasta",
             price: "Precio",
-          },
-        },
-        transportTable: {
-          empty: "Sin tarifas de transporte.",
-          columns: {
-            supplier: "Proveedor",
-            rate: "Tarifa",
-            description: "Descripción",
-            validFrom: "Válido desde",
-            validTo: "Válido hasta",
           },
         },
         purchaseHistoryTable: {
@@ -1808,8 +1797,16 @@ const es = {
             amount: "Importe",
           },
         },
+        externalServiceDialog: {
+          title: "Añadir tarifa de servicio externo",
+          nameLabel: "Nombre de la tarifa",
+          validFrom: "Válido desde",
+          validTo: "Válido hasta",
+        },
       },
       production: {
+        theoreticalCostLabel: "Coste Teórico Fabricación",
+        areaLabel: "Área de producción",
         workMastersTitle: "Rutas de fabricación",
         workMastersEmpty: "Sin rutas de fabricación.",
         workMastersColumns: {
@@ -1834,11 +1831,14 @@ const es = {
         },
       },
       warehouse: {
+        requiresLotLabel: "Requiere lote",
+        requiresLotBlocked: "No se puede cambiar la gestión de lotes mientras el stock general (en todos los almacenes y ubicaciones) no sea 0",
         stockTitle: "Stock por ubicación",
         stockEmpty: "Sin stock.",
         stockColumns: {
           warehouse: "Almacén",
           location: "Ubicación",
+          lot: "Lote",
           quantity: "Cantidad",
           width: "Ancho",
           length: "Largo",
@@ -1859,6 +1859,8 @@ const es = {
       },
       messages: {
         loadError: "Error al cargar la vista",
+        saveReferenceFirst: "Guarda la referencia general para gestionar esta información.",
+        pendingRatesError: "No se han podido guardar todas las tarifas nuevas",
         selectSupplier: "Selecciona un proveedor",
         confirmDeleteSupplier: "¿Está seguro de que desea eliminar el proveedor seleccionado?",
         supplierSaved: "Proveedor guardado",

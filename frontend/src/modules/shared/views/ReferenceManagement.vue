@@ -1,29 +1,28 @@
 <template>
   <div v-if="!loading && reference">
+    <div class="flex justify-content-end mb-2">
+      <Button
+        :label="$t('shared.referenceManagement.general.save')"
+        size="small"
+        :icon="PrimeIcons.SAVE"
+        @click="submitGeneral"
+      />
+    </div>
     <Tabs value="general">
       <TabList>
         <Tab value="general">
           <i :class="PrimeIcons.INFO_CIRCLE" class="mr-2" />{{ $t('shared.referenceManagement.tabs.general') }}
         </Tab>
-        <Tab
-          value="sales"
-          v-if="formMode === FormActionMode.EDIT && reference.sales"
-        >
+        <Tab value="sales" v-if="reference.sales">
           <i :class="PrimeIcons.SHOPPING_CART" class="mr-2" />{{ $t('shared.referenceManagement.tabs.sales') }}
         </Tab>
-        <Tab
-          value="purchase"
-          v-if="formMode === FormActionMode.EDIT && reference.purchase"
-        >
+        <Tab value="purchase" v-if="reference.purchase">
           <i :class="PrimeIcons.TRUCK" class="mr-2" />{{ $t('shared.referenceManagement.tabs.purchase') }}
         </Tab>
-        <Tab
-          value="production"
-          v-if="formMode === FormActionMode.EDIT && reference.production"
-        >
+        <Tab value="production" v-if="reference.production">
           <i :class="PrimeIcons.COG" class="mr-2" />{{ $t('shared.referenceManagement.tabs.production') }}
         </Tab>
-        <Tab value="warehouse" v-if="formMode === FormActionMode.EDIT">
+        <Tab value="warehouse">
           <i :class="PrimeIcons.BUILDING" class="mr-2" />{{ $t('shared.referenceManagement.tabs.warehouse') }}
         </Tab>
       </TabList>
@@ -31,14 +30,6 @@
       <TabPanels>
         <!-- ============ GENERAL ============ -->
         <TabPanel value="general">
-          <div class="flex justify-content-end mb-2">
-            <Button
-              :label="$t('shared.referenceManagement.general.save')"
-              size="small"
-              :icon="PrimeIcons.SAVE"
-              @click="submitGeneral"
-            />
-          </div>
           <form>
             <section class="five-columns">
               <div class="mt-1">
@@ -59,12 +50,23 @@
                 />
               </div>
               <div class="mt-1">
+                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.category') }}</label>
+                <Select
+                  v-model="reference.categoryName"
+                  :options="referenceStore.referenceCategories"
+                  optionValue="code"
+                  optionLabel="description"
+                  class="w-full"
+                  disabled
+                />
+              </div>
+              <div class="mt-1" v-if="!isService">
                 <DropdownReferenceType
                   :label="$t('shared.referenceManagement.general.materialType')"
                   v-model="reference.referenceTypeId"
                 />
               </div>
-              <div class="mt-1">
+              <div class="mt-1" v-if="isMaterial">
                 <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.format') }}</label>
                 <Select
                   v-model="reference.referenceFormatId"
@@ -78,12 +80,6 @@
             </section>
             <section class="five-columns">
               <div class="mt-1">
-                <DropdownCustomers
-                  :label="$t('shared.referenceManagement.general.client')"
-                  v-model="reference.customerId"
-                />
-              </div>
-              <div class="mt-1">
                 <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.tax') }}</label>
                 <Select
                   v-model="reference.taxId"
@@ -93,57 +89,27 @@
                   class="w-full"
                 />
               </div>
-              <div class="mt-1">
-                <BaseInput
-                  :type="BaseInputType.CURRENCY"
-                  :label="$t('shared.referenceManagement.general.theoreticalCost')"
-                  id="workMasterCost"
-                  v-model="reference.workMasterCost"
-                  disabled
-                />
-              </div>
-              <div class="mt-1">
-                <BaseInput
-                  :type="BaseInputType.CURRENCY"
-                  :label="$t('shared.referenceManagement.general.lastCost')"
-                  id="lastCost"
-                  v-model="reference.lastCost"
-                  disabled
-                />
-              </div>
-              <div class="mt-1">
-                <BaseInput
-                  :type="BaseInputType.CURRENCY"
-                  label="PVP"
-                  id="price"
-                  v-model="reference.price"
-                />
-              </div>
             </section>
-            <section class="five-columns">
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.active') }}</label>
+            <section class="flex flex-row flex-wrap align-items-center gap-4 mt-3">
+              <div class="flex align-items-center gap-2">
                 <Checkbox v-model="isActive" :binary="true" />
+                <label class="text-900">{{ $t('shared.referenceManagement.general.active') }}</label>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.sales') }}</label>
+              <div class="flex align-items-center gap-2">
                 <Checkbox v-model="reference.sales" :binary="true" />
+                <label class="text-900">{{ $t('shared.referenceManagement.general.sales') }}</label>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.purchase') }}</label>
+              <div class="flex align-items-center gap-2">
                 <Checkbox v-model="reference.purchase" :binary="true" />
+                <label class="text-900">{{ $t('shared.referenceManagement.general.purchase') }}</label>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.production') }}</label>
+              <div class="flex align-items-center gap-2">
                 <Checkbox v-model="reference.production" :binary="true" />
+                <label class="text-900">{{ $t('shared.referenceManagement.general.production') }}</label>
               </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.service') }}</label>
+              <div class="flex align-items-center gap-2">
                 <Checkbox v-model="reference.isService" :binary="true" />
-              </div>
-              <div class="mt-1">
-                <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.general.requiresLot') }}</label>
-                <Checkbox v-model="reference.requiresLot" :binary="true" />
+                <label class="text-900">{{ $t('shared.referenceManagement.general.service') }}</label>
               </div>
             </section>
           </form>
@@ -162,19 +128,17 @@
         <TabPanel value="sales" v-if="reference.sales">
           <section class="five-columns mb-3">
             <div class="mt-1">
-              <BaseInput
-                :type="BaseInputType.CURRENCY"
-                label="PVP"
-                id="pvp"
-                v-model="reference.price"
+              <DropdownCustomers
+                :label="$t('shared.referenceManagement.sales.clientLabel')"
+                v-model="reference.customerId"
               />
             </div>
-            <div class="mt-1 flex align-items-end">
-              <Button
-                :label="$t('shared.referenceManagement.sales.savePvp')"
-                size="small"
-                :icon="PrimeIcons.SAVE"
-                @click="submitGeneral"
+            <div class="mt-1" v-if="!isService">
+              <BaseInput
+                :type="BaseInputType.CURRENCY"
+                :label="$t('shared.referenceManagement.sales.pvpLabel')"
+                id="pvp"
+                v-model="reference.price"
               />
             </div>
           </section>
@@ -217,19 +181,38 @@
             <div class="mt-1">
               <BaseInput
                 :type="BaseInputType.CURRENCY"
-                :label="$t('shared.referenceManagement.sales.pucLabel')"
+                :label="$t('shared.referenceManagement.purchase.pucLabel')"
                 id="puc"
                 v-model="reference.lastCost"
                 disabled
               />
             </div>
+            <div class="mt-1" v-if="isService">
+              <BaseInput
+                :type="BaseInputType.CURRENCY"
+                :label="$t('shared.referenceManagement.purchase.servicePriceLabel')"
+                id="servicePrice"
+                v-model="reference.price"
+              />
+            </div>
+            <div class="mt-1" v-if="isService">
+              <BaseInput
+                :type="BaseInputType.CURRENCY"
+                :label="$t('shared.referenceManagement.purchase.transportPriceLabel')"
+                id="transportAmount"
+                v-model="reference.transportAmount"
+              />
+            </div>
           </section>
+
+          <p v-if="formMode === FormActionMode.CREATE" class="text-600 mb-3">
+            {{ $t('shared.referenceManagement.messages.saveReferenceFirst') }}
+          </p>
 
           <Tabs value="suppliers">
             <TabList>
               <Tab value="suppliers">{{ $t('shared.referenceManagement.purchase.tabs.suppliers') }}</Tab>
               <Tab value="externalServices">{{ $t('shared.referenceManagement.purchase.tabs.externalServices') }}</Tab>
-              <Tab value="transport">{{ $t('shared.referenceManagement.purchase.tabs.transport') }}</Tab>
               <Tab value="purchaseHistory">{{ $t('shared.referenceManagement.purchase.tabs.purchaseHistory') }}</Tab>
             </TabList>
             <TabPanels>
@@ -250,6 +233,7 @@
                         :icon="PrimeIcons.PLUS"
                         rounded
                         raised
+                        :disabled="formMode === FormActionMode.CREATE"
                         @click="newSupplier"
                       />
                     </div>
@@ -296,6 +280,18 @@
                   scrollHeight="flex"
                   :loading="ratesLoading"
                 >
+                  <template #header>
+                    <div class="flex flex-wrap align-items-center justify-content-between gap-2">
+                      <label class="block text-900">{{ $t('shared.referenceManagement.purchase.externalServicesTable.title') }}</label>
+                      <Button
+                        :icon="PrimeIcons.PLUS"
+                        rounded
+                        raised
+                        :disabled="referenceSupplierOptions.length === 0"
+                        @click="openExternalServiceDialog"
+                      />
+                    </div>
+                  </template>
                   <template #empty>{{ $t('shared.referenceManagement.purchase.externalServicesTable.empty') }}</template>
                   <Column field="supplierName" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.supplier')" />
                   <Column field="rateName" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.rate')" />
@@ -319,31 +315,6 @@
                   <Column field="price" :header="$t('shared.referenceManagement.purchase.externalServicesTable.columns.price')">
                     <template #body="{ data }">{{
                       formatCurrency(data.price)
-                    }}</template>
-                  </Column>
-                </DataTable>
-              </TabPanel>
-
-              <TabPanel value="transport">
-                <DataTable
-                  :value="transportRateRows"
-                  tableStyle="min-width: 100%"
-                  scrollable
-                  scrollHeight="flex"
-                  :loading="ratesLoading"
-                >
-                  <template #empty>{{ $t('shared.referenceManagement.purchase.transportTable.empty') }}</template>
-                  <Column field="supplierName" :header="$t('shared.referenceManagement.purchase.transportTable.columns.supplier')" />
-                  <Column field="rateName" :header="$t('shared.referenceManagement.purchase.transportTable.columns.rate')" />
-                  <Column field="description" :header="$t('shared.referenceManagement.purchase.transportTable.columns.description')" />
-                  <Column :header="$t('shared.referenceManagement.purchase.transportTable.columns.validFrom')">
-                    <template #body="{ data }">{{
-                      formatDate(data.validFrom)
-                    }}</template>
-                  </Column>
-                  <Column :header="$t('shared.referenceManagement.purchase.transportTable.columns.validTo')">
-                    <template #body="{ data }">{{
-                      formatDate(data.validTo)
                     }}</template>
                   </Column>
                 </DataTable>
@@ -386,6 +357,29 @@
 
         <!-- ============ PRODUCCIÓ ============ -->
         <TabPanel value="production" v-if="reference.production">
+          <section class="five-columns mb-3">
+            <div class="mt-1">
+              <BaseInput
+                :type="BaseInputType.CURRENCY"
+                :label="$t('shared.referenceManagement.production.theoreticalCostLabel')"
+                id="workMasterCost"
+                v-model="reference.workMasterCost"
+                disabled
+              />
+            </div>
+            <div class="mt-1" v-if="isTool">
+              <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.production.areaLabel') }}</label>
+              <Select
+                v-model="reference.areaId"
+                :options="plantModelStore.areas"
+                optionValue="id"
+                optionLabel="name"
+                class="w-full"
+                showClear
+              />
+            </div>
+          </section>
+
           <DataTable
             :value="workMasters"
             tableStyle="min-width: 100%"
@@ -474,6 +468,17 @@
 
         <!-- ============ MAGATZEM ============ -->
         <TabPanel value="warehouse">
+          <section class="five-columns mb-3" v-if="!isService">
+            <div class="mt-1 flex align-items-center gap-2">
+              <Checkbox
+                v-model="requiresLotModel"
+                :binary="true"
+                :disabled="totalStockQuantity !== 0"
+              />
+              <label class="text-900">{{ $t('shared.referenceManagement.warehouse.requiresLotLabel') }}</label>
+            </div>
+          </section>
+
           <DataTable
             :value="stock"
             tableStyle="min-width: 100%"
@@ -489,6 +494,7 @@
             <template #empty>{{ $t('shared.referenceManagement.warehouse.stockEmpty') }}</template>
             <Column field="warehouseName" :header="$t('shared.referenceManagement.warehouse.stockColumns.warehouse')" />
             <Column field="locationName" :header="$t('shared.referenceManagement.warehouse.stockColumns.location')" />
+            <Column field="lotCode" :header="$t('shared.referenceManagement.warehouse.stockColumns.lot')" />
             <Column field="quantity" :header="$t('shared.referenceManagement.warehouse.stockColumns.quantity')" />
             <Column field="width" :header="$t('shared.referenceManagement.warehouse.stockColumns.width')" />
             <Column field="length" :header="$t('shared.referenceManagement.warehouse.stockColumns.length')" />
@@ -551,6 +557,85 @@
         <Button :label="$t('shared.referenceManagement.supplierDialog.save')" :icon="PrimeIcons.SAVE" @click="saveSupplier" />
       </template>
     </Dialog>
+
+    <!-- New external service rate dialog -->
+    <Dialog
+      v-model:visible="externalServiceDialogVisible"
+      modal
+      :header="$t('shared.referenceManagement.purchase.externalServiceDialog.title')"
+      :style="{ width: '36rem' }"
+    >
+      <div v-if="newExternalServiceRate" class="flex flex-column gap-3">
+        <div>
+          <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.supplierDialog.supplierLabel') }}</label>
+          <Select
+            v-model="newExternalServiceRate.supplierId"
+            :options="referenceSupplierOptions"
+            optionValue="id"
+            optionLabel="comercialName"
+            class="w-full"
+            filter
+          />
+        </div>
+        <BaseInput
+          :label="$t('shared.referenceManagement.purchase.externalServiceDialog.nameLabel')"
+          id="externalServiceRateName"
+          v-model="newExternalServiceRate.name"
+        />
+        <div class="two-columns">
+          <div>
+            <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.purchase.externalServiceDialog.validFrom') }}</label>
+            <DatePicker v-model="newExternalServiceRate.validFrom" class="w-full" dateFormat="dd/mm/yy" />
+          </div>
+          <div>
+            <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.purchase.externalServiceDialog.validTo') }}</label>
+            <DatePicker v-model="newExternalServiceRate.validTo" class="w-full" dateFormat="dd/mm/yy" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-900 mb-2">{{ $t('shared.referenceManagement.purchase.externalServicesTable.columns.calculation') }}</label>
+          <Select
+            v-model="newExternalServiceRate.calculationType"
+            :options="calculationTypeOptions"
+            optionValue="value"
+            optionLabel="label"
+            class="w-full"
+          />
+        </div>
+        <div class="two-columns">
+          <BaseInput
+            :type="BaseInputType.NUMERIC"
+            :label="$t('shared.referenceManagement.purchase.externalServicesTable.columns.from')"
+            id="externalServiceFrom"
+            v-model="newExternalServiceRate.from"
+          />
+          <BaseInput
+            :type="BaseInputType.NUMERIC"
+            :label="$t('shared.referenceManagement.purchase.externalServicesTable.columns.to')"
+            id="externalServiceTo"
+            v-model="newExternalServiceRate.to"
+          />
+        </div>
+        <BaseInput
+          :type="BaseInputType.CURRENCY"
+          :label="$t('shared.referenceManagement.purchase.externalServicesTable.columns.price')"
+          id="externalServicePrice"
+          v-model="newExternalServiceRate.price"
+        />
+      </div>
+      <template #footer>
+        <Button
+          :label="$t('shared.referenceManagement.supplierDialog.cancel')"
+          text
+          @click="externalServiceDialogVisible = false"
+        />
+        <Button
+          :label="$t('shared.referenceManagement.supplierDialog.save')"
+          :icon="PrimeIcons.SAVE"
+          @click="saveExternalServiceRate"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -577,6 +662,8 @@ import { useReferenceStore } from "../store/reference";
 import { useTaxesStore } from "../store/tax";
 import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { useCustomersStore } from "../../sales/store/customers";
+import { usePlantModelStore } from "../../production/store/plantmodel";
+import { usePurchaseRateStore } from "../../purchase/store/purchaseRate";
 
 import { Reference, ReferenceCategoryEnum } from "../types";
 import { SupplierReference } from "../../purchase/types";
@@ -584,7 +671,7 @@ import { DeliveryNote } from "../../sales/types";
 import {
   Receipt,
   PurchaseRate,
-  TransportRate,
+  PurchaseRateDetail,
   CalculationType,
 } from "../../purchase/types";
 import { WorkMaster, WorkOrder } from "../../production/types";
@@ -596,7 +683,6 @@ import { WorkOrderService } from "../../production/services/workorder.service";
 import { WorkMasterService } from "../../production/services/workmaster.service";
 import { StockService } from "../../warehouse/services/warehouse.service";
 import { PurchaseRateService } from "../../purchase/services/purchaseRate.service";
-import { TransportRateService } from "../../purchase/services/transportRate.service";
 
 const route = useRoute();
 const router = useRouter();
@@ -608,6 +694,8 @@ const referenceStore = useReferenceStore();
 const taxesStore = useTaxesStore();
 const suppliersStore = useSuppliersStore();
 const customersStore = useCustomersStore();
+const plantModelStore = usePlantModelStore();
+const purchaseRateStore = usePurchaseRateStore();
 const { t } = useI18n();
 
 const deliveryNoteService = new DeliveryNoteService("/DeliveryNote");
@@ -616,7 +704,6 @@ const workOrderService = new WorkOrderService("/WorkOrder");
 const workMasterService = new WorkMasterService("/WorkMaster");
 const stockService = new StockService("/Stock");
 const purchaseRateService = new PurchaseRateService("/PurchaseRate");
-const transportRateService = new TransportRateService("/TransportRate");
 
 const { reference } = storeToRefs(referenceStore);
 const id = ref("");
@@ -633,7 +720,6 @@ const formMode = ref(FormActionMode.EDIT);
 const salesHistory = ref<Array<DeliveryNote>>([]);
 const purchaseHistory = ref<Array<Receipt>>([]);
 const purchaseRates = ref<Array<PurchaseRate>>([]);
-const transportRates = ref<Array<TransportRate>>([]);
 const workMasters = ref<Array<WorkMaster>>([]);
 const workOrders = ref<Array<WorkOrder>>([]);
 const stock = ref<Array<StockListItem>>([]);
@@ -644,6 +730,33 @@ const isActive = computed({
     if (reference.value) reference.value.disabled = !value;
   },
 });
+
+// Sum across every warehouse/location for this reference, not just one location
+const totalStockQuantity = computed(() =>
+  stock.value.reduce((total, item) => total + (item.quantity ?? 0), 0)
+);
+
+// Lot tracking behavior can't change (on or off) while there's stock to reconcile
+const requiresLotModel = computed({
+  get: () => reference.value?.requiresLot ?? false,
+  set: (value: boolean) => {
+    if (!reference.value) return;
+    if (totalStockQuantity.value !== 0) {
+      toast.add({
+        severity: "warn",
+        summary: t("shared.referenceManagement.warehouse.requiresLotBlocked"),
+        life: 5000,
+      });
+      return;
+    }
+    reference.value.requiresLot = value;
+  },
+});
+
+// Drives which category-specific fields are shown across tabs (D)
+const isService = computed(() => reference.value?.categoryName === ReferenceCategoryEnum.SERVICE);
+const isMaterial = computed(() => reference.value?.categoryName === ReferenceCategoryEnum.MATERIAL);
+const isTool = computed(() => reference.value?.categoryName === ReferenceCategoryEnum.TOOL);
 
 const salesHistoryRows = computed(() =>
   salesHistory.value.flatMap((dn) =>
@@ -692,16 +805,6 @@ const externalServiceRateRows = computed(() =>
   )
 );
 
-const transportRateRows = computed(() =>
-  transportRates.value.map((rate) => ({
-    supplierName: suppliersStore.getName(rate.supplierId),
-    rateName: rate.name,
-    description: rate.description,
-    validFrom: rate.validFrom,
-    validTo: rate.validTo,
-  }))
-);
-
 const getCalculationTypeLabel = (type: CalculationType) => {
   switch (type) {
     case CalculationType.Volume:
@@ -713,6 +816,72 @@ const getCalculationTypeLabel = (type: CalculationType) => {
     default:
       return "";
   }
+};
+
+// Suppliers already linked to this reference are the only valid targets for new rates
+const referenceSupplierOptions = computed(() => {
+  const linkedIds = new Set(
+    (referenceStore.referenceSuppliers ?? []).map((s) => s.supplierId)
+  );
+  return (suppliersStore.suppliers ?? []).filter((s) => linkedIds.has(s.id));
+});
+
+const calculationTypeOptions = computed(() => [
+  { value: CalculationType.Units, label: getCalculationTypeLabel(CalculationType.Units) },
+  { value: CalculationType.Volume, label: getCalculationTypeLabel(CalculationType.Volume) },
+  { value: CalculationType.Weight, label: getCalculationTypeLabel(CalculationType.Weight) },
+]);
+
+// Rates added here are only kept in memory until the top-level Save persists them
+const pendingPurchaseRates = ref<Array<{ rate: PurchaseRate; detail: PurchaseRateDetail }>>([]);
+
+const externalServiceDialogVisible = ref(false);
+const newExternalServiceRate = ref<{
+  supplierId: string;
+  name: string;
+  validFrom: Date;
+  validTo: Date;
+  calculationType: CalculationType;
+  from: number;
+  to: number;
+  price: number;
+} | null>(null);
+
+const openExternalServiceDialog = () => {
+  newExternalServiceRate.value = {
+    supplierId: "",
+    name: "",
+    validFrom: new Date(),
+    validTo: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+    calculationType: CalculationType.Units,
+    from: 0,
+    to: 0,
+    price: 0,
+  };
+  externalServiceDialogVisible.value = true;
+};
+
+const saveExternalServiceRate = () => {
+  const form = newExternalServiceRate.value;
+  if (!form?.supplierId || !reference.value) return;
+
+  const rate = purchaseRateStore.setNewPurchaseRate(form.supplierId);
+  rate.name = form.name;
+  rate.validFrom = form.validFrom;
+  rate.validTo = form.validTo;
+
+  const detail = purchaseRateStore.setNewPurchaseRateDetail(rate.id);
+  detail.referenceId = reference.value.id;
+  detail.calculationType = form.calculationType;
+  detail.from = form.from;
+  detail.to = form.to;
+  detail.price = form.price;
+  rate.details = [detail];
+
+  purchaseRates.value = [...purchaseRates.value, rate];
+  pendingPurchaseRates.value.push({ rate, detail });
+
+  externalServiceDialogVisible.value = false;
 };
 
 const workMasterTotal = (wm: WorkMaster) =>
@@ -731,6 +900,7 @@ const loadGeneral = async () => {
     referenceStore.referenceFormats
       ? Promise.resolve()
       : referenceStore.fetchReferences(),
+    plantModelStore.areas ? Promise.resolve() : plantModelStore.fetchAreas(),
   ]);
 };
 
@@ -761,16 +931,6 @@ const loadRelated = async () => {
 
     purchaseRates.value =
       (await purchaseRateService.getByReferenceId(refId)) ?? [];
-
-    const supplierIds = [
-      ...new Set(
-        (referenceStore.referenceSuppliers ?? []).map((s) => s.supplierId)
-      ),
-    ];
-    const transportResults = await Promise.all(
-      supplierIds.map((sid) => transportRateService.getBySupplierId(sid))
-    );
-    transportRates.value = transportResults.flatMap((r) => r ?? []);
     ratesLoading.value = false;
   }
 
@@ -858,15 +1018,43 @@ const submitGeneral = async () => {
       : t("shared.referenceManagement.messages.referenceSaveError");
   }
 
+  // Only push rate inserts once the reference itself is safely persisted, and never for a domain the user left unchecked
+  let pendingRatesFailed = false;
+  if (result && data.purchase) {
+    for (const pending of pendingPurchaseRates.value) {
+      const rateCreated = await purchaseRateStore.createPurchaseRate(pending.rate);
+      const detailCreated = rateCreated
+        ? await purchaseRateStore.createPurchaseRateDetail(pending.detail)
+        : false;
+      if (!rateCreated || !detailCreated) pendingRatesFailed = true;
+    }
+  }
+  // Discard anything queued for purchase once that domain is off, or once it's been sent
+  if (result) {
+    pendingPurchaseRates.value = [];
+  }
+
   toast.add({
     severity: result ? "success" : "warn",
     summary: message,
     life: 5000,
   });
 
-  if (result && formMode.value === FormActionMode.CREATE) {
-    router.replace({ path: `/reference-management/${data.id}` });
-    await loadView();
+  if (pendingRatesFailed) {
+    toast.add({
+      severity: "warn",
+      summary: t("shared.referenceManagement.messages.pendingRatesError"),
+      life: 5000,
+    });
+  }
+
+  if (result) {
+    if (formMode.value === FormActionMode.CREATE) {
+      router.replace({ path: `/reference-management/${data.id}` });
+      await loadView();
+    } else {
+      await loadRelated();
+    }
   }
 };
 
