@@ -1,0 +1,25 @@
+frontend/src/i18n/ca.ts
+  s_c417659112a3b0::t_ad386beb14fffe 1787,1799-1800,1814-1815,1833,1857-1862,1865-1866,1891-1892,1898,1919-1920
+frontend/src/i18n/en.ts
+  s_c417659112a3b0::t_dc516af871e2fb 1761,1773-1774,1788-1789,1807,1831-1836,1839-1840,1865-1866,1872,1893-1894
+frontend/src/i18n/es.ts
+  s_c417659112a3b0::t_18a196c5a33429 1730,1742-1743,1757-1758,1776,1800-1805,1808-1809,1834-1835,1841,1862-1863
+frontend/src/modules/shared/views/ReferenceManagement.vue
+  s_c417659112a3b0::t_04b03f18c56687 3-10,16,19,22,25,53-63,69,93-94,96,98,100,102,104,106,108,110,112,131-136,139,184,190-205,208-211,236,283-294,360-382,471-481,497,560-638,665-666,674,697-698,734-760,821-886,903,1021-1036,1043-1057
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "27441f705f57cdb3a3a2e04e2d2edd597c31d930",
+  "prompts": {},
+  "sessions": {
+    "s_c417659112a3b0": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "ecff91e7-e90b-4645-9205-efddf22c58ce",
+        "model": "unknown"
+      },
+      "human_author": "Èric Zapater <ericzm@ext.inditex.com>"
+    }
+  }
+}
