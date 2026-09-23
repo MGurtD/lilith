@@ -2139,6 +2139,7 @@ const ca = {
     signOut: "Tancar sessió",
     back: "Tornar",
     userMenu: "Menú d'usuari",
+    openMenu: "Obrir el menú",
   },
   movementTypes: {
     input: "Entrada",

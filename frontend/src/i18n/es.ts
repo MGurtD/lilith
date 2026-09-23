@@ -2082,6 +2082,7 @@ const es = {
     signOut: "Cerrar sesión",
     back: "Volver",
     userMenu: "Menú de usuario",
+    openMenu: "Abrir el menú",
   },
   movementTypes: {
     input: "Entrada",

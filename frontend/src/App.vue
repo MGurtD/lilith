@@ -160,6 +160,16 @@ const logoutOperator = () => {
   );
 }
 
+/* Phones: the sidebar becomes a drawer, content takes the full width. */
+@media (max-width: 767.98px) {
+  .app__view,
+  .app__view.collapsed {
+    left: 0;
+    width: 100vw;
+    padding: 0.75rem;
+  }
+}
+
 /* Subtle loading indicator - top progress bar */
 .loading-indicator {
   position: fixed;

@@ -1,47 +1,59 @@
 <template>
-  <sidebar-menu
-    :menu="store.sidebar.menus"
-    :collapsed="store.sidebar.collapsed"
-    :showOneChild="true"
-    :hideToggle="store.sidebar.hideToggle"
-    :style="{ '--vsm-primary-color': sidebarAccent }"
-    @update:collapsed="toggleCollapse"
+  <!-- Phones get the same menu inside a drawer opened from the header; the
+       fixed sidebar would take most of a 390px screen. -->
+  <component
+    :is="isPhone ? Drawer : Passthrough"
+    v-bind="isPhone ? drawerProps : {}"
+    v-model:visible="store.sidebar.mobileOpen"
   >
-    <template #header>
-      <div class="brand" @click="() => router.push({ path: '/' })">
-        <!-- Only a logo uploaded for the sidebar is shown: tenants preview it on a
-             dark background. Main logos and the bundled default mark are made for
-             white backgrounds, so the monogram stands in for them. -->
-        <img
-          v-if="brandingStore.hasSidebarLogo && !logoLoadFailed"
-          :src="brandingStore.sidebarLogoUrl"
-          :alt="brandingStore.brandName"
-          class="brand-logo"
-          draggable="false"
-          @error="logoLoadFailed = true"
-        />
-        <span v-else class="brand-monogram">{{ brandingStore.monogram }}</span>
-        <span
-          v-if="!store.sidebar.collapsed"
-          class="brand-name"
-          :title="brandingStore.brandName"
-          >{{ brandingStore.brandName }}</span
-        >
-      </div>
+    <template #container>
+      <sidebar-menu
+        :menu="store.sidebar.menus"
+        :collapsed="!isPhone && store.sidebar.collapsed"
+        :showOneChild="true"
+        :hideToggle="isPhone || store.sidebar.hideToggle"
+        :relative="isPhone"
+        :width="isPhone ? '100%' : undefined"
+        :style="{ '--vsm-primary-color': sidebarAccent }"
+        @update:collapsed="toggleCollapse"
+      >
+        <template #header>
+          <div class="brand" @click="() => router.push({ path: '/' })">
+            <!-- Only a logo uploaded for the sidebar is shown: tenants preview it on a
+                 dark background. Main logos and the bundled default mark are made for
+                 white backgrounds, so the monogram stands in for them. -->
+            <img
+              v-if="brandingStore.hasSidebarLogo && !logoLoadFailed"
+              :src="brandingStore.sidebarLogoUrl"
+              :alt="brandingStore.brandName"
+              class="brand-logo"
+              draggable="false"
+              @error="logoLoadFailed = true"
+            />
+            <span v-else class="brand-monogram">{{ brandingStore.monogram }}</span>
+            <span
+              v-if="isPhone || !store.sidebar.collapsed"
+              class="brand-name"
+              :title="brandingStore.brandName"
+              >{{ brandingStore.brandName }}</span
+            >
+          </div>
+        </template>
+        <template #footer>
+          <div class="sidebar-footer">
+            <Button
+              :label="!isPhone && store.sidebar.collapsed ? '' : $t('support.request')"
+              icon="pi pi-question-circle"
+              severity="secondary"
+              text
+              class="support-btn"
+              @click="openSupport"
+            />
+          </div>
+        </template>
+      </sidebar-menu>
     </template>
-    <template #footer>
-      <div class="sidebar-footer">
-        <Button
-          :label="store.sidebar.collapsed ? '' : $t('support.request')"
-          icon="pi pi-question-circle"
-          severity="secondary"
-          text
-          class="support-btn"
-          @click="showSupportDialog = true"
-        />
-      </div>
-    </template>
-  </sidebar-menu>
+  </component>
 
   <Dialog
     v-model:visible="showSupportDialog"
@@ -55,19 +67,40 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type FunctionalComponent } from "vue";
+import Drawer from "primevue/drawer";
 import { SidebarMenu } from "vue-sidebar-menu";
 import "vue-sidebar-menu/dist/vue-sidebar-menu.css";
+import { useIsPhone } from "@/composables/useIsPhone";
 import { useStore } from "@/store";
 import { useBrandingStore } from "@/store/branding";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import FormSupportRequest from "../modules/shared/components/FormSupportRequest.vue";
 
 const router = useRouter();
+const route = useRoute();
 const store = useStore();
+const isPhone = useIsPhone();
+
+// Desktop renders the menu as is; the drawer's container slot is reused for it.
+const Passthrough: FunctionalComponent = (_props, { slots }) => slots.container?.();
+const drawerProps = {
+  position: "left",
+  blockScroll: true,
+  class: "nav-drawer",
+};
+
+// Leaving the screen or widening the window closes the phone drawer.
+watch([() => route.fullPath, isPhone], () => (store.sidebar.mobileOpen = false));
+
 const showSupportDialog = ref(false);
 const brandingStore = useBrandingStore();
 const logoLoadFailed = ref(false);
+
+function openSupport() {
+  store.sidebar.mobileOpen = false;
+  showSupportDialog.value = true;
+}
 
 // The black palette has no light shade to stand out on the dark sidebar.
 const sidebarAccent = computed(() =>
@@ -85,6 +118,15 @@ function toggleCollapse() {
   store.sidebar.collapsed = !store.sidebar.collapsed;
 }
 </script>
+
+<style>
+/* The drawer panel is teleported to <body>, so it is styled globally. */
+.p-drawer.nav-drawer {
+  width: min(18rem, 85vw);
+  border: none;
+  background: var(--p-steel-850);
+}
+</style>
 
 <style scoped>
 /*
@@ -124,6 +166,10 @@ function toggleCollapse() {
   --vsm-item-padding: 7px 10px;
   --vsm-icon-height: 22px;
   --vsm-icon-width: 22px;
+}
+
+.v-sidebar-menu.vsm_relative {
+  width: 100%;
 }
 
 .brand {
@@ -213,7 +259,13 @@ function toggleCollapse() {
   padding-left: 1.25rem;
 }
 
-:global(.v-sidebar-menu .vsm--link_level-2::before) {
+/* Third level (module > group > screen): indented past the group's marker. */
+:global(.v-sidebar-menu .vsm--link_level-3) {
+  padding-left: calc(1.25rem + 16px);
+}
+
+:global(.v-sidebar-menu .vsm--link_level-2::before),
+:global(.v-sidebar-menu .vsm--link_level-3::before) {
   content: "";
   flex-shrink: 0;
   width: 6px;
@@ -223,7 +275,10 @@ function toggleCollapse() {
   background: transparent;
 }
 
-:global(.v-sidebar-menu .vsm--item .vsm--link_level-2.vsm--link_active::before) {
+/* The marker follows the current screen at any depth; an open group holding it
+   stays unmarked, a closed one is marked so the screen can still be found. */
+:global(.v-sidebar-menu .vsm--item .vsm--link_level-2.vsm--link_active:not(.vsm--link_open)::before),
+:global(.v-sidebar-menu .vsm--item .vsm--link_level-3.vsm--link_active::before) {
   background: var(--vsm-primary-color);
 }
 

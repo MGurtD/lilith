@@ -35,6 +35,7 @@ export const useStore = defineStore("applicationStore", {
       sidebar: {
         collapsed: false,
         hideToggle: false,
+        mobileOpen: false,
         menus: [],
       } as SidebarConfig,
       currentMenuItem: {

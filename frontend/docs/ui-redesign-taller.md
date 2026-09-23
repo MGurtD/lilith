@@ -1,6 +1,6 @@
 # UI Redesign "Taller"
 
-> **Status**: In progress. Phases 0–4 (partial) done on `feat/ui-design-foundation`, not merged.
+> **Status**: In progress. Phases 0–4 done on `feat/ui-design-foundation` except the login; not merged.
 > **Created**: 2026-09-23 · **Owner**: Marc Gurt
 > **Design canvas**: https://claude.ai/artifact/N7mbr8zHW3Lds7U1b7jfCL (private; share it from its Share menu)
 
@@ -17,6 +17,7 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 | `3290c77` | Aura-based `TallerPreset` (`src/theme/preset.ts`): steel surface scale, primary on shade 600 (700 for emerald/teal/orange so white text reaches 4.5:1, see `store/branding.ts`), 4px radii, denser form/table tokens. IBM Plex Sans + Plex Sans Condensed self-hosted via Fontsource and cached by the PWA service worker. 14px root for the office UI; `/plant` keeps 16px (`plant-mode` class in `App.vue`) so shop-floor touch targets do not shrink. Currency/number columns right-aligned in `Table.vue`. Sub-11px font sizes raised. |
 | `15d8250` | Sidebar "Grafit": neutral dark steel, branding colour only on the current-screen marker (white for the black palette). Replaced ~300 lines of runtime contrast maths in `TheSidebar.vue` with `vue-sidebar-menu` CSS variables. Only an uploaded *sidebar* logo is shown; otherwise the monogram. |
 | `f2f75eb` | Light header: readable page title, owning module (from the sidebar menu tree) above it, visible help button (Alt+H still works), accessible back button and avatar. New i18n keys `ui.back`, `ui.userMenu`. |
+| *(mobile shell)* | Below 768px (`composables/useIsPhone.ts`, same breakpoint as `Form.vue`) the sidebar menu moves into a PrimeVue `Drawer` opened from a menu button in the header; header and content take the full width. The drawer closes on navigation, Escape or widening the window. Page actions show their icon only on phones (label kept for screen readers). The current-screen marker now follows third-level entries (module › group › screen) on desktop too. New i18n key `ui.openMenu`. |
 | `f937c65` | **Save convention** (below) applied to all 40 detail screens plus branding. `components/PageActions.vue`, `Form.vue` `page-actions` option. Removed `grid_add_row_button` (a `position: fixed` save that overlapped fields). |
 
 ## Conventions Now In Force
@@ -30,20 +31,19 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 
 Ordered from lower to higher impact. Validate each with screenshots before committing.
 
-1. **Mobile shell (rest of phase 4).** At 390px the fixed 240px sidebar crushes the content. Plan: below 768px hide `vue-sidebar-menu`, add a menu button in `TheHeader`, render navigation in a PrimeVue `Drawer`; make `App.vue`'s fixed `left/width` layout responsive. The canvas has an interactive mobile mockup.
-2. **Login (rest of phase 4).** Split layout: form on white, steel panel with a drawing title block ("caixetí") as brand motif. Mockup in the canvas.
-3. **Semantic states.** Document statuses as `Tag` with consistent colours (draft grey, issued brand tint, paid green, pending amber, overdue red) instead of plain text in tables; `Desactivat` column as a badge instead of radio-like circles.
-4. **Create button.** Replace the green round `+` (`severity="success"`, 16 uses) with a labelled primary action ("Nou client") in list screens.
-5. **Page patterns.** One `FilterBar` replacing `.two-columns…`, `.datatable-filter-*` and `.filter-toolbar`; empty states; a useful Home instead of the big logo.
-6. **Caixetí (signature element).** Title-block header for document detail screens (number, customer, dates, status, totals). Pilot on `SalesInvoice`. Mockup in the canvas.
-7. Later: dark mode (tokens are ready), unsaved-changes indicator and Ctrl+S.
+1. **Login (rest of phase 4).** Split layout: form on white, steel panel with a drawing title block ("caixetí") as brand motif. Mockup in the canvas.
+2. **Semantic states.** Document statuses as `Tag` with consistent colours (draft grey, issued brand tint, paid green, pending amber, overdue red) instead of plain text in tables; `Desactivat` column as a badge instead of radio-like circles.
+3. **Create button.** Replace the green round `+` (`severity="success"`, 16 uses) with a labelled primary action ("Nou client") in list screens.
+4. **Page patterns.** One `FilterBar` replacing `.two-columns…`, `.datatable-filter-*` and `.filter-toolbar`; empty states; a useful Home instead of the big logo.
+5. **Caixetí (signature element).** Title-block header for document detail screens (number, customer, dates, status, totals). Pilot on `SalesInvoice`. Mockup in the canvas.
+6. Later: dark mode (tokens are ready), unsaved-changes indicator and Ctrl+S.
 
 ## Known Issues And Pending Checks
 
 - **Verified against real data** (local backend on the Default database, every write blocked in Playwright): purchase order, work order, work master, receipt, budget, sales order, sales invoice, delivery note and purchase invoice details render with no page errors; phase forms follow both conventions (work order and work master: "new phase" dialog keeps Save in its footer, phase detail shows it in the header); header Save on a work order issues `PUT /api/WorkOrder/{id}`. The material form inside the receipt line dialog keeps its Save in the dialog footer and does not reach the header.
 - The "Maximum recursive updates exceeded in DataTable" seen on work orders only happens with mocked data.
 - Save labels are inconsistent between modules ("Desar" in purchases, "Guardar" in sales/production); pre-existing translations, unify when touching i18n.
-- The real menu has three levels (module › group › screen); check the current-screen marker on third-level entries when doing the mobile shell.
+- On phones the shell fits, but most legacy screens keep their desktop grids (three-column forms, wide tables with horizontal scroll). Screens built on `Form.vue` rows already have mobile spans; the rest adapt screen by screen.
 - `LanguageSwitcher` in the user menu shows the code ("ca") instead of the language name.
 - On detail routes (`/customers/:id`) the sidebar loses the current-screen highlight (`vue-sidebar-menu` only matches menu routes).
 - The PWA cannot reload offline (`navigateFallback: null`); fonts are cached, navigation is not. Separate decision.

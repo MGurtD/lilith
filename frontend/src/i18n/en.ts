@@ -2113,6 +2113,7 @@ const en = {
     signOut: "Sign out",
     back: "Back",
     userMenu: "User menu",
+    openMenu: "Open menu",
   },
   movementTypes: {
     input: "Input",

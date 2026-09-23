@@ -2,6 +2,17 @@
   <header class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
     <div class="title-bar__page">
       <Button
+        v-if="isPhone"
+        icon="pi pi-bars"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('ui.openMenu')"
+        aria-haspopup="dialog"
+        :aria-expanded="store.sidebar.mobileOpen"
+        @click="store.sidebar.mobileOpen = true"
+      />
+      <Button
         v-if="store.currentMenuItem.backButtonVisible"
         :icon="PrimeIcons.ARROW_LEFT"
         severity="secondary"
@@ -143,6 +154,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import { useIsPhone } from "@/composables/useIsPhone";
 import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
 import { useHelpStore } from "@/store/help";
@@ -152,6 +164,7 @@ const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 const plantOperatorStore = usePlantOperatorStore();
 
 const store = useStore();
+const isPhone = useIsPhone();
 const op = ref();
 const showOverlayPanel = (event: Event) => {
   op.value.toggle(event);
@@ -207,6 +220,40 @@ const moduleTitle = computed<string | undefined>(() => {
   width: calc(
     100vw - var(--side-bar-collapsed-width) - var(--collapsed-side-padding)
   );
+}
+
+/* Phones: navigation lives in a drawer, so the header spans the screen. */
+@media (max-width: 767.98px) {
+  .title-bar,
+  .title-bar.collapsed {
+    left: 0;
+    width: 100vw;
+    gap: 0.5rem;
+    padding: 0 0.75rem 0 0.5rem;
+  }
+
+  .title-bar__heading {
+    padding-left: 0.25rem;
+  }
+
+  .title-bar__title {
+    font-size: 1.2857rem;
+  }
+
+  /* Page actions keep their icon; the label stays for screen readers only, so
+     the page title keeps its room. */
+  .title-bar__actions :deep(.p-button-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.title-bar__page > .p-button {
+  flex-shrink: 0;
 }
 
 .title-bar__page {
