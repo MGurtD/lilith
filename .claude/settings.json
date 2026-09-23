@@ -29,5 +29,19 @@
       "Bash(npm *)",
       "Bash(yarn *)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/i18n-check.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }
