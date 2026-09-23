@@ -1,7 +1,7 @@
 ---
 name: adding-backend-entity
 description: Add or extend a Lilith backend entity and its API flow. Use when creating domain entities, relationships, repositories, services, controllers, EF Core configuration, or an explicitly requested migration in the .NET backend.
-compatibility: OpenCode with .NET 10; PostgreSQL is required only for database updates.
+compatibility: Requires .NET 10; PostgreSQL is required only for database updates.
 ---
 
 # Add A Backend Entity

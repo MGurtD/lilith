@@ -1,7 +1,7 @@
 ---
 name: translate-frontend-view
 description: Translate a complete Lilith Vue screen to ca/es/en. Use when replacing hardcoded user-facing text, completing a partially localized view, fixing literal translation fallbacks, or validating reactive language changes in a view and its owned children.
-compatibility: OpenCode with frontend dependencies installed by pnpm.
+compatibility: Requires frontend dependencies installed by pnpm.
 ---
 
 # Translate A Frontend Screen

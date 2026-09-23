@@ -1,7 +1,7 @@
 ---
 name: frontend-crud
 description: Add or extend a Lilith Vue frontend CRUD flow. Use when creating entity types, services, Pinia stores, list/detail views, forms, dialogs, tables, or lazy routes under frontend/src/modules.
-compatibility: OpenCode with Node 20.19+ and pnpm 10.
+compatibility: Requires Node 20.19+ and pnpm 10.
 ---
 
 # Frontend CRUD

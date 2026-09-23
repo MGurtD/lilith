@@ -32,3 +32,7 @@ frontend/.env.local
 Thumbs.db
 nul
 .pnpm-store
+
+# Claude Code personal settings
+.claude/settings.local.json
+CLAUDE.local.md

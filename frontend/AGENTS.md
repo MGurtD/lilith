@@ -1,6 +1,6 @@
 # Lilith Frontend Agent Guide
 
-Canonical rules for work under `frontend/`. When OpenCode starts from this directory, also read `../AGENTS.md` for repository-wide safety and backend/frontend contracts.
+Canonical rules for work under `frontend/`. When an agent session starts from this directory, also read `../AGENTS.md` for repository-wide safety and backend/frontend contracts.
 
 ## Stack And Commands
 

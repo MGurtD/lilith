@@ -1,7 +1,7 @@
 ---
 name: audit-frontend-localization
 description: Audit Lilith frontend localization without editing source. Use when checking ca/es/en parity, placeholders, missing static keys, literal fallbacks, unused keys, or hardcoded user-facing text globally or for a Vue screen boundary.
-compatibility: OpenCode with frontend dependencies installed by pnpm.
+compatibility: Requires frontend dependencies installed by pnpm.
 ---
 
 # Audit Frontend Localization
