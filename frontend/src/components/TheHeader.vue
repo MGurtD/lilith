@@ -169,15 +169,16 @@ const helpKey = computed(() =>
   typeof route.meta.helpKey === "string" ? route.meta.helpKey : undefined,
 );
 
-// Module that owns the current screen, taken from the sidebar menu tree.
-// Detail routes (/customers/:id) belong to their list entry (/customers).
+// Module that owns the current screen: the top-level sidebar entry whose menu
+// tree (any depth) holds the route. Detail routes (/customers/:id) belong to
+// their list entry (/customers).
+const ownsRoute = (entry: MenuItem, path: string): boolean =>
+  (!!entry.href && (path === entry.href || path.startsWith(`${entry.href}/`))) ||
+  (entry.child ?? []).some((child) => ownsRoute(child, path));
+
 const moduleTitle = computed<string | undefined>(() => {
-  const path = route.path;
-  const owner = store.sidebar.menus.find((module: MenuItem) =>
-    module.child?.some(
-      (entry: MenuItem) =>
-        !!entry.href && (path === entry.href || path.startsWith(`${entry.href}/`)),
-    ),
+  const owner = store.sidebar.menus.find(
+    (module: MenuItem) => !module.href && ownsRoute(module, route.path),
   );
   return owner?.title;
 });

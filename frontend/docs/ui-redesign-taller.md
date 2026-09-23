@@ -40,8 +40,10 @@ Ordered from lower to higher impact. Validate each with screenshots before commi
 
 ## Known Issues And Pending Checks
 
-- **Verify with the real backend before merging:** purchase order detail, work order detail, work order phase (detail and "new phase" dialog), material dialog inside receipts. They could not be rendered with the mocked API.
-- Work order screen hits "Maximum recursive updates exceeded in DataTable" with mocked data; it also happens before this branch. Check whether real data triggers it.
+- **Verified against real data** (local backend on the Default database, every write blocked in Playwright): purchase order, work order, work master, receipt, budget, sales order, sales invoice, delivery note and purchase invoice details render with no page errors; phase forms follow both conventions (work order and work master: "new phase" dialog keeps Save in its footer, phase detail shows it in the header); header Save on a work order issues `PUT /api/WorkOrder/{id}`. Still unchecked with real data: the material dialog inside receipts.
+- The "Maximum recursive updates exceeded in DataTable" seen on work orders only happens with mocked data.
+- Save labels are inconsistent between modules ("Desar" in purchases, "Guardar" in sales/production); pre-existing translations, unify when touching i18n.
+- The real menu has three levels (module › group › screen); check the current-screen marker on third-level entries when doing the mobile shell.
 - `LanguageSwitcher` in the user menu shows the code ("ca") instead of the language name.
 - On detail routes (`/customers/:id`) the sidebar loses the current-screen highlight (`vue-sidebar-menu` only matches menu routes).
 - The PWA cannot reload offline (`navigateFallback: null`); fonts are cached, navigation is not. Separate decision.
@@ -60,5 +62,7 @@ BRAND=orange node scripts/visual-shots.mjs shots-orange /customers
 CLICK="#page-actions button" node scripts/visual-shots.mjs save /budget/b0   # then read save/api-calls.txt
 NAVFROM=/workmaster/x node scripts/visual-shots.mjs phase /workmaster/x/phase/p1
 ```
+
+Against real data: run the backend (`dotnet run --project src/Api --launch-profile Api`, HTTPS on 7284) and start Vite with `VITE_API_BASE_URL=https://localhost:7284/api`. The `Default` connection string points at a remote database, so any Playwright run must intercept and block `POST/PUT/PATCH/DELETE` (except `/Authentication/*`) and pass credentials only through environment variables.
 
 For a before/after comparison, run the same command on the previous commit (e.g. `git stash` or a checkout of the files) and compare. Page errors that also appear on the baseline come from the mock data.

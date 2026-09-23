@@ -1,6 +1,7 @@
 <template>
   <PageActions>
     <SplitButton
+      icon="pi pi-save"
       :label="t('production.components.guardar')"
       @click="handleSubmit"
       :model="items"
