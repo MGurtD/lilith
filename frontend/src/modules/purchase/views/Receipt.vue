@@ -89,6 +89,7 @@
           <TabPanel value="1">
             <FormMaterial
               v-if="referenceStore.reference"
+              in-dialog
               :reference="referenceStore.reference"
               @submit="onFormReferenceSubmit"
             />

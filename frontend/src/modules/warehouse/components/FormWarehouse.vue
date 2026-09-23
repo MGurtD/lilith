@@ -1,13 +1,8 @@
 <template>
   <form v-if="warehouse">
-    <div class="pb-4">
-      <Button
-        :label="t('common.save')"
-        size="small"
-        class="grid_add_row_button"
-        @click="submitForm"
-      />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('common.save')" @click="submitForm" />
+    </PageActions>
     <section class="three-columns">
       <BaseInput
         class="mb-2"
@@ -64,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";

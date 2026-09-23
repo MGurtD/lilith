@@ -68,9 +68,9 @@ const submit = (values: FormValues): void => {
 
 <template>
   <Form
+    page-actions
     :rows="rows"
     :initial-values="expenseType"
-    :show-cancel="false"
     @submit="submit"
   />
 </template>

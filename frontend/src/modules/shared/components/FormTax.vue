@@ -32,13 +32,14 @@
       </div>
     </div>
 
-    <div class="mt-2">
-      <Button :label="$t('shared.taxes.form.save')" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="$t('shared.taxes.form.save')" @click="submitForm" />
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BaseInput from "../../../components/BaseInput.vue";

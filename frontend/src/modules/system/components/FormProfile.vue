@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import * as yup from "yup";
@@ -45,15 +46,14 @@ const submit = () => {
 </script>
 <template>
   <div class="form-profile">
-    <div class="flex justify-content-end mr-3">
+    <PageActions>
       <Button
-        size="small"
         :label="t('common.save')"
         icon="pi pi-save"
         :loading="submitting"
         @click="submit"
       />
-    </div>
+    </PageActions>
     <div class="formgrid grid">
       <div class="field col-12 md:col-4">
         <label class="block mb-2">{{ t("profiles.form.name") }}</label>

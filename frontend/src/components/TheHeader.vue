@@ -16,6 +16,8 @@
       </div>
     </div>
     <div class="title-bar__right">
+      <!-- Screens teleport their page-level actions (Save…) here. -->
+      <div id="page-actions" class="title-bar__actions"></div>
       <Button
         v-if="helpKey"
         icon="pi pi-question-circle"
@@ -242,6 +244,16 @@ const moduleTitle = computed<string | undefined>(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.title-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-bar__actions:not(:empty) {
+  margin-right: 0.5rem;
 }
 
 .avatar-button {

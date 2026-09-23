@@ -74,7 +74,9 @@ open decisions or verification work.
     current `values`.
 11. Use default actions when their labels and behavior match. Use the actions
    slot or an external template ref only for a real create/edit or workflow
-   difference.
+   difference. On a full screen pass `page-actions`: Save moves to the header
+   and Cancel is dropped (the header's back button leaves). Keep the default
+   footer actions inside dialogs.
 12. Narrow every `FormValues` field with the shared helpers from
    `frontend/src/components/forms/value-utils.ts` and construct the typed entity
    or DTO at the submit boundary. Choose explicit fallbacks for required,

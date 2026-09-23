@@ -111,12 +111,6 @@ html {
   color: black;
 }
 
-.grid_add_row_button {
-  position: fixed !important;
-  right: 1rem !important;
-  z-index: 1 !important;
-}
-
 .grid_delete_column_button {
   color: var(--p-red-600);
   cursor: pointer;

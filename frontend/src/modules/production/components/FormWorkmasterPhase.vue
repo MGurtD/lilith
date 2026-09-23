@@ -1,14 +1,5 @@
 <template>
   <form v-if="phase">
-    <div>
-      <Button
-        :label="t('production.components.guardarFase')"
-        class="grid_add_row_button"
-        size="small"
-        @click="submitForm"
-      />
-      <br />
-    </div>
     <section class="two-columns-2575 mb-2">
       <div>
         <BaseInput :label="t('production.components.codiDeLaFase')" v-model="phase.code" />
@@ -132,10 +123,18 @@
         />
       </div>
     </section>
+    <PageActions :inline="inDialog">
+      <Button
+        icon="pi pi-save"
+        :label="t('production.components.guardarFase')"
+        @click="submitForm"
+      />
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -159,6 +158,8 @@ import { Reference, ReferenceCategoryEnum } from "../../shared/types";
 import { useExerciseStore } from "../../shared/store/exercise";
 
 const props = defineProps<{
+  /** Rendered inside a dialog: keep Save in place instead of the header. */
+  inDialog?: boolean;
   workmaster: WorkMaster;
   phase: WorkMasterPhase;
 }>();

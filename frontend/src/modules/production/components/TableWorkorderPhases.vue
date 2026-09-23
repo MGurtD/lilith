@@ -68,6 +68,7 @@
     :modal="dialogOptions.modal"
   >
     <FormWorkOrderPhase
+      in-dialog
       v-if="newPhase"
       :workorder="workorder"
       :phase="newPhase"

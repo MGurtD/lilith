@@ -59,6 +59,7 @@
     :modal="dialogOptions.modal"
   >
     <FormWorkmasterPhase
+      in-dialog
       v-if="newPhase"
       :workmaster="workmaster"
       :phase="newPhase"

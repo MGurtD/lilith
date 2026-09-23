@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { ref, watch, onMounted, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import * as yup from "yup";
@@ -178,13 +179,13 @@ onMounted(async () => {
         {{ errors.translations[0] }}
       </small>
     </div>
-    <div class="flex gap-2 mt-3">
+    <PageActions>
       <Button
         :label="t('menuItems.form.save')"
         icon="pi pi-save"
         :loading="submitting"
         @click="submit"
       />
-    </div>
+    </PageActions>
   </div>
 </template>

@@ -1,6 +1,8 @@
 <template>
   <main class="container">
-    <Button :label="$t('shared.lifecycle.save')" class="grid_add_row_button" @click="submitForm" />
+    <PageActions>
+      <Button icon="pi pi-save" :label="$t('shared.lifecycle.save')" @click="submitForm" />
+    </PageActions>
     <section class="section_lifecycle mt-5">
       <FormLifecycle v-if="lifecycle" :lifecycle="lifecycle" />
     </section>
@@ -107,6 +109,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TableStatuses from "../components/TableStatuses.vue";

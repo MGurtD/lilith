@@ -1,12 +1,12 @@
 <template>
-  <div class="grid_add_row_button">
+  <PageActions>
     <SplitButton
+      icon="pi pi-save"
       :label="t('common.save')"
       :model="splitButtonItems"
-      :size="'small'"
       @click="submitForm"
     />
-  </div>
+  </PageActions>
   <Tabs value="0">
     <TabList>
       <Tab value="0">{{ t("purchase.purchaseInvoice.tabs.invoice") }}</Tab>
@@ -174,6 +174,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";

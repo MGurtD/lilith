@@ -1,12 +1,13 @@
 <template>
   <main v-if="order">
-    <SplitButton
-      :label="t('purchase.order.actions.save')"
-      @click="submitForm"
-      :model="items"
-      :size="'small'"
-      class="grid_add_row_button"
-    />
+    <PageActions>
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('purchase.order.actions.save')"
+        @click="submitForm"
+        :model="items"
+      />
+    </PageActions>
 
     <FormOrder
       class="pt-3"
@@ -54,6 +55,7 @@
   <main v-else>{{ t("purchase.order.messages.loading") }}</main>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import FormOrder from "../components/FormOrder.vue";
 import TableOrderDetails from "../components/TableOrderDetails.vue";
 import FormOrderDetail from "../components/FormOrderDetail.vue";
