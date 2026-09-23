@@ -40,7 +40,7 @@ Ordered from lower to higher impact. Validate each with screenshots before commi
 
 ## Known Issues And Pending Checks
 
-- **Verified against real data** (local backend on the Default database, every write blocked in Playwright): purchase order, work order, work master, receipt, budget, sales order, sales invoice, delivery note and purchase invoice details render with no page errors; phase forms follow both conventions (work order and work master: "new phase" dialog keeps Save in its footer, phase detail shows it in the header); header Save on a work order issues `PUT /api/WorkOrder/{id}`. Still unchecked with real data: the material dialog inside receipts.
+- **Verified against real data** (local backend on the Default database, every write blocked in Playwright): purchase order, work order, work master, receipt, budget, sales order, sales invoice, delivery note and purchase invoice details render with no page errors; phase forms follow both conventions (work order and work master: "new phase" dialog keeps Save in its footer, phase detail shows it in the header); header Save on a work order issues `PUT /api/WorkOrder/{id}`. The material form inside the receipt line dialog keeps its Save in the dialog footer and does not reach the header.
 - The "Maximum recursive updates exceeded in DataTable" seen on work orders only happens with mocked data.
 - Save labels are inconsistent between modules ("Desar" in purchases, "Guardar" in sales/production); pre-existing translations, unify when touching i18n.
 - The real menu has three levels (module › group › screen); check the current-screen marker on third-level entries when doing the mobile shell.
