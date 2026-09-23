@@ -130,7 +130,8 @@ function toggleCollapse() {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  height: 3.5rem;
+  height: var(--top-panel-height);
+  box-sizing: border-box;
   padding: 0 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--p-surface-0);

@@ -2080,6 +2080,8 @@ const es = {
     exit: "Salir",
     language: "Idioma",
     signOut: "Cerrar sesión",
+    back: "Volver",
+    userMenu: "Menú de usuario",
   },
   movementTypes: {
     input: "Entrada",

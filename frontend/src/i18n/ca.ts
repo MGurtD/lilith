@@ -2137,6 +2137,8 @@ const ca = {
     exit: "Sortir",
     language: "Idioma",
     signOut: "Tancar sessió",
+    back: "Tornar",
+    userMenu: "Menú d'usuari",
   },
   movementTypes: {
     input: "Entrada",

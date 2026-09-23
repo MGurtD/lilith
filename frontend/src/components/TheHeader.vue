@@ -1,28 +1,46 @@
 <template>
-  <div class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
+  <header class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
     <div class="title-bar__page">
-      <i
+      <Button
         v-if="store.currentMenuItem.backButtonVisible"
-        class="title-bar__back"
-        :class="PrimeIcons.ARROW_LEFT"
+        :icon="PrimeIcons.ARROW_LEFT"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('ui.back')"
         @click="goBack"
-      ></i>
-      <span class="title-bar__page__text">{{
-        store.currentMenuItem.title
-      }}</span>
+      />
+      <div class="title-bar__heading">
+        <span v-if="moduleTitle" class="title-bar__module">{{ moduleTitle }}</span>
+        <h1 class="title-bar__title">{{ store.currentMenuItem.title }}</h1>
+      </div>
     </div>
     <div class="title-bar__right">
+      <Button
+        v-if="helpKey"
+        icon="pi pi-question-circle"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('help.actions.openTooltip')"
+        v-tooltip.bottom="t('help.actions.openTooltip')"
+        @click="helpStore.toggleForRoute(helpKey)"
+      />
       <div v-if="plantOperatorStore.operator" class="title-bar__user">
-        <div class="avatar-container" @click="showOverlayPanel">
+        <button
+          type="button"
+          class="avatar-button"
+          :aria-label="t('ui.userMenu')"
+          @click="showOverlayPanel"
+        >
           <Avatar
             :label="
               plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
             "
-            class="title-bar__user__avatar title-bar__user__avatar--operator"
-            size="large"
+            class="title-bar__avatar title-bar__avatar--operator"
             shape="circle"
           />
-        </div>
+        </button>
         <Popover ref="op">
           <div class="user-menu">
             <div class="user-menu__header">
@@ -59,14 +77,18 @@
         </Popover>
       </div>
       <div class="title-bar__user" v-else-if="store.user">
-        <div class="avatar-container" @click="showOverlayPanel">
+        <button
+          type="button"
+          class="avatar-button"
+          :aria-label="t('ui.userMenu')"
+          @click="showOverlayPanel"
+        >
           <Avatar
             :label="store.user.username.substring(0, 1).toUpperCase()"
-            class="title-bar__user__avatar title-bar__user__avatar--admin"
-            size="large"
+            class="title-bar__avatar title-bar__avatar--admin"
             shape="circle"
           />
-        </div>
+        </button>
         <Popover ref="op">
           <div class="user-menu">
             <div class="user-menu__header">
@@ -108,18 +130,21 @@
         </Popover>
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import Avatar from "primevue/avatar";
 import Popover from "primevue/popover";
 import { PrimeIcons } from "@primevue/core/api";
-import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
+import { useHelpStore } from "@/store/help";
+import type { MenuItem } from "@/types/component";
 
 const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 const plantOperatorStore = usePlantOperatorStore();
@@ -132,115 +157,125 @@ const showOverlayPanel = (event: Event) => {
 const logoutClick = () => emits("logoutClick");
 const logoutOperator = () => emits("logoutOperatorClick");
 
+const { t } = useI18n();
+const helpStore = useHelpStore();
+const route = useRoute();
 const router = useRouter();
 const goBack = () => router.back();
+
+const helpKey = computed(() =>
+  typeof route.meta.helpKey === "string" ? route.meta.helpKey : undefined,
+);
+
+// Module that owns the current screen, taken from the sidebar menu tree.
+// Detail routes (/customers/:id) belong to their list entry (/customers).
+const moduleTitle = computed<string | undefined>(() => {
+  const path = route.path;
+  const owner = store.sidebar.menus.find((module: MenuItem) =>
+    module.child?.some(
+      (entry: MenuItem) =>
+        !!entry.href && (path === entry.href || path.startsWith(`${entry.href}/`)),
+    ),
+  );
+  return owner?.title;
+});
 </script>
 
 <style scoped>
 .title-bar {
   position: fixed;
-  background-color: var(--p-primary-900);
-  color: var(--p-surface-400);
   top: 0;
   left: var(--side-bar-width);
-  height: var(--top-panel-height);
-  display: grid;
-  grid-template-columns: 0.7fr 0.3fr;
-  padding-top: 0.3rem;
-  padding-bottom: 0.5rem;
-  padding-top: 0.3rem;
-  padding-bottom: 0.5rem;
   width: calc(100vw - var(--side-bar-width));
+  height: var(--top-panel-height);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.5rem 0 1rem;
+  background-color: var(--p-surface-0);
+  border-bottom: 1px solid var(--p-surface-200);
+  color: var(--p-text-color);
   transition: all 0.3s ease-in-out;
 }
 
 .collapsed {
-  left: 60px;
-  width: calc(100vw - var(--side-bar-collapsed-width));
+  left: calc(var(--side-bar-collapsed-width) + var(--collapsed-side-padding));
+  width: calc(
+    100vw - var(--side-bar-collapsed-width) - var(--collapsed-side-padding)
+  );
 }
 
 .title-bar__page {
-  margin-left: 1vw;
-  margin-top: 0.6rem;
-  margin-top: 0.6rem;
-  text-align: left;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.title-bar__heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.5rem;
+}
+
+.title-bar__module {
+  font-size: 0.8571rem;
+  line-height: 1.2;
+  color: var(--p-text-muted-color);
+}
+
+.title-bar__title {
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 1.4286rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .title-bar__right {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-right: 1.5vw;
+  gap: 0.5rem;
 }
 
-.title-bar__page__text {
-  font-size: 1.5rem;
-}
-
-.title-bar__back {
-  font-size: 1.3rem;
-  font-size: 1.3rem;
-  margin-right: 1rem;
-  cursor: pointer;
-}
-
-.title-bar__back:hover {
-  color: #fff;
-}
-
-.title-bar__user {
-  padding-top: 0.2rem;
-  padding-top: 0.2rem;
-  font-size: 1rem;
-  text-align: right;
-}
-
-/* Avatar mejorado con badge */
-.avatar-container {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-}
-
-.title-bar__user__avatar {
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
-}
-
-.title-bar__user__avatar:hover {
-  transform: scale(1.05);
-}
-
-/* Gradientes por rol */
-.title-bar__user__avatar--operator {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  color: white;
-}
-
-.title-bar__user__avatar--admin {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  color: #1e3a8a;
-}
-
-.avatar-badge {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  min-width: 1.5rem;
-  height: 1.5rem;
+.avatar-button {
+  all: unset;
+  display: inline-flex;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
-/* New user overlay menu styles */
+.avatar-button:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+
+.title-bar__avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-family: var(--font-condensed);
+  font-weight: 600;
+}
+
+.title-bar__avatar--admin,
+.user-menu__avatar--admin {
+  background: var(--p-surface-100);
+  color: var(--p-surface-700);
+}
+
+.title-bar__avatar--operator,
+.user-menu__avatar--operator {
+  background: var(--p-primary-100);
+  color: var(--p-primary-800);
+}
+
+/* User menu (popover) */
 .user-menu {
   min-width: 16rem;
   padding: 0.75rem;
@@ -256,35 +291,25 @@ const goBack = () => router.back();
 
 .user-menu__avatar {
   grid-row: span 2;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.user-menu__avatar--operator {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  color: white;
-}
-
-.user-menu__avatar--admin {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  color: #1e3a8a;
+  font-family: var(--font-condensed);
+  font-weight: 600;
 }
 
 .user-menu__name {
   font-weight: 600;
-  color: var(--p-surface-900, #1f2937);
+  color: var(--p-text-color);
 }
 
 .user-menu__username {
-  font-size: 0.85rem;
-  color: var(--p-surface-500, #6b7280);
   display: flex;
   align-items: center;
+  font-size: 0.9286rem;
+  color: var(--p-text-muted-color);
 }
 
 .divider {
   height: 1px;
-  background: var(--p-surface-200, #e5e7eb);
+  background: var(--p-surface-200);
   margin: 0.75rem 0;
 }
 
@@ -294,18 +319,13 @@ const goBack = () => router.back();
 }
 
 .user-menu__label {
-  font-size: 0.85rem;
-  color: var(--p-surface-600, #4b5563);
+  font-family: var(--font-condensed);
+  font-size: 0.9286rem;
+  font-weight: 500;
+  color: var(--p-text-muted-color);
 }
 
 .user-menu__actions {
   margin-top: 0.75rem;
-}
-
-.title-bar__operator {
-  display: grid;
-  grid-template-columns: 1fr 0.4fr;
-  align-items: center;
-  gap: 1rem;
 }
 </style>

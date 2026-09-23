@@ -2111,6 +2111,8 @@ const en = {
     exit: "Exit",
     language: "Language",
     signOut: "Sign out",
+    back: "Back",
+    userMenu: "User menu",
   },
   movementTypes: {
     input: "Input",
