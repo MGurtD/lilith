@@ -26,6 +26,8 @@ export const TallerPreset = definePreset(Aura, {
       600: "#5F6973",
       700: "#3F4852",
       800: "#2C343C",
+      // Grafit: navigation sidebar background
+      850: "#232A31",
       900: "#1C2126",
       950: "#12161A",
     },
