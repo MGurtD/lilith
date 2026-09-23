@@ -1,7 +1,7 @@
 ---
 name: frontend-form
 description: Create or migrate Lilith Vue forms with frontend/src/components/forms/Form.vue. Use when building a new declarative form, replacing legacy PrimeVue form markup, FormValidation, direct prop or Pinia editing, adding Yup validation, custom field slots, responsive form rows, or auditing whether Form.vue supports a workflow.
-compatibility: OpenCode with Vue 3, PrimeVue 4, Node 20.19+, and pnpm 10.
+compatibility: Requires Vue 3, PrimeVue 4, Node 20.19+, and pnpm 10.
 ---
 
 # Frontend Form

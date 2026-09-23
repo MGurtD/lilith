@@ -1,7 +1,7 @@
 ---
 name: migrate-datatable-to-table
 description: Audit or migrate Lilith Vue code from raw PrimeVue DataTable to the internal Table.vue. Use when evaluating compatibility, preserving table behavior, implementing a migration, or planning support for a missing Table.vue feature.
-compatibility: OpenCode with Node 20.19+ and pnpm 10.
+compatibility: Requires Node 20.19+ and pnpm 10.
 ---
 
 # Migrate DataTable To Table.vue

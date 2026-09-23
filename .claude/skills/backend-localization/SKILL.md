@@ -1,7 +1,7 @@
 ---
 name: backend-localization
 description: Add or fix Lilith backend localization. Use when changing ILocalizationService messages, ca/es/en resource keys, culture resolution, parameterized responses, or lifecycle/status handling in backend services.
-compatibility: OpenCode with .NET 10.
+compatibility: Requires .NET 10.
 ---
 
 # Backend Localization

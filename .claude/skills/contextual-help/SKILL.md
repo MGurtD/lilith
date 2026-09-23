@@ -1,7 +1,7 @@
 ---
 name: contextual-help
 description: Add, update, translate, or audit Lilith Alt+H contextual help. Use when documenting a frontend route or module, adding meta.helpKey, creating help Markdown, or checking help behavior and consistency.
-compatibility: OpenCode with the Lilith frontend source available.
+compatibility: Requires the Lilith frontend source.
 ---
 
 # Contextual Help
