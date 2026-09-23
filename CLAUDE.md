@@ -1,6 +1,8 @@
+@AGENTS.md
+
 # Claude Code
 
-`AGENTS.md` holds the project rules and is loaded as project instructions. This file only adds what is specific to Claude Code.
+The import above loads the shared project rules from `AGENTS.md`, which OpenCode also reads. The rest of this file only adds what is specific to Claude Code.
 
 ## Exploration
 
