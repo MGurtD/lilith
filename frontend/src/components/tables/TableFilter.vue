@@ -523,41 +523,17 @@ const tableFilterClassName = computed(() => ({
 
 .table-filter__label {
   margin-bottom: 0;
-  font-size: 0.68rem;
-  line-height: 1;
+  font-family: var(--font-condensed);
+  font-size: 0.9286rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--p-text-muted-color);
 }
 
 .table-filter__checkbox {
   min-height: 2.375rem;
   display: flex;
   align-items: center;
-}
-
-.table-filter :deep(.p-inputtext),
-.table-filter :deep(.p-select-label),
-.table-filter :deep(.p-multiselect-label),
-.table-filter :deep(.p-multiselect-chip-label),
-.table-filter :deep(.p-inputnumber-input),
-.table-filter :deep(.p-datepicker-input) {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  padding-top: 0.55rem;
-  padding-bottom: 0.55rem;
-}
-
-.table-filter :deep(.p-select),
-.table-filter :deep(.p-multiselect),
-.table-filter :deep(.p-inputtext),
-.table-filter :deep(.p-inputnumber),
-.table-filter :deep(.p-datepicker-input) {
-  height: 2.375rem;
-  min-height: 2.375rem;
-}
-
-.table-filter :deep(.p-select-dropdown),
-.table-filter :deep(.p-multiselect-dropdown),
-.table-filter :deep(.p-datepicker-dropdown) {
-  width: 2.375rem;
 }
 
 .table-filter :deep(.p-multiselect) {
@@ -576,7 +552,7 @@ const tableFilterClassName = computed(() => ({
 }
 
 .table-filter :deep(.p-multiselect-chip-item) {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   padding-block: 0;
   padding-inline: 0.4rem;
   border-radius: 0.25rem;
@@ -585,11 +561,11 @@ const tableFilterClassName = computed(() => ({
 }
 
 .table-filter :deep(.p-multiselect-chip-label) {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
 }
 
 .table-filter :deep(.p-multiselect-chip-icon) {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
 }
 
 .table-filter :deep(.table-filter-prepend-field) {
@@ -618,8 +594,11 @@ const tableFilterClassName = computed(() => ({
 
 .table-filter :deep(.table-filter-prepend-label) {
   margin-bottom: 0;
-  font-size: 0.68rem;
-  line-height: 1;
+  font-family: var(--font-condensed);
+  font-size: 0.9286rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--p-text-muted-color);
 }
 
 @media (max-width: 768px) {

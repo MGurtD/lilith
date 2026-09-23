@@ -91,6 +91,14 @@ watch(
   },
 );
 
+// Plant screens run on shop-floor tablets: keep the 16px root there so touch
+// targets are not scaled down with the denser 14px office UI.
+watch(
+  () => route.path.startsWith("/plant"),
+  (isPlant) => document.documentElement.classList.toggle("plant-mode", isPlant),
+  { immediate: true },
+);
+
 const logout = async () => {
   helpStore.reset();
   await store.removeAuthorization();

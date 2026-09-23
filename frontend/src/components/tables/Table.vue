@@ -647,6 +647,21 @@ function formatCellValue(col: Column, data: any): string {
   }
 }
 
+// Amounts and quantities are right-aligned so figures line up by place value.
+function columnPt(col: Column) {
+  const numeric =
+    col.columnType === ColumnType.Currency ||
+    col.columnType === ColumnType.Number
+      ? "numeric-cell"
+      : undefined;
+  const truncate = col.truncate !== false ? "truncate-cell" : undefined;
+  if (!numeric && !truncate) return undefined;
+  return {
+    headerCell: { class: numeric },
+    bodyCell: { class: [truncate, numeric] },
+  };
+}
+
 function resolveCellValue(col: Column, data: unknown): unknown {
   const value = resolveFieldValue(data, col.field);
   if (!col.resolver) return value;
@@ -781,11 +796,7 @@ function resolveBooleanValue(
         :sortable="col.sortable || activeSortConfig?.field === col.field"
         :style="col.style"
         :frozen="col.frozen"
-        :pt="
-          col.truncate !== false
-            ? { bodyCell: { class: 'truncate-cell' } }
-            : undefined
-        "
+        :pt="columnPt(col)"
       >
         <!-- Custom body slot from consumer takes priority -->
         <template v-if="slots[`body-${col.field}`]" #body="slotProps">
@@ -984,7 +995,7 @@ function resolveBooleanValue(
 }
 
 .delete-icon {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   pointer-events: none;
 }
 </style>
@@ -999,5 +1010,13 @@ function resolveBooleanValue(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.p-datatable .numeric-cell {
+  text-align: right;
+}
+
+.p-datatable .numeric-cell .p-datatable-column-header-content {
+  justify-content: flex-end;
 }
 </style>

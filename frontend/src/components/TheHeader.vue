@@ -236,7 +236,7 @@ const goBack = () => router.back();
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 

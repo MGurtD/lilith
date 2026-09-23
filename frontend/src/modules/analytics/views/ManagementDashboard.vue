@@ -262,12 +262,12 @@ onMounted(async () => {
 }
 
 .mgmt-card-sub {
-  font-size: 0.78rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
 }
 
 .mgmt-card-line-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;

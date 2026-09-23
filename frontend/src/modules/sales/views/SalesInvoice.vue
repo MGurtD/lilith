@@ -768,7 +768,7 @@ const sendToVerifactu = async () => {
 }
 
 .total-card-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
   white-space: nowrap;
   line-height: 1.1;

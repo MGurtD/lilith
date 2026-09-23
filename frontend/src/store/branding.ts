@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { palette, updatePrimaryPalette } from "@primeuix/themes";
+import { palette, updatePreset, updatePrimaryPalette } from "@primeuix/themes";
 import {
   DEFAULT_BRAND_NAME,
   DEFAULT_MAIN_LOGO,
@@ -11,9 +11,12 @@ import {
   DEFAULT_BRANDING_PALETTE,
   brandingService,
   normalizeBrandingPalette,
+  type BrandingPalette,
   type BrandingResponse,
 } from "@/services/branding.service";
 import { useStore } from "@/store";
+
+const DARKER_ACTION_PALETTES: ReadonlyArray<BrandingPalette> = ["emerald", "teal", "orange"];
 
 export const useBrandingStore = defineStore("branding", {
   state: () => ({
@@ -86,6 +89,22 @@ export const useBrandingStore = defineStore("branding", {
       const primaryPalette = palette(BRANDING_PALETTE_TOKENS[this.primaryColor]) as
         Parameters<typeof updatePrimaryPalette>[0];
       updatePrimaryPalette(primaryPalette);
+
+      // White text needs 4.5:1 on buttons: these palettes only get there one shade darker.
+      const shade = DARKER_ACTION_PALETTES.includes(this.primaryColor) ? 700 : 600;
+      updatePreset({
+        semantic: {
+          colorScheme: {
+            light: {
+              primary: {
+                color: `{primary.${shade}}`,
+                hoverColor: `{primary.${shade + 100}}`,
+                activeColor: `{primary.${shade + 200}}`,
+              },
+            },
+          },
+        },
+      });
     },
   },
 });

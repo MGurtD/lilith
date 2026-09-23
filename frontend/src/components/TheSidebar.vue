@@ -427,7 +427,7 @@ function toggleCollapse() {
   color: var(--sidebar-muted-color);
   display: flex;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -436,7 +436,7 @@ function toggleCollapse() {
   width: 100%;
   color: var(--sidebar-muted-color) !important;
   justify-content: flex-start;
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
