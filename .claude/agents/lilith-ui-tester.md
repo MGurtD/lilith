@@ -88,6 +88,11 @@ after the block. The sentence you want to write first ("The session was dead", "
 - **Frontend**: Vite dev server at **http://localhost:8100**, Vue 3.5 + PrimeVue 4, history-mode router (no
   `#`). A cold first load can log Vite "new dependencies optimized" and reload once: benign on the first visit.
 - **API**: **https://localhost:7284/api**, a trusted dev certificate. CORS is open.
+- **Shop-floor actions are a separate, remote service** (`VITE_API_ACTIONS_URL`, e.g.
+  `actions.preprod.zenith.ovh`): loading or unloading a phase and the realtime work-centre data come from it,
+  and it may use another database than the local API. A conflict or failure there (e.g. 409 "already has a
+  workorder") or realtime data that the local API does not know is an environment limit: `BLOCKED`, not
+  `FAIL`. Report what it said; do not guess how that state came about.
 - **Session check**, one call: `() => ({ path: location.pathname, signedIn:
   !!localStorage.getItem('temges.authorization'), operator: !!localStorage.getItem('temges.operator'),
   lang: localStorage.getItem('app.lang'), viewport: innerWidth + 'x' + innerHeight })`. Read presence only,
