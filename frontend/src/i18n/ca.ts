@@ -2140,6 +2140,8 @@ const ca = {
     back: "Tornar",
     userMenu: "Menú d'usuari",
     openMenu: "Obrir el menú",
+    collapseMenu: "Plegar el menú",
+    expandMenu: "Desplegar el menú",
   },
   movementTypes: {
     input: "Entrada",

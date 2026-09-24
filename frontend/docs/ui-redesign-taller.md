@@ -18,6 +18,7 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 | `15d8250` | Sidebar "Grafit": neutral dark steel, branding colour only on the current-screen marker (white for the black palette). Replaced ~300 lines of runtime contrast maths in `TheSidebar.vue` with `vue-sidebar-menu` CSS variables. Only an uploaded *sidebar* logo is shown; otherwise the monogram. |
 | `f2f75eb` | Light header: readable page title, owning module (from the sidebar menu tree) above it, visible help button (Alt+H still works), accessible back button and avatar. New i18n keys `ui.back`, `ui.userMenu`. |
 | *(mobile shell)* | Below 768px (`composables/useIsPhone.ts`, same breakpoint as `Form.vue`) the sidebar menu moves into a PrimeVue `Drawer` opened from a menu button in the header; header and content take the full width. The drawer closes on navigation, Escape or widening the window. Page actions show their icon only on phones (label kept for screen readers). The current-screen marker now follows third-level entries (module › group › screen) on desktop too. New i18n key `ui.openMenu`. |
+| *(user in sidebar)* | The signed-in user (or the clocked-in plant operator) moves from the header to the foot of the sidebar; its menu (language, sign out; "Sortir" for operators) opens above it. The collapse control moves to the brand row, and when collapsed it is the first row of the rail (option A in the canvas); hidden on phones and for plant operators (`hideToggle`). New i18n keys `ui.collapseMenu`, `ui.expandMenu`. |
 | `f937c65` | **Save convention** (below) applied to all 40 detail screens plus branding. `components/PageActions.vue`, `Form.vue` `page-actions` option. Removed `grid_add_row_button` (a `position: fixed` save that overlapped fields). |
 
 ## Conventions Now In Force
@@ -44,7 +45,7 @@ Ordered from lower to higher impact. Validate each with screenshots before commi
 - The "Maximum recursive updates exceeded in DataTable" seen on work orders only happens with mocked data.
 - Save labels are inconsistent between modules ("Desar" in purchases, "Guardar" in sales/production); pre-existing translations, unify when touching i18n.
 - On phones the shell fits, but most legacy screens keep their desktop grids (three-column forms, wide tables with horizontal scroll). Screens built on `Form.vue` rows already have mobile spans; the rest adapt screen by screen.
-- `LanguageSwitcher` in the user menu shows the code ("ca") instead of the language name.
+- `LanguageSwitcher` shows the language code ("ca") only when `/language` returns nothing (seen with the mocked API); with the backend's languages it shows their names.
 - On detail routes (`/customers/:id`) the sidebar loses the current-screen highlight (`vue-sidebar-menu` only matches menu routes).
 - The PWA cannot reload offline (`navigateFallback: null`); fonts are cached, navigation is not. Separate decision.
 - `pnpm install` also bumped `@babel/*` 7.28 → 7.29 in the lockfile (it was out of sync).

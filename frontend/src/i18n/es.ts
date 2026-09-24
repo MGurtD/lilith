@@ -2083,6 +2083,8 @@ const es = {
     back: "Volver",
     userMenu: "Menú de usuario",
     openMenu: "Abrir el menú",
+    collapseMenu: "Contraer el menú",
+    expandMenu: "Expandir el menú",
   },
   movementTypes: {
     input: "Entrada",

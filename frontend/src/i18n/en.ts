@@ -2114,6 +2114,8 @@ const en = {
     back: "Back",
     userMenu: "User menu",
     openMenu: "Open menu",
+    collapseMenu: "Collapse menu",
+    expandMenu: "Expand menu",
   },
   movementTypes: {
     input: "Input",
