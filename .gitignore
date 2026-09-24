@@ -36,3 +36,5 @@ nul
 # Claude Code personal settings
 .claude/settings.local.json
 CLAUDE.local.md
+# lilith-ui-tester browser profile and screenshots
+.claude/.ui-tester/
