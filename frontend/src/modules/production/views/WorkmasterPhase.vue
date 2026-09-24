@@ -127,6 +127,11 @@ onMounted(async () => {
 
 const loadViewData = async () => {
   await workmasterStore.fetchPhaseById(phaseId.value);
+  // The header needs the work master; it is only in the store when the user
+  // came from the work master screen, not on a direct load of this URL.
+  if (workmaster.value?.id !== id.value) {
+    await workmasterStore.fetchOne(id.value);
+  }
 };
 
 const workmasterPhaseForm = ref<InstanceType<

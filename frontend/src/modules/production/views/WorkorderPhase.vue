@@ -162,6 +162,11 @@ onMounted(async () => {
 
 const loadViewData = async () => {
   await workorderStore.fetchPhaseById(phaseId.value);
+  // The header needs the work order; it is only in the store when the user
+  // came from the work order screen, not on a direct load of this URL.
+  if (workorder.value?.id !== id.value) {
+    await workorderStore.fetchOne(id.value);
+  }
   phaseRejections.value =
     (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
 };
