@@ -53,8 +53,8 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = rejectionReason.value as RejectionReason;
+// Form.vue edits a snapshot, so the submitted payload is the source of truth.
+const submitForm = async (data: RejectionReason) => {
   let result = false;
   let message = "";
 
