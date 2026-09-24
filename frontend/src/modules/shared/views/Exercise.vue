@@ -53,8 +53,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = exercise.value as Exercise;
+const submitForm = async (data: Exercise) => {
   let result = false;
   let message = "";
 
