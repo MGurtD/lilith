@@ -1,12 +1,13 @@
 <template>
-  <SplitButton
-    :label="t('production.components.guardar')"
-    @click="handleSubmit"
-    :model="items"
-    :loading="reportDownloading"
-    :size="'small'"
-    class="grid_add_row_button"
-  />
+  <PageActions>
+    <SplitButton
+      icon="pi pi-save"
+      :label="t('production.components.guardar')"
+      @click="handleSubmit"
+      :model="items"
+      :loading="reportDownloading"
+    />
+  </PageActions>
   <form v-if="workorder" class="pt-3">
     <section class="four-columns">
       <div>
@@ -95,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();

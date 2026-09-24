@@ -124,8 +124,9 @@ const columns = computed<Column[]>(() => [
   {
     field: "statusId",
     header: t("purchase.order.fields.status"),
-    columnType: ColumnType.Lookup,
+    columnType: ColumnType.Status,
     resolver: getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
     style: "width: 25%",
   },
 ]);

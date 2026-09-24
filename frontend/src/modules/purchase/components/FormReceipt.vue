@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Form from "@/components/forms/Form.vue";
+import PageActions from "@/components/PageActions.vue";
 import {
   FormFieldType,
   type FormRowConfig,
@@ -118,13 +119,13 @@ defineExpose({ submitForm });
 
 <template>
   <div>
-    <Button
-      :label="t('purchase.receipt.actions.save')"
-      size="small"
-      class="grid_add_row_button"
-      @click="submitForm"
-    />
-    <br />
+    <PageActions>
+      <Button
+        icon="pi pi-save"
+        :label="t('purchase.receipt.actions.save')"
+        @click="submitForm"
+      />
+    </PageActions>
     <Form
       ref="form"
       :rows="rows"

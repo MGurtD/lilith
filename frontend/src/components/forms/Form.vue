@@ -8,6 +8,7 @@ import PrimeForm, {
 import PrimeFormField from "@primevue/forms/formfield";
 import { cloneDeep } from "lodash";
 import PrimeButton from "primevue/button";
+import PageActions from "@/components/PageActions.vue";
 import PrimeCheckbox from "primevue/checkbox";
 import PrimeDatePicker from "primevue/datepicker";
 import PrimeInputNumber from "primevue/inputnumber";
@@ -44,6 +45,11 @@ interface Props {
   disabled?: boolean;
   showSubmit?: boolean;
   showCancel?: boolean;
+  /**
+   * Full-screen form: Save goes to the header's page actions and there is no
+   * Cancel (the header has a back button). Leave off for dialogs.
+   */
+  pageActions?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   showSubmit: true,
   showCancel: true,
+  pageActions: false,
 });
 
 const emit = defineEmits<{
@@ -443,7 +450,29 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues });
       </PrimeFormField>
     </div>
 
-    <div v-if="hasActions" class="generic-form__actions">
+    <PageActions v-if="hasActions && pageActions">
+      <slot
+        name="actions"
+        :submit="submit"
+        :reset="reset"
+        :values="formValues"
+        :states="formStates"
+        :valid="formValid"
+        :loading="loading"
+        :disabled="disabled"
+      >
+        <PrimeButton
+          v-if="showSubmit"
+          type="button"
+          icon="pi pi-save"
+          :label="t('common.save')"
+          :loading="loading"
+          :disabled="disabled"
+          @click="submit"
+        />
+      </slot>
+    </PageActions>
+    <div v-else-if="hasActions" class="generic-form__actions">
       <slot
         name="actions"
         :submit="submit"

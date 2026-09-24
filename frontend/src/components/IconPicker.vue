@@ -160,7 +160,7 @@ onBeforeUnmount(() => {
   border-color: var(--p-primary-color);
 }
 .icon-item.none {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 .selected-icon-wrapper {

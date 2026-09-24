@@ -24,6 +24,8 @@ export enum ColumnType {
   Currency = "currency",
   Number = "number",
   Lookup = "lookup",
+  /** A Lookup shown as a coloured Tag; `severity` picks the colour. */
+  Status = "status",
   ProgressBar = "progressbar",
 }
 
@@ -58,6 +60,8 @@ export interface Column {
   frozen?: boolean;
   showColor?: boolean;
   resolver?: ColumnResolver;
+  /** Status columns: PrimeVue Tag severity for the value (none → neutral grey). */
+  severity?: (value: unknown, data: unknown) => string | undefined;
   truncate?: boolean;
   props?: ColumnProps;
 }

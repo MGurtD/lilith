@@ -1,8 +1,8 @@
 <template>
   <form v-if="workcenter">
-    <div class="grid_add_row_button">
-      <Button :label="t('production.components.guardar')" style="float: right" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
+    </PageActions>
     <section class="four-columns mb-2">
       <BaseInput
         :label="t('production.components.nom')"
@@ -79,6 +79,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();

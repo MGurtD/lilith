@@ -231,6 +231,8 @@ const en = {
     none: "No dimensions",
   },
   common: {
+    yes: "Yes",
+    no: "No",
     success: "Success",
     error: "Error",
     info: "Information",
@@ -1156,7 +1158,12 @@ const en = {
       customers: "Customers",
     },
   },
-  home: {},
+  home: {
+    title: "Home",
+    greetingMorning: "Good morning, {name}",
+    greetingAfternoon: "Good afternoon, {name}",
+    greetingEvening: "Good evening, {name}",
+  },
   phaseTemplates: {
     title: "Phase templates",
     menuTitle: "Phase template management",
@@ -1213,11 +1220,13 @@ const en = {
   shopfloor: {
     clockin: {
       title: "Operator Access",
-      placeholder: "Enter your operator code",
       buttonLabel: "Enter",
-      errorTitle: "Operator not found",
-      errorDetail: "Please enter a valid operator code",
-      instructions: "Scan the code or enter it manually",
+      instructions: "Scan your code or type it in",
+      notFound: "No operator has this code. Try again.",
+      codeLabel: "Operator code",
+      keypad: "Numeric keypad",
+      letters: "Letter keyboard",
+      backspace: "Delete last",
     },
   },
   table: {
@@ -1268,6 +1277,7 @@ const en = {
   },
   login: {
     welcome: "Welcome to {brandName}",
+    productCredit: "Zenith ERP by Rawcraft Software",
     username: "Username",
     usernamePlaceholder: "Enter your username",
     password: "Password",
@@ -1573,6 +1583,15 @@ const en = {
       form: {
         name: "Name",
         color: "Color",
+        colors: {
+          none: "No colour",
+          secondary: "Neutral",
+          info: "In progress",
+          warn: "Needs action",
+          success: "Done",
+          danger: "Problem",
+          contrast: "Closed",
+        },
         disabled: "Disabled",
         tags: "Tags",
         tagsPlaceholder: "Select tags",
@@ -2111,6 +2130,20 @@ const en = {
     exit: "Exit",
     language: "Language",
     signOut: "Sign out",
+    back: "Back",
+    userMenu: "User menu",
+    openMenu: "Open menu",
+    collapseMenu: "Collapse menu",
+    expandMenu: "Expand menu",
+    titleBlock: {
+      label: "Title block",
+      system: "System",
+      company: "Company",
+      date: "Date",
+      scale: "Scale",
+      screen: "Screen",
+      user: "User",
+    },
   },
   movementTypes: {
     input: "Input",

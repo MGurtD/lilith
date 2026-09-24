@@ -937,7 +937,7 @@ function buildViewConfig(): string {
 
 .default-star {
   color: var(--p-primary-color);
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
 }
 
 .columns-config-list {
@@ -1027,7 +1027,7 @@ function buildViewConfig(): string {
 }
 
 .total-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--text-color-secondary);
 }
 

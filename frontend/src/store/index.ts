@@ -35,6 +35,7 @@ export const useStore = defineStore("applicationStore", {
       sidebar: {
         collapsed: false,
         hideToggle: false,
+        mobileOpen: false,
         menus: [],
       } as SidebarConfig,
       currentMenuItem: {
@@ -118,7 +119,12 @@ export const useStore = defineStore("applicationStore", {
         while (stack.length) {
           const n = stack.pop()!;
           if (n.key === userMenu.defaultScreen && n.route) {
-            if (this.currentMenuItem?.title === "Home") {
+            // Only the startup placeholder (title "Home" with the home icon); the
+            // English home screen is also titled "Home" and must keep its title.
+            if (
+              this.currentMenuItem?.title === "Home" &&
+              this.currentMenuItem?.icon === PrimeIcons.HOME
+            ) {
               this.currentMenuItem = {
                 title: n.title,
                 icon: n.icon || undefined,

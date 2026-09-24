@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Form from "@/components/forms/Form.vue";
+import PageActions from "@/components/PageActions.vue";
 import {
   FormFieldType,
   type FormRowConfig,
@@ -27,6 +28,8 @@ import {
 import Services from "../services";
 
 const props = defineProps<{
+  /** Rendered inside a dialog: keep Save in place instead of the header. */
+  inDialog?: boolean;
   reference: Reference;
 }>();
 
@@ -311,15 +314,6 @@ const submitForm = (): void => form.value?.submit();
 </script>
 
 <template>
-  <div>
-    <Button
-      :label="t('purchase.materials.actions.save')"
-      class="grid_add_row_button"
-      size="small"
-      @click="submitForm"
-    />
-    <br />
-  </div>
   <Form
     ref="form"
     :rows="rows"
@@ -328,4 +322,11 @@ const submitForm = (): void => form.value?.submit();
     :show-cancel="false"
     @submit="submit"
   />
+  <PageActions :inline="inDialog">
+    <Button
+      icon="pi pi-save"
+      :label="t('purchase.materials.actions.save')"
+      @click="submitForm"
+    />
+  </PageActions>
 </template>

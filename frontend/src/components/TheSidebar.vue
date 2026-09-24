@@ -1,48 +1,166 @@
 <template>
-  <sidebar-menu
-    :menu="store.sidebar.menus"
-    :collapsed="store.sidebar.collapsed"
-    :showOneChild="true"
-    :hideToggle="store.sidebar.hideToggle"
-    :style="sidebarTheme"
-    @update:collapsed="toggleCollapse"
+  <!-- Phones get the same menu inside a drawer opened from the header; the
+       fixed sidebar would take most of a 390px screen. -->
+  <component
+    :is="isPhone ? Drawer : Passthrough"
+    v-bind="isPhone ? drawerProps : {}"
+    v-model:visible="store.sidebar.mobileOpen"
   >
-    <template #header>
-      <div class="brand" @click="() => router.push({ path: '/' })">
-        <img
-          v-if="!logoLoadFailed"
-          :src="brandingStore.sidebarLogoUrl"
-          :alt="brandingStore.brandName"
-          class="brand-logo"
-          draggable="false"
-          @error="logoLoadFailed = true"
-        />
-        <span v-else class="brand-monogram">{{ brandingStore.monogram }}</span>
-        <span
-          v-if="!store.sidebar.collapsed"
-          class="brand-name"
-          :title="brandingStore.brandName"
-          >{{ brandingStore.brandName }}</span
-        >
-      </div>
+    <template #container>
+      <sidebar-menu
+        :menu="store.sidebar.menus"
+        :collapsed="rail"
+        :showOneChild="true"
+        :hideToggle="true"
+        :relative="isPhone"
+        :width="isPhone ? '100%' : undefined"
+        :style="{ '--vsm-primary-color': sidebarAccent }"
+      >
+        <template #header>
+          <div class="brand-row" :class="{ 'brand-row--rail': rail }">
+            <RouterLink to="/" class="brand" :aria-label="brandingStore.brandName">
+              <!-- Only a logo uploaded for the sidebar is shown: tenants preview it on a
+                   dark background. Main logos and the bundled default mark are made for
+                   white backgrounds, so the monogram stands in for them. -->
+              <img
+                v-if="brandingStore.hasSidebarLogo && !logoLoadFailed"
+                :src="brandingStore.sidebarLogoUrl"
+                alt=""
+                class="brand-logo"
+                draggable="false"
+                @error="logoLoadFailed = true"
+              />
+              <span v-else class="brand-monogram">{{ brandingStore.monogram }}</span>
+              <span v-if="!rail" class="brand-name" :title="brandingStore.brandName">{{
+                brandingStore.brandName
+              }}</span>
+            </RouterLink>
+            <button
+              v-if="canToggle && !rail"
+              type="button"
+              class="sidebar-icon-button"
+              :aria-label="t('ui.collapseMenu')"
+              v-tooltip.right="t('ui.collapseMenu')"
+              @click="store.sidebar.collapsed = true"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M9 4v16M16 10l-2 2 2 2" />
+              </svg>
+            </button>
+          </div>
+          <!-- Collapsed: the expand control is the first row of the rail. -->
+          <div v-if="canToggle && rail" class="rail-toggle">
+            <button
+              type="button"
+              class="sidebar-icon-button"
+              :aria-label="t('ui.expandMenu')"
+              v-tooltip.right="t('ui.expandMenu')"
+              @click="store.sidebar.collapsed = false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2" />
+                <path d="M9 4v16M14 10l2 2-2 2" />
+              </svg>
+            </button>
+          </div>
+        </template>
+        <template #footer>
+          <div class="sidebar-footer" :class="{ 'sidebar-footer--rail': rail }">
+            <Button
+              :label="rail ? undefined : t('support.request')"
+              :aria-label="t('support.request')"
+              icon="pi pi-question-circle"
+              severity="secondary"
+              text
+              class="support-btn"
+              @click="openSupport"
+            />
+            <button
+              v-if="account"
+              type="button"
+              class="user-button"
+              :class="{ 'user-button--open': userMenuOpen }"
+              :aria-label="`${t('ui.userMenu')}: ${account.name}`"
+              aria-haspopup="true"
+              :aria-expanded="userMenuOpen"
+              @click="toggleUserMenu"
+            >
+              <Avatar
+                :label="account.initial"
+                shape="circle"
+                class="user-avatar"
+                :class="{ 'user-avatar--operator': account.operator }"
+              />
+              <template v-if="!rail">
+                <span class="user-text">
+                  <span class="user-name">{{ account.name }}</span>
+                  <span class="user-detail">{{ account.detail }}</span>
+                </span>
+                <svg class="user-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
+                </svg>
+              </template>
+            </button>
+          </div>
+        </template>
+      </sidebar-menu>
     </template>
-    <template #footer>
-      <div class="sidebar-footer">
+  </component>
+
+  <Popover ref="userMenu" @show="userMenuOpen = true" @hide="userMenuOpen = false">
+    <div v-if="account" class="user-menu">
+      <div class="user-menu__header">
+        <Avatar
+          :label="account.initial"
+          size="large"
+          shape="circle"
+          class="user-menu__avatar"
+          :class="{ 'user-avatar--operator': account.operator }"
+        />
+        <div class="user-menu__name">{{ account.name }}</div>
+        <div class="user-menu__detail">
+          <i :class="account.operator ? 'pi pi-user' : 'pi pi-shield'" class="mr-1"></i>
+          {{ account.detail }}
+        </div>
+      </div>
+
+      <template v-if="account.operator">
+        <div class="user-menu__divider" />
+        <!-- Shop-floor tablets: a large touch target to leave. -->
         <Button
-          :label="store.sidebar.collapsed ? '' : $t('support.request')"
-          icon="pi pi-question-circle"
+          icon="pi pi-sign-out"
+          :label="t('ui.exit')"
+          class="w-full"
+          size="large"
+          @click="leave('logoutOperatorClick')"
+        />
+      </template>
+      <template v-else-if="store.user">
+        <div class="user-menu__divider" />
+        <div class="user-menu__section">
+          <label class="user-menu__label">{{ t("ui.language") }}</label>
+          <LanguageSwitcher
+            v-model="store.user.preferredLanguage"
+            :changeAppLanguage="true"
+          />
+        </div>
+        <div class="user-menu__divider" />
+        <Button
+          icon="pi pi-sign-out"
+          :label="t('ui.signOut')"
           severity="secondary"
           text
-          class="support-btn"
-          @click="showSupportDialog = true"
+          class="user-menu__item"
+          @click="leave('logoutClick')"
         />
-      </div>
-    </template>
-  </sidebar-menu>
+      </template>
+    </div>
+  </Popover>
 
   <Dialog
     v-model:visible="showSupportDialog"
-    :header="$t('support.request')"
+    :header="t('support.request')"
     :modal="true"
     :style="{ width: '480px' }"
     @hide="showSupportDialog = false"
@@ -52,556 +170,467 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, type FunctionalComponent } from "vue";
+import Avatar from "primevue/avatar";
+import Drawer from "primevue/drawer";
+import Popover from "primevue/popover";
+import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import { SidebarMenu } from "vue-sidebar-menu";
 import "vue-sidebar-menu/dist/vue-sidebar-menu.css";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import { useIsPhone } from "@/composables/useIsPhone";
+import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
 import { useBrandingStore } from "@/store/branding";
-import {
-  BRANDING_PALETTE_OPTIONS,
-  DEFAULT_BRANDING_PALETTE,
-} from "@/services/branding.service";
-import { useRouter } from "vue-router";
 import FormSupportRequest from "../modules/shared/components/FormSupportRequest.vue";
 
-type Rgb = { r: number; g: number; b: number };
+const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 
-const BLACK = "#000000";
-const WHITE = "#FFFFFF";
-const LIGHT_TEXT = "#F8FAFC";
-
-function hexToRgb(hex: string): Rgb {
-  const normalized = hex.replace("#", "");
-  return {
-    r: parseInt(normalized.slice(0, 2), 16),
-    g: parseInt(normalized.slice(2, 4), 16),
-    b: parseInt(normalized.slice(4, 6), 16),
-  };
-}
-
-function rgbToHex({ r, g, b }: Rgb): string {
-  return (
-    "#" +
-    [r, g, b]
-      .map((channel) => Math.round(channel).toString(16).padStart(2, "0"))
-      .join("")
-  ).toUpperCase();
-}
-
-function mixColors(first: string, second: string, amount: number): string {
-  const firstRgb = hexToRgb(first);
-  const secondRgb = hexToRgb(second);
-  return rgbToHex({
-    r: firstRgb.r + (secondRgb.r - firstRgb.r) * amount,
-    g: firstRgb.g + (secondRgb.g - firstRgb.g) * amount,
-    b: firstRgb.b + (secondRgb.b - firstRgb.b) * amount,
-  });
-}
-
-function relativeLuminance(color: string): number {
-  const channels = Object.values(hexToRgb(color)).map((channel) => {
-    const normalized = channel / 255;
-    return normalized <= 0.03928
-      ? normalized / 12.92
-      : ((normalized + 0.055) / 1.055) ** 2.4;
-  });
-
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
-
-function contrastRatio(first: string, second: string): number {
-  const firstLuminance = relativeLuminance(first);
-  const secondLuminance = relativeLuminance(second);
-  const lighter = Math.max(firstLuminance, secondLuminance);
-  const darker = Math.min(firstLuminance, secondLuminance);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-function adjustBackgroundForContrast(
-  background: string,
-  foreground: string,
-  minimumRatio: number,
-): string {
-  if (contrastRatio(background, foreground) >= minimumRatio) {
-    return background;
-  }
-
-  const candidates = [background];
-  for (let step = 1; step <= 100; step += 1) {
-    const amount = step / 100;
-    candidates.push(mixColors(background, BLACK, amount));
-    candidates.push(mixColors(background, WHITE, amount));
-  }
-
-  const accessibleCandidates = candidates.filter(
-    (candidate) => contrastRatio(candidate, foreground) >= minimumRatio,
-  );
-
-  return (accessibleCandidates.length ? accessibleCandidates : candidates).reduce(
-    (best, candidate) => {
-      if (!best) return candidate;
-      return colorDistance(candidate, background) <
-        colorDistance(best, background)
-        ? candidate
-        : best;
-    },
-    "",
-  );
-}
-
-function colorDistance(first: string, second: string): number {
-  const firstRgb = hexToRgb(first);
-  const secondRgb = hexToRgb(second);
-  return Math.sqrt(
-    (firstRgb.r - secondRgb.r) ** 2 +
-      (firstRgb.g - secondRgb.g) ** 2 +
-      (firstRgb.b - secondRgb.b) ** 2,
-  );
-}
-
-function findAccessibleColor(
-  seed: string,
-  backgrounds: string[],
-  minimumRatio: number,
-): string {
-  const candidates = [seed];
-  for (let step = 1; step <= 100; step += 1) {
-    const amount = step / 100;
-    candidates.push(mixColors(seed, WHITE, amount));
-    candidates.push(mixColors(seed, BLACK, amount));
-  }
-
-  const accessibleCandidates = candidates.filter((candidate) =>
-    backgrounds.every(
-      (background) => contrastRatio(candidate, background) >= minimumRatio,
-    ),
-  );
-
-  return (accessibleCandidates.length ? accessibleCandidates : candidates).reduce(
-    (best, candidate) => {
-      if (!best) return candidate;
-      return colorDistance(candidate, seed) < colorDistance(best, seed)
-        ? candidate
-        : best;
-    },
-    "",
-  );
-}
-
-function getReadableText(background: string): string {
-  return findAccessibleColor(LIGHT_TEXT, [background], 4.5);
-}
-
-function getPaletteOption(
-  primaryColor: unknown,
-): (typeof BRANDING_PALETTE_OPTIONS)[number] {
-  const normalized =
-    typeof primaryColor === "string"
-      ? primaryColor.trim().toLowerCase()
-      : DEFAULT_BRANDING_PALETTE;
-
-  return (
-    BRANDING_PALETTE_OPTIONS.find((option) => option.value === normalized) ??
-    BRANDING_PALETTE_OPTIONS.find(
-      (option) => option.value === DEFAULT_BRANDING_PALETTE,
-    )!
-  );
-}
-
-function buildSidebarTheme(primaryColor: unknown): Record<string, string> {
-  const paletteOption = getPaletteOption(primaryColor);
-  const paletteColor = paletteOption.swatch;
-  const darkPalette = mixColors(paletteColor, BLACK, 0.8);
-  const createSurface = (paletteAmount: number, neutralLift: number) =>
-    adjustBackgroundForContrast(
-      mixColors(
-        mixColors(darkPalette, paletteColor, paletteAmount),
-        WHITE,
-        neutralLift,
-      ),
-      LIGHT_TEXT,
-      4.5,
-    );
-
-  const createGrayscaleSurface = (gray: string) =>
-    adjustBackgroundForContrast(gray, LIGHT_TEXT, 4.5);
-  const surfaces =
-    paletteOption.value === "black"
-      ? {
-          // Keep each navigation level distinct while validating every rung for text contrast.
-          base: createGrayscaleSurface("#101010"),
-          dropdown: createGrayscaleSurface("#1C1C1C"),
-          submenu: createGrayscaleSurface("#2C2C2C"),
-          hover: createGrayscaleSurface("#3C3C3C"),
-          submenuHover: createGrayscaleSurface("#4C4C4C"),
-          selected: createGrayscaleSurface("#585858"),
-          submenuSelected: createGrayscaleSurface("#646464"),
-          active: createGrayscaleSurface("#707070"),
-        }
-      : {
-          base: createSurface(0.04, 0.03),
-          dropdown: createSurface(0.08, 0.05),
-          submenu: createSurface(0.16, 0.08),
-          hover: createSurface(0.2, 0.08),
-          submenuHover: createSurface(0.28, 0.12),
-          selected: createSurface(0.34, 0.13),
-          submenuSelected: createSurface(0.4, 0.16),
-          active: createSurface(0.48, 0.18),
-        };
-  const {
-    base,
-    dropdown,
-    submenu,
-    hover,
-    submenuHover,
-    selected,
-    submenuSelected,
-    active,
-  } = surfaces;
-  const createIconSurface = (surface: string) =>
-    adjustBackgroundForContrast(mixColors(surface, WHITE, 0.08), LIGHT_TEXT, 3);
-  const primarySurfaces =
-    paletteOption.value === "black"
-      ? {
-          base: createGrayscaleSurface("#101010"),
-          hover: createGrayscaleSurface("#3C3C3C"),
-          selected: createGrayscaleSurface("#585858"),
-          active: createGrayscaleSurface("#707070"),
-        }
-      : {
-          base: createSurface(0.18, 0.04),
-          hover: createSurface(0.3, 0.1),
-          selected: createSurface(0.42, 0.14),
-          active: createSurface(0.54, 0.18),
-        };
-  const primaryIcon = createIconSurface(primarySurfaces.base);
-  const primaryHoverIcon = createIconSurface(primarySurfaces.hover);
-  const primarySelectedIcon = createIconSurface(primarySurfaces.selected);
-  const primaryActiveIcon = createIconSurface(primarySurfaces.active);
-  const icon = createIconSurface(base);
-  const hoverIcon = createIconSurface(hover);
-  const selectedIcon = createIconSurface(selected);
-  const activeIcon = createIconSurface(active);
-  const surfaceValues = [
-    base,
-    dropdown,
-    submenu,
-    hover,
-    submenuHover,
-    selected,
-    submenuSelected,
-    active,
-  ];
-  const linkColor = findAccessibleColor(LIGHT_TEXT, [base, dropdown], 4.5);
-  const iconColor = findAccessibleColor(LIGHT_TEXT, [icon], 3);
-  const accent = findAccessibleColor(
-    paletteColor,
-    paletteOption.value === "black"
-      ? surfaceValues
-      : [...surfaceValues, icon, hoverIcon, selectedIcon, activeIcon],
-    3,
-  );
-
-  return {
-    "--sidebar-base-bg": "var(--p-primary-900)",
-    "--sidebar-primary-color": getReadableText(primarySurfaces.base),
-    "--sidebar-primary-hover-bg": primarySurfaces.hover,
-    "--sidebar-primary-hover-color": getReadableText(primarySurfaces.hover),
-    "--sidebar-primary-selected-bg": primarySurfaces.selected,
-    "--sidebar-primary-selected-color": getReadableText(primarySurfaces.selected),
-    "--sidebar-primary-active-bg": primarySurfaces.active,
-    "--sidebar-primary-active-color": getReadableText(primarySurfaces.active),
-    "--sidebar-primary-icon-bg": primaryIcon,
-    "--sidebar-primary-icon-color": getReadableText(primaryIcon),
-    "--sidebar-primary-hover-icon-bg": primaryHoverIcon,
-    "--sidebar-primary-hover-icon-color": getReadableText(primaryHoverIcon),
-    "--sidebar-primary-selected-icon-bg": primarySelectedIcon,
-    "--sidebar-primary-selected-icon-color": getReadableText(primarySelectedIcon),
-    "--sidebar-primary-active-icon-bg": primaryActiveIcon,
-    "--sidebar-primary-active-icon-color": getReadableText(primaryActiveIcon),
-    "--sidebar-link-color": linkColor,
-    "--sidebar-icon-bg": icon,
-    "--sidebar-icon-color": iconColor,
-    "--sidebar-active-bg": active,
-    "--sidebar-active-color": getReadableText(active),
-    "--sidebar-active-icon-bg": activeIcon,
-    "--sidebar-active-icon-color": findAccessibleColor(accent, [activeIcon], 3),
-    "--vsm-item-active-line-color": accent,
-    "--sidebar-selected-bg": selected,
-    "--sidebar-selected-color": getReadableText(selected),
-    "--sidebar-selected-icon-bg": selectedIcon,
-    "--sidebar-selected-icon-color": getReadableText(selectedIcon),
-    "--sidebar-hover-bg": hover,
-    "--sidebar-hover-color": getReadableText(hover),
-    "--sidebar-hover-icon-bg": hoverIcon,
-    "--sidebar-hover-icon-color": getReadableText(hoverIcon),
-    "--sidebar-dropdown-bg": dropdown,
-    "--sidebar-submenu-bg": submenu,
-    "--sidebar-submenu-color": getReadableText(submenu),
-    "--sidebar-submenu-hover-bg": submenuHover,
-    "--sidebar-submenu-hover-color": getReadableText(submenuHover),
-    "--sidebar-submenu-selected-bg": submenuSelected,
-    "--sidebar-submenu-selected-color": getReadableText(submenuSelected),
-    "--sidebar-mobile-bg": "var(--p-primary-900)",
-    "--sidebar-muted-color": linkColor,
-    "--sidebar-accent": accent,
-  };
-}
-
-const router = useRouter();
+const { t } = useI18n();
+const route = useRoute();
 const store = useStore();
-const showSupportDialog = ref(false);
 const brandingStore = useBrandingStore();
+const plantOperatorStore = usePlantOperatorStore();
+const isPhone = useIsPhone();
+
+// Desktop renders the menu as is; the drawer's container slot is reused for it.
+const Passthrough: FunctionalComponent = (_props, { slots }) => slots.container?.();
+const drawerProps = {
+  position: "left",
+  blockScroll: true,
+  class: "nav-drawer",
+};
+
+// The phone drawer is always expanded; desktop follows the collapsed setting.
+const rail = computed(() => !isPhone.value && store.sidebar.collapsed);
+// Plant screens with an operator keep the sidebar collapsed (hideToggle).
+const canToggle = computed(() => !isPhone.value && !store.sidebar.hideToggle);
+
+// Leaving the screen or widening the window closes the phone drawer.
+watch([() => route.fullPath, isPhone], () => (store.sidebar.mobileOpen = false));
+
+const showSupportDialog = ref(false);
 const logoLoadFailed = ref(false);
-const sidebarTheme = computed(() =>
-  buildSidebarTheme(brandingStore.primaryColor),
+
+function openSupport() {
+  store.sidebar.mobileOpen = false;
+  showSupportDialog.value = true;
+}
+
+// Who is signed in: the plant operator once one has clocked in, else the user.
+const account = computed(() => {
+  const operator = plantOperatorStore.operator;
+  if (operator) {
+    return {
+      operator: true,
+      initial: operator.name.substring(0, 1).toUpperCase(),
+      name: `${operator.name} ${operator.surname}`,
+      detail: t("ui.operator"),
+    };
+  }
+  const user = store.user;
+  if (!user) return undefined;
+  const fullName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
+  return {
+    operator: false,
+    initial: user.username.substring(0, 1).toUpperCase(),
+    name: fullName || user.username,
+    detail: `@${user.username}`,
+  };
+});
+
+const userMenu = ref<InstanceType<typeof Popover>>();
+const userMenuOpen = ref(false);
+const toggleUserMenu = (event: Event) => userMenu.value?.toggle(event);
+const leave = (event: "logoutClick" | "logoutOperatorClick") => {
+  userMenu.value?.hide();
+  emits(event);
+};
+
+// The black palette has no light shade to stand out on the dark sidebar.
+const sidebarAccent = computed(() =>
+  brandingStore.primaryColor === "black"
+    ? "var(--p-surface-0)"
+    : "var(--p-primary-400)",
 );
 
 watch(
   () => brandingStore.sidebarLogoUrl,
   () => (logoLoadFailed.value = false),
 );
-
-function toggleCollapse() {
-  store.sidebar.collapsed = !store.sidebar.collapsed;
-}
 </script>
 
+<style>
+/* The drawer panel is teleported to <body>, so it is styled globally. */
+.p-drawer.nav-drawer {
+  width: min(18rem, 85vw);
+  border: none;
+  background: var(--p-steel-850);
+}
+</style>
+
 <style scoped>
+/*
+ * Grafit sidebar: a neutral dark steel frame. The tenant's branding colour only
+ * marks the current screen, so any of the branding palettes works here and the
+ * white "sidebar logo" tenants upload stays readable.
+ */
 .v-sidebar-menu {
-  background-color: var(--sidebar-base-bg);
   width: var(--side-bar-width);
 
-  /* Item height & icon size */
+  --vsm-base-bg: var(--p-steel-850);
+  --vsm-item-color: var(--p-steel-300);
+  --vsm-item-active-color: var(--p-surface-0);
+  --vsm-item-active-bg: transparent;
+  --vsm-item-active-line-color: transparent;
+  --vsm-item-open-color: var(--p-surface-0);
+  --vsm-item-open-bg: transparent;
+  --vsm-item-hover-color: var(--p-surface-0);
+  --vsm-item-hover-bg: rgba(255, 255, 255, 0.06);
+  --vsm-icon-color: var(--p-steel-400);
+  --vsm-icon-bg: transparent;
+  --vsm-icon-active-color: var(--p-surface-0);
+  --vsm-icon-active-bg: transparent;
+  --vsm-icon-open-color: var(--p-surface-0);
+  --vsm-icon-open-bg: transparent;
+  --vsm-dropdown-bg: var(--p-steel-800);
+  --vsm-header-item-color: var(--p-steel-400);
+  --vsm-mobile-item-color: var(--p-surface-0);
+  --vsm-mobile-item-bg: var(--p-steel-800);
+  --vsm-mobile-icon-color: var(--p-surface-0);
+  --vsm-mobile-icon-bg: transparent;
+
+  --vsm-item-font-size: 1rem;
   --vsm-item-line-height: 22px;
-  --vsm-item-padding: 7px 12px;
-  --vsm-icon-height: 28px;
-  --vsm-icon-width: 28px;
-  --vsm-item-font-size: 14px;
+  --vsm-item-padding: 7px 10px;
+  --vsm-icon-height: 22px;
+  --vsm-icon-width: 22px;
 }
 
-.v-sidebar-menu .vsm--header {
-  text-align: left;
-  border-bottom: 1px solid var(--sidebar-hover-bg);
+.v-sidebar-menu.vsm_relative {
+  width: 100%;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: var(--top-panel-height);
+  box-sizing: border-box;
+  padding: 0 0.5rem 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand-row--rail {
+  justify-content: center;
+  padding: 0;
 }
 
 .brand {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  background: transparent;
-  border: none;
-  color: var(--sidebar-link-color);
-  font-weight: 600;
-  font-size: 1.4rem;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  padding: 0.75rem;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  text-transform: uppercase;
+  gap: 0.625rem;
+  border-radius: var(--p-border-radius-md);
+  color: var(--p-surface-0);
+  text-decoration: none;
   white-space: nowrap;
 }
 
+.brand-row--rail .brand {
+  flex: none;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--p-surface-0);
+  outline-offset: 2px;
+}
+
 .brand-logo {
-  height: 40px;
+  height: 32px;
+  max-width: 140px;
   object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-  transition: transform 0.25s ease;
 }
 
 .brand-name {
+  font-family: var(--font-condensed);
+  font-size: 1.2857rem;
+  font-weight: 600;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand-monogram {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  border: 2px solid var(--sidebar-accent);
-  border-radius: 50%;
+  border-radius: var(--p-border-radius-md);
+  background: var(--vsm-primary-color);
+  color: var(--p-steel-900);
+  font-family: var(--font-condensed);
+  font-weight: 600;
+}
+
+.sidebar-icon-button {
+  all: unset;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--p-border-radius-md);
+  color: var(--p-steel-400);
+  cursor: pointer;
+}
+
+.sidebar-icon-button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--p-surface-0);
+}
+
+.sidebar-icon-button:focus-visible {
+  outline: 2px solid var(--p-surface-0);
+  outline-offset: -2px;
+}
+
+.sidebar-icon-button svg,
+.user-chevron {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rail-toggle {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
 }
 
 .sidebar-footer {
-  padding: 0.65rem 0.85rem;
-  color: var(--sidebar-muted-color);
   display: flex;
-  justify-content: center;
-  font-size: 0.7rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-footer--rail {
+  align-items: center;
+  padding: 0.5rem 0;
 }
 
 .support-btn {
   width: 100%;
-  color: var(--sidebar-muted-color) !important;
   justify-content: flex-start;
-  font-size: 0.75rem;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  color: var(--p-steel-300);
+}
+
+.sidebar-footer--rail .support-btn {
+  width: auto;
 }
 
 .support-btn:hover {
-  background-color: var(--sidebar-hover-bg) !important;
-  color: var(--sidebar-hover-color) !important;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--p-surface-0);
+}
+
+/* Signed-in user: identity at the foot of the sidebar, menu opens above it. */
+.user-button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.5rem;
+  border-radius: var(--p-border-radius-md);
+  color: var(--p-surface-0);
+  cursor: pointer;
+}
+
+.sidebar-footer--rail .user-button {
+  width: auto;
+  min-height: 0;
+  padding: 0.25rem;
+}
+
+.user-button:hover,
+.user-button--open {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.user-button:focus-visible {
+  outline: 2px solid var(--p-surface-0);
+  outline-offset: -2px;
+}
+
+.user-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  background: var(--p-steel-700);
+  color: var(--p-surface-0);
+  font-family: var(--font-condensed);
+  font-weight: 600;
+}
+
+.user-avatar--operator,
+.user-menu__avatar.user-avatar--operator {
+  background: var(--p-primary-100);
+  color: var(--p-primary-800);
+}
+
+.user-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-detail {
+  font-size: 0.8571rem;
+  line-height: 1.3;
+  color: var(--p-steel-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke-width: 2;
+  color: var(--p-steel-400);
+}
+
+/* User menu (popover) */
+.user-menu {
+  min-width: 16rem;
+  padding: 0.25rem;
+}
+
+.user-menu__header {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.75rem;
+  align-items: center;
+}
+
+.user-menu__avatar {
+  grid-row: span 2;
+  background: var(--p-surface-100);
+  color: var(--p-surface-700);
+  font-family: var(--font-condensed);
+  font-weight: 600;
+}
+
+.user-menu__name {
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.user-menu__detail {
+  display: flex;
+  align-items: center;
+  font-size: 0.9286rem;
+  color: var(--p-text-muted-color);
+}
+
+.user-menu__divider {
+  height: 1px;
+  background: var(--p-surface-200);
+  margin: 0.75rem 0;
+}
+
+.user-menu__section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.user-menu__label {
+  font-family: var(--font-condensed);
+  font-size: 0.9286rem;
+  font-weight: 500;
+  color: var(--p-text-muted-color);
+}
+
+.user-menu .user-menu__item {
+  width: 100%;
+  justify-content: flex-start;
+  color: var(--p-text-color);
+}
+
+:global(.v-sidebar-menu .vsm--scroll-wrapper) {
+  padding: 0.5rem 0.625rem;
 }
 
 :global(.v-sidebar-menu .vsm--link) {
-  color: var(--sidebar-link-color) !important;
+  border-radius: var(--p-border-radius-md);
 }
 
-:global(.v-sidebar-menu .vsm--link_hover),
-:global(.v-sidebar-menu .vsm--link:hover) {
-  background-color: var(--sidebar-hover-bg) !important;
-  color: var(--sidebar-hover-color) !important;
+/* Expanded submenus sit on the sidebar itself; the dropdown colour is only
+   for the flyout shown when the sidebar is collapsed. */
+:global(.v-sidebar-menu.vsm_expanded .vsm--dropdown) {
+  background-color: transparent;
 }
 
-:global(.v-sidebar-menu .vsm--link_level-2:not(.vsm--link_active):not(.vsm--link_exact-active)) {
-  background-color: var(--sidebar-submenu-bg) !important;
-  color: var(--sidebar-submenu-color) !important;
+:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_open) {
+  font-weight: 600;
 }
 
-:global(.v-sidebar-menu .vsm--link_level-2.vsm--link_hover:not(.vsm--link_active):not(.vsm--link_exact-active)),
-:global(.v-sidebar-menu .vsm--link_level-2:hover:not(.vsm--link_active):not(.vsm--link_exact-active)) {
-  background-color: var(--sidebar-submenu-hover-bg) !important;
-  color: var(--sidebar-submenu-hover-color) !important;
+/* Current screen: lighter row plus a small marker in the branding colour.
+   vue-sidebar-menu also flags the open parent module as active; it stays plain. */
+:global(.v-sidebar-menu .vsm--item .vsm--link.vsm--link_active:not(.vsm--link_open)) {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--p-surface-0);
+  font-weight: 500;
 }
 
-:global(.v-sidebar-menu.vsm_expanded .vsm--item.vsm--item_open > .vsm--link) {
-  background-color: var(--sidebar-selected-bg) !important;
-  color: var(--sidebar-selected-color) !important;
+:global(.v-sidebar-menu .vsm--link_level-2) {
+  padding-left: 1.25rem;
 }
 
-:global(.v-sidebar-menu .vsm--link_level-1 .vsm--icon) {
-  background-color: var(--sidebar-icon-bg) !important;
-  color: var(--sidebar-icon-color) !important;
+/* Third level (module > group > screen): indented past the group's marker. */
+:global(.v-sidebar-menu .vsm--link_level-3) {
+  padding-left: calc(1.25rem + 16px);
 }
 
-:global(.v-sidebar-menu .vsm--link_hover .vsm--icon),
-:global(.v-sidebar-menu .vsm--link:hover .vsm--icon) {
-  background-color: var(--sidebar-hover-icon-bg) !important;
-  color: var(--sidebar-hover-icon-color) !important;
+:global(.v-sidebar-menu .vsm--link_level-2::before),
+:global(.v-sidebar-menu .vsm--link_level-3::before) {
+  content: "";
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  border-radius: 1px;
+  background: transparent;
 }
 
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_hover),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1:hover) {
-  background-color: transparent !important;
-}
-
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_hover .vsm--icon),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1:hover .vsm--icon) {
-  background-color: var(--sidebar-hover-icon-bg) !important;
-  color: var(--sidebar-hover-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_active:not(.vsm--link_exact-active)) {
-  background-color: var(--sidebar-selected-bg) !important;
-  color: var(--sidebar-selected-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-2.vsm--link_active:not(.vsm--link_exact-active)) {
-  background-color: var(--sidebar-submenu-selected-bg) !important;
-  color: var(--sidebar-submenu-selected-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_exact-active) {
-  background-color: var(--sidebar-active-bg) !important;
-  color: var(--sidebar-active-color) !important;
-  box-shadow: inset 3px 0 0 0 var(--sidebar-accent) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_active) {
-  box-shadow: 3px 0 0 0 var(--sidebar-accent) inset !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_active:not(.vsm--link_exact-active) .vsm--icon) {
-  background-color: var(--sidebar-selected-icon-bg) !important;
-  color: var(--sidebar-selected-icon-color) !important;
-}
-
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_active),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_exact-active) {
-  background-color: transparent !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_exact-active .vsm--icon) {
-  background-color: var(--sidebar-active-icon-bg) !important;
-  color: var(--sidebar-active-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--item.vsm--item_open > .vsm--link .vsm--icon) {
-  background-color: var(--sidebar-selected-icon-bg) !important;
-  color: var(--sidebar-selected-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--dropdown) {
-  background-color: var(--sidebar-dropdown-bg) !important;
-}
-
-:global(.v-sidebar-menu .vsm--mobile-bg) {
-  background-color: var(--sidebar-mobile-bg) !important;
-}
-
-:global(.v-sidebar-menu .vsm--mobile-item),
-:global(.v-sidebar-menu .vsm--link_mobile) {
-  background-color: var(--sidebar-mobile-bg) !important;
-  color: var(--sidebar-link-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_mobile:hover),
-:global(.v-sidebar-menu .vsm--mobile-item:hover) {
-  background-color: var(--sidebar-hover-bg) !important;
-  color: var(--sidebar-hover-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1) {
-  background-color: var(--sidebar-base-bg) !important;
-  color: var(--sidebar-primary-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_hover),
-:global(.v-sidebar-menu .vsm--link_level-1:hover) {
-  background-color: var(--sidebar-primary-hover-bg) !important;
-  color: var(--sidebar-primary-hover-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_active:not(.vsm--link_exact-active)),
-:global(.v-sidebar-menu.vsm_expanded .vsm--item.vsm--item_open > .vsm--link_level-1) {
-  background-color: var(--sidebar-primary-selected-bg) !important;
-  color: var(--sidebar-primary-selected-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_exact-active) {
-  background-color: var(--sidebar-primary-active-bg) !important;
-  color: var(--sidebar-primary-active-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1 .vsm--icon) {
-  background-color: var(--sidebar-primary-icon-bg) !important;
-  color: var(--sidebar-primary-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_hover .vsm--icon),
-:global(.v-sidebar-menu .vsm--link_level-1:hover .vsm--icon) {
-  background-color: var(--sidebar-primary-hover-icon-bg) !important;
-  color: var(--sidebar-primary-hover-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_active:not(.vsm--link_exact-active) .vsm--icon),
-:global(.v-sidebar-menu.vsm_expanded .vsm--item.vsm--item_open > .vsm--link_level-1 .vsm--icon) {
-  background-color: var(--sidebar-primary-selected-icon-bg) !important;
-  color: var(--sidebar-primary-selected-icon-color) !important;
-}
-
-:global(.v-sidebar-menu .vsm--link_level-1.vsm--link_exact-active .vsm--icon) {
-  background-color: var(--sidebar-primary-active-icon-bg) !important;
-  color: var(--sidebar-primary-active-icon-color) !important;
-}
-
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_hover),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1:hover),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_active),
-:global(.v-sidebar-menu.vsm_collapsed .vsm--link_level-1.vsm--link_exact-active) {
-  background-color: transparent !important;
+/* The marker follows the current screen at any depth; an open group holding it
+   stays unmarked, a closed one is marked so the screen can still be found. */
+:global(.v-sidebar-menu .vsm--item .vsm--link_level-2.vsm--link_active:not(.vsm--link_open)::before),
+:global(.v-sidebar-menu .vsm--item .vsm--link_level-3.vsm--link_active::before) {
+  background: var(--vsm-primary-color);
 }
 </style>

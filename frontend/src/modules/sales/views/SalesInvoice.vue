@@ -1,14 +1,12 @@
 <template>
-  <div class="button-panel">
-    <div class="flex align-items-end justify-content-end">
-      <SplitButton
-        :label="t('sales.detail.actions.save')"
-        @click="updateInvoice"
-        :model="items"
-        :size="'small'"
-      />
-    </div>
-  </div>
+  <PageActions>
+    <SplitButton
+      icon="pi pi-save"
+      :label="t('sales.detail.actions.save')"
+      @click="updateInvoice"
+      :model="items"
+    />
+  </PageActions>
 
   <main v-if="invoice">
     <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
@@ -244,6 +242,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -705,12 +704,6 @@ const sendToVerifactu = async () => {
 </script>
 
 <style scoped>
-.button-panel {
-  position: absolute;
-  top: 0;
-  right: 2rem;
-  z-index: 1000;
-}
 
 .invoice-totals-section {
   padding-right: 0.75rem;
@@ -768,7 +761,7 @@ const sendToVerifactu = async () => {
 }
 
 .total-card-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
   white-space: nowrap;
   line-height: 1.1;

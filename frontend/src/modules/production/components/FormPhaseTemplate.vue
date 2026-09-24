@@ -1,9 +1,8 @@
 <template>
   <form v-if="phaseTemplate">
-    <div class="grid_add_row_button">
-      <Button :label="t('common.save')" size="small" @click="submitForm" />
-      <br />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('common.save')" @click="submitForm" />
+    </PageActions>
     <section class="three-columns">
       <div>
         <BaseInput
@@ -29,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { PhaseTemplate } from "../types";

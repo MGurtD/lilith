@@ -639,6 +639,7 @@ function formatCellValue(col: Column, data: any): string {
     case ColumnType.Currency:
       return typeof value === "number" ? formatCurrency(value) : "";
     case ColumnType.Lookup:
+    case ColumnType.Status:
       return String(value ?? "");
     case ColumnType.Number:
       return String(value);
@@ -647,13 +648,48 @@ function formatCellValue(col: Column, data: any): string {
   }
 }
 
+// Amounts and quantities are right-aligned so figures line up by place value.
+function columnPt(col: Column) {
+  const numeric =
+    col.columnType === ColumnType.Currency ||
+    col.columnType === ColumnType.Number
+      ? "numeric-cell"
+      : undefined;
+  const truncate = col.truncate !== false ? "truncate-cell" : undefined;
+  if (!numeric && !truncate) return undefined;
+  return {
+    headerCell: { class: numeric },
+    bodyCell: { class: [truncate, numeric] },
+  };
+}
+
 function resolveCellValue(col: Column, data: unknown): unknown {
   const value = resolveFieldValue(data, col.field);
   if (!col.resolver) return value;
-  if (col.columnType === ColumnType.Lookup && typeof value !== "string") {
+  const isLookup =
+    col.columnType === ColumnType.Lookup || col.columnType === ColumnType.Status;
+  if (isLookup && typeof value !== "string") {
     return undefined;
   }
   return col.resolver(value, data);
+}
+
+// Colours come from the lifecycle administration as PrimeVue severities;
+// a status without one stays neutral.
+const STATUS_SEVERITIES = ["secondary", "info", "warn", "success", "danger", "contrast"];
+
+function statusSeverity(col: Column, data: unknown) {
+  const value = resolveFieldValue(data, col.field);
+  const severity = col.severity?.(value, data);
+  // Unknown or retired values ("help") fall back to neutral.
+  return (severity && STATUS_SEVERITIES.includes(severity) ? severity : "secondary") as
+    | "secondary"
+    | "info"
+    | "success"
+    | "warn"
+    | "danger"
+    | "contrast"
+    | undefined;
 }
 
 function resolveBooleanValue(
@@ -781,11 +817,7 @@ function resolveBooleanValue(
         :sortable="col.sortable || activeSortConfig?.field === col.field"
         :style="col.style"
         :frozen="col.frozen"
-        :pt="
-          col.truncate !== false
-            ? { bodyCell: { class: 'truncate-cell' } }
-            : undefined
-        "
+        :pt="columnPt(col)"
       >
         <!-- Custom body slot from consumer takes priority -->
         <template v-if="slots[`body-${col.field}`]" #body="slotProps">
@@ -800,6 +832,18 @@ function resolveBooleanValue(
           <BooleanColumn
             :value="resolveBooleanValue(slotProps.data, col.field)"
             :show-color="col.showColor"
+          />
+        </template>
+        <!-- Status: the resolved name as a Tag in the status colour. -->
+        <template
+          v-else-if="col.columnType === ColumnType.Status"
+          #body="slotProps"
+        >
+          <Tag
+            v-if="hasValue(resolveCellValue(col, slotProps.data))"
+            :value="formatCellValue(col, slotProps.data)"
+            :severity="statusSeverity(col, slotProps.data)"
+            class="lifecycle-status-tag"
           />
         </template>
         <!-- Default + all text-typed columns: route through TruncatedCell.
@@ -937,6 +981,7 @@ function resolveBooleanValue(
 </template>
 
 <style scoped>
+
 .attachment-cell {
   position: absolute;
   top: 0;
@@ -984,7 +1029,7 @@ function resolveBooleanValue(
 }
 
 .delete-icon {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   pointer-events: none;
 }
 </style>
@@ -999,5 +1044,13 @@ function resolveBooleanValue(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.p-datatable .numeric-cell {
+  text-align: right;
+}
+
+.p-datatable .numeric-cell .p-datatable-column-header-content {
+  justify-content: flex-end;
 }
 </style>

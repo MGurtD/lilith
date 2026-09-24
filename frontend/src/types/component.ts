@@ -23,6 +23,8 @@ export interface MenuItem {
 export interface SidebarConfig {
   collapsed: boolean;
   hideToggle: boolean;
+  // Phone layout: navigation drawer visibility.
+  mobileOpen: boolean;
   menus: Array<any>;
 }
 

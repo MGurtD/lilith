@@ -61,6 +61,18 @@ export default defineConfig({
             },
           },
           {
+            // Self-hosted fonts (IBM Plex, PrimeIcons): only the subsets in use get cached
+            urlPattern: /\.(?:woff2?|ttf|eot)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts-cache",
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          {
             // Fuentes y CSS externos
             urlPattern: /^https:\/\/unpkg\.com\/.*/i,
             handler: "CacheFirst",

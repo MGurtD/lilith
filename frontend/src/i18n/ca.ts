@@ -231,6 +231,8 @@ const ca = {
     none: "Sense mesures",
   },
   common: {
+    yes: "Sí",
+    no: "No",
     success: "Èxit",
     error: "Error",
     info: "Informació",
@@ -1179,7 +1181,12 @@ const ca = {
       customers: "Clients",
     },
   },
-  home: {},
+  home: {
+    title: "Inici",
+    greetingMorning: "Bon dia, {name}",
+    greetingAfternoon: "Bona tarda, {name}",
+    greetingEvening: "Bona nit, {name}",
+  },
   phaseTemplates: {
     title: "Plantilles de fase",
     menuTitle: "Gestió de plantilles de fase",
@@ -1236,11 +1243,13 @@ const ca = {
   shopfloor: {
     clockin: {
       title: "Accés Operari",
-      placeholder: "Introdueix el codi",
       buttonLabel: "Entrar",
-      errorTitle: "Operari/a inexistent",
-      errorDetail: "Introdueix un codi d'operari/a vàlid",
-      instructions: "Escaneja el codi o introdueix-lo manualment",
+      instructions: "Escaneja el codi o tecleja'l",
+      notFound: "No hi ha cap operari amb aquest codi. Torna-ho a provar.",
+      codeLabel: "Codi d'operari",
+      keypad: "Teclat numèric",
+      letters: "Teclat de lletres",
+      backspace: "Esborrar l'últim",
     },
   },
   table: {
@@ -1291,6 +1300,7 @@ const ca = {
   },
   login: {
     welcome: "Benvingut a {brandName}",
+    productCredit: "Zenith ERP, de Rawcraft Software",
     username: "Nom d'usuari",
     usernamePlaceholder: "Introdueix el teu nom d'usuari",
     password: "Contrasenya",
@@ -1599,6 +1609,15 @@ const ca = {
       form: {
         name: "Nom",
         color: "Color",
+        colors: {
+          none: "Sense color",
+          secondary: "Neutre",
+          info: "En curs",
+          warn: "Cal actuar",
+          success: "Fet",
+          danger: "Problema",
+          contrast: "Tancat",
+        },
         disabled: "Deshabilitat",
         tags: "Etiquetes",
         tagsPlaceholder: "Selecciona etiquetes",
@@ -2137,6 +2156,20 @@ const ca = {
     exit: "Sortir",
     language: "Idioma",
     signOut: "Tancar sessió",
+    back: "Tornar",
+    userMenu: "Menú d'usuari",
+    openMenu: "Obrir el menú",
+    collapseMenu: "Plegar el menú",
+    expandMenu: "Desplegar el menú",
+    titleBlock: {
+      label: "Caixetí",
+      system: "Sistema",
+      company: "Empresa",
+      date: "Data",
+      scale: "Escala",
+      screen: "Pantalla",
+      user: "Usuari",
+    },
   },
   movementTypes: {
     input: "Entrada",

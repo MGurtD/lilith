@@ -1,11 +1,13 @@
 <template>
   <form v-if="workmaster">
-    <div class="grid_add_row_button">
-      <Button :label="t('production.components.calcularCost')" size="small" @click="calculateCost" />
-      &nbsp;
-      <Button :label="t('production.components.guardar')" size="small" @click="submitForm" />
-      <br />
-    </div>
+    <PageActions>
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('production.components.guardar')"
+        :model="workmasterActions"
+        @click="submitForm"
+      />
+    </PageActions>
     <section class="six-columns">
       <div>
         <DropdownReference
@@ -126,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -198,6 +201,15 @@ const submitForm = async () => {
     });
   }
 };
+
+// Secondary actions live in the Save button's menu (page actions convention).
+const workmasterActions = computed(() => [
+  {
+    label: t("production.components.calcularCost"),
+    icon: "pi pi-calculator",
+    command: () => calculateCost(),
+  },
+]);
 
 const calculateCost = () => {
   validate();

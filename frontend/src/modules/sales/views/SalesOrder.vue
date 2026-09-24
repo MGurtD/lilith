@@ -1,11 +1,12 @@
 <template>
-  <SplitButton
-    :label="t('sales.detail.actions.save')"
-    @click="submitForm"
-    :model="items"
-    :size="'small'"
-    class="grid_add_row_button"
-  />
+  <PageActions>
+    <SplitButton
+      icon="pi pi-save"
+      :label="t('sales.detail.actions.save')"
+      @click="submitForm"
+      :model="items"
+    />
+  </PageActions>
 
   <FormSalesOrder
     class="mt-3 mb-3"
@@ -161,6 +162,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";

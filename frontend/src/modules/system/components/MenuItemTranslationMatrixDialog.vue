@@ -298,7 +298,7 @@ watch(
 }
 
 .matrix-status {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
 }
 
 :deep(.translation-matrix-table) {
