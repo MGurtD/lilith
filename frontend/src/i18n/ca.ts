@@ -1236,11 +1236,13 @@ const ca = {
   shopfloor: {
     clockin: {
       title: "Accés Operari",
-      placeholder: "Introdueix el codi",
       buttonLabel: "Entrar",
-      errorTitle: "Operari/a inexistent",
-      errorDetail: "Introdueix un codi d'operari/a vàlid",
-      instructions: "Escaneja el codi o introdueix-lo manualment",
+      instructions: "Escaneja el codi o tecleja'l",
+      notFound: "No hi ha cap operari amb aquest codi. Torna-ho a provar.",
+      codeLabel: "Codi d'operari",
+      keypad: "Teclat numèric",
+      letters: "Teclat de lletres",
+      backspace: "Esborrar l'últim",
     },
   },
   table: {
@@ -1291,6 +1293,7 @@ const ca = {
   },
   login: {
     welcome: "Benvingut a {brandName}",
+    productCredit: "Zenith ERP, de Rawcraft Software",
     username: "Nom d'usuari",
     usernamePlaceholder: "Introdueix el teu nom d'usuari",
     password: "Contrasenya",
@@ -2142,6 +2145,14 @@ const ca = {
     openMenu: "Obrir el menú",
     collapseMenu: "Plegar el menú",
     expandMenu: "Desplegar el menú",
+    titleBlock: {
+      label: "Caixetí",
+      system: "Sistema",
+      company: "Empresa",
+      date: "Data",
+      scale: "Escala",
+      screen: "Pantalla",
+    },
   },
   movementTypes: {
     input: "Entrada",

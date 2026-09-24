@@ -1,77 +1,171 @@
 <template>
   <main class="clockin">
-    <div class="clockin__container">
-      <!-- Logo Section -->
-      <div class="clockin__header">
-        <img
-          :src="brandingStore.mainLogoUrl"
-          :alt="brandingStore.brandName"
-          class="clockin__logo"
+    <form class="clockin__entry" @submit.prevent="onSubmit">
+      <!-- One question, one field, one line under it: the line says how to answer
+           and turns into the error in place, so the keypad never moves. -->
+      <div class="clockin__field">
+        <label for="operator-code" class="clockin__label">
+          {{ t("shopfloor.clockin.codeLabel") }}
+        </label>
+        <!-- Scanners type into the focused field, so the keypad never takes focus.
+             The on-screen keyboard only opens when the operator asks for letters. -->
+        <InputText
+          id="operator-code"
+          ref="codeInput"
+          v-model="operatorCode"
+          type="password"
+          autocomplete="off"
+          :inputmode="letters ? 'text' : 'none'"
+          :invalid="notFound"
+          aria-describedby="operator-code-help"
+          autofocus
+          class="clockin__code"
+          @input="notFound = false"
         />
-        <h1 class="clockin__title">{{ $t("shopfloor.clockin.title") }}</h1>
+        <p
+          id="operator-code-help"
+          class="clockin__help"
+          :class="{ 'clockin__help--error': notFound }"
+          :role="notFound ? 'alert' : undefined"
+        >
+          <i
+            :class="notFound ? 'pi pi-exclamation-circle' : 'pi pi-barcode'"
+            aria-hidden="true"
+          ></i>
+          <span>{{
+            notFound ? t("shopfloor.clockin.notFound") : t("shopfloor.clockin.instructions")
+          }}</span>
+        </p>
       </div>
 
-      <!-- Input Section -->
-      <div class="clockin__form">
-        <InputGroup class="clockin__input-group">
-          <InputGroupAddon>
-            <i :class="PrimeIcons.USER"></i>
-          </InputGroupAddon>
-          <Password
-            v-model="operatorCode"
-            :placeholder="$t('shopfloor.clockin.placeholder')"
-            class="clockin__input"
-            autofocus
-            @keyup.enter="onSubmit"
-            :feedback="false"
-            inputClass="clockin__password-field"
-          />
-        </InputGroup>
-
-        <Button
-          :label="$t('shopfloor.clockin.buttonLabel')"
-          :icon="PrimeIcons.ARROW_RIGHT"
-          icon-pos="right"
-          size="large"
-          class="clockin__button"
-          :disabled="!operatorCode.trim()"
-          @click="onSubmit"
-        />
+      <div class="clockin__keypad" role="group" :aria-label="t('shopfloor.clockin.keypad')">
+        <button
+          v-for="digit in DIGITS"
+          :key="digit"
+          type="button"
+          class="clockin__key"
+          @pointerdown.prevent
+          @click="press(digit)"
+        >
+          {{ digit }}
+        </button>
+        <button
+          type="button"
+          class="clockin__key clockin__key--soft"
+          :aria-label="letters ? t('shopfloor.clockin.keypad') : t('shopfloor.clockin.letters')"
+          :aria-pressed="letters"
+          @pointerdown.prevent
+          @click="toggleLetters"
+        >
+          {{ letters ? "123" : "ABC" }}
+        </button>
+        <button type="button" class="clockin__key" @pointerdown.prevent @click="press('0')">0</button>
+        <button
+          type="button"
+          class="clockin__key clockin__key--soft"
+          :aria-label="t('shopfloor.clockin.backspace')"
+          @pointerdown.prevent
+          @click="backspace"
+        >
+          <i class="pi pi-delete-left" aria-hidden="true"></i>
+        </button>
       </div>
 
-      <!-- Visual Feedback -->
-      <div class="clockin__hint" v-if="!operatorCode.trim()">
-        <i :class="PrimeIcons.INFO_CIRCLE"></i>
-        <span>{{ $t("shopfloor.clockin.instructions") }}</span>
-      </div>
-    </div>
+      <Button
+        type="submit"
+        :label="t('shopfloor.clockin.buttonLabel')"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        :disabled="!operatorCode.trim()"
+        class="clockin__submit"
+      />
+    </form>
+
+    <!-- Brand panel: the time, readable from across the shop floor, and the title block. -->
+    <aside class="clockin__panel">
+      <div class="clockin__time">{{ time }}</div>
+      <div class="clockin__date">{{ date }}</div>
+      <TitleBlock
+        class="clockin__title-block"
+        :top="{ label: t('ui.titleBlock.system'), value: 'Zenith ERP' }"
+        :cells="[
+          { label: t('ui.titleBlock.company'), value: brandingStore.brandName, strong: true },
+          { label: t('ui.titleBlock.screen'), value: t('shopfloor.clockin.title') },
+          { label: t('ui.titleBlock.scale'), value: '1:1' },
+        ]"
+      />
+    </aside>
   </main>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
-import Password from "primevue/password";
-import InputGroup from "primevue/inputgroup";
-import InputGroupAddon from "primevue/inputgroupaddon";
+import InputText from "primevue/inputtext";
+import { useI18n } from "vue-i18n";
+import TitleBlock from "@/components/brand/TitleBlock.vue";
+import { useBrandingStore } from "@/store/branding";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { usePlantOperatorStore } from "../store";
-import { useToast } from "primevue/usetoast";
-import { useI18n } from "vue-i18n";
 import { useStore } from "../../../store";
-import { useBrandingStore } from "@/store/branding";
+
+const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const MAX_CODE_LENGTH = 32;
 
 const store = useStore();
 const brandingStore = useBrandingStore();
 const router = useRouter();
 const plantModelStore = usePlantModelStore();
 const plantOperatorStore = usePlantOperatorStore();
-const toast = useToast();
 const { t } = useI18n();
+
 const operatorCode = ref("");
+const notFound = ref(false);
+const letters = ref(false);
+const codeInput = ref<{ $el: HTMLInputElement }>();
+
+const focusCode = () => codeInput.value?.$el.focus();
+
+const press = (key: string) => {
+  notFound.value = false;
+  operatorCode.value = (operatorCode.value + key).slice(0, MAX_CODE_LENGTH);
+  focusCode();
+};
+
+const backspace = () => {
+  notFound.value = false;
+  operatorCode.value = operatorCode.value.slice(0, -1);
+  focusCode();
+};
+
+// inputmode changes only apply on the next focus, so refocus after toggling.
+const toggleLetters = async () => {
+  letters.value = !letters.value;
+  codeInput.value?.$el.blur();
+  await nextTick();
+  focusCode();
+};
+
+// Clock for the brand panel, refreshed often enough to never show a stale minute.
+const now = ref(new Date());
+let clockTimer: ReturnType<typeof setInterval> | undefined;
+const time = computed(() =>
+  new Intl.DateTimeFormat(store.language.current, { hour: "2-digit", minute: "2-digit" }).format(
+    now.value,
+  ),
+);
+const date = computed(() =>
+  new Intl.DateTimeFormat(store.language.current, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now.value),
+);
 
 onMounted(async () => {
+  clockTimer = setInterval(() => (now.value = new Date()), 15000);
+
   // Pre-cargar operadores
   await plantModelStore.fetchOperators();
 
@@ -84,257 +178,202 @@ onMounted(async () => {
   });
 });
 
-const onSubmit = async () => {
-  if (!operatorCode.value.trim()) return;
+onUnmounted(() => clearInterval(clockTimer));
 
-  const operator = plantModelStore.operators?.find(
-    (op) => op.code === operatorCode.value.trim()
-  );
+const onSubmit = async () => {
+  const code = operatorCode.value.trim();
+  if (!code) return;
+
+  const operator = plantModelStore.operators?.find((op) => op.code === code);
 
   if (operator) {
-    // Guardar operador en el store
     await plantOperatorStore.setOperator(operator);
-
-    // Navegar a la vista de áreas
     router.push({ name: "SiteAreas" });
   } else {
-    toast.add({
-      severity: "error",
-      summary: t("shopfloor.clockin.errorTitle"),
-      detail: t("shopfloor.clockin.errorDetail"),
-      life: 4000,
-    });
-    // Clear input after error for quick retry
+    // The message stays next to the field; clear it for a quick retry or rescan.
+    notFound.value = true;
     operatorCode.value = "";
+    focusCode();
   }
 };
 </script>
 
 <style scoped>
 .clockin {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: minmax(0, 29rem) minmax(0, 1fr);
   min-height: calc(100vh - var(--top-panel-height) - 2rem);
+  border: 1px solid var(--p-surface-200);
+  border-radius: var(--p-border-radius-md);
+  overflow: hidden;
 }
 
-.clockin__container {
-  width: 100%;
-  max-width: 500px;
-  background: white;
-  border-radius: 24px;
-  padding: 2.5rem 2rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.4s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.clockin__header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.clockin__logo {
-  height: 80px;
-  width: auto;
-  margin-bottom: 1.5rem;
-  object-fit: contain;
-}
-
-.clockin__title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.025em;
-}
-
-.clockin__instructions {
-  font-size: 1rem;
-  color: #718096;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.clockin__form {
+.clockin__entry {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 1.75rem 2.25rem;
+  background: var(--p-surface-0);
 }
 
-.clockin__input-group {
+.clockin__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clockin__label {
+  font-family: var(--font-condensed);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+/* Masked code: large dots, centred in the field (no placeholder to misalign). */
+.clockin__code {
   width: 100%;
+  height: 4rem;
+  padding: 0 1.125rem;
+  font-family: var(--font-condensed);
+  font-size: 2.125rem;
+  line-height: 1;
+  letter-spacing: 0.5rem;
 }
 
-.clockin__input-group :deep(.p-inputgroup-addon) {
-  background: #f7fafc;
-  border: 2px solid #e2e8f0;
-  border-right: none;
-  border-radius: 12px 0 0 12px;
-  padding: 0 1rem;
-  min-width: 3.5rem;
+/* The field keeps focus after a miss, so the error border must win over focus. */
+.clockin__code.p-invalid,
+.clockin__code.p-invalid:focus {
+  border-color: var(--p-red-600);
+}
+
+/* Fixed height: switching between help and error never moves the keypad. */
+.clockin__help {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 3rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: var(--p-text-muted-color);
+}
+
+.clockin__help .pi {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+}
+
+.clockin__help--error {
+  font-weight: 500;
+  color: var(--p-red-700);
+}
+
+.clockin__keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.clockin__key {
+  all: unset;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 4.5rem;
+  border-radius: var(--p-border-radius-lg);
+  background: var(--p-surface-0);
+  box-shadow:
+    inset 0 0 0 1px var(--p-surface-300),
+    0 1px 0 var(--p-surface-300);
+  font-family: var(--font-condensed);
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
 }
 
-.clockin__input-group :deep(.p-inputgroup-addon i) {
-  color: #a0aec0;
+.clockin__key:active {
+  background: var(--p-surface-100);
+}
+
+.clockin__key:focus-visible {
+  outline: 3px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+
+.clockin__key--soft {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--p-surface-700);
+  background: var(--p-surface-50);
+}
+
+.clockin__key--soft .pi {
   font-size: 1.5rem;
 }
 
-.clockin__input {
-  flex: 1;
+.clockin__submit {
+  height: 4rem;
+  font-size: 1.25rem;
 }
 
-.clockin__input :deep(.p-password) {
-  width: 100%;
-}
-
-.clockin__input :deep(.p-password-input),
-.clockin__password-field {
-  width: 100%;
-  padding: 1.25rem 1.25rem !important;
-  font-size: 1.125rem !important;
-  text-align: left !important;
-  border: 2px solid #e2e8f0 !important;
-  border-left: none !important;
-  border-radius: 0 12px 12px 0 !important;
-  transition: all 0.3s ease !important;
-  background: #f7fafc !important;
-}
-
-.clockin__input :deep(.p-password-input:focus),
-.clockin__password-field:focus {
-  border-color: #667eea !important;
-  background: white !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-.clockin__input-group:focus-within :deep(.p-inputgroup-addon) {
-  border-color: #667eea;
-  background: white;
-}
-
-.clockin__button {
-  width: 100%;
-  padding: 1.25rem !important;
-  font-size: 1.25rem !important;
-  font-weight: 600 !important;
-  border-radius: 12px !important;
-  background: #667eea !important;
-  border: none !important;
-  transition: all 0.3s ease !important;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.clockin__button:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4) !important;
-}
-
-.clockin__button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #cbd5e0 !important;
-}
-
-.clockin__hint {
+.clockin__panel {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: #edf2f7;
-  border-radius: 8px;
-  color: #4a5568;
-  font-size: 0.875rem;
-  text-align: center;
+  flex-direction: column;
+  padding: 2.5rem 2rem 12rem;
+  background: var(--p-surface-50);
+  border-left: 1px solid var(--p-surface-200);
 }
 
-.clockin__hint i {
-  font-size: 1rem;
-  color: #667eea;
+.clockin__time {
+  font-family: var(--font-condensed);
+  font-size: 6rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.0625rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-primary-color);
 }
 
-/* Tablet and larger screens */
-@media (min-width: 640px) {
-  .clockin__container {
-    padding: 3rem 2.5rem;
-  }
-
-  .clockin__logo {
-    height: 100px;
-  }
-
-  .clockin__title {
-    font-size: 2rem;
-  }
-
-  .clockin__instructions {
-    font-size: 1.125rem;
-  }
-
-  .clockin__input :deep(.p-password-input),
-  .clockin__password-field {
-    font-size: 1.5rem !important;
-  }
-
-  .clockin__input-group :deep(.p-inputgroup-addon) {
-    min-width: 4rem;
-  }
-
-  .clockin__input-group :deep(.p-inputgroup-addon i) {
-    font-size: 1.75rem;
-  }
-
-  .clockin__button {
-    font-size: 1.5rem !important;
-  }
+.clockin__date {
+  margin-top: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--p-surface-700);
 }
 
-/* Large screens */
-@media (min-width: 1024px) {
-  .clockin__container {
-    max-width: 600px;
-    padding: 4rem 3rem;
-  }
-
-  .clockin__logo {
-    height: 120px;
-  }
-
-  .clockin__title {
-    font-size: 2.25rem;
-  }
+.clockin__date::first-letter {
+  text-transform: uppercase;
 }
 
-/* Touch-friendly adjustments */
-@media (hover: none) and (pointer: coarse) {
-  .clockin__input :deep(.p-password-input),
-  .clockin__password-field {
-    padding: 1.5rem 1.25rem !important;
+.clockin__title-block {
+  position: absolute;
+  left: 2rem;
+  right: 2rem;
+  bottom: 2rem;
+}
+
+/* Portrait tablets and phones: the entry alone. */
+@media (max-width: 899.98px) {
+  .clockin {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .clockin__input-group :deep(.p-inputgroup-addon) {
+  .clockin__entry {
+    width: 100%;
+    max-width: 29rem;
+    box-sizing: border-box;
+    justify-self: center;
     padding: 1.5rem 1rem;
   }
 
-  .clockin__button {
-    padding: 1.75rem !important;
+  .clockin__panel {
+    display: none;
   }
 }
 </style>

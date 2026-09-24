@@ -1,21 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { UserLogin } from "../../services/authentications.service";
 import { useToast } from "primevue/usetoast";
-import InputGroup from "primevue/inputgroup";
-import InputGroupAddon from "primevue/inputgroupaddon";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
-import { useBrandingStore } from "@/store/branding";
-import { DEFAULT_MAIN_LOGO } from "@/config/branding";
 import { useI18n } from "vue-i18n";
 
 const emits = defineEmits(["login", "registerClick"]);
-const brandingStore = useBrandingStore();
-const logoLoadFailed = ref(false);
-const loginLogoUrl = computed(() =>
-  logoLoadFailed.value ? DEFAULT_MAIN_LOGO : brandingStore.mainLogoUrl,
-);
 
 const userLogin = ref({
   username: "",
@@ -24,6 +15,7 @@ const userLogin = ref({
 
 const toast = useToast();
 const { t } = useI18n();
+
 const login = () => {
   if (
     userLogin.value.username.length === 0 ||
@@ -36,290 +28,83 @@ const login = () => {
     });
     return;
   }
-
   emits("login", userLogin.value);
-};
-
-const registerClick = () => {
-  emits("registerClick");
 };
 </script>
 
 <template>
-  <div class="login-card p-6 shadow-8 border-round-xl w-full">
-    <div class="text-center mb-6">
-      <img
-        :src="loginLogoUrl"
-        :alt="brandingStore.brandName"
-        class="logo-image mb-4"
-        @error="logoLoadFailed = true"
+  <form @submit.prevent="login" class="login-form">
+    <h1 class="login-form__title">{{ $t("login.signIn") }}</h1>
+    <div class="login-form__field">
+      <label for="username">{{ $t("login.username") }}</label>
+      <InputText
+        id="username"
+        type="text"
+        autocomplete="username"
+        v-model="userLogin.username"
+        fluid
       />
-      <h1 class="text-3xl font-bold text-900 mb-2">
-        {{ $t("login.welcome", { brandName: brandingStore.brandName }) }}
-      </h1>
     </div>
-
-    <form @submit.prevent="login" class="login-form">
-      <div class="form-group mb-4">
-        <label for="username" class="form-label">
-          {{ $t("login.username") }}
-        </label>
-        <InputGroup class="input-group-enhanced">
-          <InputGroupAddon class="input-addon">
-            <i class="pi pi-user"></i>
-          </InputGroupAddon>
-          <InputText
-            id="username"
-            type="text"
-            class="form-input"
-            v-model="userLogin.username"
-            @keyup.enter="login"
-            :placeholder="$t('login.usernamePlaceholder')"
-          />
-        </InputGroup>
-      </div>
-
-      <div class="form-group mb-6">
-        <label for="password" class="form-label">
-          {{ $t("login.password") }}
-        </label>
-        <InputGroup class="input-group-enhanced">
-          <InputGroupAddon class="input-addon">
-            <i class="pi pi-key"></i>
-          </InputGroupAddon>
-          <InputText
-            id="password"
-            type="password"
-            class="form-input"
-            v-model="userLogin.password"
-            @keyup.enter="login"
-            :placeholder="$t('login.passwordPlaceholder')"
-          />
-        </InputGroup>
-      </div>
-
-      <Button
-        type="submit"
-        :label="$t('login.btnSignIn')"
-        class="login-button w-full mb-4"
-        size="large"
-        :loading="false"
+    <div class="login-form__field">
+      <label for="password">{{ $t("login.password") }}</label>
+      <InputText
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        v-model="userLogin.password"
+        fluid
       />
-
-      <!--<div class="text-center">
-        <span class="text-600">{{
-           $t("login.noAccount")
-        }}</span>
-        <Button
-           :label="$t('login.createAccount')"
-          link
-          class="register-link p-0 ml-2"
-          @click="registerClick"
-        />
-      </div>
-      -->
-    </form>
-  </div>
+    </div>
+    <Button type="submit" :label="$t('login.btnSignIn')" class="login-form__submit" fluid />
+    <!--<div class="text-center">
+      <span class="text-600">{{ $t("login.noAccount") }}</span>
+      <Button
+        :label="$t('login.createAccount')"
+        link
+        class="register-link p-0 ml-2"
+        @click="emits('registerClick')"
+      />
+    </div>
+    -->
+  </form>
 </template>
-<style lang="scss" scoped>
-.login-card {
-  background: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.logo-image {
-  height: 80px;
-  width: auto;
-  max-width: 180px;
-  object-fit: contain;
-  margin-inline: auto;
-  display: block;
-}
+<style scoped>
 .login-form {
-  .form-group {
-    position: relative;
-  }
-
-  .form-label {
-    display: block;
-    font-weight: 600;
-    color: var(--text-color);
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-    transition: color 0.3s ease;
-  }
-
-  .input-group-enhanced {
-    transition: all 0.3s ease;
-    overflow: hidden;
-
-    &:focus-within {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 25px rgba(var(--p-primary-500), 0.15);
-
-      .input-addon {
-        background: var(--p-primary-50);
-        color: var(--p-primary-600);
-      }
-
-      .form-label {
-        color: var(--p-primary-600);
-      }
-    }
-  }
-
-  .input-addon {
-    background: var(--p-surface-100);
-    border-color: var(--p-surface-300);
-    color: var(--text-color-secondary);
-    transition: all 0.3s ease;
-    padding: 1rem;
-  }
-
-  .form-input {
-    border-color: var(--p-surface-300);
-    padding: 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-
-    &:focus {
-      border-color: var(--p-primary-500);
-      box-shadow: none;
-    }
-
-    &::placeholder {
-      color: var(--text-color-secondary);
-      opacity: 0.7;
-    }
-  }
-
-  .login-button {
-    background: linear-gradient(
-      135deg,
-      var(--p-primary-600) 0%,
-      var(--p-primary-500) 100%
-    );
-    border: none;
-    border-radius: 12px;
-    padding: 1rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-      );
-      transition: left 0.5s ease;
-    }
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(var(--p-primary-500), 0.3);
-
-      &::before {
-        left: 100%;
-      }
-    }
-
-    &:active {
-      transform: translateY(0);
-    }
-
-    &:focus {
-      box-shadow: 0 0 0 3px rgba(var(--p-primary-500), 0.2);
-    }
-  }
-
-  .register-link {
-    color: var(--p-primary-600);
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: var(--p-primary-700);
-      text-decoration: underline;
-    }
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .login-card {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-
-  .logo-image {
-    height: 60px;
-    width: auto;
-    max-width: 90px;
-  }
-
-  .login-form {
-    .form-input,
-    .input-addon {
-      padding: 0.875rem;
-    }
-
-    .login-button {
-      padding: 0.875rem;
-      font-size: 1rem;
-    }
-  }
+.login-form__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-condensed);
+  font-size: 2.4286rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--p-text-color);
 }
 
-@media (max-width: 480px) {
-  .login-card {
-    padding: 1.25rem;
-    margin: 0.5rem;
-  }
-
-  .logo-image {
-    height: 50px;
-    width: auto;
-    max-width: 75px;
-  }
+.login-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
 }
 
-/* Loading state animation */
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
+.login-form__field label {
+  font-family: var(--font-condensed);
+  font-weight: 500;
+  color: var(--p-surface-700);
 }
 
-.login-button:disabled {
-  animation: pulse 1.5s infinite;
+.login-form__field :deep(.p-inputtext) {
+  height: 3.1429rem;
+  font-size: 1.0714rem;
 }
 
-/* Focus accessibility improvements */
-.form-input:focus,
-.login-button:focus,
-.register-link:focus {
-  outline: 2px solid var(--p-primary-400);
-  outline-offset: 2px;
+.login-form__submit {
+  height: 3.1429rem;
+  margin-top: 0.5rem;
+  font-size: 1.0714rem;
 }
 </style>

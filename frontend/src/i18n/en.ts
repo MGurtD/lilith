@@ -1213,11 +1213,13 @@ const en = {
   shopfloor: {
     clockin: {
       title: "Operator Access",
-      placeholder: "Enter your operator code",
       buttonLabel: "Enter",
-      errorTitle: "Operator not found",
-      errorDetail: "Please enter a valid operator code",
-      instructions: "Scan the code or enter it manually",
+      instructions: "Scan your code or type it in",
+      notFound: "No operator has this code. Try again.",
+      codeLabel: "Operator code",
+      keypad: "Numeric keypad",
+      letters: "Letter keyboard",
+      backspace: "Delete last",
     },
   },
   table: {
@@ -1268,6 +1270,7 @@ const en = {
   },
   login: {
     welcome: "Welcome to {brandName}",
+    productCredit: "Zenith ERP by Rawcraft Software",
     username: "Username",
     usernamePlaceholder: "Enter your username",
     password: "Password",
@@ -2116,6 +2119,14 @@ const en = {
     openMenu: "Open menu",
     collapseMenu: "Collapse menu",
     expandMenu: "Expand menu",
+    titleBlock: {
+      label: "Title block",
+      system: "System",
+      company: "Company",
+      date: "Date",
+      scale: "Scale",
+      screen: "Screen",
+    },
   },
   movementTypes: {
     input: "Input",

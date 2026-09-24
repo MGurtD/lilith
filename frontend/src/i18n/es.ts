@@ -1180,11 +1180,13 @@ const es = {
   shopfloor: {
     clockin: {
       title: "Acceso Operario",
-      placeholder: "Introduce el código de operario/a",
       buttonLabel: "Entrar",
-      errorTitle: "Operario/a inexistente",
-      errorDetail: "Introduce un código de operario/a válido",
-      instructions: "Escanea el código o introdúcelo manualmente",
+      instructions: "Escanea el código o tecléalo",
+      notFound: "No hay ningún operario con este código. Vuelve a probarlo.",
+      codeLabel: "Código de operario",
+      keypad: "Teclado numérico",
+      letters: "Teclado de letras",
+      backspace: "Borrar el último",
     },
   },
   table: {
@@ -1235,6 +1237,7 @@ const es = {
   },
   login: {
     welcome: "Bienvenido a {brandName}",
+    productCredit: "Zenith ERP, de Rawcraft Software",
     username: "Nombre de usuario",
     usernamePlaceholder: "Introduce tu nombre de usuario",
     password: "Contraseña",
@@ -2085,6 +2088,14 @@ const es = {
     openMenu: "Abrir el menú",
     collapseMenu: "Contraer el menú",
     expandMenu: "Expandir el menú",
+    titleBlock: {
+      label: "Cajetín",
+      system: "Sistema",
+      company: "Empresa",
+      date: "Fecha",
+      scale: "Escala",
+      screen: "Pantalla",
+    },
   },
   movementTypes: {
     input: "Entrada",
