@@ -121,10 +121,11 @@
     :style="{ width: '50vw' }"
   >
     <FormCreateWorkorder
-      :createWorkOrderDto="createWorkOrderDto"
+      :create-work-order-dto="createWorkOrderDto"
       :filtered-work-masters="referenceActiveWorkMasters"
       @submit="onWorkOrderCreateSubmit"
-    ></FormCreateWorkorder>
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 <script setup lang="ts">
@@ -246,7 +247,7 @@ const onWorkOrderCreateClick = async (salesOrderDetail: SalesOrderDetail) => {
     // Fetch only active workmasters for this reference (stateless, no Pinia cache)
     referenceActiveWorkMasters.value = await workMasterStore.fetchActiveWorkmastersByReference(salesOrderDetail.referenceId);
     // Set workMasterId: prefer the one already saved on the detail, then first active,
-    // or leave empty so FormCreateWorkorder's Yup validation blocks submit with a toast.
+    // or leave empty so FormCreateWorkorder's Yup validation blocks submit inline.
     createWorkOrderDto.value.workMasterId = salesOrderDetail.workMasterId || "";
     if (createWorkOrderDto.value.workMasterId === "" && referenceActiveWorkMasters.value.length > 0) {
       createWorkOrderDto.value.workMasterId = referenceActiveWorkMasters.value[0].id;
@@ -294,9 +295,9 @@ const openWorkOrder = (workorderId: string) => {
   emit("openWorkOrder", workorderId);
 };
 
-const onWorkOrderCreateSubmit = () => {
+const onWorkOrderCreateSubmit = (dto: CreateWorkOrderDto) => {
   const workOrder = {
-    workOrderDto: createWorkOrderDto.value,
+    workOrderDto: dto,
     orderDetail: selectedDetail!,
   } as CreateWorkOrderFromSalesOrderDto;
 
