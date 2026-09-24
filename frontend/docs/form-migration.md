@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. Inventory complete, no batch started.
+> **Status**: In progress. F-03 implemented; batch L1 in progress.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -104,8 +104,8 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | SH-01 | `shared/components/FormPaymentMethod.vue` | `PaymentMethod.vue` | low | — | pending | | Flat fields |
 | SH-02 | `shared/components/FormTax.vue` | `Tax.vue` | low | — | pending | | Text, number, 2 checkboxes |
-| SH-03 | `shared/components/FormReferenceType.vue` | `ReferenceType.vue`, `sales/components/FormReference.vue` | low | — | pending | | 2 ColorPickers via `Custom` slot; also nested inside `FormReference` (SA-05), keep both callers working |
-| SH-04 | `shared/components/FormLifecycle.vue` | `Lifecycle.vue` | low | — | pending | | No own submit button; confirm how the parent triggers submit |
+| SH-03 | `shared/components/FormReferenceType.vue` | `ReferenceType.vue` | low | — | pending | | 2 ColorPickers via `Custom` slot; `sales/components/FormReference.vue` imports it but never renders it (dead import) |
+| SH-04 | `shared/components/FormLifecycle.vue` | `Lifecycle.vue` | low | F-03 | migrated | `5c0a9a0` / F-03 PR | Parent's own save replaced by `page-actions`; statuses kept out of the snapshot and merged at submit |
 | SH-05 | `shared/components/FormExercise.vue` | `Exercise.vue` | med | — | pending | | `Yup.ref` date range; legacy mutates dates at submit |
 
 ### 2.2 Batch L2 — Production plant model
@@ -255,13 +255,49 @@ established pattern turned out to be enough).
 | --- | --- | --- | --- | --- | --- | --- |
 | F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | candidate | | | |
 | F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot. First check whether a Save `SplitButton` in `PageActions` driven through an external form ref (frontend save convention) is enough | PR-18, PR-24, SY-04 | candidate | | | |
-| F-03 | Unique native field IDs for simultaneous forms | PR-21, PR-26, SH-09 | candidate | | | |
+| F-03 | Unique native field IDs for simultaneous forms | SH-04 | implemented | `Form.vue`, `README.md`, custom slots in purchase forms and `FormRejectionReason.vue` | See entry below | `fe59b6b` |
 | F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06, SH-09 | candidate | | | |
 | F-05 | Repeatable or dynamically generated field groups | SY-05 | candidate | | | |
 
 Candidates come from the inventory and are hypotheses. Confirm one only when
 migrating its form proves that the patterns in section 1 are not enough;
 otherwise mark it `rejected` and note the pattern used.
+
+### F-03 — Per-instance native field IDs
+
+- **Motivated by**: SH-04. `Lifecycle.vue` opens the `FormLifecycleTag` dialog
+  over the migrated `FormLifecycle` screen form. Both have `name` and
+  `description` fields, and `Form.vue` built ids from the field name alone
+  (`form-field-name`), so the document had duplicate ids and the dialog labels
+  targeted the screen inputs. The same collision already existed on Receipt and
+  Order screens with their line dialogs.
+- **Design**: `Form.vue` prefixes ids with Vue's `useId()`
+  (`form-<instance>-<field>`) and passes the id to field slots as `inputId`.
+  Custom selectors bind it with `:input-id="inputId"`; the shared `Dropdown*`
+  components forward it to their `Select` through `$attrs`. No feature logic.
+- **Files**: `src/components/forms/Form.vue`, `src/components/forms/README.md`
+  (slot props, limitation removed), `FormRejectionReason.vue` (previously
+  hardcoded `form-field-color`), custom slots in `FormOrder`, `FormOrderDetail`,
+  `FormReceipt`, `FormReceiptDetail`, `FormPurchaseInvoice`,
+  `FormPurchaseRateDetail`, `FormSupplierReference`; `frontend-form` skill.
+- **Verification** (2026-09-24, `lilith-ui-tester`, staging DB):
+  - `typecheck`, `i18n:check`, `build`: pass (i18n warnings pre-existing).
+  - Validation case, Lifecycle "Budget": header form renders with a single
+    header Save; empty name shows the inline error in ca/es and sends no
+    request; editing the description sends a PUT whose body keeps the
+    `statuses` array, then the value was restored. With the tag dialog open,
+    screen and dialog `name` fields have different ids (`form-v-384-name`,
+    `form-v-475-name`), no duplicates, and clicking the dialog label focuses the
+    dialog input.
+  - Regression: Rejection reason color label resolves to the ColorPicker input
+    and no `form-field-*` ids remain; Receipt 26156 with the line dialog open
+    and Purchase order 26130 have every `label[for]` resolved and no duplicate
+    ids; status selectors still list transitions. No console errors.
+  - Known platform behavior: clicking a label does not focus a PrimeVue
+    `Select` because its combobox is a `span`; unchanged by this feature.
+- **Docs updated**: README limitation removed · skill custom-field step and
+  Proven Patterns (`FormLifecycle`, `FormRejectionReason`).
+- **PR**: pending (branch `forms/f03-unique-field-ids`).
 
 ### Feature entry template
 
@@ -286,6 +322,8 @@ Copy for each feature once it is `confirmed`:
 | Scope | Change | Approval |
 | --- | --- | --- |
 | All migrated forms | Inline field errors replace the "invalid form" toast and `FormValidation` | Accepted globally (2026-09-24) |
+| SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
+| All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
 Record per-form changes here (cancel now discards edits, validation added where
 there was none, and so on).
@@ -295,3 +333,4 @@ there was none, and so on).
 | Date | Event |
 | --- | --- |
 | 2026-09-24 | Tracker created with full inventory and candidate features |
+| 2026-09-24 | L1 stopped at SH-04 by F-03; F-03 implemented and verified with SH-04 (`fe59b6b`, `5c0a9a0`) |

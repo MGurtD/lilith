@@ -62,8 +62,10 @@ open decisions or verification work.
    resolver only when field schemas cannot express the rule; a resolver
    replaces, rather than merges with, field validation.
 8. Implement a custom control with `#field-<name>` and connect its `value` and
-   `setValue`. Pass an empty label when the legacy control renders its own, and
-   propagate `disabled` to the actual interactive control.
+   `setValue`. Pass an empty label when the legacy control renders its own,
+   propagate `disabled` to the actual interactive control, and bind the slot's
+   `inputId` to its focusable element (`input-id` on PrimeVue inputs). Never
+   hardcode native IDs; they are generated per form instance.
 9. For synchronous derived sibling values, define `onChange` only on source
    fields and call the exposed `setFieldValue`. Keep formulas feature-owned and
    do not attach callbacks to derived fields unless recursion is guarded.
@@ -172,6 +174,11 @@ open decisions or verification work.
 - `FormPurchaseInvoice.vue`: stable scalar snapshot with independently owned
   collections, derived summary section, narrow parent events, and typed external
   workflow methods.
+- `FormLifecycle.vue`: screen form whose parent opens other `Form.vue` dialogs
+  (per-instance field IDs), status options from a parent-owned collection kept
+  out of the snapshot, and the parent's own save button replaced by
+  `page-actions`.
+- `FormRejectionReason.vue`: custom `ColorPicker` bound to the slot `inputId`.
 
 ## Anti-Patterns
 
