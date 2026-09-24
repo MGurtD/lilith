@@ -108,8 +108,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = workcenter.value as Workcenter;
+const submitForm = async (data: Workcenter) => {
   let result = false;
   let message = "";
 

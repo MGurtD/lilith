@@ -1,152 +1,142 @@
-<template>
-  <form v-if="workcenter">
-    <PageActions>
-      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
-    </PageActions>
-    <section class="four-columns mb-2">
-      <BaseInput
-        :label="t('production.components.nom')"
-        id="name"
-        v-model="workcenter.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        :label="t('production.components.descripcio')"
-        id="description"
-        v-model="workcenter.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <BaseInput
-        :type="BaseInputType.NUMERIC"
-        :minFractionDigits="2"
-        class="mb-2"
-        :label="t('production.components.margeDeBenefici')"
-        id="profitPercentage"
-        v-model="workcenter.profitPercentage"
-        suffix="%"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
-        <Checkbox v-model="workcenter.disabled" class="w-full" :binary="true" />
-      </div>
-    </section>
-    <section class="three-columns">
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.tipus") }}</label>
-        <Select
-          v-model="workcenter.workcenterTypeId"
-          :options="plantModelStore.workcenterTypes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.workcenterTypeId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.area") }}</label>
-        <Select
-          v-model="workcenter.areaId"
-          :options="plantModelStore.areas"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.areaId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.torn") }}</label>
-        <Select
-          v-model="workcenter.shiftId"
-          :options="shiftStore.shifts"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.shiftId,
-          }"
-        />
-      </div>
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { onMounted, ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import { Workcenter } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useShiftStore } from "../store/shift";
+import type { Workcenter } from "../types";
 
 const props = defineProps<{
   workcenter: Workcenter;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", workcenter: Workcenter): void;
-  (e: "cancel"): void;
+  (event: "submit", workcenter: Workcenter): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 const plantModelStore = usePlantModelStore();
 const shiftStore = useShiftStore();
-const { workcenter } = storeToRefs(plantModelStore);
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required(t("production.validation.elNomEsObligatori"))
-    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
-  description: Yup.string()
-    .required(t("production.validation.laDescripcioEsObligatori"))
-    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
-  workcenterTypeId: Yup.string().required(t("production.validation.elTipusEsObligatori")),
-  areaId: Yup.string().required(t("production.validation.lAreaEsObligatoria")),
-  shiftId: Yup.string().required(t("production.validation.elTornEsObligatori")),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "name",
+        label: t("production.components.nom"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elNomEsObligatori"))
+          .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
+      },
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.laDescripcioEsObligatoria"))
+          .max(
+            250,
+            t("production.validation.laDescripcioNoPotSuperarEls250Caracters"),
+          ),
+      },
+      {
+        name: "profitPercentage",
+        label: t("production.components.margeDeBenefici"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 2, suffix: "%" },
+      },
+      {
+        name: "disabled",
+        label: t("production.components.desactivat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "workcenterTypeId",
+        label: t("production.components.tipus"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.workcenterTypes ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.elTipusEsObligatori"),
+        ),
+      },
+      {
+        name: "areaId",
+        label: t("production.components.area"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.areas ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.lAreaEsObligatoria"),
+        ),
+      },
+      {
+        name: "shiftId",
+        label: t("production.components.torn"),
+        type: FormFieldType.Select,
+        props: {
+          options: shiftStore.shifts ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.elTornEsObligatori"),
+        ),
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.workcenter);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.workcenter);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.workcenter,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    profitPercentage: finiteNumberValue(
+      values.profitPercentage,
+      props.workcenter.profitPercentage,
+    ),
+    workcenterTypeId: stringValue(
+      values.workcenterTypeId,
+      props.workcenter.workcenterTypeId,
+    ),
+    areaId: stringValue(values.areaId, props.workcenter.areaId),
+    shiftId: stringValue(values.shiftId, props.workcenter.shiftId),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="workcenter"
+    @submit="submit"
+  />
+</template>
