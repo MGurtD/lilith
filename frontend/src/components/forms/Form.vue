@@ -324,7 +324,11 @@ const handleSubmit = (event: FormSubmitEvent): void => {
   );
 };
 
-defineExpose({ submit, reset, cancel, setFieldValue, setValues });
+// A detached copy of the current, unvalidated values. For feature workflows
+// that must persist in-progress edits alongside another save (see README).
+const getValues = (): FormValues => cloneDeep(formValues.value);
+
+defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
 </script>
 
 <template>

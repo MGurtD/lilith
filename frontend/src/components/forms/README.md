@@ -61,11 +61,20 @@ reset(): Promise<void>;
 cancel(): Promise<void>;
 setFieldValue(name: string, value: unknown): void;
 setValues(values: FormValues): void;
+getValues(): FormValues;
 ```
 
 Use these methods through a template ref when an action outside the component
 submits the form or when feature-owned change logic updates derived sibling
-fields. The component does not expose its current values directly.
+fields.
+
+`getValues()` returns a detached copy of the current values, without
+validating them. Use it only when a feature workflow must persist in-progress
+edits together with another save, and expose a typed feature method rather
+than the raw values to the parent. Example: the production phase screens save
+unsaved header edits when a step or material is saved, because the reload
+that follows would otherwise discard them (`FormWorkmasterPhase.currentPhase`).
+Do not use it to replace the submit payload.
 
 ### Section Rows
 
@@ -145,8 +154,8 @@ For these workflows:
 - merge the latest collections into the typed payload at submit;
 - exchange only the derived values needed by external UI through narrow events
   or feature-specific exposed methods;
-- avoid adding a generic current-values API solely to couple a parent to form
-  internals.
+- when the parent must persist in-progress edits with another save, wrap
+  `getValues()` in a typed feature method instead of reading raw form values.
 
 ## Value Narrowing
 
@@ -406,7 +415,6 @@ are required.
 ## Current Limitations
 
 - No `modelValue` or `update:modelValue` contract.
-- No exposed `getValues` API.
 - Field visibility is not configurable.
 - A custom field can update only its own form value through the supported API.
 - No built-in nested collection or array-field support.
