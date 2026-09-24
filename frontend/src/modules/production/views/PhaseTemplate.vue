@@ -27,7 +27,8 @@
       v-if="selectedDetail"
       :detail="selectedDetail"
       @submit="onDetailSubmit"
-    ></FormPhaseTemplateDetail>
+      @cancel="closeDetailDialog"
+    />
   </Dialog>
 </template>
 
@@ -134,6 +135,10 @@ const onDetailSubmit = async (detail: PhaseTemplateDetail) => {
   } else {
     await phaseTemplateStore.updateDetail(detail.id, detail);
   }
+  closeDetailDialog();
+};
+
+const closeDetailDialog = () => {
   detailDialogOptions.visible = false;
   selectedDetail.value = undefined;
 };
