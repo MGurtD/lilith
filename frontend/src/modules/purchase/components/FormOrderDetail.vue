@@ -216,8 +216,9 @@ const submit = (values: FormValues): void => {
 
 <template>
   <Form ref="form" :rows="rows" :initial-values="detail" @submit="submit">
-    <template #field-referenceId="{ value, setValue, disabled }">
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
       <DropdownReference
+        :input-id="inputId"
         label=""
         :model-value="typeof value === 'string' ? value : null"
         :full-name="true"
@@ -226,8 +227,9 @@ const submit = (values: FormValues): void => {
       />
     </template>
 
-    <template #field-statusId="{ value, setValue, disabled }">
+    <template #field-statusId="{ value, setValue, disabled, inputId }">
       <DropdownLifecycleStatusTransitions
+        :input-id="inputId"
         label=""
         :status-id="detail.statusId"
         :model-value="typeof value === 'string' ? value : undefined"

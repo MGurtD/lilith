@@ -95,9 +95,9 @@ const submit = (values: FormValues): void => {
     :initial-values="rejectionReason"
     @submit="submit"
   >
-    <template #field-color="{ value, setValue, disabled }">
+    <template #field-color="{ value, setValue, disabled, inputId }">
       <ColorPicker
-        input-id="form-field-color"
+        :input-id="inputId"
         :model-value="typeof value === 'string' ? value : undefined"
         :disabled="disabled"
         @update:model-value="setValue"

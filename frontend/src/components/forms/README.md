@@ -333,9 +333,10 @@ Define a custom field and a `field-<name>` slot:
 
 ```vue
 <Form :rows="rows" :initial-values="entity" @submit="submit">
-  <template #field-icon="{ value, setValue, disabled }">
-    <IconPicker
-      :model-value="typeof value === 'string' ? value : null"
+  <template #field-color="{ value, setValue, disabled, inputId }">
+    <ColorPicker
+      :input-id="inputId"
+      :model-value="typeof value === 'string' ? value : undefined"
       :disabled="disabled"
       @update:model-value="setValue"
     />
@@ -353,8 +354,15 @@ Every field slot receives:
   state;
   errors;
   disabled;
+  inputId;
 }
 ```
+
+`inputId` is the native ID the field label points to. Bind it to the focusable
+element of the custom control (`input-id` on PrimeVue inputs) so the label and
+error description stay connected. Never hardcode it: IDs are generated per form
+instance so that simultaneous forms, such as a dialog over a screen, never
+collide.
 
 `setValue` updates only that field. Do not mutate `initialValues` from a slot to
 simulate updates to other fields. Avoid duplicate labels when a custom control
@@ -404,8 +412,6 @@ are required.
 - No built-in nested collection or array-field support.
 - No invalid-submit event or error summary.
 - The actions slot does not receive `cancel`.
-- Native field IDs are based only on the field name and can collide between
-  simultaneous forms.
 - A custom field without its matching slot renders no control.
 
 Add shared capabilities only when a real migration demonstrates the need and

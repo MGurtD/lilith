@@ -136,8 +136,9 @@ const submit = (values: FormValues): void => {
     :show-cancel="false"
     @submit="submit"
   >
-    <template #field-referenceId="{ value, setValue, disabled }">
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
       <DropdownReference
+        :input-id="inputId"
         label=""
         :model-value="typeof value === 'string' ? value : undefined"
         :full-name="true"
@@ -146,8 +147,9 @@ const submit = (values: FormValues): void => {
       />
     </template>
 
-    <template #field-supplierId="{ value, setValue, disabled }">
+    <template #field-supplierId="{ value, setValue, disabled, inputId }">
       <DropdownSupplier
+        :input-id="inputId"
         label=""
         :model-value="typeof value === 'string' ? value : undefined"
         :disabled="disabled"

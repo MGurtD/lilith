@@ -23,6 +23,7 @@ import {
   nextTick,
   ref,
   shallowRef,
+  useId,
   useSlots,
   watch,
   type CSSProperties,
@@ -184,8 +185,11 @@ const fieldStyle = (field: FormFieldConfig): GridStyle => {
   };
 };
 
+// Scoped per instance so a dialog form and the screen form behind it never
+// share native IDs or label targets.
+const instanceId = useId();
 const fieldId = (name: string): string =>
-  `form-field-${name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  `form-${instanceId}-${name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 const errorId = (name: string): string => `${fieldId(name)}-error`;
 
 const showFieldError = (state: FormFieldState): boolean =>
@@ -367,6 +371,7 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues });
             :state="$field"
             :errors="$field.errors"
             :disabled="isFieldDisabled(field)"
+            :input-id="fieldId(field.name)"
           >
             <PrimeInputText
               v-if="field.type === FormFieldType.Text"
