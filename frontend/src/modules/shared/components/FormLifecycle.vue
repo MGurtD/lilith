@@ -1,96 +1,89 @@
-<template>
-  <form v-if="lifecycle">
-    <section class="three-columns">
-      <BaseInput
-        class="mb-2"
-        :label="$t('shared.lifecycle.form.name')"
-        id="name"
-        v-model="lifecycle.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="$t('shared.lifecycle.form.description')"
-        id="description"
-        v-model="lifecycle.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.lifecycle.form.initialStatus') }}</label>
-        <Select
-          class="w-full"
-          v-model="lifecycle.initialStatusId"
-          :options="lifecycle.statuses"
-          optionValue="id"
-          optionLabel="name"
-        />
-      </div>
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import { Lifecycle } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-
-const { t } = useI18n();
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  optionalStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { Lifecycle } from "../types";
 
 const props = defineProps<{
   lifecycle: Lifecycle;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", exercise: Lifecycle): void;
-  (e: "cancel"): void;
+  (event: "submit", lifecycle: Lifecycle): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
-  description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+// Statuses are edited by the parent screen, so they stay out of the snapshot
+// and are merged back from the latest prop at submit.
+const initialValues = computed(() => ({
+  name: props.lifecycle.name,
+  description: props.lifecycle.description,
+  initialStatusId: props.lifecycle.initialStatusId,
+}));
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.lifecycle);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("shared.lifecycle.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.lifecycle.validation.nameRequired"))
+          .max(250, t("shared.lifecycle.validation.nameMax")),
+      },
+      {
+        name: "description",
+        label: t("shared.lifecycle.form.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.lifecycle.validation.descriptionRequired"))
+          .max(250, t("shared.lifecycle.validation.descriptionMax")),
+      },
+      {
+        name: "initialStatusId",
+        label: t("shared.lifecycle.form.initialStatus"),
+        type: FormFieldType.Select,
+        props: {
+          options: props.lifecycle.statuses,
+          optionLabel: "name",
+          optionValue: "id",
+        },
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.lifecycle);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("shared.common.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.lifecycle,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    initialStatusId: optionalStringValue(
+      values.initialStatusId,
+      props.lifecycle.initialStatusId,
+    ),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+  />
+</template>

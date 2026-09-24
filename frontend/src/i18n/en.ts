@@ -1561,7 +1561,6 @@ const en = {
     lifecycle: {
       tabStatesTransitions: "States & Transitions",
       tabTags: "Tags",
-      save: "Save",
       dialogAddStatus: "Add status",
       dialogAddTransition: "Add transition",
       dialogNewTag: "New tag",
@@ -1581,7 +1580,6 @@ const en = {
         name: "Name",
         description: "Description",
         initialStatus: "Initial status",
-        invalidForm: "Invalid form",
       },
       validation: {
         nameRequired: "Name is required",

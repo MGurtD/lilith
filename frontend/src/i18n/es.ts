@@ -1530,7 +1530,6 @@ const es = {
     lifecycle: {
       tabStatesTransitions: "Estados y Transiciones",
       tabTags: "Etiquetas",
-      save: "Guardar",
       dialogAddStatus: "Introducción de estados",
       dialogAddTransition: "Introducción de transiciones",
       dialogNewTag: "Nueva etiqueta",
@@ -1550,7 +1549,6 @@ const es = {
         name: "Nombre",
         description: "Descripción",
         initialStatus: "Estado inicial",
-        invalidForm: "Formulario inválido",
       },
       validation: {
         nameRequired: "El nombre es obligatorio",

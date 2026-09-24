@@ -1587,7 +1587,6 @@ const ca = {
     lifecycle: {
       tabStatesTransitions: "Estats i Transicions",
       tabTags: "Etiquetes",
-      save: "Guardar",
       dialogAddStatus: "Introducció d'estats",
       dialogAddTransition: "Introducció de transicions",
       dialogNewTag: "Nova etiqueta",
@@ -1607,7 +1606,6 @@ const ca = {
         name: "Nom",
         description: "Descripció",
         initialStatus: "Estat inicial",
-        invalidForm: "Formulari invàlid",
       },
       validation: {
         nameRequired: "El nom és obligatori",
