@@ -53,8 +53,7 @@ const { t } = useI18n();
   });
   
   const toast = useToast();
-  const submitForm = async () => {
-    const data = area.value as Area;
+  const submitForm = async (data: Area) => {
     let result = false;
     let message = "";
   
