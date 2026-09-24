@@ -34,9 +34,10 @@
     :modal="dialogOptions.modal"
   >
     <FormProductionPart
-      :productionPart="productionPartRequest"
+      :production-part="productionPartRequest"
       :avoid-work-order-refresh="false"
       @submit="createProductionPart"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -392,9 +393,9 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const createProductionPart = async () => {
+const createProductionPart = async (productionPart: ProductionPart) => {
   dialogOptions.visible = false;
-  const created = await productionPartStore.create(productionPartRequest.value);
+  const created = await productionPartStore.create(productionPart);
   if (created) {
     router.push({ path: `/productionpart` });
     filterData();
