@@ -19,8 +19,10 @@ import PrimeSelect from "primevue/select";
 import PrimeTextarea from "primevue/textarea";
 import {
   computed,
+  defineComponent,
   mergeProps,
   nextTick,
+  provide,
   ref,
   shallowRef,
   useId,
@@ -67,6 +69,20 @@ const emit = defineEmits<{
   (event: "submit", values: FormValues): void;
   (event: "cancel"): void;
 }>();
+
+// PrimeVue inputs register themselves with an injected PrimeVue Form/FormField
+// and then write to, and read back from, that state on their own. Form.vue
+// already binds every control through modelValue and setFieldValue, so the
+// second binding is removed: it reverted cleared InputNumber fields to their
+// initial value and let an empty required number be submitted.
+const FormControlScope = defineComponent({
+  name: "FormControlScope",
+  setup(_, { slots: scopeSlots }) {
+    provide("$pcForm", undefined);
+    provide("$pcFormField", undefined);
+    return () => scopeSlots.default?.();
+  },
+});
 
 const slots = useSlots();
 const { t } = useI18n();
@@ -363,84 +379,86 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues });
             {{ field.label }}
           </label>
 
-          <slot
-            :name="`field-${field.name}`"
-            :value="$field.value"
-            :set-value="fieldSetter(field.name)"
-            :config="field"
-            :state="$field"
-            :errors="$field.errors"
-            :disabled="isFieldDisabled(field)"
-            :input-id="fieldId(field.name)"
-          >
-            <PrimeInputText
-              v-if="field.type === FormFieldType.Text"
-              :model-value="$field.value as string | undefined"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimePassword
-              v-else-if="field.type === FormFieldType.Password"
-              :model-value="$field.value as string | undefined"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimeInputNumber
-              v-else-if="field.type === FormFieldType.Number"
-              :model-value="$field.value as number | null | undefined"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimeInputNumber
-              v-else-if="field.type === FormFieldType.Currency"
-              :model-value="$field.value as number | null | undefined"
-              v-bind="currencyProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimeTextarea
-              v-else-if="field.type === FormFieldType.Textarea"
-              :model-value="$field.value as string | undefined"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimeSelect
-              v-else-if="field.type === FormFieldType.Select"
-              :model-value="$field.value"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <PrimeMultiSelect
-              v-else-if="field.type === FormFieldType.MultiSelect"
-              :model-value="$field.value"
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-            <div
-              v-else-if="field.type === FormFieldType.Checkbox"
-              class="generic-form__checkbox"
+          <FormControlScope>
+            <slot
+              :name="`field-${field.name}`"
+              :value="$field.value"
+              :set-value="fieldSetter(field.name)"
+              :config="field"
+              :state="$field"
+              :errors="$field.errors"
+              :disabled="isFieldDisabled(field)"
+              :input-id="fieldId(field.name)"
             >
-              <PrimeCheckbox
-                :model-value="$field.value as boolean | undefined"
-                v-bind="checkboxProps(field, $field, $field.props)"
+              <PrimeInputText
+                v-if="field.type === FormFieldType.Text"
+                :model-value="$field.value as string | undefined"
+                v-bind="controlProps(field, $field, $field.props)"
                 @update:model-value="setFieldValue(field.name, $event)"
               />
-              <label
-                class="generic-form__checkbox-label"
-                :for="fieldId(field.name)"
+              <PrimePassword
+                v-else-if="field.type === FormFieldType.Password"
+                :model-value="$field.value as string | undefined"
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <PrimeInputNumber
+                v-else-if="field.type === FormFieldType.Number"
+                :model-value="$field.value as number | null | undefined"
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <PrimeInputNumber
+                v-else-if="field.type === FormFieldType.Currency"
+                :model-value="$field.value as number | null | undefined"
+                v-bind="currencyProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <PrimeTextarea
+                v-else-if="field.type === FormFieldType.Textarea"
+                :model-value="$field.value as string | undefined"
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <PrimeSelect
+                v-else-if="field.type === FormFieldType.Select"
+                :model-value="$field.value"
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <PrimeMultiSelect
+                v-else-if="field.type === FormFieldType.MultiSelect"
+                :model-value="$field.value"
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+              <div
+                v-else-if="field.type === FormFieldType.Checkbox"
+                class="generic-form__checkbox"
               >
-                {{ field.label }}
-              </label>
-            </div>
-            <PrimeDatePicker
-              v-else-if="field.type === FormFieldType.Date"
-              :model-value="
-                $field.value as
-                  Date | Date[] | (Date | null)[] | null | undefined
-              "
-              v-bind="controlProps(field, $field, $field.props)"
-              @update:model-value="setFieldValue(field.name, $event)"
-            />
-          </slot>
+                <PrimeCheckbox
+                  :model-value="$field.value as boolean | undefined"
+                  v-bind="checkboxProps(field, $field, $field.props)"
+                  @update:model-value="setFieldValue(field.name, $event)"
+                />
+                <label
+                  class="generic-form__checkbox-label"
+                  :for="fieldId(field.name)"
+                >
+                  {{ field.label }}
+                </label>
+              </div>
+              <PrimeDatePicker
+                v-else-if="field.type === FormFieldType.Date"
+                :model-value="
+                  $field.value as
+                    Date | Date[] | (Date | null)[] | null | undefined
+                "
+                v-bind="controlProps(field, $field, $field.props)"
+                @update:model-value="setFieldValue(field.name, $event)"
+              />
+            </slot>
+          </FormControlScope>
 
           <small
             v-if="showFieldError($field)"
