@@ -1501,8 +1501,6 @@ const es = {
         disabled: "Desactivado",
         materialProfit: "Margen material por defecto (%)",
         externalProfit: "Margen externo por defecto (%)",
-        save: "Guardar",
-        invalidForm: "Formulario inválido",
       },
       validation: {
         nameRequired: "El nombre es obligatorio",
@@ -1654,8 +1652,6 @@ const es = {
         numberOfPayments: "Número de pagos",
         frequency: "Frecuencia",
         disabled: "Desactivada",
-        save: "Guardar",
-        invalidForm: "Formulario inválido",
       },
       messages: {
         confirmDelete: "¿Está seguro de que desea eliminar la forma de pago {name}?",
@@ -1687,10 +1683,7 @@ const es = {
         density: "Densidad g/cm^3",
         primaryColor: "Color Primario",
         secondaryColor: "Color Secundario",
-        colorLabel: "Color",
         disabled: "Desactivado",
-        save: "Guardar",
-        invalidForm: "Formulario inválido",
       },
       messages: {
         confirmDelete: "¿Está seguro de que desea eliminar el tipo de materiales {name}?",
@@ -1717,8 +1710,6 @@ const es = {
         percentage: "Porcentaje",
         reverseCharge: "Inversión del sujeto pasivo (ISP)",
         disabled: "Desactivada",
-        save: "Guardar",
-        invalidForm: "Formulario inválido",
       },
       messages: {
         confirmDelete: "¿Está seguro de que desea eliminar el impuesto?",
@@ -1730,6 +1721,11 @@ const es = {
       pageTitles: {
         create: "Alta de impuesto",
         edit: "Impuesto {name}",
+      },
+      validation: {
+        nameRequired: "El nombre es obligatorio",
+        nameMax: "El nombre no puede superar los 250 caracteres",
+        percentageRequired: "El porcentaje es obligatorio",
       },
     },
     references: {

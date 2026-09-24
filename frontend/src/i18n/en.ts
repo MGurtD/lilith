@@ -1532,8 +1532,6 @@ const en = {
         disabled: "Disabled",
         materialProfit: "Default material margin (%)",
         externalProfit: "Default external margin (%)",
-        save: "Save",
-        invalidForm: "Invalid form",
       },
       validation: {
         nameRequired: "Name is required",
@@ -1685,8 +1683,6 @@ const en = {
         numberOfPayments: "Number of payments",
         frequency: "Frequency",
         disabled: "Disabled",
-        save: "Save",
-        invalidForm: "Invalid form",
       },
       messages: {
         confirmDelete: "Are you sure you want to delete payment method {name}?",
@@ -1718,10 +1714,7 @@ const en = {
         density: "Density g/cm^3",
         primaryColor: "Primary Color",
         secondaryColor: "Secondary Color",
-        colorLabel: "Color",
         disabled: "Disabled",
-        save: "Save",
-        invalidForm: "Invalid form",
       },
       messages: {
         confirmDelete: "Are you sure you want to delete material type {name}?",
@@ -1748,8 +1741,6 @@ const en = {
         percentage: "Percentage",
         reverseCharge: "Reverse charge (RC)",
         disabled: "Disabled",
-        save: "Save",
-        invalidForm: "Invalid form",
       },
       messages: {
         confirmDelete: "Are you sure you want to delete the tax?",
@@ -1761,6 +1752,11 @@ const en = {
       pageTitles: {
         create: "Create tax",
         edit: "Tax {name}",
+      },
+      validation: {
+        nameRequired: "Name is required",
+        nameMax: "Name cannot exceed 250 characters",
+        percentageRequired: "Percentage is required",
       },
     },
     references: {
