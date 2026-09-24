@@ -51,27 +51,23 @@
       :modal="true"
       :style="{ width: '450px' }"
     >
-      <div class="flex flex-column gap-3 mt-3">
-        <DropdownWarehousesWithLocations
-          :label="t('production.components.ubicacio')"
-          v-model="selectedLocationId"
-          :placeholder="t('production.components.seleccionaUnaUbicacio')"
-        />
-      </div>
-
-      <template #footer>
-        <Button
-          :label="t('production.components.cancellar')"
-          :icon="PrimeIcons.TIMES"
-          text
-          @click="dialogVisible = false"
-        />
-        <Button
-          :label="t('production.components.guardar')"
-          :icon="PrimeIcons.CHECK"
-          @click="onSaveHandler"
-        />
-      </template>
+      <Form
+        class="mt-3"
+        :rows="rows"
+        :initial-values="initialValues"
+        @submit="onSubmit"
+        @cancel="dialogVisible = false"
+      >
+        <template #field-locationId="{ value, setValue, disabled, inputId }">
+          <DropdownWarehousesWithLocations
+            :input-id="inputId"
+            :model-value="typeof value === 'string' ? value : null"
+            :placeholder="t('production.components.seleccionaUnaUbicacio')"
+            :disabled="disabled"
+            @update:model-value="setValue"
+          />
+        </template>
+      </Form>
     </Dialog>
   </div>
 </template>
@@ -81,9 +77,16 @@ import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
-import { ref } from "vue";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import { computed, ref } from "vue";
 import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import * as Yup from "yup";
 import { WorkcenterLocation } from "../types";
 import DropdownWarehousesWithLocations from "../../warehouse/components/DropdownWarehousesWithLocations.vue";
 
@@ -98,42 +101,45 @@ const emits = defineEmits<{
 }>();
 
 const confirm = useConfirm();
-const toast = useToast();
 
 const dialogVisible = ref(false);
-const selectedLocationId = ref<string | null>(null);
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "locationId",
+        label: t("production.components.ubicacio"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(
+            t("production.components.hasDeSeleccionarUnaUbicacioPerContinuar"),
+          )
+          .test(
+            "location-not-assigned",
+            t("production.components.aquestaUbicacioJaEstaAssignadaAAquestaMaquina"),
+            (value) =>
+              !value ||
+              !props.workcenterLocations?.some((wl) => wl.locationId === value),
+          ),
+      },
+    ],
+  },
+]);
+
+// Stable reference: an inline literal would reset the form on every render.
+// The dialog content is unmounted when hidden, so every opening starts from
+// an empty selection.
+const initialValues = { locationId: null };
 
 const onAddClick = () => {
-  selectedLocationId.value = null;
   dialogVisible.value = true;
 };
 
-const onSaveHandler = () => {
-  if (!selectedLocationId.value) {
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.ubicacioNoSeleccionada"),
-      detail: t("production.components.hasDeSeleccionarUnaUbicacioPerContinuar"),
-      life: 5000,
-    });
-    return;
-  }
-
-  const alreadyAssigned = props.workcenterLocations?.find(
-    (wl) => wl.locationId === selectedLocationId.value,
-  );
-  if (alreadyAssigned) {
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.ubicacioDuplicada"),
-      detail: t("production.components.aquestaUbicacioJaEstaAssignadaAAquestaMaquina"),
-      life: 5000,
-    });
-    return;
-  }
-
+const onSubmit = (values: FormValues) => {
   dialogVisible.value = false;
-  emits("add", selectedLocationId.value);
+  emits("add", stringValue(values.locationId, ""));
 };
 
 const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
