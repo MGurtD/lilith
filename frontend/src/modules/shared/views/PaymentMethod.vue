@@ -52,8 +52,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = paymentMethod.value as PaymentMethod;
+const submitForm = async (data: PaymentMethod) => {
   let result = false;
   let message = "";
 
