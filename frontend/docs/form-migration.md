@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1 in review (#135); L2, L3 and L4 migrated; L4 UI verification running.
+> **Status**: In progress. L1–L4 in review as stacked PRs #135–#138; next batch L5 (sales masters).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -391,4 +391,13 @@ there was none, and so on).
 | 2026-09-24 | Tracker created with full inventory and candidate features |
 | 2026-09-24 | L1 stopped at SH-04 by F-03; F-03 implemented and verified with SH-04 (`770c1ae`, `7251692`) |
 | 2026-09-24 | L1 SH-01, SH-02, SH-03, SH-05 migrated; `Form.vue` InputNumber binding fix (`fddf84d`) |
-| 2026-09-24 | L1 UI verification complete; purchase Number regression for `fddf84d` queued |
+| 2026-09-24 | L1 UI verification complete; purchase regression for `fddf84d` passes (Expenses screen unreachable) |
+| 2026-09-24 | L1 rebased onto `dev` and opened as #135 |
+| 2026-09-24 | L2 (17 forms) migrated in `eed879d`..`e91d2e7`; no new Form.vue feature needed |
+| 2026-09-24 | L2 UI verification complete: enterprise, area, site, workcenter and its dialogs, operators, operator type, machine status, shifts, phase templates. Unverifiable with staging data: duplicate reason code (no status has reasons) |
+| 2026-09-24 | L3 (4 forms) migrated in `7fcaff0`..`6a8c993`; no new Form.vue feature needed |
+| 2026-09-24 | L3 UI: warehouse, location dialog copy-on-edit, inventory movement validation pass; lot reset unverifiable (tested reference has no lots) |
+| 2026-09-24 | L4 (13 forms) migrated in `beceff8`..`c2f9c94`; F-01 and F-02 rejected in favour of section rows and the actions slot |
+| 2026-09-24 | L4 stopped on the phase screens: keeping unsaved header edits needed F-07 (`getValues`), implemented in `7cb2e10`/`f79be93` and verified |
+| 2026-09-24 | Pre-existing cold-load bugs fixed: phase screens load their parent (`9bcb6ec`) and the work order phase loads the WorkOrder lifecycle so the status shows (`ba7d69e`); verified by loading the four URLs directly |
+| 2026-09-24 | Stacked PRs opened: #136 (L2 → L1), #137 (L3 → L2), #138 (L4 → L3) |
