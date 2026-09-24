@@ -401,3 +401,4 @@ there was none, and so on).
 | 2026-09-24 | L4 stopped on the phase screens: keeping unsaved header edits needed F-07 (`getValues`), implemented in `7cb2e10`/`f79be93` and verified |
 | 2026-09-24 | Pre-existing cold-load bugs fixed: phase screens load their parent (`9bcb6ec`) and the work order phase loads the WorkOrder lifecycle so the status shows (`ba7d69e`); verified by loading the four URLs directly |
 | 2026-09-24 | Stacked PRs opened: #136 (L2 → L1), #137 (L3 → L2), #138 (L4 → L3) |
+| 2026-09-24 | L4 UI verification complete: workorder phase header and step dialog, workmaster copy dialog (both modes), purchase rate duplicate (L3) pass. Unverifiable with staging data: lot code field (no lot-tracked route). Pre-existing: the copy dialog label `production.ui.Ruta d'origen` renders as a raw key (same call before the migration) |
