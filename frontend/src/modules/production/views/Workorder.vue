@@ -159,9 +159,10 @@
     :modal="dialogOptions.modal"
   >
     <FormWorkOrderProductionPart
-      :productionPart="productionPartRequest"
+      :production-part="productionPartRequest"
       :avoid-work-order-refresh="true"
       @submit="createProductionPart"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -349,9 +350,9 @@ const onProductionPartAddClick = () => {
   dialogOptions.visible = true;
 };
 
-const createProductionPart = async () => {
+const createProductionPart = async (productionPart: ProductionPart) => {
   dialogOptions.visible = false;
-  const created = await productionPartStore.create(productionPartRequest.value);
+  const created = await productionPartStore.create(productionPart);
   if (created) {
     productionPartStore.fetchByWorkOrderId(id.value);
     fetchWorkOrder();
