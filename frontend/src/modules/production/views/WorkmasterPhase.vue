@@ -45,11 +45,13 @@
         v-if="selectedDetail"
         :detail="selectedDetail"
         @submit="onWorkmasterPhaseDetailSubmit"
+        @cancel="dialogOptions.visible = false"
       ></FormWorkmasterPhaseDetail>
       <FormWorkmasterPhaseBomItem
         v-if="selectedBomItem"
         :bomItem="selectedBomItem"
         @submit="onWorkmasterPhasBomItemSubmit"
+        @cancel="dialogOptions.visible = false"
       ></FormWorkmasterPhaseBomItem>
     </Dialog>
   </main>
