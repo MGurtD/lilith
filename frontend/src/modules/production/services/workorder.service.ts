@@ -12,6 +12,7 @@ import {
   PhaseTimeMetrics,
   CreatePhaseFromTemplateDto,
   WorkOrderDashboardItem,
+  WorkOrderPhaseRejection,
 } from "../types";
 import BaseService from "../../../api/base.service";
 import { NextPhaseInfo } from "../../plant/types";
@@ -102,6 +103,17 @@ export class WorkOrderService extends BaseService<WorkOrder> {
   }
 }
 export class WorkOrderPhaseService extends BaseService<WorkOrderPhase> {
+  async getRejections(
+    phaseId: string,
+  ): Promise<Array<WorkOrderPhaseRejection> | undefined> {
+    const response = await this.apiClient.get(
+      `${this.resource}/${phaseId}/Rejections`,
+    );
+    if (response.status === 200) {
+      return response.data as Array<WorkOrderPhaseRejection>;
+    }
+  }
+
   async getByWorkOrderId(
     workOrderId: string,
   ): Promise<Array<WorkOrderPhase> | undefined> {

@@ -58,6 +58,12 @@
         @update:counter-ko="formData.counterKo = $event"
       />
 
+      <PhaseRejectionReasons
+        ref="rejectionReasons"
+        v-model="formData.rejections"
+        :counter-ko="formData.counterKo"
+      />
+
       <!-- Options Section -->
       <div
         v-if="props.showNextPhaseOption !== false && nextAvailablePhase"
@@ -140,10 +146,12 @@ import { useToast } from "primevue/usetoast";
 import { UnloadWorkOrderPhaseRequest } from "../../types";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
+import PhaseRejectionReasons from "./PhaseRejectionReasons.vue";
 import SelectWorkOrderPhaseDetail from "./SelectWorkOrderPhaseDetail.vue";
 import MaterialConsumptionDialog from "./MaterialConsumptionDialog.vue";
 import type { ConsumeStockEntry } from "../../../warehouse/types";
 import ProductionServices from "../../../production/services";
+import { WorkOrderPhaseRejectionRequest } from "../../../production/types";
 
 const { t } = useI18n();
 
@@ -157,7 +165,11 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (event: "update:visible", value: boolean): void;
-  (event: "phase-unloaded", data: UnloadWorkOrderPhaseRequest): void;
+  (
+    event: "phase-unloaded",
+    data: UnloadWorkOrderPhaseRequest,
+    rejections: WorkOrderPhaseRejectionRequest[],
+  ): void;
 }>();
 
 const toast = useToast();
@@ -190,6 +202,7 @@ interface FormData {
   counterKo: number;
   loadNextPhase: boolean;
   selectedNextMachineStatusId: string;
+  rejections: Array<WorkOrderPhaseRejectionRequest>;
 }
 
 const formData = reactive<FormData>({
@@ -199,7 +212,10 @@ const formData = reactive<FormData>({
   counterKo: 0,
   loadNextPhase: false,
   selectedNextMachineStatusId: "",
+  rejections: [],
 });
+
+const rejectionReasons = ref<InstanceType<typeof PhaseRejectionReasons>>();
 
 // Computed: Form validation (always valid if counters >= 0)
 const isFormValid = computed(() => {
@@ -226,6 +242,7 @@ const resetForm = () => {
   formData.counterKo = 0;
   formData.loadNextPhase = false;
   formData.selectedNextMachineStatusId = "";
+  formData.rejections = [];
 };
 
 const onCancel = () => {
@@ -258,7 +275,7 @@ const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
     showConsumptionDialog.value = false;
 
     // Proceed with the normal unload flow
-    emit("phase-unloaded", pendingUnloadRequest.value);
+    emit("phase-unloaded", pendingUnloadRequest.value, [...formData.rejections]);
     pendingUnloadRequest.value = null;
   } catch (error) {
     console.error("Error consuming phase stock:", error);
@@ -271,6 +288,33 @@ const onConsumptionConfirmed = async (entries: ConsumeStockEntry[]) => {
   }
 };
 
+// Reasons are optional, but a partial breakdown would misreport the KO units
+const isRejectionBreakdownValid = () => {
+  if (formData.rejections.length === 0) return true;
+
+  if (formData.rejections.some((r) => !r.rejectionReasonId)) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.reasonRequired"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  if (!rejectionReasons.value?.isBalanced) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.quantityMismatch"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const onUnload = async (closePhase: boolean) => {
   if (!isFormValid.value) {
     toast.add({
@@ -281,6 +325,8 @@ const onUnload = async (closePhase: boolean) => {
     });
     return;
   }
+
+  if (!isRejectionBreakdownValid()) return;
 
   isValidating.value = true;
   closingPhase.value = closePhase;
@@ -380,7 +426,7 @@ const onUnload = async (closePhase: boolean) => {
       return;
     }
 
-    emit("phase-unloaded", request);
+    emit("phase-unloaded", request, [...formData.rejections]);
   } finally {
     isValidating.value = false;
   }

@@ -74,6 +74,8 @@ namespace Application.Contracts
         IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; }
         IRepository<Operator, Guid> Operators { get; }
         IRepository<OperatorType, Guid> OperatorTypes { get; }
+        IRepository<RejectionReason, Guid> RejectionReasons { get; }
+        IRepository<WorkOrderPhaseRejection, Guid> WorkOrderPhaseRejections { get; }
         IMachineStatusRepository MachineStatuses { get; }
         IRepository<Shift, Guid> Shifts { get; }
         IRepository<ShiftDetail, Guid> ShiftDetails { get; }

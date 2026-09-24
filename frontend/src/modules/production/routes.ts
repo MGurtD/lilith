@@ -18,6 +18,8 @@ const Operators = () => import("./views/Operators.vue");
 const Operator = () => import("./views/Operator.vue");
 const OperatorTypes = () => import("./views/OperatorTypes.vue");
 const OperatorType = () => import("./views/OperatorType.vue");
+const RejectionReasons = () => import("./views/RejectionReasons.vue");
+const RejectionReason = () => import("./views/RejectionReason.vue");
 
 const Workmasters = () => import("./views/Workmasters.vue");
 const Workmaster = () => import("./views/Workmaster.vue");
@@ -111,6 +113,16 @@ export default [
     path: "/operatortype",
     name: "Operatortypes",
     component: OperatorTypes,
+  },
+  {
+    path: "/rejectionreason/:id",
+    name: "Rejectionreason",
+    component: RejectionReason,
+  },
+  {
+    path: "/rejectionreason",
+    name: "Rejectionreasons",
+    component: RejectionReasons,
   },
   {
     path: "/operator/:id",

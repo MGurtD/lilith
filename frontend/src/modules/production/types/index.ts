@@ -315,11 +315,44 @@ export interface ValidatePreviousPhaseQuantityRequest {
   quantity: number;
 }
 
+export interface RejectionReason {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  color: string;
+  disabled: boolean;
+}
+
+export interface WorkOrderPhaseRejectionRequest {
+  rejectionReasonId: string;
+  quantity: number;
+}
+
+export interface WorkOrderPhaseRejection {
+  id: string;
+  workOrderPhaseId: string;
+  rejectionReasonId: string;
+  rejectionReasonCode: string;
+  rejectionReasonName: string;
+  rejectionReasonColor: string;
+  quantity: number;
+  createdOn: string;
+}
+
+export interface RegisterPhaseRejectionsRequest {
+  workcenterId: string;
+  workOrderPhaseId: string;
+  quantityKo: number;
+  rejections: Array<WorkOrderPhaseRejectionRequest>;
+}
+
 export interface UpdatePhaseQuantitiesRequest {
   workcenterId: string;
   workOrderPhaseId: string;
   quantityOk: number;
   quantityKo: number;
+  rejections: Array<WorkOrderPhaseRejectionRequest>;
 }
 
 export interface ProductionPart {

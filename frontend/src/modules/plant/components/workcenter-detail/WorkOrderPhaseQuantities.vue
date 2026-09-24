@@ -69,6 +69,12 @@
         @update:counter-ko="formData.counterKo = $event"
       />
 
+      <PhaseRejectionReasons
+        ref="rejectionReasons"
+        v-model="formData.rejections"
+        :counter-ko="formData.counterKo"
+      />
+
       <!-- Action Buttons -->
       <div class="actions-panel">
         <Button
@@ -100,6 +106,8 @@ import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
+import PhaseRejectionReasons from "./PhaseRejectionReasons.vue";
+import { WorkOrderPhaseRejectionRequest } from "../../../production/types";
 
 const { t } = useI18n();
 
@@ -131,12 +139,16 @@ const isSubmitting = ref(false);
 interface FormData {
   counterOk: number;
   counterKo: number;
+  rejections: Array<WorkOrderPhaseRejectionRequest>;
 }
 
 const formData = reactive<FormData>({
   counterOk: 0,
   counterKo: 0,
+  rejections: [],
 });
+
+const rejectionReasons = ref<InstanceType<typeof PhaseRejectionReasons>>();
 
 // At least one quantity must be > 0 to enable the submit button
 const hasQuantity = computed(() => {
@@ -150,6 +162,7 @@ watch(
     if (newValue) {
       formData.counterOk = 0;
       formData.counterKo = 0;
+      formData.rejections = [];
     }
   },
 );
@@ -158,8 +171,38 @@ const onCancel = () => {
   emit("update:visible", false);
 };
 
+// Reasons are optional, but a partial breakdown would misreport the KO units
+const isRejectionBreakdownValid = () => {
+  if (formData.rejections.length === 0) return true;
+
+  if (formData.rejections.some((r) => !r.rejectionReasonId)) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.reasonRequired"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  if (!rejectionReasons.value?.isBalanced) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.quantityMismatch"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const onSubmit = async () => {
   if (!hasQuantity.value) return;
+
+  // The rejection breakdown must cover every declared KO unit
+  if (!isRejectionBreakdownValid()) return;
 
   isSubmitting.value = true;
   try {
@@ -182,6 +225,7 @@ const onSubmit = async () => {
     const result = await activePhaseStore.updatePhaseQuantities(
       formData.counterOk,
       formData.counterKo,
+      formData.rejections,
     );
 
     if (result) {

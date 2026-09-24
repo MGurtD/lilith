@@ -524,6 +524,13 @@ namespace Application.Services.Production
 
         public async Task<GenericResponse> UpdateWorkcenterShiftDetailQuantities(UpdateWorkcenterShiftDetailQuantitiesDto dto)
         {
+            // Validar el desglossament de motius de rebuig abans de modificar cap quantitat
+            var rejectionsValidation = await ValidateRejections(dto.Rejections, dto.QuantityKo);
+            if (!rejectionsValidation.Result)
+            {
+                return rejectionsValidation;
+            }
+
             // Obtener el último detalle de la fase de la orden de trabajo
             var recentDetail = await unitOfWork.WorkcenterShifts
                                                 .FindWithDetails(ws => ws.Current && ws.WorkcenterId == dto.WorkcenterId)
@@ -536,7 +543,7 @@ namespace Application.Services.Production
                 // Actualizar WorkcenterShiftDetail
                 recentDetail.QuantityOk += dto.QuantityOk;
                 recentDetail.QuantityKo += dto.QuantityKo;
-                await unitOfWork.WorkcenterShifts.Details.Update(recentDetail);
+                unitOfWork.WorkcenterShifts.Details.UpdateWithoutSave(recentDetail);
 
                 // Actualizar WorkOrderPhase con las unidades fabricadas
                 var workOrderPhase = await unitOfWork.WorkOrders.Phases.Get(dto.WorkOrderPhaseId);
@@ -544,14 +551,104 @@ namespace Application.Services.Production
                 {
                     workOrderPhase.QuantityOk += dto.QuantityOk;
                     workOrderPhase.QuantityKo += dto.QuantityKo;
-                    await unitOfWork.WorkOrders.Phases.Update(workOrderPhase);
+                    unitOfWork.WorkOrders.Phases.UpdateWithoutSave(workOrderPhase);
                 }
 
+                // Registrar el desglossament d'unitats KO per motiu de rebuig
+                await AddRejectionsWithoutSave(dto.Rejections, dto.WorkOrderPhaseId, recentDetail.Id);
+
+                await unitOfWork.CompleteAsync();
                 return new GenericResponse(true);
             }
             else
             {
                 return LogAndReturnError(localizationService.GetLocalizedString("WorkOrderPhaseShiftDetailNotLoaded"));
+            }
+        }
+
+        public async Task<GenericResponse> RegisterWorkOrderPhaseRejections(RegisterWorkOrderPhaseRejectionsDto dto)
+        {
+            var rejectionsValidation = await ValidateRejections(dto.Rejections, dto.QuantityKo);
+            if (!rejectionsValidation.Result)
+            {
+                return rejectionsValidation;
+            }
+
+            if (dto.Rejections.Count == 0)
+            {
+                return new GenericResponse(true);
+            }
+
+            var workOrderPhase = await unitOfWork.WorkOrders.Phases.Get(dto.WorkOrderPhaseId);
+            if (workOrderPhase == null)
+            {
+                return LogAndReturnError(localizationService.GetLocalizedString("WorkOrderPhaseNotFound"));
+            }
+
+            // El detall de torn és opcional: la fase pot haver-se descarregat abans de registrar els motius
+            var recentDetail = await unitOfWork.WorkcenterShifts
+                                                .FindWithDetails(ws => ws.Current && ws.WorkcenterId == dto.WorkcenterId)
+                                                .SelectMany(ws => ws.Details
+                                                    .Where(wsd => wsd.Current && wsd.WorkOrderPhaseId == dto.WorkOrderPhaseId))
+                                                .OrderByDescending(wsd => wsd.StartTime)
+                                                .FirstOrDefaultAsync();
+
+            await AddRejectionsWithoutSave(dto.Rejections, dto.WorkOrderPhaseId, recentDetail?.Id);
+
+            await unitOfWork.CompleteAsync();
+            return new GenericResponse(true);
+        }
+
+        private async Task<GenericResponse> ValidateRejections(List<WorkOrderPhaseRejectionDto> rejections, decimal quantityKo)
+        {
+            if (rejections.Count == 0)
+            {
+                return new GenericResponse(true);
+            }
+
+            if (rejections.Any(r => r.Quantity <= 0))
+            {
+                return LogAndReturnError(localizationService.GetLocalizedString("WorkOrderPhaseRejectionQuantityInvalid"));
+            }
+
+            if (rejections.Select(r => r.RejectionReasonId).Distinct().Count() != rejections.Count)
+            {
+                return LogAndReturnError(localizationService.GetLocalizedString("WorkOrderPhaseRejectionDuplicatedReason"));
+            }
+
+            var totalRejected = rejections.Sum(r => r.Quantity);
+            if (totalRejected != quantityKo)
+            {
+                return LogAndReturnError(localizationService.GetLocalizedString("WorkOrderPhaseRejectionQuantityMismatch", totalRejected, quantityKo));
+            }
+
+            foreach (var rejection in rejections)
+            {
+                var reason = await unitOfWork.RejectionReasons.Get(rejection.RejectionReasonId);
+                if (reason == null)
+                {
+                    return LogAndReturnError(localizationService.GetLocalizedString("RejectionReasonNotFound", rejection.RejectionReasonId));
+                }
+                if (reason.Disabled)
+                {
+                    return LogAndReturnError(localizationService.GetLocalizedString("RejectionReasonDisabled", reason.Code));
+                }
+            }
+
+            return new GenericResponse(true);
+        }
+
+        private async Task AddRejectionsWithoutSave(List<WorkOrderPhaseRejectionDto> rejections, Guid workOrderPhaseId, Guid? workcenterShiftDetailId)
+        {
+            foreach (var rejection in rejections)
+            {
+                await unitOfWork.WorkOrderPhaseRejections.AddWithoutSave(new WorkOrderPhaseRejection
+                {
+                    WorkOrderPhaseId = workOrderPhaseId,
+                    RejectionReasonId = rejection.RejectionReasonId,
+                    WorkcenterShiftDetailId = workcenterShiftDetailId,
+                    Quantity = rejection.Quantity
+                });
             }
         }
 

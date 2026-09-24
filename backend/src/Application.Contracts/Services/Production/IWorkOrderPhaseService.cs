@@ -74,6 +74,14 @@ public interface IWorkOrderPhaseService
     // Create from template
     Task<GenericResponse> CreateFromTemplate(CreatePhaseFromTemplateDto dto);
 
+    // Rejections
+    /// <summary>
+    /// Gets the rejected units of a work order phase broken down by rejection reason.
+    /// </summary>
+    /// <param name="phaseId">Work order phase ID</param>
+    /// <returns>Recorded rejections ordered by registration date</returns>
+    Task<IEnumerable<WorkOrderPhaseRejectionDisplayDto>> GetPhaseRejections(Guid phaseId);
+
     // Time Metrics
     /// <summary>
     /// Gets estimated vs actual time metrics for a work order phase.

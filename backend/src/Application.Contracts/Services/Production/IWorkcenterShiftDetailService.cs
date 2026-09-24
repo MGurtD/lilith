@@ -14,6 +14,7 @@ public interface IWorkcenterShiftDetailService
     Task<GenericResponse> WorkOrderPhaseOut(WorkOrderPhaseOutRequest request);
     Task<GenericResponse> ChangeWorkcenterStatus(WorkcenterChangeStatusRequest request);
     Task<GenericResponse> UpdateWorkcenterShiftDetailQuantities(UpdateWorkcenterShiftDetailQuantitiesDto dto);
+    Task<GenericResponse> RegisterWorkOrderPhaseRejections(RegisterWorkOrderPhaseRejectionsDto dto);
 
     Task<GenericResponse> DisableWorkcenterShiftDetail(Guid workcenterShiftDetailId);
 }

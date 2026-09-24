@@ -14,6 +14,7 @@
         <Tab value="0">{{ pt("Pasos") }}</Tab>
         <Tab value="1">{{ pt("Materials") }}</Tab>
         <Tab value="2">{{ pt("Comentaris") }}</Tab>
+        <Tab value="3">{{ t("production.rejections.title") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -58,6 +59,9 @@
             </Card>
           </div>
         </TabPanel>
+        <TabPanel value="3">
+          <TableWorkorderPhaseRejections :rejections="phaseRejections" />
+        </TabPanel>
       </TabPanels>
     </Tabs>
     <Dialog
@@ -89,6 +93,7 @@ import TableWorkOrderPhaseDetails from "../components/TableWorkorderPhaseDetails
 import FormWorkOrderPhaseDetail from "../components/FormWorkorderPhaseDetail.vue";
 import TableWorkOrderPhaseBillOfMaterials from "../components/TableWorkorderPhaseBillOfMaterials.vue";
 import FormWorkOrderPhaseBomItem from "../components/FormWorkorderPhaseBomItem.vue";
+import TableWorkorderPhaseRejections from "../components/TableWorkorderPhaseRejections.vue";
 
 import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
@@ -101,7 +106,9 @@ import {
   WorkOrderPhase,
   WorkOrderPhaseBillOfMaterials,
   WorkOrderPhaseDetail,
+  WorkOrderPhaseRejection,
 } from "../types";
+import ProductionServices from "../services";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import { useWorkOrderStore } from "../store/workorder";
 import { useToast } from "primevue/usetoast";
@@ -115,6 +122,7 @@ const workorderStore = useWorkOrderStore();
 const { workorder, workorderPhase } = storeToRefs(workorderStore);
 const id = ref("");
 const phaseId = ref("");
+const phaseRejections = ref<Array<WorkOrderPhaseRejection>>([]);
 const workorderPhaseForm =
   ref<InstanceType<typeof FormWorkOrderPhase> | null>(null);
 
@@ -152,6 +160,8 @@ onMounted(async () => {
 
 const loadViewData = async () => {
   await workorderStore.fetchPhaseById(phaseId.value);
+  phaseRejections.value =
+    (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
 };
 
 const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {

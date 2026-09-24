@@ -239,6 +239,7 @@ import {
   LoadWorkOrderPhaseRequest,
   UnloadWorkOrderPhaseRequest,
 } from "../types";
+import { WorkOrderPhaseRejectionRequest } from "../../production/types";
 import actionsService from "../services/actions.service";
 import { normalizeColor, isColorLight } from "@/utils/functions";
 
@@ -697,11 +698,30 @@ const handleWorkOrderPhaseClose = async () => {
   workOrderUnloaderVisible.value = true;
 };
 
-const handlePhaseUnloaded = async (data: UnloadWorkOrderPhaseRequest) => {
+const handlePhaseUnloaded = async (
+  data: UnloadWorkOrderPhaseRequest,
+  rejections: WorkOrderPhaseRejectionRequest[],
+) => {
   const result = await actionsService.client.unloadWorkOrderPhase(data);
 
   if (result) {
     workOrderUnloaderVisible.value = false;
+
+    // The unload endpoint owns the quantities; the reasons behind the KO units
+    // are recorded separately once the unload has succeeded.
+    const rejectionsRegistered = await activePhaseStore.registerPhaseRejections(
+      data.workOrderPhaseId,
+      data.quantityKo,
+      rejections,
+    );
+    if (!rejectionsRegistered) {
+      toast.add({
+        severity: "warn",
+        summary: t("plant.rejections.registerError"),
+        life: 6000,
+      });
+    }
+
     // Refresh available work orders list
     if (workcenter.value?.config.workcenterTypeId) {
       await workcenterStore.fetchAvailableWorkOrders(
