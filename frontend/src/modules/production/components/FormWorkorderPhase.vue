@@ -36,6 +36,7 @@ const { t } = useI18n();
 const plantModelStore = usePlantModelStore();
 const referencesStore = useReferenceStore();
 const form = ref<{
+  getValues: () => FormValues;
   submit: () => void;
   setValues: (values: FormValues) => void;
 } | null>(null);
@@ -305,13 +306,13 @@ const rows = computed<FormRowConfig[]>(() => [
   },
 ]);
 
-const submit = (values: FormValues): void => {
+const toPhase = (values: FormValues): WorkOrderPhase => {
   const preferredWorkcenterId = nullableStringValue(
     values.preferredWorkcenterId,
     props.phase.preferredWorkcenterId ?? null,
   );
 
-  emit("submit", {
+  return {
     ...props.phase,
     code: stringValue(values.code, props.phase.code),
     description: stringValue(values.description, props.phase.description),
@@ -346,7 +347,19 @@ const submit = (values: FormValues): void => {
       values.transportCost,
       props.phase.transportCost,
     ),
-  });
+  };
+};
+
+const submit = (values: FormValues): void => {
+  emit("submit", toPhase(values));
+};
+
+// Unsaved header edits, used by the screen when saving steps or materials
+// so the reload that follows does not discard them (no validation, as
+// before the migration).
+const currentPhase = (): WorkOrderPhase => {
+  const values = form.value?.getValues();
+  return values ? toPhase(values) : props.phase;
 };
 
 const submitForm = (): void => form.value?.submit();
@@ -355,7 +368,7 @@ const reloadLifecycleTransitions = async (): Promise<void> => {
   await statusTransitionsDropdown.value?.reloadTransitions();
 };
 
-defineExpose({ submitForm, reloadLifecycleTransitions });
+defineExpose({ submitForm, reloadLifecycleTransitions, currentPhase });
 </script>
 
 <template>

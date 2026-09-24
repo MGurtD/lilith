@@ -1,6 +1,7 @@
 <template>
   <header>
     <FormWorkmasterPhase
+      ref="workmasterPhaseForm"
       v-if="workmaster && workmasterPhase"
       :workmaster="workmaster"
       :phase="workmasterPhase"
@@ -128,6 +129,16 @@ const loadViewData = async () => {
   await workmasterStore.fetchPhaseById(phaseId.value);
 };
 
+const workmasterPhaseForm = ref<InstanceType<
+  typeof FormWorkmasterPhase
+> | null>(null);
+
+// Step and material changes reload the phase; send the header as currently
+// edited so unsaved header changes are persisted instead of lost.
+const headerPhase = (): WorkMasterPhase =>
+  workmasterPhaseForm.value?.currentPhase() ??
+  workmasterStore.workmasterPhase!;
+
 const onWorkmasterPhaseSubmit = async (phase: WorkMasterPhase) => {
   const updated = await workmasterStore.updatePhase(phaseId.value, phase);
   if (updated) {
@@ -167,7 +178,7 @@ const onEditDetail = (detail: WorkMasterPhaseDetail) => {
 const onDeleteDetail = async (detail: WorkMasterPhaseDetail) => {
   await workmasterStore.updatePhase(
     workmasterStore.workmasterPhase!.id,
-    workmasterStore.workmasterPhase!,
+    headerPhase(),
   );
   await workmasterStore.deletePhaseDetail(detail.id);
 };
@@ -181,7 +192,7 @@ const onWorkmasterPhaseDetailSubmit = async (detail: WorkMasterPhaseDetail) => {
   }
   await workmasterStore.updatePhase(
     workmasterStore.workmasterPhase!.id,
-    workmasterStore.workmasterPhase!,
+    headerPhase(),
   );
   const result = await promise;
 
@@ -208,7 +219,7 @@ const onEditBomItem = (bomItem: WorkMasterPhaseBillOfMaterials) => {
 const onDeleteBomItem = async (bomItem: WorkMasterPhaseBillOfMaterials) => {
   await workmasterStore.updatePhase(
     workmasterStore.workmasterPhase!.id,
-    workmasterStore.workmasterPhase!,
+    headerPhase(),
   );
   await workmasterStore.deletePhaseBomItem(bomItem.id);
 };
@@ -224,7 +235,7 @@ const onWorkmasterPhasBomItemSubmit = async (
   }
   await workmasterStore.updatePhase(
     workmasterStore.workmasterPhase!.id,
-    workmasterStore.workmasterPhase!,
+    headerPhase(),
   );
   const result = await promise;
 

@@ -42,6 +42,7 @@ const plantModelStore = usePlantModelStore();
 const referencesStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
 const form = ref<{
+  getValues: () => FormValues;
   setValues: (values: FormValues) => void;
 } | null>(null);
 
@@ -307,13 +308,13 @@ const rows = computed<FormRowConfig[]>(() => [
   },
 ]);
 
-const submit = (values: FormValues): void => {
+const toPhase = (values: FormValues): WorkMasterPhase => {
   const preferredWorkcenterId = nullableStringValue(
     values.preferredWorkcenterId,
     props.phase.preferredWorkcenterId ?? null,
   );
 
-  emit("submit", {
+  return {
     ...props.phase,
     code: stringValue(values.code, props.phase.code),
     description: stringValue(values.description, props.phase.description),
@@ -341,8 +342,21 @@ const submit = (values: FormValues): void => {
     ),
     externalWorkCost: finiteNumberValue(values.externalWorkCost, 0),
     transportCost: finiteNumberValue(values.transportCost, 0),
-  });
+  };
 };
+
+const submit = (values: FormValues): void => {
+  emit("submit", toPhase(values));
+};
+
+// Unsaved header edits, used by the screen when saving steps or materials
+// so the reload that follows does not discard them (no validation, as
+// before the migration).
+const currentPhase = (): WorkMasterPhase => {
+  const values = form.value?.getValues();
+  return values ? toPhase(values) : props.phase;
+};
+defineExpose({ currentPhase });
 </script>
 
 <template>

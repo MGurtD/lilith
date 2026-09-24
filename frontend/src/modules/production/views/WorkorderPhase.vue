@@ -166,6 +166,11 @@ const loadViewData = async () => {
     (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
 };
 
+// Step and material changes reload the phase; send the header as currently
+// edited so unsaved header changes are persisted instead of lost.
+const headerPhase = (): WorkOrderPhase =>
+  workorderPhaseForm.value?.currentPhase() ?? workorderStore.workorderPhase!;
+
 const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
   const updated = await workorderStore.updatePhase(phaseId.value, phase);
 
@@ -207,10 +212,7 @@ const onEditDetail = (detail: WorkOrderPhaseDetail) => {
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkOrderPhaseDetail) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseDetail(detail.id);
 };
 
@@ -221,10 +223,7 @@ const onWorkOrderPhaseDetailSubmit = async (detail: WorkOrderPhaseDetail) => {
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseDetail(detail.id, detail);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {
@@ -248,10 +247,7 @@ const onEditBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkOrderPhaseBillOfMaterials) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseBomItem(bomItem.id);
 };
 
@@ -264,10 +260,7 @@ const onWorkmasterPhasBomItemSubmit = async (
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseBomItem(bomItem.id, bomItem);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {
