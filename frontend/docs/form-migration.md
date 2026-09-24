@@ -306,7 +306,7 @@ every consumer, so they are recorded here.
 
 | Fix | Found by | Commit | Verification |
 | --- | --- | --- | --- |
-| PrimeVue inputs also registered themselves with the injected PrimeVue form and synced their value from it. A cleared `InputNumber` reverted to its initial value on blur, so an empty required number was saved. Controls now render in a scope that hides `$pcForm`/`$pcFormField`; `modelValue` + `setFieldValue` is the only binding. Affects every Number/Currency field, including migrated purchase forms. | SH-02 UI test (tax 21%: empty percentage saved) | `b060c1c` | Tax 21%: cleared percentage stays empty after blur, Save shows the inline required error and sends no PUT; retyping 21 works. Exercise date-range error still blocks submit. Purchase Number fields: regression pending |
+| PrimeVue inputs also registered themselves with the injected PrimeVue form and synced their value from it. A cleared `InputNumber` reverted to its initial value on blur, so an empty required number was saved. Controls now render in a scope that hides `$pcForm`/`$pcFormField`; `modelValue` + `setFieldValue` is the only binding. Affects every Number/Currency field, including migrated purchase forms. | SH-02 UI test (tax 21%: empty percentage saved) | `b060c1c` | Tax 21%: cleared percentage stays empty after blur, Save shows the inline required error and sends no PUT; retyping 21 works. Exercise date-range error still blocks submit. Purchase regression: receipt line dialog recalculates on quantity change, a cleared quantity stays empty, closing the dialog saves nothing. Expense screen not reachable (`/expenses` falls back to Home, menu link is `#`), still unchecked |
 
 ### Feature entry template
 
