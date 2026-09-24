@@ -1,123 +1,107 @@
-<template>
-  <form v-if="workcentercost">
-    <section class="four-columns">
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.maquina") }}</label>
-        <Select
-          v-model="workcentercost.workcenterId"
-          :options="plantModelStore.workcenters"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.WorkcenterId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.estatDeMaquina") }}</label>
-        <Select
-          v-model="workcentercost.machineStatusId"
-          :options="plantModelStore.machineStatuses"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.machineStatusId,
-          }"
-        />
-      </div>
-      <BaseInput
-        class="mb-2 w-full"
-        :label="t('production.components.preuHora')"
-        v-model="workcentercost.cost"
-        :type="BaseInputType.CURRENCY"
-        :class="{
-          'p-invalid': validation.errors.cost,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
-        <Checkbox
-          v-model="workcentercost.disabled"
-          class="w-full"
-          :binary="true"
-        />
-      </div>
-    </section>
-
-    <PageActions>
-      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { onMounted, ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import { WorkcenterCost } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { usePlantModelStore } from "../store/plantmodel";
-import { BaseInputType, FormActionMode } from "../../../types/component";
+import type { WorkcenterCost } from "../types";
 
 const props = defineProps<{
   workcentercost: WorkcenterCost;
 }>();
 
+const emit = defineEmits<{
+  (event: "submit", workcentercost: WorkcenterCost): void;
+}>();
+
+const { t } = useI18n();
+const plantModelStore = usePlantModelStore();
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "workcenterId",
+        label: t("production.components.maquina"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.workcenters ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.laMaquinaEsObligatoria"),
+        ),
+      },
+      {
+        name: "machineStatusId",
+        label: t("production.components.estatDeMaquina"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.machineStatuses ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.lEstatDeMaquinaEsObligatori"),
+        ),
+      },
+      {
+        name: "cost",
+        label: t("production.components.preuHora"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 2, suffix: " €" },
+        validation: Yup.number()
+          .typeError(t("production.validation.elCostEsObligatori"))
+          .required(t("production.validation.elCostEsObligatori")),
+      },
+      {
+        name: "disabled",
+        label: t("production.components.desactivat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
+
 onMounted(async () => {
-  await plantModelStore.fetchOperatorTypes();
   await plantModelStore.fetchMachineStatuses();
 });
 
-const emit = defineEmits<{
-  (e: "submit", workcentercost: WorkcenterCost): void;
-  (e: "cancel"): void;
-}>();
-
-const toast = useToast();
-const plantModelStore = usePlantModelStore();
-const { workcentercost } = storeToRefs(plantModelStore);
-
-const schema = Yup.object().shape({
-  workcenterId: Yup.string().required(t("production.validation.laMaquinaEsObligatoria")),
-  machineStatusId: Yup.string().required(t("production.validation.lEstatDeMaquinaEsObligatori")),
-  cost: Yup.number().required(t("production.validation.elCostEsObligatori")),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.workcentercost);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.workcentercost);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.workcentercost,
+    workcenterId: stringValue(
+      values.workcenterId,
+      props.workcentercost.workcenterId,
+    ),
+    machineStatusId: stringValue(
+      values.machineStatusId,
+      props.workcentercost.machineStatusId,
+    ),
+    cost: finiteNumberValue(values.cost, props.workcentercost.cost),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="workcentercost"
+    @submit="submit"
+  />
+</template>
