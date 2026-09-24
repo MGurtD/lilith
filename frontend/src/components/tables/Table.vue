@@ -639,6 +639,7 @@ function formatCellValue(col: Column, data: any): string {
     case ColumnType.Currency:
       return typeof value === "number" ? formatCurrency(value) : "";
     case ColumnType.Lookup:
+    case ColumnType.Status:
       return String(value ?? "");
     case ColumnType.Number:
       return String(value);
@@ -665,10 +666,30 @@ function columnPt(col: Column) {
 function resolveCellValue(col: Column, data: unknown): unknown {
   const value = resolveFieldValue(data, col.field);
   if (!col.resolver) return value;
-  if (col.columnType === ColumnType.Lookup && typeof value !== "string") {
+  const isLookup =
+    col.columnType === ColumnType.Lookup || col.columnType === ColumnType.Status;
+  if (isLookup && typeof value !== "string") {
     return undefined;
   }
   return col.resolver(value, data);
+}
+
+// Colours come from the lifecycle administration as PrimeVue severities;
+// a status without one stays neutral.
+const STATUS_SEVERITIES = ["secondary", "info", "warn", "success", "danger", "contrast"];
+
+function statusSeverity(col: Column, data: unknown) {
+  const value = resolveFieldValue(data, col.field);
+  const severity = col.severity?.(value, data);
+  // Unknown or retired values ("help") fall back to neutral.
+  return (severity && STATUS_SEVERITIES.includes(severity) ? severity : "secondary") as
+    | "secondary"
+    | "info"
+    | "success"
+    | "warn"
+    | "danger"
+    | "contrast"
+    | undefined;
 }
 
 function resolveBooleanValue(
@@ -813,6 +834,18 @@ function resolveBooleanValue(
             :show-color="col.showColor"
           />
         </template>
+        <!-- Status: the resolved name as a Tag in the status colour. -->
+        <template
+          v-else-if="col.columnType === ColumnType.Status"
+          #body="slotProps"
+        >
+          <Tag
+            v-if="hasValue(resolveCellValue(col, slotProps.data))"
+            :value="formatCellValue(col, slotProps.data)"
+            :severity="statusSeverity(col, slotProps.data)"
+            class="lifecycle-status-tag"
+          />
+        </template>
         <!-- Default + all text-typed columns: route through TruncatedCell.
            Default is true; opt out per column with `truncate: false`. -->
         <template v-else #body="slotProps">
@@ -948,6 +981,7 @@ function resolveBooleanValue(
 </template>
 
 <style scoped>
+
 .attachment-cell {
   position: absolute;
   top: 0;

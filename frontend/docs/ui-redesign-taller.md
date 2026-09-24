@@ -20,6 +20,7 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 | *(mobile shell)* | Below 768px (`composables/useIsPhone.ts`, same breakpoint as `Form.vue`) the sidebar menu moves into a PrimeVue `Drawer` opened from a menu button in the header; header and content take the full width. The drawer closes on navigation, Escape or widening the window. Page actions show their icon only on phones (label kept for screen readers). The current-screen marker now follows third-level entries (module › group › screen) on desktop too. New i18n key `ui.openMenu`. |
 | *(user in sidebar)* | The signed-in user (or the clocked-in plant operator) moves from the header to the foot of the sidebar; its menu (language, sign out; "Sortir" for operators) opens above it. The collapse control moves to the brand row, and when collapsed it is the first row of the rail (option A in the canvas); hidden on phones and for plant operators (`hideToggle`). New i18n keys `ui.collapseMenu`, `ui.expandMenu`. |
 | *(login and clock-in)* | Option A2 from the canvas. Office login: tenant logo, form and language picker on white (4px brand rule on top, "Zenith ERP, de Rawcraft Software" credit); a shaft drawing inked in the tenant colour and a title block (`components/brand/TitleBlock.vue`, logo + brand rule) on the right; the panel hides below 1024px. Operator clock-in (tablet): masked code field that keeps focus for barcode scanners, 72px numeric keypad ("ABC" opens the on-screen keyboard), inline "operator not found" instead of a toast, and a panel with the time in the tenant colour and the title block; the panel hides below 900px. |
+| *(semantic states)* | Lifecycle statuses show as `Tag`s in lists (`ColumnType.Status` in `Table.vue`, `severity` from `lifecycleStore.getStatusColorById`; 11 lists plus work order phases). The colour is the status's own `Color` (option A; lifecycle tags are behavioural and a status may have several). The status form picks colours by meaning (Neutre, En curs, Cal actuar, Fet, Problema, Tancat) over the same stored PrimeVue severities; "help" is retired (Aura has none, it showed the tenant colour) and unknown values render neutral. Preset tag tokens: darker text, amber for `warn`, `contrast` as a quiet outline. Boolean columns show ✓ / a quiet dash instead of radio-like circles. Status colours for the Default database were set through the API with the approved mapping. |
 | `f937c65` | **Save convention** (below) applied to all 40 detail screens plus branding. `components/PageActions.vue`, `Form.vue` `page-actions` option. Removed `grid_add_row_button` (a `position: fixed` save that overlapped fields). |
 
 ## Conventions Now In Force
@@ -33,11 +34,10 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 
 Ordered from lower to higher impact. Validate each with screenshots before committing.
 
-1. **Semantic states.** Document statuses as `Tag` with consistent colours (draft grey, issued brand tint, paid green, pending amber, overdue red) instead of plain text in tables; `Desactivat` column as a badge instead of radio-like circles.
-2. **Create button.** Replace the green round `+` (`severity="success"`, 16 uses) with a labelled primary action ("Nou client") in list screens.
-3. **Page patterns.** One `FilterBar` replacing `.two-columns…`, `.datatable-filter-*` and `.filter-toolbar`; empty states; a useful Home instead of the big logo.
-4. **Caixetí (signature element).** Title-block header for document detail screens (number, customer, dates, status, totals). Pilot on `SalesInvoice`. Mockup in the canvas.
-5. Later: dark mode (tokens are ready), unsaved-changes indicator and Ctrl+S.
+1. **Create button.** Replace the green round `+` (`severity="success"`, 16 uses) with a labelled primary action ("Nou client") in list screens.
+2. **Page patterns.** One `FilterBar` replacing `.two-columns…`, `.datatable-filter-*` and `.filter-toolbar`; empty states; a useful Home instead of the big logo.
+3. **Caixetí (signature element).** Title-block header for document detail screens (number, customer, dates, status, totals). Pilot on `SalesInvoice`. Mockup in the canvas.
+4. Later: dark mode (tokens are ready), unsaved-changes indicator and Ctrl+S.
 
 ## Known Issues And Pending Checks
 

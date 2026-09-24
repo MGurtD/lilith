@@ -231,6 +231,8 @@ const es = {
     none: "Sin medidas",
   },
   common: {
+    yes: "Sí",
+    no: "No",
     success: "Éxito",
     error: "Error",
     info: "Información",
@@ -1550,6 +1552,15 @@ const es = {
       form: {
         name: "Nombre",
         color: "Color",
+        colors: {
+          none: "Sin color",
+          secondary: "Neutro",
+          info: "En curso",
+          warn: "Requiere acción",
+          success: "Hecho",
+          danger: "Problema",
+          contrast: "Cerrado",
+        },
         disabled: "Deshabilitado",
         tags: "Etiquetas",
         tagsPlaceholder: "Selecciona etiquetas",

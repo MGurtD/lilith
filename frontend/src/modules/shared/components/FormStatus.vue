@@ -11,6 +11,7 @@
       ></BaseInput>
       <div class="mb-4">
         <label class="block text-900 mb-2">{{ $t('shared.statuses.form.color') }}</label>
+        <!-- Colours by meaning; each option previews the tag lists will show. -->
         <Select
           v-model="status.color"
           :options="colors"
@@ -20,7 +21,17 @@
           :class="{
             'p-invalid': validation.errors.statusId,
           }"
-        />
+        >
+          <template #value="{ value }">
+            <Tag
+              :value="colorLabel(value)"
+              :severity="(value || 'secondary') as any"
+            />
+          </template>
+          <template #option="{ option }">
+            <Tag :value="option.value" :severity="(option.id || 'secondary') as any" />
+          </template>
+        </Select>
       </div>
       <div class="mb-4">
         <label class="block text-900 mb-2">{{ $t('shared.statuses.form.disabled') }}</label>
@@ -83,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { Status, LifecycleTag } from "../types";
 import * as Yup from "yup";
@@ -188,14 +199,19 @@ type Color = {
   value: string;
 };
 
-const colors: Color[] = [
-  { id: "", value: "Cap" },
-  { id: "info", value: "Blau" },
-  { id: "secondary", value: "Gris" },
-  { id: "help", value: "Lila" },
-  { id: "contrast", value: "Negre" },
-  { id: "warn", value: "Taronja" },
-  { id: "success", value: "Verd" },
-  { id: "danger", value: "Vermell" },
-];
+// Stored values stay PrimeVue severities. "help" is no longer offered: Aura has
+// no such severity, so it showed the tenant colour; old values render neutral.
+const colors = computed<Color[]>(() => [
+  { id: "", value: t("shared.statuses.form.colors.none") },
+  { id: "secondary", value: t("shared.statuses.form.colors.secondary") },
+  { id: "info", value: t("shared.statuses.form.colors.info") },
+  { id: "warn", value: t("shared.statuses.form.colors.warn") },
+  { id: "success", value: t("shared.statuses.form.colors.success") },
+  { id: "danger", value: t("shared.statuses.form.colors.danger") },
+  { id: "contrast", value: t("shared.statuses.form.colors.contrast") },
+]);
+
+const colorLabel = (id: string | undefined) =>
+  colors.value.find((c) => c.id === (id ?? ""))?.value ??
+  t("shared.statuses.form.colors.none");
 </script>

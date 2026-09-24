@@ -36,7 +36,12 @@
     </Column>
     <Column :header="t('production.components.estat')">
       <template #body="slotProps">
-        {{ getStatus(slotProps.data.statusId) }}
+        <Tag
+          v-if="getStatus(slotProps.data.statusId)"
+          :value="getStatus(slotProps.data.statusId)"
+          :severity="(lifecycleStore.getStatusColorById(slotProps.data.statusId) || 'secondary') as any"
+          class="lifecycle-status-tag"
+        />
       </template>
     </Column>
     <Column :header="t('production.components.quantitat')">

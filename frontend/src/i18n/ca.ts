@@ -231,6 +231,8 @@ const ca = {
     none: "Sense mesures",
   },
   common: {
+    yes: "Sí",
+    no: "No",
     success: "Èxit",
     error: "Error",
     info: "Informació",
@@ -1607,6 +1609,15 @@ const ca = {
       form: {
         name: "Nom",
         color: "Color",
+        colors: {
+          none: "Sense color",
+          secondary: "Neutre",
+          info: "En curs",
+          warn: "Cal actuar",
+          success: "Fet",
+          danger: "Problema",
+          contrast: "Tancat",
+        },
         disabled: "Deshabilitat",
         tags: "Etiquetes",
         tagsPlaceholder: "Selecciona etiquetes",

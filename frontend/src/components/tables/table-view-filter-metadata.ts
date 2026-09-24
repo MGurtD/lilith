@@ -23,7 +23,10 @@ export function createTableViewFilterMetadata(
 
   for (const column of columns) {
     const resolver = column.resolver;
-    if (!resolver || column.columnType !== ColumnType.Lookup) continue;
+    const isLookup =
+      column.columnType === ColumnType.Lookup ||
+      column.columnType === ColumnType.Status;
+    if (!resolver || !isLookup) continue;
 
     filterValueResolvers[column.field] = (value) => {
       if (typeof value !== "string") return "";

@@ -30,9 +30,12 @@
       />
     </template>
     <template #body-_status="{ data }">
-      <span :class="{ 'managed-status': isManagedStatus(data.statusId) }">
-        {{ getStatusNameById(data.statusId) }}
-      </span>
+      <Tag
+        v-if="getStatusNameById(data.statusId)"
+        :value="getStatusNameById(data.statusId)"
+        :severity="(lifecycleStore.getStatusColorById(data.statusId) || 'secondary') as any"
+        class="lifecycle-status-tag"
+      />
     </template>
     <template #body-_dueDate="{ data }">
       {{ getLastDueDate(data) }}
@@ -208,14 +211,6 @@ const getLastDueDate = (invoice: PurchaseInvoice): string => {
   }
 };
 
-const isManagedStatus = (statusId: string): boolean => {
-  const managedStatus = lifecycleStore.lifecycle?.statuses?.find(
-    (s) => s.name === "Gestionada",
-  );
-
-  return (managedStatus && managedStatus.id === statusId) as boolean;
-};
-
 const clearFilter = () => {
   filter.value.dates = undefined;
   filter.value.showManaged = false;
@@ -308,7 +303,4 @@ const downloadInvoices = async (invoice: PurchaseInvoice) => {
   cursor: pointer;
 }
 
-.managed-status {
-  color: green;
-}
 </style>

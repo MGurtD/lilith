@@ -231,6 +231,8 @@ const en = {
     none: "No dimensions",
   },
   common: {
+    yes: "Yes",
+    no: "No",
     success: "Success",
     error: "Error",
     info: "Information",
@@ -1581,6 +1583,15 @@ const en = {
       form: {
         name: "Name",
         color: "Color",
+        colors: {
+          none: "No colour",
+          secondary: "Neutral",
+          info: "In progress",
+          warn: "Needs action",
+          success: "Done",
+          danger: "Problem",
+          contrast: "Closed",
+        },
         disabled: "Disabled",
         tags: "Tags",
         tagsPlaceholder: "Select tags",

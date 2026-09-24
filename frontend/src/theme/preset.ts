@@ -116,10 +116,24 @@ export const TallerPreset = definePreset(Aura, {
         },
       },
     },
+    // Status tags carry meaning, never the tenant colour: text one shade darker
+    // than Aura for dense tables, amber instead of orange for "act on it" (orange
+    // is a tenant palette), and "contrast" (closed) as a quiet outline, see
+    // styles.scss, so finished documents step back instead of shouting.
     tag: {
       root: {
         fontWeight: "500",
         padding: "0.1875rem 0.5rem",
+      },
+      colorScheme: {
+        light: {
+          secondary: { background: "{surface.100}", color: "{surface.700}" },
+          info: { background: "{sky.100}", color: "{sky.800}" },
+          warn: { background: "{amber.100}", color: "{amber.800}" },
+          success: { background: "{green.100}", color: "{green.800}" },
+          danger: { background: "{red.100}", color: "{red.800}" },
+          contrast: { background: "{surface.0}", color: "{surface.600}" },
+        },
       },
     },
   },

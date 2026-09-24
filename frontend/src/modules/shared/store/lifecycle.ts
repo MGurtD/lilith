@@ -42,6 +42,11 @@ export const useLifecyclesStore = defineStore({
         return statusName;
       };
     },
+    // PrimeVue Tag severity set for the status in the lifecycle administration.
+    getStatusColorById: (state) => {
+      return (statusId: unknown): string | undefined =>
+        state.lifecycle?.statuses?.find((s) => s.id === statusId)?.color || undefined;
+    },
   },
   actions: {
     setNew(id: string) {
