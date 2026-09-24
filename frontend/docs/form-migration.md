@@ -258,6 +258,7 @@ established pattern turned out to be enough).
 | F-03 | Unique native field IDs for simultaneous forms | SH-04 | implemented | `Form.vue`, `README.md`, custom slots in purchase forms and `FormRejectionReason.vue` | See entry below | `770c1ae` |
 | F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06, SH-09 | candidate | | | |
 | F-05 | Repeatable or dynamically generated field groups | SY-05 | candidate | | | |
+| F-07 | Read current (unvalidated) values so a feature can persist in-progress edits with another save | PR-21, PR-26 | implemented | `Form.vue` (`getValues`), README, skill; `currentPhase()` in both phase forms | See entry below | `7cb2e10`, `f79be93` |
 
 Candidates come from the inventory and are hypotheses. Confirm one only when
 migrating its form proves that the patterns in section 1 are not enough;
@@ -298,6 +299,33 @@ otherwise mark it `rejected` and note the pattern used.
 - **Docs updated**: README limitation removed · skill custom-field step and
   Proven Patterns (`FormLifecycle`, `FormRejectionReason`).
 - **PR**: shipped with batch L1 (branch `forms/l1-shared-masters`).
+
+### F-07 — Current values for in-progress saves
+
+- **Motivated by**: PR-21/PR-26. On the route and work-order phase screens the
+  user often edits the header and then manages steps or materials. Those saves
+  reload the phase; the legacy form edited the store entity, so the step save
+  also persisted the header edits. With `Form.vue` they were no longer sent and
+  were lost on reload. The user asked to keep the legacy behaviour.
+- **Design**: `Form.vue` exposes `getValues()`, a detached copy of the current
+  values without validation. Each phase form exposes a typed `currentPhase()`
+  built with the same narrowing as submit; the screens pass it to
+  `updatePhase` in the four step/material handlers. The parent never reads raw
+  form values.
+- **Files**: `src/components/forms/Form.vue`, `README.md` (limitation removed,
+  usage rule), `frontend-form` skill, `FormWorkmasterPhase.vue`,
+  `FormWorkorderPhase.vue`, `WorkmasterPhase.vue`, `WorkorderPhase.vue`.
+- **Verification** (2026-09-24, `lilith-ui-tester`): route "4020-207-1", phase
+  "10 - Serrar material": header description edited without saving, then an
+  existing step saved from its dialog. The phase PUT carried
+  `"description":"Serrar material (test)"` with the `details` array, the header
+  kept the value after the reload, and the API returned it after a full reload.
+  Test data restored afterwards.
+- **Found, not caused by the migration**: loading a phase URL directly does not
+  render the header, because `WorkmasterPhase.vue` only fetches the phase while
+  the header requires the work master (same `v-if` before the migration). The
+  step detail PUT returned 404 "No s'ha trobat el cost del centre de treball"
+  for this staging record (backend data).
 
 ### Form.vue fixes found during migration
 
@@ -344,7 +372,7 @@ Copy for each feature once it is `confirmed`:
 | WH-03 Inventory movement | Changing the reference clears the selected lot (legacy could submit a lot from another reference); hardcoded Catalan messages replaced by keys | Bug fix |
 | PU-01 Purchase rate duplicate | Name and both dates now required, end date on or after start; confirm button reads Save instead of Duplicate | Global decision |
 | i18n | `common.lot` was referenced by inventory, stock and stock movement screens but missing from every locale; added | Bug fix |
-| PR-21..PR-28 Phase screens (workmaster and workorder) | Header forms keep a scalar snapshot; saving or deleting a step/material no longer silently saves unsaved header edits (the parent's `updatePhase` now sends the phase as loaded). **Open decision**: accept, or drop the now-redundant `updatePhase` calls | Pending user decision |
+| PR-21..PR-28 Phase screens (workmaster and workorder) | Saving or deleting a step/material still persists unsaved header edits (kept on user request, F-07); header edits also survive the reload | Kept legacy |
 | PR-21 Workmaster phase | Stale profit-percentage responses are ignored; a missing workcenter type no longer crashes | Bug fix |
 | PR-18, PR-19, PR-20 Workmasters | Split-button save kept; create dialog requires a reference; copy dialog radios sit above the chosen group; footer reads Save instead of Crear/Copiar | Global decision |
 | PR-24 Workorder | Clearing the status falls back to the saved status; execution period gets its own row | Layout |
