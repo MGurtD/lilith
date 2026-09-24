@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. F-03 implemented; batch L1 migrated and verified, awaiting review.
+> **Status**: In progress. L1 in review (#135); batch L2 migrated, UI verification running.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -105,30 +105,30 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 | SH-01 | `shared/components/FormPaymentMethod.vue` | `PaymentMethod.vue` | low | — | migrated | `f506840` | Flat fields; UI verified |
 | SH-02 | `shared/components/FormTax.vue` | `Tax.vue` | low | — | migrated | `6206465`, fix `fddf84d` | UI verified after the fix; exposed the InputNumber double-binding bug fixed in `fddf84d` |
 | SH-03 | `shared/components/FormReferenceType.vue` | `ReferenceType.vue` | low | — | migrated | `fc393c1` | UI verified (density PUT keeps colors); 2 ColorPickers via `Custom` slot; `sales/components/FormReference.vue` imports it but never renders it (dead import) |
-| SH-04 | `shared/components/FormLifecycle.vue` | `Lifecycle.vue` | low | F-03 | migrated | `7251692` / L1 PR | Parent's own save replaced by `page-actions`; statuses kept out of the snapshot and merged at submit |
+| SH-04 | `shared/components/FormLifecycle.vue` | `Lifecycle.vue` | low | F-03 | migrated | `7251692` / #135 | Parent's own save replaced by `page-actions`; statuses kept out of the snapshot and merged at submit |
 | SH-05 | `shared/components/FormExercise.vue` | `Exercise.vue` | med | — | migrated | `fdf0406` | UI verified (date-range error; PUT dates `2022-01-01T00:00:00.000Z`/`2022-12-31T00:00:00.000Z`); `Yup.ref` date range; submit-time date mutation removed (`toJSON` serializes identically) |
 
 ### 2.2 Batch L2 — Production plant model
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PR-01 | `production/components/FormEnterprise.vue` | `Enterprise.vue` | low | — | pending | | |
-| PR-02 | `production/components/FormArea.vue` | `Area.vue` | low | — | pending | | Reads Pinia via `storeToRefs` |
-| PR-03 | `production/components/FormSite.vue` | `Site.vue` | med | — | pending | | `LocationFields` multi-field control → section; email rules |
-| PR-04 | `production/components/FormWorkcenter.vue` | `Workcenter.vue` | low | — | pending | | Page form |
-| PR-05 | `production/components/FormWorkcenterType.vue` | `WorkcenterType.vue` | low | — | pending | | Pinia state; % suffix |
-| PR-06 | `production/components/FormWorkcenterCost.vue` | `WorkcenterCost.vue` | low | — | pending | | Pinia state; currency |
-| PR-07 | `production/components/TableWorkcenterLocations.vue` (add dialog) | `Workcenter.vue` | low | — | pending | | 1 selector; manual checks + toast; duplicate check |
-| PR-08 | `production/components/TableWorkcenterProfitPercentage.vue` (add dialog) | `Workcenter.vue` | low | — | pending | | 1 InputNumber; manual checks + toast; duplicate check |
-| PR-09 | `production/components/FormOperator.vue` | `Operator.vue` | low | — | pending | | |
-| PR-10 | `production/components/FormOperatorType.vue` | `OperatorType.vue` | low | — | pending | | Pinia state; currency |
-| PR-11 | `production/components/FormMachineStatus.vue` | `MachineStatus.vue` | med | — | pending | | ColorPicker + IconPicker slots, 6 checkboxes |
-| PR-12 | `production/components/FormMachineStatusReason.vue` | `MachineStatuses.vue`, `TableMachineStatusReasons.vue` | med | — | pending | | Yup `.test` unique code across records |
-| PR-13 | `production/components/FormShift.vue` | `Shifts.vue` | low | — | pending | | |
-| PR-14 | `production/components/FormShiftDetail.vue` | `Shifts.vue` | med | — | pending | | Time-only dates via `Date` props; `extractTime` at submit; empty legacy schema |
-| PR-15 | `production/components/FormPhaseTemplate.vue` | `PhaseTemplate.vue` | low | — | pending | | |
-| PR-16 | `production/components/FormPhaseTemplateDetail.vue` | `TablePhaseTemplateDetails.vue` | low | — | pending | | |
-| PR-17 | `production/views/PhaseTemplates.vue` (create dialog) | — | low | — | pending | | 2 raw fields, no validation today |
+| PR-01 | `production/components/FormEnterprise.vue` | `Enterprise.vue` | low | — | migrated | `eed879d` | |
+| PR-02 | `production/components/FormArea.vue` | `Area.vue` | low | — | migrated | `11fb59b` | Reads Pinia via `storeToRefs` |
+| PR-03 | `production/components/FormSite.vue` | `Site.vue` | med | — | migrated | `e76b64e` | `LocationFields` multi-field control → section; email rules |
+| PR-04 | `production/components/FormWorkcenter.vue` | `Workcenter.vue` | low | — | migrated | `d8312bd` | Page form |
+| PR-05 | `production/components/FormWorkcenterType.vue` | `WorkcenterType.vue` | low | — | migrated | `6a5e748` | Pinia state; % suffix |
+| PR-06 | `production/components/FormWorkcenterCost.vue` | `WorkcenterCost.vue` | low | — | migrated | `e87e2c4` | Pinia state; currency |
+| PR-07 | `production/components/TableWorkcenterLocations.vue` (add dialog) | `Workcenter.vue` | low | — | migrated | `8ccd24d` | 1 selector; manual checks + toast; duplicate check |
+| PR-08 | `production/components/TableWorkcenterProfitPercentage.vue` (add dialog) | `Workcenter.vue` | low | — | migrated | `ac77bda` | 1 InputNumber; manual checks + toast; duplicate check |
+| PR-09 | `production/components/FormOperator.vue` | `Operator.vue` | low | — | migrated | `5a84aa3` | |
+| PR-10 | `production/components/FormOperatorType.vue` | `OperatorType.vue` | low | — | migrated | `1302dd8` | Pinia state; currency |
+| PR-11 | `production/components/FormMachineStatus.vue` | `MachineStatus.vue` | med | — | migrated | `a1c574e` | ColorPicker + IconPicker slots, 6 checkboxes |
+| PR-12 | `production/components/FormMachineStatusReason.vue` | `MachineStatuses.vue`, `TableMachineStatusReasons.vue` | med | — | migrated | `63926f1` | Yup `.test` unique code across records |
+| PR-13 | `production/components/FormShift.vue` | `Shifts.vue` | low | — | migrated | `6f1e460` | |
+| PR-14 | `production/components/FormShiftDetail.vue` | `Shifts.vue` | med | — | migrated | `6f1e460` | Time-only dates via `Date` props; `extractTime` at submit; empty legacy schema |
+| PR-15 | `production/components/FormPhaseTemplate.vue` | `PhaseTemplate.vue` | low | — | migrated | `2f864d1` | |
+| PR-16 | `production/components/FormPhaseTemplateDetail.vue` | `TablePhaseTemplateDetails.vue` | low | — | migrated | `2f864d1` | |
+| PR-17 | `production/views/PhaseTemplates.vue` (create dialog) | — | low | — | migrated | `45a69f4` | 2 raw fields, no validation today |
 
 ### 2.3 Batch L3 — Warehouse and purchase leftovers
 
@@ -333,6 +333,12 @@ Copy for each feature once it is `confirmed`:
 | All migrated forms | Inline field errors replace the "invalid form" toast and `FormValidation` | Accepted globally (2026-09-24) |
 | SH-02 Tax | The percentage validation message said "frequency"; it now names the percentage in ca/es/en | Bug fix |
 | SH-05 Exercise | Dates are no longer rewritten on the store object at submit; the request body is serialized by `Date.prototype.toJSON`, which applies the same local-time conversion | Equivalent request |
+| PR-07, PR-08 Workcenter dialogs | Required, duplicate and range checks move from warning toasts to inline errors | Global decision |
+| PR-10 Operator type | Cost input blocks negatives; the min rule has a localized message (was Yup's English default) | Bug fix |
+| PR-13, PR-14 Shifts | Shift detail times convert between `HH:mm:ss` and `Date` at the form boundary (legacy parsed the raw string and produced NaN times for new details); time labels now render; seconds are still saved as `00` | Bug fix |
+| PR-15 Phase template | Header form keeps a scalar snapshot, so adding/editing a detail no longer discards unsaved header edits | Improvement |
+| PR-16, PR-17 Phase templates | Detail and create dialogs use the default Save label instead of "Guardar detall"/"Crear"; create now requires a name and no longer edits the store while typing | Global decision |
+| PR-03 Site, PR-09 Operator | Hardcoded "CIF"/"NIF" labels replaced by `production.fields.companyVatNumber` / `personalVatNumber` | i18n |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
