@@ -1,77 +1,63 @@
-<template>
-  <form v-if="shift">
-    <section class="two-columns">
-      <BaseInput
-        class="mb-2"
-        :label="t('production.components.nom')"
-        v-model="shift.name"
-        :class="{
-          'p-invalid': validation.errors.baseAmount,
-        }"
-      ></BaseInput>
-      <div class="mb-4">
-        <label class="block text-900 mb-2">{{ t("production.components.deshabilitat") }}</label>
-        <Checkbox v-model="shift.disabled" :binary="true" />
-      </div>
-    </section>
-    <Button :label="t('production.components.confirmar')" @click="submitForm" style="float: right" />
-  </form>
-</template>
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import { Shift } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { booleanValue, stringValue } from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { Shift } from "../types";
 
 const props = defineProps<{
   shift: Shift;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", shift: Shift): void;
-  (e: "cancel"): void;
+  (event: "submit", shift: Shift): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required(t("production.validation.elNomEsObligatori"))
-    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "name",
+        label: t("production.components.nom"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elNomEsObligatori"))
+          .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
+      },
+      {
+        name: "disabled",
+        label: t("production.components.deshabilitat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.shift);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.shift);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.shift,
+    name: stringValue(values.name, ""),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="shift"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

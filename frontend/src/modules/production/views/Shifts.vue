@@ -39,7 +39,12 @@
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
   >
-    <FormShift v-if="shift" :shift="shift" @submit="submitShift" />
+    <FormShift
+      v-if="shift"
+      :shift="shift"
+      @submit="submitShift"
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
   <Dialog
     v-model:visible="dialogOptionsDetail.visible"
@@ -51,6 +56,7 @@
       v-if="shiftdetail"
       :shiftdetail="shiftdetail"
       @submit="submitShiftDetail"
+      @cancel="dialogOptionsDetail.visible = false"
     />
   </Dialog>
 </template>
@@ -144,10 +150,9 @@ onMounted(async () => {
   });
 });
 
-const submitShift = async () => {
-  const data = shift.value as Shift;
-  let result = false;
-  result = await shiftStore.createShift(data);
+// The dialog only creates shifts; editing an existing shift is not wired here.
+const submitShift = async (data: Shift) => {
+  const result = await shiftStore.createShift(data);
   if (result) {
     dialogOptions.visible = false;
     toast.add({
@@ -157,10 +162,8 @@ const submitShift = async () => {
     });
   }
 };
-const submitShiftDetail = async () => {
-  const data = shiftdetail.value as ShiftDetail;
-  let result = false;
-  result = await shiftStore.createDetail(data);
+const submitShiftDetail = async (data: ShiftDetail) => {
+  const result = await shiftStore.createDetail(data);
   if (result) {
     dialogOptionsDetail.visible = false;
     toast.add({
