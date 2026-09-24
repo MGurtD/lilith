@@ -1,6 +1,5 @@
 <template>
-  <FormOperator v-if="operator" 
-  :operator="operator" @submit="submitForm" />
+  <FormOperator v-if="operator" :operator="operator" @submit="submitForm" />
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
@@ -49,8 +48,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = operator.value as Operator;
+const submitForm = async (data: Operator) => {
   let result = false;
   let message = "";
 
