@@ -242,6 +242,7 @@ const ca = {
     none: "Sense mesures",
   },
   common: {
+    lot: "Lot",
     yes: "Sí",
     no: "No",
     success: "Èxit",
@@ -2020,7 +2021,7 @@ const ca = {
     },
     locationTypes: { supply: "Subministrament", receiving: "Recepció", shipping: "Expedició", storage: "Emmagatzematge" },
     placeholders: { selectWarehouse: "Selecciona un magatzem", selectLocation: "Selecciona una ubicació", noLocationType: "Sense tipus", allLocationTypes: "Tots els tipus", selectPeriod: "Selecciona un període" },
-    validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", descriptionRequired: "La descripció és obligatòria", descriptionMaxLength: "La descripció no pot superar els 250 caràcters", siteRequired: "El centre és obligatori", quantityMinimum: "La quantitat ha de ser com a mínim 1", quantityGreaterThanZero: "La quantitat ha de ser superior a 0", referenceRequired: "La referència és obligatòria" },
+    validation: { nameRequired: "El nom és obligatori", nameMaxLength: "El nom no pot superar els 250 caràcters", descriptionRequired: "La descripció és obligatòria", descriptionMaxLength: "La descripció no pot superar els 250 caràcters", siteRequired: "El centre és obligatori", quantityMinimum: "La quantitat ha de ser com a mínim 1", quantityGreaterThanZero: "La quantitat ha de ser superior a 0", referenceRequired: "La referència és obligatòria", locationRequired: "La ubicació és obligatòria" },
     messages: { invalidForm: "Formulari invàlid", warehouseCreated: "Magatzem creat correctament", warehouseUpdated: "Magatzem actualitzat correctament", selectDefaultLocation: "Selecciona una ubicació per defecte", locationHasDependencies: "Ubicació amb dependències", defaultLocationCannotBeDeleted: "La ubicació que intentes eliminar és la ubicació per defecte del magatzem", confirmDeleteLocation: "Segur que vols eliminar la ubicació '{name}'?", confirmDeleteWarehouse: "Segur que vols eliminar el magatzem {name}?", deleted: "Eliminat", inventoryCreated: "Inventari creat correctament", inventoryMovementError: "Error en crear el moviment d'inventari", invalidFilter: "Filtre invàlid", selectPeriod: "Selecciona un període" },
     locations: { title: "Ubicacions", createTitle: "Crear ubicació", updateTitle: "Actualitzar ubicació" },
     warehouses: { title: "Gestió de magatzems" },

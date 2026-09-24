@@ -242,6 +242,7 @@ const es = {
     none: "Sin medidas",
   },
   common: {
+    lot: "Lote",
     yes: "Sí",
     no: "No",
     success: "Éxito",
@@ -1963,7 +1964,7 @@ const es = {
     },
     locationTypes: { supply: "Suministro", receiving: "Recepción", shipping: "Expedición", storage: "Almacenamiento" },
     placeholders: { selectWarehouse: "Selecciona un almacén", selectLocation: "Selecciona una ubicación", noLocationType: "Sin tipo", allLocationTypes: "Todos los tipos", selectPeriod: "Selecciona un período" },
-    validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", descriptionRequired: "La descripción es obligatoria", descriptionMaxLength: "La descripción no puede superar los 250 caracteres", siteRequired: "El centro es obligatorio", quantityMinimum: "La cantidad debe ser como mínimo 1", quantityGreaterThanZero: "La cantidad debe ser superior a 0", referenceRequired: "La referencia es obligatoria" },
+    validation: { nameRequired: "El nombre es obligatorio", nameMaxLength: "El nombre no puede superar los 250 caracteres", descriptionRequired: "La descripción es obligatoria", descriptionMaxLength: "La descripción no puede superar los 250 caracteres", siteRequired: "El centro es obligatorio", quantityMinimum: "La cantidad debe ser como mínimo 1", quantityGreaterThanZero: "La cantidad debe ser superior a 0", referenceRequired: "La referencia es obligatoria", locationRequired: "La ubicación es obligatoria" },
     messages: { invalidForm: "Formulario inválido", warehouseCreated: "Almacén creado correctamente", warehouseUpdated: "Almacén actualizado correctamente", selectDefaultLocation: "Selecciona una ubicación predeterminada", locationHasDependencies: "Ubicación con dependencias", defaultLocationCannotBeDeleted: "La ubicación que intentas eliminar es la ubicación predeterminada del almacén", confirmDeleteLocation: "¿Seguro que quieres eliminar la ubicación '{name}'?", confirmDeleteWarehouse: "¿Seguro que quieres eliminar el almacén {name}?", deleted: "Eliminado", inventoryCreated: "Inventario creado correctamente", inventoryMovementError: "Error al crear el movimiento de inventario", invalidFilter: "Filtro inválido", selectPeriod: "Selecciona un período" },
     locations: { title: "Ubicaciones", createTitle: "Crear ubicación", updateTitle: "Actualizar ubicación" },
     warehouses: { title: "Gestión de almacenes" },
