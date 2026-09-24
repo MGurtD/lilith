@@ -66,23 +66,27 @@
     :header="dialogOptions.title"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
+    :style="{ width: '450px' }"
   >
-    <div>
-      <DropdownReference
-        :label="pt('Referència')"
-        v-model="workmasterStore.workmaster!.referenceId"
-        class="w-full"
-        :fullName="true"
-      ></DropdownReference>
-    </div>
-    <br />
-    <div>
-      <Button
-        :label="pt('Crear')"
-        style="float: right"
-        @click="onCreateSubmit"
-      ></Button>
-    </div>
+    <Form
+      v-if="workmasterStore.workmaster"
+      :rows="createRows"
+      :initial-values="workmasterStore.workmaster"
+      :loading="createLoading"
+      @submit="onCreateSubmit"
+      @cancel="dialogOptions.visible = false"
+    >
+      <template #field-referenceId="{ value, setValue, disabled, inputId }">
+        <DropdownReference
+          :input-id="inputId"
+          label=""
+          :model-value="typeof value === 'string' ? value : null"
+          :full-name="true"
+          :disabled="disabled"
+          @update:model-value="setValue"
+        />
+      </template>
+    </Form>
   </Dialog>
   <Dialog
     v-model:visible="copyDialogVisible"
@@ -91,7 +95,7 @@
     :modal="true"
     :style="{ width: '50vw', maxWidth: '700px' }"
   >
-    <div v-if="copyModel" class="flex flex-column gap-3">
+    <div v-if="copyInitialValues" class="flex flex-column gap-3">
       <div class="flex flex-column gap-1">
         <label class="font-semibold text-sm text-color-secondary">{{
           pt("Ruta d'origen")
@@ -104,87 +108,138 @@
         style="border: none; border-top: 1px solid var(--p-surface-200)"
       />
 
-      <div class="flex flex-column gap-2">
-        <label class="font-semibold text-sm text-color-secondary">{{
-          pt("Destí de la còpia")
-        }}</label>
-
-        <div class="flex align-items-center gap-2">
-          <RadioButton
-            v-model="copyDestinyMode"
-            inputId="destExisting"
-            value="existing"
-          />
-          <label for="destExisting">{{ pt("Referència existent") }}</label>
-        </div>
-        <div v-if="copyDestinyMode === 'existing'" class="ml-4">
-          <DropdownReference
-            label=""
-            v-model="copyModel.referenceId"
-            :fullName="true"
-          />
-        </div>
-
-        <div class="flex align-items-center gap-2 mt-2">
-          <RadioButton
-            v-model="copyDestinyMode"
-            inputId="destNew"
-            value="new"
-          />
-          <label for="destNew">{{ pt("Crear nova referència") }}</label>
-        </div>
-        <div
-          v-if="copyDestinyMode === 'new'"
-          class="ml-4 flex flex-column gap-2"
+      <Form
+        :rows="copyRows"
+        :initial-values="copyInitialValues"
+        :loading="copyLoading"
+        @submit="onCopySubmit"
+        @cancel="copyDialogVisible = false"
+      >
+        <template
+          #field-copyDestinyMode="{ value, setValue, disabled, inputId }"
         >
-          <BaseInput
-            id="referenceCode"
-            :label="pt('Codi')"
-            v-model="copyModel.referenceCode"
-          />
-          <BaseInput
-            id="referenceDescription"
-            :label="pt('Descripció')"
-            v-model="copyModel.referenceDescription"
-          />
-        </div>
-      </div>
+          <div class="flex flex-column gap-2">
+            <div
+              v-for="(option, index) in copyDestinyOptions"
+              :key="option.value"
+              class="flex align-items-center gap-2"
+            >
+              <RadioButton
+                :input-id="index === 0 ? inputId : `${inputId}-${option.value}`"
+                :name="inputId"
+                :value="option.value"
+                :model-value="value"
+                :disabled="disabled"
+                @update:model-value="setValue"
+              />
+              <label
+                :for="index === 0 ? inputId : `${inputId}-${option.value}`"
+                >{{ option.label }}</label
+              >
+            </div>
+          </div>
+        </template>
 
-      <div class="flex flex-column gap-1">
-        <label class="font-semibold text-sm text-color-secondary mb-1">{{
-          pt("Mode de fabricació")
-        }}</label>
-        <Select
-          v-model="copyModel.mode"
-          :options="workmasterStore.workmasterModes"
-          optionLabel="value"
-          optionValue="id"
-          :placeholder="pt('Selecciona el mode')"
-          class="w-full"
-        />
-      </div>
+        <template
+          #section-existingReference="{
+            values,
+            errors,
+            setFieldValue,
+            disabled,
+          }"
+        >
+          <div v-if="values.copyDestinyMode === 'existing'" class="ml-4">
+            <label
+              class="block text-900 mb-2"
+              :for="copyFieldId('referenceId')"
+              >{{ pt("Referència") }}</label
+            >
+            <DropdownReference
+              :input-id="copyFieldId('referenceId')"
+              label=""
+              :model-value="
+                typeof values.referenceId === 'string'
+                  ? values.referenceId
+                  : null
+              "
+              :full-name="true"
+              :disabled="disabled"
+              :class="{ 'p-invalid': errors.referenceId }"
+              @update:model-value="setFieldValue('referenceId', $event)"
+            />
+            <small v-if="errors.referenceId" class="p-error" role="alert">
+              {{ errors.referenceId }}
+            </small>
+          </div>
+        </template>
+
+        <template
+          #section-newReference="{ values, errors, setFieldValue, disabled }"
+        >
+          <div
+            v-if="values.copyDestinyMode === 'new'"
+            class="ml-4 flex flex-column gap-2"
+          >
+            <div>
+              <label
+                class="block text-900 mb-2"
+                :for="copyFieldId('referenceCode')"
+                >{{ pt("Codi") }}</label
+              >
+              <InputText
+                :id="copyFieldId('referenceCode')"
+                class="w-full"
+                :class="{ 'p-invalid': errors.referenceCode }"
+                :model-value="
+                  typeof values.referenceCode === 'string'
+                    ? values.referenceCode
+                    : ''
+                "
+                :disabled="disabled"
+                @update:model-value="setFieldValue('referenceCode', $event)"
+              />
+              <small v-if="errors.referenceCode" class="p-error" role="alert">
+                {{ errors.referenceCode }}
+              </small>
+            </div>
+            <div>
+              <label
+                class="block text-900 mb-2"
+                :for="copyFieldId('referenceDescription')"
+                >{{ pt("Descripció") }}</label
+              >
+              <InputText
+                :id="copyFieldId('referenceDescription')"
+                class="w-full"
+                :model-value="
+                  typeof values.referenceDescription === 'string'
+                    ? values.referenceDescription
+                    : ''
+                "
+                :disabled="disabled"
+                @update:model-value="
+                  setFieldValue('referenceDescription', $event)
+                "
+              />
+            </div>
+          </div>
+        </template>
+      </Form>
     </div>
-
-    <template #footer>
-      <div class="flex justify-content-end gap-2">
-        <Button
-          :label="pt('Cancel·lar')"
-          severity="secondary"
-          text
-          :disabled="copyLoading"
-          @click="copyDialogVisible = false"
-        />
-        <Button
-          :label="pt('Copiar')"
-          icon="pi pi-copy"
-          :loading="copyLoading"
-          @click="onCopySubmit"
-        />
-      </div>
-    </template>
   </Dialog>
 </template>
 <script setup lang="ts">
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  integerValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
 import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
@@ -193,7 +248,8 @@ import DropdownReference from "../../shared/components/DropdownReference.vue";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, useId } from "vue";
+import * as Yup from "yup";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -370,17 +426,130 @@ const returnMode = (mode: number) => {
   return workmasterStore.workmasterModes.find((m) => m.id === mode)?.value;
 };
 
-const copyDialogVisible = ref(false);
-const copyLoading = ref(false);
-const copyDestinyMode = ref<"existing" | "new">("existing");
-const copyModel = ref<{
+const createLoading = ref(false);
+
+const createRows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "referenceId",
+        label: pt("Referència"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(t("production.validation.laReferenciaEsObligatoria")),
+      },
+    ],
+  },
+]);
+
+type CopyDestinyMode = "existing" | "new";
+
+interface CopyFormValues {
+  copyDestinyMode: CopyDestinyMode;
   referenceId: string | null;
   referenceCode: string;
   referenceDescription: string;
   mode: number;
-} | null>(null);
+}
+
+const copyDialogVisible = ref(false);
+const copyLoading = ref(false);
+// Assigned once per opening: a stable snapshot for the copy form.
+const copyInitialValues = ref<CopyFormValues | null>(null);
 const copySourceWorkmasterId = ref("");
 const copySourceName = ref("");
+
+// Section fields render their own controls, so their IDs are generated here.
+const copyFormId = useId();
+const copyFieldId = (name: string): string => `copy-${copyFormId}-${name}`;
+
+const copyDestinyOptions = computed<
+  Array<{ value: CopyDestinyMode; label: string }>
+>(() => [
+  { value: "existing", label: pt("Referència existent") },
+  { value: "new", label: pt("Crear nova referència") },
+]);
+
+const copyDestinyModeValue = (value: unknown): CopyDestinyMode =>
+  value === "new" ? "new" : "existing";
+
+const copyRows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "copyDestinyMode",
+        label: pt("Destí de la còpia"),
+        type: FormFieldType.Custom,
+        defaultValue: "existing",
+      },
+    ],
+  },
+  {
+    section: "existingReference",
+    fields: [
+      {
+        name: "referenceId",
+        label: pt("Referència"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .test(
+            "existing-reference-required",
+            pt("Selecciona una referència de destí"),
+            function (value) {
+              return (
+                copyDestinyModeValue(this.parent.copyDestinyMode) !==
+                  "existing" || Boolean(value)
+              );
+            },
+          ),
+      },
+    ],
+  },
+  {
+    section: "newReference",
+    fields: [
+      {
+        name: "referenceCode",
+        label: pt("Codi"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .test(
+            "new-reference-code-required",
+            pt("Introdueix el codi de la nova referència"),
+            function (value) {
+              return (
+                copyDestinyModeValue(this.parent.copyDestinyMode) !== "new" ||
+                Boolean(value?.trim())
+              );
+            },
+          ),
+      },
+      {
+        name: "referenceDescription",
+        label: pt("Descripció"),
+        type: FormFieldType.Custom,
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "mode",
+        label: pt("Mode de fabricació"),
+        type: FormFieldType.Select,
+        props: {
+          options: workmasterStore.workmasterModes,
+          optionLabel: "value",
+          optionValue: "id",
+          placeholder: pt("Selecciona el mode"),
+        },
+      },
+    ],
+  },
+]);
 
 onMounted(async () => {
   store.setMenuItem({
@@ -413,8 +582,8 @@ const createButtonClick = () => {
 const copyButton = (workmaster: WorkMaster) => {
   copySourceWorkmasterId.value = workmaster.id;
   copySourceName.value = referenceStore.getFullNameById(workmaster.referenceId);
-  copyDestinyMode.value = "existing";
-  copyModel.value = {
+  copyInitialValues.value = {
+    copyDestinyMode: "existing",
     referenceId: null,
     referenceCode: "",
     referenceDescription: "",
@@ -423,43 +592,22 @@ const copyButton = (workmaster: WorkMaster) => {
   copyDialogVisible.value = true;
 };
 
-const onCopySubmit = async () => {
-  if (!copyModel.value) return;
-
-  if (copyDestinyMode.value === "existing" && !copyModel.value.referenceId) {
-    toast.add({
-      severity: "warn",
-      summary: pt("Selecciona una referència de destí"),
-      life: 5000,
-    });
-    return;
-  }
-
-  if (
-    copyDestinyMode.value === "new" &&
-    !copyModel.value.referenceCode.trim()
-  ) {
-    toast.add({
-      severity: "warn",
-      summary: pt("Introdueix el codi de la nova referència"),
-      life: 5000,
-    });
-    return;
-  }
+const onCopySubmit = async (values: FormValues) => {
+  const destinyMode = copyDestinyModeValue(values.copyDestinyMode);
 
   const payload: WorkMasterToCopy = {
     workmasterId: copySourceWorkmasterId.value,
     referenceId:
-      copyDestinyMode.value === "existing" ? copyModel.value.referenceId : null,
+      destinyMode === "existing"
+        ? nullableStringValue(values.referenceId, null)
+        : null,
     referenceCode:
-      copyDestinyMode.value === "new"
-        ? copyModel.value.referenceCode.trim()
-        : "",
+      destinyMode === "new" ? stringValue(values.referenceCode, "").trim() : "",
     referenceDescription:
-      copyDestinyMode.value === "new"
-        ? copyModel.value.referenceDescription.trim()
+      destinyMode === "new"
+        ? stringValue(values.referenceDescription, "").trim()
         : "",
-    mode: copyModel.value.mode,
+    mode: integerValue(values.mode, 1),
   };
 
   copyLoading.value = true;
@@ -473,7 +621,7 @@ const onCopySubmit = async () => {
       });
       copyDialogVisible.value = false;
       await workmasterStore.fetchAll();
-      if (copyDestinyMode.value === "new") {
+      if (destinyMode === "new") {
         referenceStore.fetchReferencesByModule("sales");
       }
     } else {
@@ -495,12 +643,24 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workmaster/${row.data.id}` });
 };
 
-const onCreateSubmit = async () => {
+const onCreateSubmit = async (values: FormValues) => {
   if (!workmasterStore.workmaster) return;
 
-  const created = await workmasterStore.create(workmasterStore.workmaster);
-  if (created)
-    router.push({ path: `/workmaster/${workmasterStore.workmaster.id}` });
+  const workmaster: WorkMaster = {
+    ...workmasterStore.workmaster,
+    referenceId: stringValue(
+      values.referenceId,
+      workmasterStore.workmaster.referenceId,
+    ),
+  };
+
+  createLoading.value = true;
+  try {
+    const created = await workmasterStore.create(workmaster);
+    if (created) router.push({ path: `/workmaster/${workmaster.id}` });
+  } finally {
+    createLoading.value = false;
+  }
 };
 
 const deleteButton = (workmaster: WorkMaster) => {
