@@ -1156,7 +1156,12 @@ const en = {
       customers: "Customers",
     },
   },
-  home: {},
+  home: {
+    title: "Home",
+    greetingMorning: "Good morning, {name}",
+    greetingAfternoon: "Good afternoon, {name}",
+    greetingEvening: "Good evening, {name}",
+  },
   phaseTemplates: {
     title: "Phase templates",
     menuTitle: "Phase template management",
@@ -2126,6 +2131,7 @@ const en = {
       date: "Date",
       scale: "Scale",
       screen: "Screen",
+      user: "User",
     },
   },
   movementTypes: {

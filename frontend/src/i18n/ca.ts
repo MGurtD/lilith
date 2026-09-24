@@ -1179,7 +1179,12 @@ const ca = {
       customers: "Clients",
     },
   },
-  home: {},
+  home: {
+    title: "Inici",
+    greetingMorning: "Bon dia, {name}",
+    greetingAfternoon: "Bona tarda, {name}",
+    greetingEvening: "Bona nit, {name}",
+  },
   phaseTemplates: {
     title: "Plantilles de fase",
     menuTitle: "Gestió de plantilles de fase",
@@ -2152,6 +2157,7 @@ const ca = {
       date: "Data",
       scale: "Escala",
       screen: "Pantalla",
+      user: "Usuari",
     },
   },
   movementTypes: {

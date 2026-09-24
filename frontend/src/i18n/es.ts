@@ -1123,7 +1123,12 @@ const es = {
       customers: "Clientes",
     },
   },
-  home: {},
+  home: {
+    title: "Inicio",
+    greetingMorning: "Buenos días, {name}",
+    greetingAfternoon: "Buenas tardes, {name}",
+    greetingEvening: "Buenas noches, {name}",
+  },
   phaseTemplates: {
     title: "Plantillas de fase",
     menuTitle: "Gestión de plantillas de fase",
@@ -2095,6 +2100,7 @@ const es = {
       date: "Fecha",
       scale: "Escala",
       screen: "Pantalla",
+      user: "Usuario",
     },
   },
   movementTypes: {
