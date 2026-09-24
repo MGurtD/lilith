@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1 in review (#135); L2 and L3 migrated, UI verification running.
+> **Status**: In progress. L1 in review (#135); L2, L3 and L4 migrated; L4 UI verification running.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -143,19 +143,19 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PR-18 | `production/components/FormWorkmaster.vue` | `Workmaster.vue` | med | F-02? | pending | | SplitButton "calculate cost" next to Save |
-| PR-19 | `production/views/Workmasters.vue` (create dialog) | — | low | — | pending | | 1 selector |
-| PR-20 | `production/views/Workmasters.vue` (copy dialog) | — | high | F-01 | pending | | RadioButton switches between existing and new reference fields |
-| PR-21 | `production/components/FormWorkmasterPhase.vue` | `WorkmasterPhase.vue`, `TableWorkmasterPhases.vue` | high | F-03? | pending | | Cascades (workcenter type/workcenter/external work/service reference), async profit lookup |
-| PR-22 | `production/components/FormWorkmasterPhaseDetail.vue` | `WorkmasterPhase.vue` | low | — | pending | | |
-| PR-23 | `production/components/FormWorkmasterPhaseBomItem.vue` | `WorkmasterPhase.vue` | low | — | pending | | `DropdownReference` slot |
-| PR-24 | `production/components/FormWorkorder.vue` | `Workorder.vue` | med | F-02? | pending | | SplitButton exports; computed date range; lifecycle status dropdown |
-| PR-25 | `production/components/FormCreateWorkorder.vue` | `Workorders.vue`, `sales/components/TableSalesOrderDetails.vue` | high | F-01 | pending | | Lot code field shown when the selected work master's reference requires a lot |
-| PR-26 | `production/components/FormWorkorderPhase.vue` | `WorkorderPhase.vue`, `TableWorkorderPhases.vue` | high | F-03? | pending | | Same cascade pattern as PR-21 |
-| PR-27 | `production/components/FormWorkorderPhaseDetail.vue` | `WorkorderPhase.vue` | low | — | pending | | |
-| PR-28 | `production/components/FormWorkorderPhaseBomItem.vue` | `WorkorderPhase.vue` | low | — | pending | | `DropdownReference` slot |
-| PR-29 | `production/components/FormProductionPart.vue` | `ProductionParts.vue` | med | — | pending | | Work order selection fills 3 dependent fields |
-| PR-30 | `production/components/FormWorkOrderProductionPart.vue` | `Workorder.vue` | med | — | pending | | Filtered options; async `getWorkOrders` on change |
+| PR-18 | `production/components/FormWorkmaster.vue` | `Workmaster.vue` | med | F-02? | migrated | `beceff8` | SplitButton "calculate cost" next to Save |
+| PR-19 | `production/views/Workmasters.vue` (create dialog) | — | low | — | migrated | `6003a06` | 1 selector |
+| PR-20 | `production/views/Workmasters.vue` (copy dialog) | — | high | F-01 | migrated | `6003a06` | RadioButton switches between existing and new reference fields |
+| PR-21 | `production/components/FormWorkmasterPhase.vue` | `WorkmasterPhase.vue`, `TableWorkmasterPhases.vue` | high | F-03? | migrated | `03e62ce` | Cascades (workcenter type/workcenter/external work/service reference), async profit lookup |
+| PR-22 | `production/components/FormWorkmasterPhaseDetail.vue` | `WorkmasterPhase.vue` | low | — | migrated | `03e62ce` | |
+| PR-23 | `production/components/FormWorkmasterPhaseBomItem.vue` | `WorkmasterPhase.vue` | low | — | migrated | `03e62ce` | `DropdownReference` slot |
+| PR-24 | `production/components/FormWorkorder.vue` | `Workorder.vue` | med | F-02? | migrated | `7b9e7f1` | SplitButton exports; computed date range; lifecycle status dropdown |
+| PR-25 | `production/components/FormCreateWorkorder.vue` | `Workorders.vue`, `sales/components/TableSalesOrderDetails.vue` | high | F-01 | migrated | `c2f9c94` | Lot code field shown when the selected work master's reference requires a lot |
+| PR-26 | `production/components/FormWorkorderPhase.vue` | `WorkorderPhase.vue`, `TableWorkorderPhases.vue` | high | F-03? | migrated | `76225d4` | Same cascade pattern as PR-21 |
+| PR-27 | `production/components/FormWorkorderPhaseDetail.vue` | `WorkorderPhase.vue` | low | — | migrated | `76225d4` | |
+| PR-28 | `production/components/FormWorkorderPhaseBomItem.vue` | `WorkorderPhase.vue` | low | — | migrated | `76225d4` | `DropdownReference` slot |
+| PR-29 | `production/components/FormProductionPart.vue` | `ProductionParts.vue` | med | — | migrated | `3b9bc7f` | Work order selection fills 3 dependent fields |
+| PR-30 | `production/components/FormWorkOrderProductionPart.vue` | `Workorder.vue` | med | — | migrated | `7b9e7f1` | Filtered options; async `getWorkOrders` on change |
 
 ### 2.5 Batch L5 — Sales masters
 
@@ -253,8 +253,8 @@ established pattern turned out to be enough).
 
 | F | Capability | Motivated by | Status | Files | Verification | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | candidate | | | |
-| F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot. First check whether a Save `SplitButton` in `PageActions` driven through an external form ref (frontend save convention) is enough | PR-18, PR-24, SY-04 | candidate | | | |
+| F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | rejected | — | Section row rendered from slot `values` + Yup `.test` on `this.parent` (README pattern) covered both cases | — |
+| F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot | PR-18, PR-24 | rejected for screens | — | With `page-actions` the `actions` slot renders inside PageActions and receives `submit`; the SplitButton lives there (secondary action via a pending-action ref). Re-check for SY-04 (dialog/cancel needs) | — |
 | F-03 | Unique native field IDs for simultaneous forms | SH-04 | implemented | `Form.vue`, `README.md`, custom slots in purchase forms and `FormRejectionReason.vue` | See entry below | `770c1ae` |
 | F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06, SH-09 | candidate | | | |
 | F-05 | Repeatable or dynamically generated field groups | SY-05 | candidate | | | |
@@ -344,6 +344,12 @@ Copy for each feature once it is `confirmed`:
 | WH-03 Inventory movement | Changing the reference clears the selected lot (legacy could submit a lot from another reference); hardcoded Catalan messages replaced by keys | Bug fix |
 | PU-01 Purchase rate duplicate | Name and both dates now required, end date on or after start; confirm button reads Save instead of Duplicate | Global decision |
 | i18n | `common.lot` was referenced by inventory, stock and stock movement screens but missing from every locale; added | Bug fix |
+| PR-21..PR-28 Phase screens (workmaster and workorder) | Header forms keep a scalar snapshot; saving or deleting a step/material no longer silently saves unsaved header edits (the parent's `updatePhase` now sends the phase as loaded). **Open decision**: accept, or drop the now-redundant `updatePhase` calls | Pending user decision |
+| PR-21 Workmaster phase | Stale profit-percentage responses are ignored; a missing workcenter type no longer crashes | Bug fix |
+| PR-18, PR-19, PR-20 Workmasters | Split-button save kept; create dialog requires a reference; copy dialog radios sit above the chosen group; footer reads Save instead of Crear/Copiar | Global decision |
+| PR-24 Workorder | Clearing the status falls back to the saved status; execution period gets its own row | Layout |
+| PR-25 Create workorder | Lot code is submitted only when the route's reference requires a lot (hidden stale codes no longer sent); still optional | Bug fix |
+| PR-29 Production part | Changing the workcenter clears the selected work order detail (stale phase could be submitted); integer/greater-than-zero rules now have localized messages | Bug fix |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
