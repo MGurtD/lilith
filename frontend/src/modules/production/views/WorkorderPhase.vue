@@ -101,6 +101,7 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { usePlantModelStore } from "../store/plantmodel";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
@@ -121,6 +122,7 @@ const store = useStore();
 const referenceStore = useReferenceStore();
 const plantModelStore = usePlantModelStore();
 const workorderStore = useWorkOrderStore();
+const lifecycleStore = useLifecyclesStore();
 const { workorder, workorderPhase } = storeToRefs(workorderStore);
 const id = ref("");
 const phaseId = ref("");
@@ -166,6 +168,10 @@ const loadViewData = async () => {
   // came from the work order screen, not on a direct load of this URL.
   if (workorder.value?.id !== id.value) {
     await workorderStore.fetchOne(id.value);
+  }
+  // The status dropdown names the current status from the loaded lifecycle.
+  if (lifecycleStore.lifecycle?.name !== "WorkOrder") {
+    await lifecycleStore.fetchOneByName("WorkOrder");
   }
   phaseRejections.value =
     (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
