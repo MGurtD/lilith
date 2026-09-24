@@ -1,119 +1,94 @@
-<template>
-  <form v-if="operatorType">
-    <section class="four-columns">
-      <BaseInput
-        class="mb-2"
-        :label="t('production.components.nom')"
-        id="name"
-        v-model="operatorType.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="t('production.components.descripcio')"
-        id="description"
-        v-model="operatorType.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="t('production.components.costHora')"
-        id="cost"
-        :type="BaseInputType.CURRENCY"
-        v-model="operatorType.cost"
-        :class="{
-          'p-invalid': validation.errors.cost,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.desactivat") }}</label>
-        <Checkbox
-          v-model="operatorType.disabled"
-          class="w-full"
-          :binary="true"
-        />
-      </div>
-    </section>
-
-    <PageActions>
-      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { onMounted, ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import { OperatorType } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
-import { usePlantModelStore } from "../store/plantmodel";
-import { BaseInputType } from "@/types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { OperatorType } from "../types";
 
 const props = defineProps<{
   operatortype: OperatorType;
 }>();
 
-onMounted(async () => {
-  await plantModelStore.fetchOperatorTypes();
-});
-
 const emit = defineEmits<{
-  (e: "submit", operatorType: OperatorType): void;
-  (e: "cancel"): void;
+  (event: "submit", operatorType: OperatorType): void;
 }>();
 
-const toast = useToast();
-const plantModelStore = usePlantModelStore();
-const { operatorType } = storeToRefs(plantModelStore);
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required(t("production.validation.elNomEsObligatori"))
-    .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
-  description: Yup.string()
-    .required(t("production.validation.laDescripcioEsObligatori"))
-    .max(250, t("production.validation.laDescripcioPotSuperarEls250Caracters")),
-  cost: Yup.number().required(t("production.validation.elCostEsObligatori")).min(0),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "name",
+        label: t("production.components.nom"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elNomEsObligatori"))
+          .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
+      },
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.laDescripcioEsObligatoria"))
+          .max(
+            250,
+            t("production.validation.laDescripcioNoPotSuperarEls250Caracters"),
+          ),
+      },
+      {
+        name: "cost",
+        label: t("production.components.costHora"),
+        type: FormFieldType.Number,
+        props: {
+          locale: "en-US",
+          minFractionDigits: 2,
+          suffix: " €",
+          min: 0,
+        },
+        validation: Yup.number()
+          .typeError(t("production.validation.elCostEsObligatori"))
+          .required(t("production.validation.elCostEsObligatori"))
+          .min(0, t("production.validation.costCannotBeNegative")),
+      },
+      {
+        name: "disabled",
+        label: t("production.components.desactivat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.operatortype);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.operatortype);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.operatortype,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    cost: finiteNumberValue(values.cost, props.operatortype.cost),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="operatortype"
+    @submit="submit"
+  />
+</template>
