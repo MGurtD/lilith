@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. F-03 implemented; batch L1 in progress.
+> **Status**: In progress. F-03 implemented; batch L1 migrated and verified, awaiting review.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -102,11 +102,11 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| SH-01 | `shared/components/FormPaymentMethod.vue` | `PaymentMethod.vue` | low | — | pending | | Flat fields |
-| SH-02 | `shared/components/FormTax.vue` | `Tax.vue` | low | — | pending | | Text, number, 2 checkboxes |
-| SH-03 | `shared/components/FormReferenceType.vue` | `ReferenceType.vue` | low | — | pending | | 2 ColorPickers via `Custom` slot; `sales/components/FormReference.vue` imports it but never renders it (dead import) |
+| SH-01 | `shared/components/FormPaymentMethod.vue` | `PaymentMethod.vue` | low | — | migrated | `2283365` | Flat fields; UI verified |
+| SH-02 | `shared/components/FormTax.vue` | `Tax.vue` | low | — | migrated | `27b4725`, fix `b060c1c` | UI verified after the fix; exposed the InputNumber double-binding bug fixed in `b060c1c` |
+| SH-03 | `shared/components/FormReferenceType.vue` | `ReferenceType.vue` | low | — | migrated | `7c202db` | UI verified (density PUT keeps colors); 2 ColorPickers via `Custom` slot; `sales/components/FormReference.vue` imports it but never renders it (dead import) |
 | SH-04 | `shared/components/FormLifecycle.vue` | `Lifecycle.vue` | low | F-03 | migrated | `5c0a9a0` / F-03 PR | Parent's own save replaced by `page-actions`; statuses kept out of the snapshot and merged at submit |
-| SH-05 | `shared/components/FormExercise.vue` | `Exercise.vue` | med | — | pending | | `Yup.ref` date range; legacy mutates dates at submit |
+| SH-05 | `shared/components/FormExercise.vue` | `Exercise.vue` | med | — | migrated | `884f211` | UI verified (date-range error; PUT dates `2022-01-01T00:00:00.000Z`/`2022-12-31T00:00:00.000Z`); `Yup.ref` date range; submit-time date mutation removed (`toJSON` serializes identically) |
 
 ### 2.2 Batch L2 — Production plant model
 
@@ -299,6 +299,15 @@ otherwise mark it `rejected` and note the pattern used.
   Proven Patterns (`FormLifecycle`, `FormRejectionReason`).
 - **PR**: pending (branch `forms/f03-unique-field-ids`).
 
+### Form.vue fixes found during migration
+
+Defects in `Form.vue` itself are not features, but they change behavior for
+every consumer, so they are recorded here.
+
+| Fix | Found by | Commit | Verification |
+| --- | --- | --- | --- |
+| PrimeVue inputs also registered themselves with the injected PrimeVue form and synced their value from it. A cleared `InputNumber` reverted to its initial value on blur, so an empty required number was saved. Controls now render in a scope that hides `$pcForm`/`$pcFormField`; `modelValue` + `setFieldValue` is the only binding. Affects every Number/Currency field, including migrated purchase forms. | SH-02 UI test (tax 21%: empty percentage saved) | `b060c1c` | Tax 21%: cleared percentage stays empty after blur, Save shows the inline required error and sends no PUT; retyping 21 works. Exercise date-range error still blocks submit. Purchase Number fields: regression pending |
+
 ### Feature entry template
 
 Copy for each feature once it is `confirmed`:
@@ -322,6 +331,8 @@ Copy for each feature once it is `confirmed`:
 | Scope | Change | Approval |
 | --- | --- | --- |
 | All migrated forms | Inline field errors replace the "invalid form" toast and `FormValidation` | Accepted globally (2026-09-24) |
+| SH-02 Tax | The percentage validation message said "frequency"; it now names the percentage in ca/es/en | Bug fix |
+| SH-05 Exercise | Dates are no longer rewritten on the store object at submit; the request body is serialized by `Date.prototype.toJSON`, which applies the same local-time conversion | Equivalent request |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -334,3 +345,5 @@ there was none, and so on).
 | --- | --- |
 | 2026-09-24 | Tracker created with full inventory and candidate features |
 | 2026-09-24 | L1 stopped at SH-04 by F-03; F-03 implemented and verified with SH-04 (`fe59b6b`, `5c0a9a0`) |
+| 2026-09-24 | L1 SH-01, SH-02, SH-03, SH-05 migrated; `Form.vue` InputNumber binding fix (`b060c1c`) |
+| 2026-09-24 | L1 UI verification complete; purchase Number regression for `b060c1c` queued |
