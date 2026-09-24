@@ -24,11 +24,13 @@ export enum FormFieldType {
 
 export interface FormGridColumns {
   mobile?: number;
+  tablet?: number;
   desktop?: number;
 }
 
 export interface FormFieldSpan {
   mobile?: number;
+  tablet?: number;
   desktop?: number;
 }
 
@@ -53,7 +55,8 @@ interface BaseFormFieldConfig<TType extends FormFieldType, TProps> {
   defaultValue?: unknown;
   validation?: AnySchema;
   props?: TProps;
-  disabled?: boolean;
+  disabled?: boolean | ((values: Readonly<FormValues>) => boolean);
+  onChange?: (value: unknown, values: Readonly<FormValues>) => void;
   span?: FormFieldSpan;
 }
 
@@ -81,6 +84,7 @@ export type FormFieldConfig =
 export interface FormRowConfig {
   fields: FormFieldConfig[];
   columns?: FormGridColumns;
+  section?: string;
 }
 
 export type FormValues = Record<string, unknown>;

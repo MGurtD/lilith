@@ -1,6 +1,6 @@
 # Lilith ERP Agent Guide
 
-Project instructions for OpenCode sessions in this monorepo. Keep this file limited to durable, project-wide rules. Task procedures belong in `.opencode/skills/`.
+Project instructions for AI coding agent sessions (Claude Code, OpenCode) in this monorepo. Keep this file limited to durable, project-wide rules. Task procedures belong in `.claude/skills/`.
 
 ## Repository
 
@@ -78,10 +78,11 @@ Local launch-profile Swagger is `https://localhost:7284/swagger`. Docker exposes
 
 ## Task Skills
 
-Load the matching skill for specialized workflows:
+Load the matching skill from `.claude/skills/` for specialized workflows:
 
 - `adding-backend-entity`
 - `frontend-crud`
+- `frontend-form`
 - `backend-localization`
 - `audit-frontend-localization`
 - `translate-frontend-view`

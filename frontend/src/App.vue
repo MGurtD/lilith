@@ -91,6 +91,14 @@ watch(
   },
 );
 
+// Plant screens run on shop-floor tablets: keep the 16px root there so touch
+// targets are not scaled down with the denser 14px office UI.
+watch(
+  () => route.path.startsWith("/plant"),
+  (isPlant) => document.documentElement.classList.toggle("plant-mode", isPlant),
+  { immediate: true },
+);
+
 const logout = async () => {
   helpStore.reset();
   await store.removeAuthorization();
@@ -106,8 +114,8 @@ const logoutOperator = () => {
 
 <template>
   <div v-if="store.authorization">
-    <Header @logout-click="logout" @logout-operator-click="logoutOperator" />
-    <SideBar />
+    <Header />
+    <SideBar @logout-click="logout" @logout-operator-click="logoutOperator" />
     <HelpDrawer />
     <main class="app__view" :class="{ collapsed: store.sidebar.collapsed }">
       <ScrollPanel style="height: calc(100vh - 5rem)">
@@ -150,6 +158,16 @@ const logoutOperator = () => {
   width: calc(
     100vw - var(--side-bar-collapsed-width) - var(--collapsed-side-padding)
   );
+}
+
+/* Phones: the sidebar becomes a drawer, content takes the full width. */
+@media (max-width: 767.98px) {
+  .app__view,
+  .app__view.collapsed {
+    left: 0;
+    width: 100vw;
+    padding: 0.75rem;
+  }
 }
 
 /* Subtle loading indicator - top progress bar */

@@ -104,40 +104,19 @@
       </div>
     </section>
 
-    <div class="mt-2">
-      <Button
-        type="submit"
-        :label="$t('forms.user.saveButton') as string"
-        class="mr-2"
+    <PageActions>
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('forms.user.saveButton')"
+        :model="userActions"
+        @click="submit"
       />
-
-      <Button
-        v-if="user.disabled"
-        severity="success"
-        :label="$t('forms.user.activateButton') as string"
-        class="mr-2"
-        @click="changeUserAvailability(false)"
-      />
-      <Button
-        v-else
-        :label="$t('forms.user.deactivateButton') as string"
-        severity="danger"
-        class="mr-2"
-        @click="changeUserAvailability(true)"
-      />
-
-      <Button
-        severity="secondary"
-        :label="$t('forms.user.changePasswordButton') as string"
-        class="mr-2"
-        @click="enablePasswordMode"
-      />
-    </div>
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "@/store";
 import * as Yup from "yup";
@@ -150,6 +129,7 @@ import { BaseInputType } from "@/types/component";
 import { UserLogin, ChangePasswordRequest } from "@/services/authentications.service";
 import { User, Role, Profile } from "@/types";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import PageActions from "@/components/PageActions.vue";
 
 const { t } = useI18n();
 const appStore = useStore();
@@ -216,6 +196,26 @@ const submit = async () => {
     });
   }
 };
+
+// Secondary actions live in the Save button's menu (page actions convention).
+const userActions = computed(() => [
+  props.user?.disabled
+    ? {
+        label: t("forms.user.activateButton"),
+        icon: "pi pi-check",
+        command: () => changeUserAvailability(false),
+      }
+    : {
+        label: t("forms.user.deactivateButton"),
+        icon: "pi pi-ban",
+        command: () => changeUserAvailability(true),
+      },
+  {
+    label: t("forms.user.changePasswordButton"),
+    icon: "pi pi-key",
+    command: () => enablePasswordMode(),
+  },
+]);
 
 const enablePasswordMode = () => {
   passwordChangeModeOn.value = true;

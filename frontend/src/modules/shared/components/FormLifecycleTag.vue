@@ -5,6 +5,7 @@ import {
   type FormRowConfig,
   type FormValues,
 } from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
 import IconPicker from "@/components/IconPicker.vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -93,10 +94,10 @@ const rows = computed<FormRowConfig[]>(() => [
 const submit = (values: FormValues): void => {
   emit("submit", {
     ...props.tag,
-    name: String(values.name ?? ""),
-    description: String(values.description ?? ""),
-    color: String(values.color ?? ""),
-    icon: String(values.icon ?? ""),
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    color: stringValue(values.color, ""),
+    icon: stringValue(values.icon, ""),
   });
 };
 </script>

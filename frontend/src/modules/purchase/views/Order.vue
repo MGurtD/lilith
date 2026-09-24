@@ -1,14 +1,20 @@
 <template>
   <main v-if="order">
-    <SplitButton
-      :label="t('purchase.order.actions.save')"
-      @click="submitForm"
-      :model="items"
-      :size="'small'"
-      class="grid_add_row_button"
-    />
+    <PageActions>
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('purchase.order.actions.save')"
+        @click="submitForm"
+        :model="items"
+      />
+    </PageActions>
 
-    <FormOrder class="pt-3" ref="orderForm" @submit="onOrderSubmit" />
+    <FormOrder
+      class="pt-3"
+      ref="orderForm"
+      :order="order"
+      @submit="onOrderSubmit"
+    />
     <br />
     <TableOrderDetails
       v-if="order.details"
@@ -49,13 +55,14 @@
   <main v-else>{{ t("purchase.order.messages.loading") }}</main>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import FormOrder from "../components/FormOrder.vue";
 import TableOrderDetails from "../components/TableOrderDetails.vue";
 import FormOrderDetail from "../components/FormOrderDetail.vue";
 import { onMounted, reactive, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
-import { PurchaseOrderDetail } from "../types";
+import type { PurchaseOrder, PurchaseOrderDetail } from "../types";
 import { GenericResponse } from "../../../types";
 import { ReferenceCategoryEnum } from "../../shared/types";
 import {
@@ -81,7 +88,7 @@ import { useI18n } from "vue-i18n";
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
-const orderForm = ref();
+const orderForm = ref<{ submitForm: () => void } | null>(null);
 const confirm = useConfirm();
 const referenceStore = useReferenceStore();
 const referenceTypeStore = useReferenceTypeStore();
@@ -128,26 +135,13 @@ onMounted(async () => {
 
 const toast = useToast();
 
-const submitForm = async () => {
-  if (!order.value?.date) {
-    toast.add({
-      severity: "error",
-      summary: t("purchase.order.messages.saveError"),
-      detail: t("purchase.order.validation.dateRequired"),
-      life: 5000,
-    });
-    return false;
-  }
+const submitForm = () => orderForm.value?.submitForm();
 
-  const form = orderForm.value as any;
-  form.submitForm();
-};
-
-const onOrderSubmit = async () => {
+const onOrderSubmit = async (submittedOrder: PurchaseOrder) => {
   let result = false;
   let message = "";
   if (order.value) {
-    result = await orderStore.update(order.value.id, order.value);
+    result = await orderStore.update(submittedOrder.id, submittedOrder);
     message = t("purchase.order.messages.updated");
 
     if (result) {

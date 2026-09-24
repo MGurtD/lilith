@@ -83,15 +83,17 @@
     <LocationFields
       :model-value="site"
       :validation-errors="validation.errors"
+      @update:model-value="updateLocation"
     />
 
-    <div class="flex justify-content-end">
-      <Button :label="t('production.components.guardar')" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
@@ -107,10 +109,15 @@ import {
   FormValidationResult,
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
+import type { LocationData } from "@/types";
 
 const props = defineProps<{
   site: Site;
 }>();
+
+const updateLocation = (location: LocationData): void => {
+  Object.assign(props.site, location);
+};
 
 const emit = defineEmits<{
   (e: "submit", site: Site): void;

@@ -2,7 +2,6 @@ import { RouteRecordRaw } from "vue-router";
 
 const Suppliers = () => import("./views/Suppliers.vue");
 const Supplier = () => import("./views/Supplier.vue");
-const SupplierType = () => import("./views/SupplierType.vue");
 const Receipts = () => import("./views/Receipts.vue");
 const Receipt = () => import("./views/Receipt.vue");
 const Orders = () => import("./views/Orders.vue");
@@ -50,13 +49,6 @@ export default [
     component: Supplier,
     props: true,
     meta: { helpKey: "purchase/supplier/detail" },
-  },
-  {
-    path: "/supplier-types/:id",
-    name: "SupplierType",
-    component: SupplierType,
-    props: true,
-    meta: { helpKey: "purchase/suppliertype/detail" },
   },
   {
     path: "/purchase-orders",

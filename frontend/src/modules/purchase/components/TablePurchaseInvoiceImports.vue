@@ -10,7 +10,6 @@
       :icon="PrimeIcons.PLUS"
       :aria-label="t('purchase.purchaseInvoiceImport.actions.add')"
       :title="t('purchase.purchaseInvoiceImport.actions.add')"
-      class="grid_add_row_button"
       style="margin-right: 1.5rem"
     />
 

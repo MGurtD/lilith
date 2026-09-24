@@ -532,7 +532,7 @@ const confirmResend = (row: any) => {
 }
 
 .verifactu-detail-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
 }
 

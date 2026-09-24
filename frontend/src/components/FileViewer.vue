@@ -827,7 +827,7 @@ onUnmounted(() => {
   }
 
   .zoom-indicator {
-    font-size: 0.75rem;
+    font-size: 0.8571rem;
     padding: 0 0.25rem;
   }
 

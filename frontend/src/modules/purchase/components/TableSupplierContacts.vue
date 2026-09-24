@@ -104,13 +104,12 @@ const rowContactClick = (row: DataTableRowClickEvent) => {
       "grid_delete_column_button"
     )
   ) {
-    selectedContact.value = row.data;
+    selectedContact.value = { ...(row.data as SupplierContact) };
     formMode.value = FormActionMode.EDIT;
   }
 };
 
-const submitForm = () => {
-  const contact = selectedContact.value as SupplierContact;
+const submitForm = (contact: SupplierContact) => {
   if (formMode.value === FormActionMode.CREATE) {
     emit("create", contact);
   } else {

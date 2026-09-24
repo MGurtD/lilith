@@ -23,6 +23,7 @@
       :model-value="address"
       :show-distance="true"
       :validation-errors="validation.errors"
+      @update:model-value="updateLocation"
     />
 
     <div>
@@ -49,11 +50,16 @@ import {
 } from "../../../utils/form-validator";
 import { useToast } from "primevue/usetoast";
 import { CustomerAddress } from "../types";
+import type { LocationData } from "@/types";
 
 const { t } = useI18n();
 const props = defineProps<{
   address: CustomerAddress;
 }>();
+
+const updateLocation = (location: LocationData): void => {
+  Object.assign(props.address, location);
+};
 
 const emit = defineEmits<{
   (e: "submit", address: CustomerAddress): void;

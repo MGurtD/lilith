@@ -11,7 +11,7 @@ A manufacturing ERP for small and mid-sized manufacturers in Catalonia and Spain
 | New engineer on the project | [Quick start](#quick-start) below, then [backend](backend/README.md) or [frontend](frontend/README.md) |
 | Backend developer | [backend/README.md](backend/README.md) |
 | Frontend developer | [frontend/README.md](frontend/README.md) |
-| AI coding agent | [AGENTS.md](AGENTS.md) |
+| AI coding agent | [AGENTS.md](AGENTS.md); Claude Code config, skills, subagents and hooks in [.claude/](.claude/) |
 | Looking for architecture | [backend/docs/architecture-layers.md](backend/docs/architecture-layers.md) |
 | Tracking known gaps | [backend/docs/architectural-debt-assessment.md](backend/docs/architectural-debt-assessment.md) |
 
@@ -60,6 +60,7 @@ cd frontend && pnpm install && pnpm run dev
 ├── frontend/          # Vue 3 SPA → frontend/README.md
 ├── .github/workflows/ # CI/CD per app
 ├── docker-compose.yml # Full stack
+├── .claude/           # Claude Code settings, skills, subagents, hooks
 ├── AGENTS.md          # AI coding agent guidelines
 └── .env.example
 ```

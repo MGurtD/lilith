@@ -31,14 +31,13 @@
       <TabPanels>
         <!-- ============ GENERAL ============ -->
         <TabPanel value="general">
-          <div class="flex justify-content-end mb-2">
+          <PageActions>
             <Button
               :label="$t('shared.referenceManagement.general.save')"
-              size="small"
               :icon="PrimeIcons.SAVE"
               @click="submitGeneral"
             />
-          </div>
+          </PageActions>
           <form>
             <section class="five-columns">
               <div class="mt-1">
@@ -169,14 +168,13 @@
                 v-model="reference.price"
               />
             </div>
-            <div class="mt-1 flex align-items-end">
+            <PageActions>
               <Button
                 :label="$t('shared.referenceManagement.sales.savePvp')"
-                size="small"
                 :icon="PrimeIcons.SAVE"
                 @click="submitGeneral"
               />
-            </div>
+            </PageActions>
           </section>
 
           <DataTable
@@ -555,6 +553,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";

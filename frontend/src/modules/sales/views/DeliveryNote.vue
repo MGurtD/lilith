@@ -1,12 +1,13 @@
 <template>
-  <SplitButton
-    :label="t('sales.detail.actions.save')"
-    @click="submitForm"
-    :model="items"
-    :size="'small'"
-    class="grid_add_row_button"
-    :disabled="!canSave"
-  />
+  <PageActions>
+    <SplitButton
+      icon="pi pi-save"
+      :label="t('sales.detail.actions.save')"
+      @click="submitForm"
+      :model="items"
+      :disabled="!canSave"
+    />
+  </PageActions>
 
   <FormDeliveryNote
     v-if="deliveryNote"
@@ -56,6 +57,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import SelectorOrders from "../components/SelectorOrders.vue";
 import FormDeliveryNote from "../components/FormDeliveryNote.vue";
 import TableDeliveryNoteDetails from "../components/TableDeliveryNoteDetails.vue";

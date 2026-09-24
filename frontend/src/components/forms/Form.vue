@@ -8,6 +8,7 @@ import PrimeForm, {
 import PrimeFormField from "@primevue/forms/formfield";
 import { cloneDeep } from "lodash";
 import PrimeButton from "primevue/button";
+import PageActions from "@/components/PageActions.vue";
 import PrimeCheckbox from "primevue/checkbox";
 import PrimeDatePicker from "primevue/datepicker";
 import PrimeInputNumber from "primevue/inputnumber";
@@ -44,6 +45,11 @@ interface Props {
   disabled?: boolean;
   showSubmit?: boolean;
   showCancel?: boolean;
+  /**
+   * Full-screen form: Save goes to the header's page actions and there is no
+   * Cancel (the header has a back button). Leave off for dialogs.
+   */
+  pageActions?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   showSubmit: true,
   showCancel: true,
+  pageActions: false,
 });
 
 const emit = defineEmits<{
@@ -67,6 +74,14 @@ const formRevision = ref(0);
 const invalidSubmitAttempted = ref(false);
 
 const fields = computed(() => props.rows.flatMap((row) => row.fields));
+const fieldChangeHandlers = computed(
+  () =>
+    new Map(
+      fields.value.flatMap((field) =>
+        field.onChange ? [[field.name, field.onChange] as const] : [],
+      ),
+    ),
+);
 const defaultValues = computed<FormValues>(() =>
   Object.fromEntries(
     fields.value
@@ -134,17 +149,40 @@ const positiveInteger = (
 
 type GridStyle = CSSProperties & Record<`--form-${string}`, string>;
 
-const rowStyle = (row: FormRowConfig): GridStyle => ({
-  "--form-columns-mobile": String(positiveInteger(row.columns?.mobile, 1)),
-  "--form-columns-desktop": String(
-    positiveInteger(row.columns?.desktop, Math.max(row.fields.length, 1)),
-  ),
-});
+const rowStyle = (row: FormRowConfig): GridStyle => {
+  if (row.section) {
+    return {
+      "--form-columns-mobile": "1",
+      "--form-columns-tablet": "1",
+      "--form-columns-desktop": "1",
+    };
+  }
 
-const fieldStyle = (field: FormFieldConfig): GridStyle => ({
-  "--form-span-mobile": String(positiveInteger(field.span?.mobile, 1)),
-  "--form-span-desktop": String(positiveInteger(field.span?.desktop, 1)),
-});
+  const desktopColumns = positiveInteger(
+    row.columns?.desktop,
+    Math.max(row.fields.length, 1),
+  );
+
+  return {
+    "--form-columns-mobile": String(positiveInteger(row.columns?.mobile, 1)),
+    "--form-columns-tablet": String(
+      positiveInteger(row.columns?.tablet, desktopColumns),
+    ),
+    "--form-columns-desktop": String(desktopColumns),
+  };
+};
+
+const fieldStyle = (field: FormFieldConfig): GridStyle => {
+  const desktopSpan = positiveInteger(field.span?.desktop, 1);
+
+  return {
+    "--form-span-mobile": String(positiveInteger(field.span?.mobile, 1)),
+    "--form-span-tablet": String(
+      positiveInteger(field.span?.tablet, desktopSpan),
+    ),
+    "--form-span-desktop": String(desktopSpan),
+  };
+};
 
 const fieldId = (name: string): string =>
   `form-field-${name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -163,8 +201,21 @@ const errorMessage = (state: FormFieldState): string => {
   return error == null ? "" : String(error);
 };
 
+const sectionErrors = (row: FormRowConfig): Record<string, string> =>
+  Object.fromEntries(
+    row.fields.flatMap((field) => {
+      const state = formStates.value[field.name];
+      return state && showFieldError(state)
+        ? [[field.name, errorMessage(state)]]
+        : [];
+    }),
+  );
+
 const isFieldDisabled = (field: FormFieldConfig): boolean =>
-  props.disabled || field.disabled === true;
+  props.disabled ||
+  (typeof field.disabled === "function"
+    ? field.disabled(formValues.value)
+    : field.disabled === true);
 
 const controlProps = (
   field: FormFieldConfig,
@@ -204,6 +255,19 @@ const currencyProps = (
 
 const setFieldValue = (name: string, value: unknown): void => {
   formRef.value?.setFieldValue(name, cloneDeep(value));
+  const onChange = fieldChangeHandlers.value.get(name);
+  if (onChange) {
+    onChange(
+      cloneDeep(value),
+      cloneDeep({ ...formValues.value, [name]: value }),
+    );
+  }
+};
+
+const setValues = (values: FormValues): void => {
+  Object.entries(values).forEach(([name, value]) => {
+    setFieldValue(name, value);
+  });
 };
 
 const fieldSetter =
@@ -240,7 +304,7 @@ const handleSubmit = (event: FormSubmitEvent): void => {
   );
 };
 
-defineExpose({ submit, reset, cancel });
+defineExpose({ submit, reset, cancel, setFieldValue, setValues });
 </script>
 
 <template>
@@ -260,7 +324,26 @@ defineExpose({ submit, reset, cancel });
       class="generic-form__row"
       :style="rowStyle(row)"
     >
+      <template v-if="row.section">
+        <PrimeFormField
+          v-for="field in row.fields"
+          :key="field.name"
+          :name="field.name"
+          as="span"
+          class="generic-form__registered-field"
+        />
+        <slot
+          :name="`section-${row.section}`"
+          :values="formValues"
+          :states="formStates"
+          :errors="sectionErrors(row)"
+          :set-field-value="setFieldValue"
+          :set-values="setValues"
+          :disabled="disabled"
+        />
+      </template>
       <PrimeFormField
+        v-else
         v-for="field in row.fields"
         v-slot="$field"
         :key="field.name"
@@ -367,7 +450,29 @@ defineExpose({ submit, reset, cancel });
       </PrimeFormField>
     </div>
 
-    <div v-if="hasActions" class="generic-form__actions">
+    <PageActions v-if="hasActions && pageActions">
+      <slot
+        name="actions"
+        :submit="submit"
+        :reset="reset"
+        :values="formValues"
+        :states="formStates"
+        :valid="formValid"
+        :loading="loading"
+        :disabled="disabled"
+      >
+        <PrimeButton
+          v-if="showSubmit"
+          type="button"
+          icon="pi pi-save"
+          :label="t('common.save')"
+          :loading="loading"
+          :disabled="disabled"
+          @click="submit"
+        />
+      </slot>
+    </PageActions>
+    <div v-else-if="hasActions" class="generic-form__actions">
       <slot
         name="actions"
         :submit="submit"
@@ -462,6 +567,20 @@ defineExpose({ submit, reset, cancel });
 }
 
 @media (min-width: 768px) {
+  .generic-form__row {
+    grid-template-columns: repeat(var(--form-columns-tablet), minmax(0, 1fr));
+  }
+
+  .generic-form__field {
+    grid-column: span var(--form-span-tablet);
+  }
+}
+
+.generic-form__registered-field {
+  display: none;
+}
+
+@media (min-width: 1024px) {
   .generic-form__row {
     grid-template-columns: repeat(var(--form-columns-desktop), minmax(0, 1fr));
   }

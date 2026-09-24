@@ -19,13 +19,14 @@
       }"
     ></BaseInput>
 
-    <div class="mt-2">
-      <Button :label="t('sales.components.guardar')" class="mr-2" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('sales.components.guardar')" @click="submitForm" />
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 import { ref } from "vue";
 import { CustomerType } from "../types";

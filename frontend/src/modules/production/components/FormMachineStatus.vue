@@ -1,8 +1,8 @@
 <template>
   <form v-if="machineStatus">
-    <div class="flex justify-content-end">
-      <Button :label="t('production.components.guardar')" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
+    </PageActions>
 
     <!-- Fila 1: Camps de text -->
     <div class="grid">
@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();

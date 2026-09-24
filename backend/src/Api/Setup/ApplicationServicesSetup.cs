@@ -1,7 +1,11 @@
 using Application.Services.System;
+using Application.Services.System.Migration;
+using Application.Contracts.Migration;
+using Infrastructure.DataMigration;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
+using Application.Services.Analytics;
 using Application.Services.Shared;
 using Application.Services.Verifactu;
 using Application.Services.Warehouse;
@@ -36,6 +40,13 @@ public static class ApplicationServicesSetup
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IBrandingService, BrandingService>();
+
+        // Data migration (import/export)
+        services.AddScoped<ISpreadsheetReader, XlsxSpreadsheet>();
+        services.AddScoped<ISpreadsheetWriter, XlsxSpreadsheet>();
+        services.AddScoped<IMigrationHandler, CustomerMigrationHandler>();
+        services.AddScoped<IDataMigrationService, DataMigrationService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
         services.AddScoped<IReferenceService, ReferenceService>();
@@ -47,6 +58,9 @@ public static class ApplicationServicesSetup
         services.AddScoped<IDeliveryNoteService, DeliveryNoteService>();
         services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
         services.AddScoped<ICustomerRankingService, CustomerRankingService>();
+        services.AddScoped<IBudgetConversionService, BudgetConversionService>();
+        services.AddScoped<IAbcAnalysisService, AbcAnalysisService>();
+        services.AddScoped<IManagementDashboardService, ManagementDashboardService>();
         services.AddScoped<ISalesInvoiceReportService, SalesInvoiceReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
         services.AddScoped<IBudgetReportService, BudgetReportService>();
@@ -105,6 +119,7 @@ public static class ApplicationServicesSetup
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
         services.AddScoped<IProductionPartService, ProductionPartService>();
+        services.AddScoped<IProductionTimeDeviationService, ProductionTimeDeviationService>();
 
         // Production services - Group C Specialized
         services.AddScoped<IWorkcenterService, WorkcenterService>();

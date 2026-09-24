@@ -94,10 +94,13 @@
       <label class="block text-900 mb-2">{{ t('sales.components.notesDeFactura') }}</label>
       <Textarea v-model="customer.invoiceNotes" class="w-full" />
     </div>
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button :label="t('sales.components.guardar')" @click="submitForm" />
-      <Button :label="t('sales.components.cancelar')" severity="secondary" @click="emit('cancel')" />
-    </div>
+    <PageActions>
+      <Button
+        icon="pi pi-save"
+        :label="t('sales.components.guardar')"
+        @click="submitForm"
+      />
+    </PageActions>
   </form>
 </template>
 
@@ -115,11 +118,11 @@ import {
 import { useToast } from "primevue/usetoast";
 import { useSharedDataStore } from "../../../modules/shared/store/masterData";
 import LanguageSwitcher from "../../../components/LanguageSwitcher.vue";
+import PageActions from "@/components/PageActions.vue";
 
 const { t } = useI18n();
 const emit = defineEmits<{
   (e: "submit", customer: Customer): void;
-  (e: "cancel"): void;
 }>();
 
 const customerStore = useCustomersStore();

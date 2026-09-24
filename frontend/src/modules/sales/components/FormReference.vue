@@ -1,13 +1,11 @@
 <template>
-  <div>
+  <PageActions>
     <Button
+      icon="pi pi-save"
       :label="t('sales.components.guardar')"
-      class="grid_add_row_button"
-      size="small"
       @click="submitForm"
     />
-    <br />
-  </div>
+  </PageActions>
 
   <form v-if="reference">
     <section class="five-columns">
@@ -96,6 +94,7 @@
   </form>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 import { onMounted, ref } from "vue";
 import BaseInput from "../../../components/BaseInput.vue";

@@ -125,6 +125,17 @@ export interface PurchaseInvoice {
   purchaseInvoiceImports: Array<PurchaseInvoiceImport>;
 }
 
+export type PurchaseInvoiceCalculatedValues = Pick<
+  PurchaseInvoice,
+  | "baseAmount"
+  | "subtotal"
+  | "taxAmount"
+  | "grossAmount"
+  | "netAmount"
+  | "discountAmount"
+  | "extraTaxAmount"
+>;
+
 export interface PurchaseMasterData {
   exercises: Array<Exercise> | undefined;
   suppliers: Array<Supplier> | undefined;
@@ -149,9 +160,9 @@ export interface ExpenseType {
 export interface Expense {
   id: string;
   description: string;
-  creationDate: any;
-  paymentDate: any;
-  endDate: any;
+  creationDate: Date;
+  paymentDate: Date;
+  endDate: Date;
   amount: number;
   recurring: boolean;
   frecuency: number;
@@ -176,7 +187,7 @@ export interface ConsolidatedExpense {
 
 export interface Receipt {
   number: string;
-  date: any;
+  date: Date;
   supplierId: string;
   exerciseId: string;
   statusId: string;
@@ -200,7 +211,7 @@ export interface PurchaseOrderFromWO {
 
 export interface CreatePurchaseDocumentRequest {
   id: string;
-  date: any;
+  date: Date;
   supplierId: string;
   exerciseId: string;
 }
@@ -208,7 +219,7 @@ export interface CreatePurchaseDocumentRequest {
 export interface PurchaseOrder {
   id: string;
   number: string;
-  date: any;
+  date: Date;
   supplierId: string;
   exerciseId: string;
   statusId: string;
@@ -221,7 +232,7 @@ export interface PurchaseOrderDetail {
   workOrderPhaseId?: string | null;
   referenceId: string;
   description: string;
-  expectedReceiptDate?: any;
+  expectedReceiptDate: Date | null;
   quantity: number;
   receivedQuantity: number;
   unitPrice: number;

@@ -336,7 +336,7 @@ const deleteFile = async (file: File) => {
 
 .file-viewer-item-type p {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   font-weight: 500;
   color: #475569;
   text-align: center;

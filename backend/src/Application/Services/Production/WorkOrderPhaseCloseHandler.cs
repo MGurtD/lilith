@@ -300,7 +300,7 @@ public class WorkOrderPhaseCloseHandler(
                 workOrder.MachineTime += part.WorkcenterTime;
                 workOrder.TotalQuantity += part.Quantity;
                 workOrder.MachineCost += (part.WorkcenterTime / 60) * part.MachineHourCost;
-                workOrder.OperatorCost += (part.OperatorTime / 60) * part.OperatorHourCost;
+                workOrder.OperatorCost += (part.OperatorTime / 60) * part.OperatorHourCost;                                
             }
         }
 

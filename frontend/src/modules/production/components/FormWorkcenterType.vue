@@ -38,13 +38,14 @@
       </div>
     </section>
 
-    <div class="mt-2">
-      <Button :label="t('production.components.guardar')" class="mr-2" @click="submitForm" />
-    </div>
+    <PageActions>
+      <Button icon="pi pi-save" :label="t('production.components.guardar')" @click="submitForm" />
+    </PageActions>
   </form>
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();

@@ -1,14 +1,13 @@
 <template>
   <form class="branding-form" @submit.prevent="saveBranding">
-    <div class="flex justify-content-end mb-3">
+    <PageActions v-if="canEdit">
       <Button
-        v-if="canEdit"
-        type="submit"
         :label="t('branding.saveButton')"
         icon="pi pi-save"
         :loading="saving"
+        @click="saveBranding"
       />
-    </div>
+    </PageActions>
 
     <div class="two-columns">
       <BaseInput
@@ -121,6 +120,7 @@
 </template>
 
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { ref } from "vue";
 import { isAxiosError } from "axios";
 import * as Yup from "yup";
