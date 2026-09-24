@@ -75,12 +75,14 @@
         v-if="selectedDetail"
         :detail="selectedDetail"
         @submit="onWorkOrderPhaseDetailSubmit"
-      ></FormWorkOrderPhaseDetail>
+        @cancel="dialogOptions.visible = false"
+      />
       <FormWorkOrderPhaseBomItem
         v-if="selectedBomItem"
         :bomItem="selectedBomItem"
         @submit="onWorkmasterPhasBomItemSubmit"
-      ></FormWorkOrderPhaseBomItem>
+        @cancel="dialogOptions.visible = false"
+      />
     </Dialog>
   </main>
 </template>
