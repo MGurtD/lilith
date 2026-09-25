@@ -62,6 +62,7 @@
       v-if="selectedLocation"
       :location="selectedLocation"
       @submit="onLocationSubmit"
+      @cancel="dialogOptions.visible = false"
     ></FormLocation>
   </Dialog>
 </template>
@@ -142,7 +143,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
       "grid_delete_column_button"
     )
   ) {
-    openDialog(FormActionMode.EDIT, row.data);
+    openDialog(FormActionMode.EDIT, { ...(row.data as Location) });
   }
 };
 const openDialog = (action: FormActionMode, location: Location) => {

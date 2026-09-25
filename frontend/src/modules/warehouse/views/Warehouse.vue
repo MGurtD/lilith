@@ -66,8 +66,7 @@ watch(locale, async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = warehouse.value as Warehouse;
+const submitForm = async (data: Warehouse) => {
   let result = false;
   let message = "";
 

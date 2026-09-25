@@ -242,6 +242,7 @@ const en = {
     none: "No dimensions",
   },
   common: {
+    lot: "Lot",
     yes: "Yes",
     no: "No",
     success: "Success",
@@ -1994,7 +1995,7 @@ const en = {
     },
     locationTypes: { supply: "Supply", receiving: "Receiving", shipping: "Shipping", storage: "Storage" },
     placeholders: { selectWarehouse: "Select a warehouse", selectLocation: "Select a location", noLocationType: "No type", allLocationTypes: "All types", selectPeriod: "Select a period" },
-    validation: { nameRequired: "Name is required", nameMaxLength: "Name cannot exceed 250 characters", descriptionRequired: "Description is required", descriptionMaxLength: "Description cannot exceed 250 characters", siteRequired: "Site is required", quantityMinimum: "Quantity must be at least 1", quantityGreaterThanZero: "Quantity must be greater than 0", referenceRequired: "Reference is required" },
+    validation: { nameRequired: "Name is required", nameMaxLength: "Name cannot exceed 250 characters", descriptionRequired: "Description is required", descriptionMaxLength: "Description cannot exceed 250 characters", siteRequired: "Site is required", quantityMinimum: "Quantity must be at least 1", quantityGreaterThanZero: "Quantity must be greater than 0", referenceRequired: "Reference is required", locationRequired: "Location is required" },
     messages: { invalidForm: "Invalid form", warehouseCreated: "Warehouse created successfully", warehouseUpdated: "Warehouse updated successfully", selectDefaultLocation: "Select a default location", locationHasDependencies: "Location has dependencies", defaultLocationCannotBeDeleted: "The location you are trying to delete is the warehouse's default location", confirmDeleteLocation: "Are you sure you want to delete location '{name}'?", confirmDeleteWarehouse: "Are you sure you want to delete warehouse {name}?", deleted: "Deleted", inventoryCreated: "Inventory created successfully", inventoryMovementError: "Error creating inventory movement", invalidFilter: "Invalid filter", selectPeriod: "Select a period" },
     locations: { title: "Locations", createTitle: "Create location", updateTitle: "Update location" },
     warehouses: { title: "Warehouse management" },

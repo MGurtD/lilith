@@ -1,125 +1,36 @@
-<template>
-  <form v-if="newMovement">
-    <div>
-        <DropdownReference
-          label="Material"
-          :fullName="true"
-          v-model="newMovement.referenceId"
-          :class="{
-            'p-invalid': validation.errors.referenceId,
-          }"
-        ></DropdownReference>
-      </div>
-
-    <div class="mt-2">
-      <DropdownWarehousesWithLocations
-        label="Ubicació"
-        v-model="newMovement.locationId"
-        :class="{
-          'p-invalid': validation.errors.locationId,
-        }"
-      />
-    </div>
-
-    <div class="mt-2">
-      <SelectorLot
-        :reference-id="newMovement.referenceId"
-        v-model="newMovement.lotId"
-        @update:lotCode="(code) => (newMovement.lotCode = code)"
-      />
-    </div>
-
-    <section class="three-columns">      
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Quantitat"
-          v-model="newMovement.newQuantity"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Amplada (mm)"
-          :decimals="2"
-          v-model="newMovement.width"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Alçada (mm)"
-          v-model="newMovement.height"
-        />
-      </div>
-    </section>
-
-    <section class="three-columns">
-     
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Longitud (mm)"
-          v-model="newMovement.length"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Diàmetre (mm)"
-          v-model="newMovement.diameter"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Gruix (mm)"
-          v-model="newMovement.thickness"
-        />
-      </div>
-    </section>
-
-    <Button
-      label="Crear"
-      @click="submitForm"
-      style="float: right"
-      :size="'small'"
-      class="mt-2"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
+import { useReferenceStore } from "../../shared/store/reference";
+import type { Inventory } from "../types";
 import DropdownWarehousesWithLocations from "./DropdownWarehousesWithLocations.vue";
 import SelectorLot from "./SelectorLot.vue";
-import { onMounted, ref } from "vue";
-import { Inventory } from "../types";
-import * as Yup from "yup";
-import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import { useReferenceStore } from "../../shared/store/reference";
 
 const props = defineProps<{
   newMovement: Inventory;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", newMovement: Inventory): void;
-  (e: "cancel"): void;
+  (event: "submit", newMovement: Inventory): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 const referenceStore = useReferenceStore();
+const form = ref<InstanceType<typeof Form> | null>(null);
 
 onMounted(async () => {
   if (!referenceStore.references || referenceStore.references.length === 0) {
@@ -127,38 +38,158 @@ onMounted(async () => {
   }
 });
 
-const schema = Yup.object().shape({
-  newQuantity: Yup.number()
-    .min(1)
-    .required("La quantitat ha de ser superior a 1"),
-  referenceId: Yup.string().required("La referencia és obligatoria"),
-  locationId: Yup.string().required("La ubicació és obligatoria"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const dimensionProps = { locale: "en-US", minFractionDigits: 2 } as const;
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.newMovement);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "referenceId",
+        label: t("warehouse.fields.material"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(t("warehouse.validation.referenceRequired")),
+        // A lot belongs to one reference; drop the previous selection.
+        onChange: () => {
+          form.value?.setFieldValue("lotId", null);
+          form.value?.setFieldValue("lotCode", "");
+        },
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "locationId",
+        label: t("warehouse.fields.location"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(
+            t("warehouse.validation.locationRequired"),
+          ),
+      },
+    ],
+  },
+  {
+    section: "lot",
+    fields: [
+      { name: "lotId", label: "", type: FormFieldType.Custom },
+      { name: "lotCode", label: "", type: FormFieldType.Custom },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "newQuantity",
+        label: t("warehouse.fields.quantity"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .typeError(t("warehouse.validation.quantityMinimum"))
+          .min(1, t("warehouse.validation.quantityMinimum"))
+          .required(t("warehouse.validation.quantityMinimum")),
+      },
+      {
+        name: "width",
+        label: t("warehouse.fields.widthMm"),
+        type: FormFieldType.Number,
+        props: dimensionProps,
+      },
+      {
+        name: "height",
+        label: t("warehouse.fields.heightMm"),
+        type: FormFieldType.Number,
+        props: dimensionProps,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "length",
+        label: t("warehouse.fields.lengthMm"),
+        type: FormFieldType.Number,
+        props: dimensionProps,
+      },
+      {
+        name: "diameter",
+        label: t("warehouse.fields.diameterMm"),
+        type: FormFieldType.Number,
+        props: dimensionProps,
+      },
+      {
+        name: "thickness",
+        label: t("warehouse.fields.thicknessMm"),
+        type: FormFieldType.Number,
+        props: dimensionProps,
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.newMovement);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.newMovement,
+    referenceId: stringValue(values.referenceId, props.newMovement.referenceId),
+    locationId: nullableStringValue(
+      values.locationId,
+      props.newMovement.locationId,
+    ),
+    lotId: nullableStringValue(values.lotId, props.newMovement.lotId ?? null),
+    lotCode: stringValue(values.lotCode, props.newMovement.lotCode ?? ""),
+    newQuantity: finiteNumberValue(
+      values.newQuantity,
+      props.newMovement.newQuantity,
+    ),
+    width: finiteNumberValue(values.width, props.newMovement.width),
+    height: finiteNumberValue(values.height, props.newMovement.height),
+    length: finiteNumberValue(values.length, props.newMovement.length),
+    diameter: finiteNumberValue(values.diameter, props.newMovement.diameter),
+    thickness: finiteNumberValue(values.thickness, props.newMovement.thickness),
+  });
 };
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="newMovement"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
+      <DropdownReference
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : null"
+        :full-name="true"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #field-locationId="{ value, setValue, disabled, inputId }">
+      <DropdownWarehousesWithLocations
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : null"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #section-lot="{ values, setFieldValue }">
+      <SelectorLot
+        :reference-id="stringValue(values.referenceId, '')"
+        :model-value="nullableStringValue(values.lotId, null)"
+        @update:model-value="setFieldValue('lotId', $event)"
+        @update:lot-code="setFieldValue('lotCode', $event)"
+      />
+    </template>
+  </Form>
+</template>

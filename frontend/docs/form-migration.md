@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1 in review (#135); batch L2 migrated, UI verification running.
+> **Status**: In progress. L1 in review (#135); L2 and L3 migrated, UI verification running.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -134,10 +134,10 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| WH-01 | `warehouse/components/FormWarehouse.vue` | `Warehouse.vue` | low | — | pending | | Computed Yup schema |
-| WH-02 | `warehouse/components/FormLocation.vue` | `TableLocations.vue` | low | — | pending | | Computed Yup schema |
-| WH-03 | `warehouse/components/FormInventoryNewMovements.vue` | `Inventory.vue` | med | — | pending | | `DropdownReference`, `DropdownWarehousesWithLocations`, `SelectorLot` keyed on reference |
-| PU-01 | `purchase/components/TablePurchaseRates.vue` (duplicate dialog) | `Supplier.vue` | low | — | pending | | 1 text + 2 dates, no validation today |
+| WH-01 | `warehouse/components/FormWarehouse.vue` | `Warehouse.vue` | low | — | migrated | `7fcaff0` | Computed Yup schema |
+| WH-02 | `warehouse/components/FormLocation.vue` | `TableLocations.vue` | low | — | migrated | `3fdc510` | Computed Yup schema |
+| WH-03 | `warehouse/components/FormInventoryNewMovements.vue` | `Inventory.vue` | med | — | migrated | `4403872` | `DropdownReference`, `DropdownWarehousesWithLocations`, `SelectorLot` keyed on reference |
+| PU-01 | `purchase/components/TablePurchaseRates.vue` (duplicate dialog) | `Supplier.vue` | low | — | migrated | `356fc9a` | 1 text + 2 dates, no validation today |
 
 ### 2.4 Batch L4 — Production routings and work orders
 
@@ -339,6 +339,11 @@ Copy for each feature once it is `confirmed`:
 | PR-15 Phase template | Header form keeps a scalar snapshot, so adding/editing a detail no longer discards unsaved header edits | Improvement |
 | PR-16, PR-17 Phase templates | Detail and create dialogs use the default Save label instead of "Guardar detall"/"Crear"; create now requires a name and no longer edits the store while typing | Global decision |
 | PR-03 Site, PR-09 Operator | Hardcoded "CIF"/"NIF" labels replaced by `production.fields.companyVatNumber` / `personalVatNumber` | i18n |
+| WH-01 Warehouse | Locations are kept out of the form snapshot and merged from the prop at submit | Parent-owned collection pattern |
+| WH-02 Location | Edits work on a copy of the row (closing no longer leaves the table changed); location type options localized; a new location without type sends `locationType: null` | Bug fix |
+| WH-03 Inventory movement | Changing the reference clears the selected lot (legacy could submit a lot from another reference); hardcoded Catalan messages replaced by keys | Bug fix |
+| PU-01 Purchase rate duplicate | Name and both dates now required, end date on or after start; confirm button reads Save instead of Duplicate | Global decision |
+| i18n | `common.lot` was referenced by inventory, stock and stock movement screens but missing from every locale; added | Bug fix |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 

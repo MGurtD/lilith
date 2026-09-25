@@ -41,25 +41,12 @@
     :modal="true"
     style="width: 500px"
   >
-    <div class="flex flex-column gap-3">
-      <div>
-        <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.newName") }}</label>
-        <InputText v-model="duplicateData.name" class="w-full" />
-      </div>
-      <div class="two-columns">
-        <div>
-          <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.validFrom") }}</label>
-          <DatePicker v-model="duplicateData.validFrom" class="w-full" dateFormat="dd/mm/yy" />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">{{ t("purchase.purchaseRates.fields.validTo") }}</label>
-          <DatePicker v-model="duplicateData.validTo" class="w-full" dateFormat="dd/mm/yy" />
-        </div>
-      </div>
-      <div class="mt-2 text-right">
-        <Button :label="t('purchase.purchaseRates.actions.duplicate')" icon="pi pi-copy" @click="confirmDuplicate" />
-      </div>
-    </div>
+    <Form
+      :rows="duplicateRows"
+      :initial-values="duplicateData"
+      @submit="confirmDuplicate"
+      @cancel="duplicateDialogVisible = false"
+    />
   </Dialog>
 
   <div class="flex flex-column" style="gap: 1rem">
@@ -177,7 +164,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { dateValue, stringValue } from "@/components/forms/value-utils";
+import * as Yup from "yup";
 import { usePurchaseRateStore } from "../store/purchaseRate";
 import { useReferenceStore } from "../../shared/store/reference";
 import { PurchaseRate, PurchaseRateDetail, CalculationType } from "../types";
@@ -218,6 +213,48 @@ const duplicateData = ref({
   validFrom: new Date(),
   validTo: new Date(),
 });
+
+const duplicateRows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "name",
+        label: t("purchase.purchaseRates.fields.newName"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("purchase.purchaseRate.validation.nameRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "validFrom",
+        label: t("purchase.purchaseRates.fields.validFrom"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("purchase.purchaseRate.validation.startDateRequired"))
+          .required(t("purchase.purchaseRate.validation.startDateRequired")),
+      },
+      {
+        name: "validTo",
+        label: t("purchase.purchaseRates.fields.validTo"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("purchase.purchaseRate.validation.endDateRequired"))
+          .required(t("purchase.purchaseRate.validation.endDateRequired"))
+          .min(
+            Yup.ref("validFrom"),
+            t("purchase.purchaseRate.validation.endDateOnOrAfterStart"),
+          ),
+      },
+    ],
+  },
+]);
 
 onMounted(async () => {
     await purchaseRateStore.fetchPurchaseRatesBySupplierId(props.supplierId);
@@ -308,13 +345,13 @@ const openDuplicateDialog = (rate: PurchaseRate) => {
   duplicateDialogVisible.value = true;
 };
 
-const confirmDuplicate = async () => {
+const confirmDuplicate = async (values: FormValues) => {
   if (!selectedRate.value) return;
   const result = await purchaseRateStore.duplicatePurchaseRate(
     selectedRate.value,
-    duplicateData.value.name,
-    duplicateData.value.validFrom,
-    duplicateData.value.validTo
+    stringValue(values.name, duplicateData.value.name),
+    dateValue(values.validFrom, duplicateData.value.validFrom),
+    dateValue(values.validTo, duplicateData.value.validTo)
   );
   if (result) {
     toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateDuplicated"), life: 4000 });
@@ -377,10 +414,5 @@ const deleteDetail = (event: Event, detail: PurchaseRateDetail) => {
 :deep(.selected-row) {
   background-color: var(--p-primary-100) !important;
   font-weight: 600;
-}
-.two-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
 }
 </style>

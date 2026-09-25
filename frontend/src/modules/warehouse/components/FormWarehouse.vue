@@ -1,132 +1,125 @@
-<template>
-  <form v-if="warehouse">
-    <PageActions>
-      <Button icon="pi pi-save" :label="t('common.save')" @click="submitForm" />
-    </PageActions>
-    <section class="three-columns">
-      <BaseInput
-        class="mb-2"
-        :label="t('warehouse.fields.name')"
-        id="name"
-        v-model="warehouse.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="t('common.description')"
-        id="description"
-        v-model="warehouse.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ t("warehouse.fields.site") }}</label>
-        <Select
-          v-model="warehouse.siteId"
-          :options="plantmodelStore.sites"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.siteId,
-          }"
-        />
-      </div>
-    </section>
-    <section class="three-columns">
-      <div>
-        <label class="block text-900 mb-2">{{ t("warehouse.fields.defaultLocation") }}</label>
-        <Select
-          v-model="warehouse.defaultLocationId"
-          :options="warehouse.locations"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.defaultLocationId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("warehouse.fields.disabled") }}</label>
-        <Checkbox v-model="warehouse.disabled" class="w-full" :binary="true" />
-      </div>
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { computed, onMounted, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import { Warehouse } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { storeToRefs } from "pinia";
-import { useWarehouseStore } from "../store/warehouse";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { usePlantModelStore } from "../../production/store/plantmodel";
-
-const toast = useToast();
-const { t } = useI18n();
-const warehouseStore = useWarehouseStore();
-const plantmodelStore = usePlantModelStore();
-const { warehouse } = storeToRefs(warehouseStore);
+import type { Warehouse } from "../types";
 
 const props = defineProps<{
   warehouse: Warehouse;
 }>();
 
+const emit = defineEmits<{
+  (event: "submit", warehouse: Warehouse): void;
+}>();
+
+const { t } = useI18n();
+const plantmodelStore = usePlantModelStore();
+
 onMounted(async () => {
   await plantmodelStore.fetchSites();
 });
 
-const emit = defineEmits<{
-  (e: "submit", warehouse: Warehouse): void;
-  (e: "cancel"): void;
-}>();
-
-const schema = computed(() => Yup.object().shape({
-  name: Yup.string()
-    .required(t("warehouse.validation.nameRequired"))
-    .max(250, t("warehouse.validation.nameMaxLength")),
-  description: Yup.string()
-    .required(t("warehouse.validation.descriptionRequired"))
-    .max(250, t("warehouse.validation.descriptionMaxLength")),
-  siteId: Yup.string().required(t("warehouse.validation.siteRequired")),
+// Scalar snapshot only: the locations collection is owned by the parent's
+// locations table and merged back from the live prop at submit.
+const initialValues = computed(() => ({
+  id: props.warehouse.id,
+  name: props.warehouse.name,
+  description: props.warehouse.description,
+  siteId: props.warehouse.siteId,
+  defaultLocationId: props.warehouse.defaultLocationId,
+  disabled: props.warehouse.disabled,
 }));
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema.value);
-  validation.value = formValidation.validate(props.warehouse);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("warehouse.fields.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("warehouse.validation.nameRequired"))
+          .max(250, t("warehouse.validation.nameMaxLength")),
+      },
+      {
+        name: "description",
+        label: t("common.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("warehouse.validation.descriptionRequired"))
+          .max(250, t("warehouse.validation.descriptionMaxLength")),
+      },
+      {
+        name: "siteId",
+        label: t("warehouse.fields.site"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantmodelStore.sites ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("warehouse.validation.siteRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "defaultLocationId",
+        label: t("warehouse.fields.defaultLocation"),
+        type: FormFieldType.Select,
+        props: {
+          options: props.warehouse.locations ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+      },
+      {
+        name: "disabled",
+        label: t("warehouse.fields.disabled"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.warehouse);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("warehouse.messages.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.warehouse,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    siteId: stringValue(values.siteId, props.warehouse.siteId),
+    defaultLocationId: nullableStringValue(
+      values.defaultLocationId,
+      props.warehouse.defaultLocationId,
+    ),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+  />
+</template>

@@ -43,6 +43,7 @@
     <FormInventoryNewMovements
       :newMovement="newStockMovement"
       @submit="submitDetailForm"
+      @cancel="isDialogVisible = false"
     />
   </Dialog>
 </template>
