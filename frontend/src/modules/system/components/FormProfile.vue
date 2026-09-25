@@ -1,10 +1,19 @@
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { ref, onMounted } from "vue";
-import { useI18n } from "vue-i18n";
-import * as yup from "yup";
-import { FormValidation } from "@/utils/form-validator";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  optionalStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
 import type { ProfileDetail } from "@/modules/system/types/profile";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 
 const props = defineProps<{
   initialData: Partial<ProfileDetail>;
@@ -18,65 +27,54 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const schema = yup.object({
-  name: yup.string().required(() => t("profiles.form.validation.nameRequired")),
-});
-const validator = new FormValidation(schema as any);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("profiles.form.name"),
+        type: FormFieldType.Text,
+        disabled: props.readonlySystem === true,
+        validation: Yup.string().required(
+          t("profiles.form.validation.nameRequired"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("profiles.form.description"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "isSystem",
+        label: t("profiles.system"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+        disabled: props.readonlySystem === true,
+      },
+    ],
+  },
+]);
 
-// Estado local independiente - copia única al montar
-const form = ref<Partial<ProfileDetail>>({});
-const errors = ref<Record<string, string[]>>({});
-
-onMounted(() => {
-  // Copia snapshot de los datos iniciales (sin reactividad al padre)
-  form.value = { ...props.initialData };
-});
-
-const validate = () => {
-  const r = validator.validate(form.value);
-  errors.value = r.errors;
-  return r.result;
-};
-
-const submit = () => {
-  if (!validate()) return;
-  // Emitir copia de los datos al guardar
-  emit("submit", { ...form.value });
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.initialData,
+    name: stringValue(values.name, ""),
+    description: optionalStringValue(
+      values.description,
+      props.initialData.description,
+    ),
+    isSystem: booleanValue(values.isSystem, props.initialData.isSystem ?? false),
+  });
 };
 </script>
+
 <template>
-  <div class="form-profile">
-    <PageActions>
-      <Button
-        :label="t('common.save')"
-        icon="pi pi-save"
-        :loading="submitting"
-        @click="submit"
-      />
-    </PageActions>
-    <div class="formgrid grid">
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("profiles.form.name") }}</label>
-        <InputText
-          v-model="form.name"
-          :disabled="props.readonlySystem"
-          class="w-full"
-        />
-        <small class="p-error" v-if="errors.name">{{ errors.name[0] }}</small>
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("profiles.form.description") }}</label>
-        <InputText v-model="form.description" class="w-full" />
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("profiles.system") }}</label>
-        <Checkbox
-          v-model="form.isSystem"
-          :disabled="props.readonlySystem"
-          :binary="true"
-          class="mt-1"
-        />
-      </div>
-    </div>
-  </div>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="initialData"
+    :loading="submitting"
+    @submit="submit"
+  />
 </template>
