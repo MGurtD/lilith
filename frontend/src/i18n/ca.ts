@@ -1312,6 +1312,7 @@ const ca = {
     },
   },
   login: {
+    usernameRequired: "El nom d'usuari és obligatori", passwordRequired: "La contrasenya és obligatòria", firstNameRequired: "El nom és obligatori", lastNameRequired: "Els cognoms són obligatoris", repeatPasswordRequired: "Has de repetir la contrasenya", emailInvalid: "El correu electrònic no és vàlid",
     welcome: "Benvingut a {brandName}",
     productCredit: "Zenith ERP, de Rawcraft Software",
     username: "Nom d'usuari",
@@ -1332,8 +1333,6 @@ const ca = {
     registerTitle: "Registre d'usuari",
     register: "Registra't",
     registerSubtitle: "Omple el formulari per crear un compte",
-    invalid: "Inici de sessió incorrecte",
-    credentialsRequired: "El nom d'usuari i la contrasenya són obligatoris",
     passwordsDoNotMatch: "Les contrasenyes introduïdes no coincideixen",
   },
   location: {

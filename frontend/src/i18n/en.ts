@@ -1289,6 +1289,7 @@ const en = {
     },
   },
   login: {
+    usernameRequired: "Username is required", passwordRequired: "Password is required", firstNameRequired: "First name is required", lastNameRequired: "Last name is required", repeatPasswordRequired: "Repeat the password", emailInvalid: "The email address is not valid",
     welcome: "Welcome to {brandName}",
     productCredit: "Zenith ERP by Rawcraft Software",
     username: "Username",
@@ -1309,8 +1310,6 @@ const en = {
     registerTitle: "User registration",
     register: "Register",
     registerSubtitle: "Fill the form to create an account",
-    invalid: "Invalid sign-in",
-    credentialsRequired: "Username and password are required",
     passwordsDoNotMatch: "The entered passwords do not match",
   },
   location: {

@@ -14,7 +14,7 @@ Vue 3 + TypeScript SPA. Domain-centric modules (sales, production, purchase, war
 | State | Pinia (global `src/store`, per-module `src/modules/*/store`) |
 | Routing | Vue Router 4 — per-domain `routes.ts` aggregated at the root |
 | UI | PrimeVue 4, PrimeFlex, PrimeIcons + base components under `src/components` |
-| Validation | Yup + `FormValidation` helper, toast feedback |
+| Forms & validation | Shared `components/forms/Form.vue` with Yup field validation and inline errors |
 | HTTP | Axios wrapped by `BaseService<T>` in `src/api` |
 | Reporting | Blob-download helper for server-generated PDFs |
 | Package manager | **pnpm v10+** (not npm/yarn) |
@@ -96,7 +96,7 @@ pnpm run preview          # Serve dist/ locally at http://localhost:4173
 | Type | Convention | Example |
 |------|------------|---------|
 | Components | PascalCase | `WorkOrderDetail.vue` |
-| Utilities | kebab-case | `form-validator.ts` |
+| Utilities | kebab-case | `value-utils.ts` |
 | Pinia stores | `use<Entity>Store` | `useWorkOrderStore` |
 | Services | `<Entity>Service` | `WorkOrderService` |
 | Interfaces | PascalCase | `WorkOrder`, `PhaseDetail` |
