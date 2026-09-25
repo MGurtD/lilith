@@ -1,5 +1,6 @@
 <template>
   <FormUser
+    v-if="user"
     :roles="roles"
     :profiles="profiles"
     :user="user"
@@ -33,10 +34,17 @@ const profiles = ref<Profile[]>();
 const roleService = new RoleService();
 const service = new UserService();
 
+// The user is assigned last: FormUser mounts with it and needs the roles and
+// profiles already loaded (its profile field depends on them).
 const loadView = async () => {
-  user.value = await service.GetById(route.params.id as string);
-  roles.value = await roleService.GetAll();
-  profiles.value = await AppProfileService.GetAll();
+  const [loadedUser, loadedRoles, loadedProfiles] = await Promise.all([
+    service.GetById(route.params.id as string),
+    roleService.GetAll(),
+    AppProfileService.GetAll(),
+  ]);
+  roles.value = loadedRoles;
+  profiles.value = loadedProfiles;
+  user.value = loadedUser;
 
   if (user.value) {
     store.setMenuItem({
@@ -52,9 +60,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = user.value as User;
-
+const submitForm = async (data: User) => {
   const updated = await service.Update(data);
   if (updated) {
     toast.add({
