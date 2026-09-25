@@ -78,8 +78,8 @@ There is no frontend unit/component test framework and no lint script. Smoke and
 - Use PrimeVue components rather than raw controls when an established equivalent exists.
 - Lazy-load route views. Follow the route naming, metadata, and authorization pattern of the current domain.
 - Keep HTTP URLs in services and environment configuration, never in components.
-- Validate forms with the established Yup/FormValidation or VeeValidate pattern used by that feature; do not mix validation frameworks inside one flow.
-- Save actions: a full screen saves from the header. Wrap its Save (or Save `SplitButton`, with secondary actions in its menu) in `components/PageActions.vue`, or pass `page-actions` to `Form.vue`. Screens have no Cancel; the header's back button leaves. Dialogs keep Cancel and Save in their footer. A form reused in both places takes an `inDialog` prop and passes it as `<PageActions :inline="inDialog">`, placed at the end of the form. Do not reintroduce floating or `position: fixed` save buttons.
+- Build every form with the shared `components/forms/Form.vue` (field-level Yup validation, inline errors); follow the `frontend-form` skill. The legacy `FormValidation` helper and Vuelidate have been removed; do not reintroduce hand-written validation or toasts for invalid forms.
+- Save actions: a full screen saves from the header. Wrap its Save (or Save `SplitButton`, with secondary actions in its menu) in `components/PageActions.vue`, or pass `page-actions` to `Form.vue`. Screens have no Cancel; the header's back button leaves. Dialogs keep Cancel and Save in their footer. A `Form.vue` form reused in both places takes an `inDialog` prop and passes `:page-actions="!inDialog"`; in a dialog it then uses the default Cancel/Save footer. Do not reintroduce floating or `position: fixed` save buttons.
 
 ## Verification
 

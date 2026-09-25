@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L7 in review as stacked PRs (SH-09 deferred); next batch L8 (login/register).
+> **Status**: Migration complete except SH-09 (deferred). L1–L8 in review as stacked PRs. `form-validator.ts` and Vuelidate removed.
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -203,8 +203,8 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AU-01 | `components/forms/LoginForm.vue` | `Login.vue` | low | — | pending | | Manual empty checks + toast |
-| AU-02 | `components/forms/RegisterForm.vue` | `Login.vue` | med | — | pending | | Vuelidate; password match via `Yup.ref` |
+| AU-01 | `components/forms/LoginForm.vue` | `Login.vue` | low | — | migrated | L8 | Manual empty checks + toast ; UI pending |
+| AU-02 | `components/forms/RegisterForm.vue` | `Login.vue` | med | — | migrated | L8 | Vuelidate; password match via `Yup.ref` ; not reachable in the UI: the register link in LoginForm is commented out |
 
 ### 2.9 Excluded
 
@@ -393,6 +393,8 @@ Copy for each feature once it is `confirmed`:
 | SY-06 Branding | The no-permission message and loading spinner now render (never imported before) | Bug fix |
 | SH-07, SH-06 Status/transition | Status dialog no longer mutates the table row while loading tags; same-status rule is inline | Bug fix |
 | SH-08 Support request | Sending and its toasts move to the sidebar host; the button still reads "Enviar" | Refactor |
+| AU-01 Login | Username/password required errors are inline (the toast is gone); password field has a show/hide toggle | Global decision |
+| AU-02 Register | Vuelidate replaced by Yup; password match via `Yup.ref`; restyled with Form.vue (the screen is currently unreachable) | Refactor |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -424,3 +426,4 @@ there was none, and so on).
 | 2026-09-25 | L6 UI verification complete: budget (create dialog, header with notes, line recalculation and cancel, transport), sales order (header, line, transport rate required), delivery note (locked note keeps downloads; status required), sales invoice (date required, fiscal tab with its own save, line amount 3 × 10 = 30.00 €, rectificative dialog limits). Unverifiable with staging data: final-customer transport distance (customer address not geocoded) |
 | 2026-09-25 | L7 (9 forms) migrated in `8853d4f`..`c7d05a2`; F-04 and F-05 rejected (existing patterns); SH-09 ReferenceManagement deferred while a teammate reworks it |
 | 2026-09-25 | L7 UI verification complete: label focus fix (number, date), create user (password mismatch), user screen (change password only on own record; password section validation), API key dialog, menu item (per-language titles), branding (60-char name), lifecycle status and transition (same-status rule), support request (Enviar, markdown preview). Unverifiable with staging data: profile name (all profiles are system profiles with a locked name) |
+| 2026-09-25 | L8 login/register migrated; `src/utils/form-validator.ts` deleted, `@vuelidate/core` and `@vuelidate/validators` removed (approved); `frontend/AGENTS.md` and `frontend/README.md` point to Form.vue |
