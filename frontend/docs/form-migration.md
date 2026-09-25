@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L4 in review as stacked PRs #135–#138; next batch L5 (sales masters).
+> **Status**: In progress. L1–L5 in review as stacked PRs; next batch L6 (sales documents).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -161,11 +161,11 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| SA-01 | `sales/components/FormCustomerType.vue` | `CustomerType.vue` | low | — | pending | | |
-| SA-02 | `sales/components/FormCustomerAddress.vue` | `TableCustomerAddresses.vue` | low | — | pending | | Dialog; clone row on edit |
-| SA-03 | `sales/components/FormCustomerContact.vue` | `TableCustomerContacts.vue` | low | — | pending | | Dialog; clone row on edit |
-| SA-04 | `sales/components/FormCustomer.vue` | `Customer.vue` | med | — | pending | | Pinia state |
-| SA-05 | `sales/components/FormReference.vue` | `Reference.vue` | med | — | pending | | Tax store options |
+| SA-01 | `sales/components/FormCustomerType.vue` | `CustomerType.vue` | low | — | migrated | `335755a` | |
+| SA-02 | `sales/components/FormCustomerAddress.vue` | `TableCustomerAddresses.vue` | low | — | migrated | `a1fc991` | Dialog; clone row on edit |
+| SA-03 | `sales/components/FormCustomerContact.vue` | `TableCustomerContacts.vue` | low | — | migrated | `22c17dd` | Dialog; clone row on edit |
+| SA-04 | `sales/components/FormCustomer.vue` | `Customer.vue` | med | — | migrated | `387454d` | Pinia state |
+| SA-05 | `sales/components/FormReference.vue` | `Reference.vue` | med | — | migrated | `dd91809` | Tax store options |
 
 ### 2.6 Batch L6 — Sales documents
 
@@ -378,6 +378,10 @@ Copy for each feature once it is `confirmed`:
 | PR-24 Workorder | Clearing the status falls back to the saved status; execution period gets its own row | Layout |
 | PR-25 Create workorder | Lot code is submitted only when the route's reference requires a lot (hidden stale codes no longer sent); still optional | Bug fix |
 | PR-29 Production part | Changing the workcenter clears the selected work order detail (stale phase could be submitted); integer/greater-than-zero rules now have localized messages | Bug fix |
+| SA-04 Customer | Customer type is now required (backend rejects a customer without one; approved); unsaved header edits survive contact/address changes | Approved |
+| SA-02, SA-03 Customer address/contact | Edits work on a copy of the row (cancel no longer leaks into the table); location errors show per field; phone error highlights its field | Bug fix |
+| SA-05 Reference | Dead `FormReferenceType` import and unused `defaultCustomerId` prop removed; rule on the hidden `cost` field dropped (not editable) | Cleanup |
+| i18n (production) | Twelve `production.ui` keys containing an apostrophe or a dot never resolved in vue-i18n and rendered raw (source route label, delete confirmations, ticket table headers and messages); moved to camelCase `production.detail` keys | Bug fix |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -402,3 +406,6 @@ there was none, and so on).
 | 2026-09-24 | Pre-existing cold-load bugs fixed: phase screens load their parent (`9bcb6ec`) and the work order phase loads the WorkOrder lifecycle so the status shows (`ba7d69e`); verified by loading the four URLs directly |
 | 2026-09-24 | Stacked PRs opened: #136 (L2 → L1), #137 (L3 → L2), #138 (L4 → L3) |
 | 2026-09-24 | L4 UI verification complete: workorder phase header and step dialog, workmaster copy dialog (both modes), purchase rate duplicate (L3) pass. Unverifiable with staging data: lot code field (no lot-tracked route). Pre-existing: the copy dialog label `production.ui.Ruta d'origen` renders as a raw key (same call before the migration) |
+| 2026-09-25 | i18n keys with an apostrophe or dot fixed in `cf11060` and `be09c01` (#138) |
+| 2026-09-25 | L5 (5 forms) migrated in `7487304`..`dd91809`; no new Form.vue feature needed; customer type made required |
+| 2026-09-25 | L5 UI verification complete: customer header, address dialog (cancel keeps the row, unsaved header edits survive), contact add dialog, customer type, sales reference |

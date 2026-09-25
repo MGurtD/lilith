@@ -1,87 +1,64 @@
-<template>
-  <form v-if="customerType">
-    <BaseInput
-      class="mb-2"
-      :label="t('sales.components.nom')"
-      id="name"
-      v-model="customerType.name"
-      :class="{
-        'p-invalid': validation.errors.name,
-      }"
-    ></BaseInput>
-    <BaseInput
-      class="mb-2"
-      :label="t('sales.components.descripcio')"
-      id="description"
-      v-model="customerType.description"
-      :class="{
-        'p-invalid': validation.errors.description,
-      }"
-    ></BaseInput>
-
-    <PageActions>
-      <Button icon="pi pi-save" :label="t('sales.components.guardar')" @click="submitForm" />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { useI18n } from "vue-i18n";
-import { ref } from "vue";
-import { CustomerType } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { CustomerType } from "../types";
 
-const { t } = useI18n();
 const props = defineProps<{
   customerType: CustomerType;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", customerType: CustomerType): void;
-  (e: "cancel"): void;
+  (event: "submit", customerType: CustomerType): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required(t("sales.validation.nameRequired"))
-    .max(250, "El nom comercial no pot superar els 250 carácters"),
-  description: Yup.string()
-    .required(t("sales.validation.descriptionRequired"))
-    .max(250, "La descripció no pot superar els 250 carácters"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 1 },
+    fields: [
+      {
+        name: "name",
+        label: t("sales.customers.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("sales.validation.nameRequired"))
+          .max(250, t("sales.validation.nameMaxLength")),
+      },
+      {
+        name: "description",
+        label: t("sales.customers.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("sales.validation.descriptionRequired"))
+          .max(250, t("sales.validation.descriptionMaxLength")),
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.customerType);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.customerType);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t('sales.components.formulariInvalid'),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.customerType,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="customerType"
+    @submit="submit"
+  />
+</template>

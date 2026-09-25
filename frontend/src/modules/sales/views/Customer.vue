@@ -20,7 +20,11 @@
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <FormCustomer @submit="submitForm" />
+        <FormCustomer
+          v-if="customer"
+          :customer="customer"
+          @submit="submitForm"
+        />
       </TabPanel>
       <TabPanel value="1" v-if="formMode === FormActionMode.EDIT">
         <CustomerContacts
@@ -123,8 +127,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = customer.value as Customer;
+const submitForm = async (data: Customer) => {
   let result;
   let successMessage = "";
 
