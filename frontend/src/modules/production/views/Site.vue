@@ -52,8 +52,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = site.value as Site;
+const submitForm = async (data: Site) => {
   let result = false;
   let message = "";
 

@@ -52,8 +52,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = operatorType.value as OperatorType;
+const submitForm = async (data: OperatorType) => {
   let result = false;
   let message = "";
 

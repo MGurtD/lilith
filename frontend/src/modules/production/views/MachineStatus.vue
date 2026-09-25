@@ -87,8 +87,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = machineStatus.value as MachineStatus;
+const submitForm = async (data: MachineStatus) => {
   let result = false;
   let message = "";
 

@@ -24,32 +24,24 @@
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
   >
-    <div>
-      <BaseInput
-        :label="t('phaseTemplates.fields.name')"
-        v-model="phaseTemplateStore.phaseTemplate!.name"
-        class="w-full mb-2"
-      />
-    </div>
-    <div>
-      <BaseInput
-        :label="t('common.description')"
-        v-model="phaseTemplateStore.phaseTemplate!.description"
-        class="w-full mb-2"
-      />
-    </div>
-    <br />
-    <div>
-      <Button
-        :label="t('phaseTemplates.actions.create')"
-        style="float: right"
-        @click="onCreateSubmit"
-      ></Button>
-    </div>
+    <Form
+      v-if="phaseTemplateStore.phaseTemplate"
+      :rows="createRows"
+      :initial-values="phaseTemplateStore.phaseTemplate"
+      @submit="onCreateSubmit"
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
 import { useRouter } from "vue-router";
@@ -63,8 +55,8 @@ import { usePhaseTemplateStore } from "../store/phasetemplate";
 import { PhaseTemplate } from "../types";
 import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
-import BaseInput from "../../../components/BaseInput.vue";
 import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 
 const router = useRouter();
 const store = useStore();
@@ -90,6 +82,27 @@ const columns = computed<Column[]>(() => [
     header: t("phaseTemplates.columns.disabled"),
     columnType: ColumnType.Boolean,
     style: "width: 10%",
+  },
+]);
+
+const createRows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 1 },
+    fields: [
+      {
+        name: "name",
+        label: t("phaseTemplates.fields.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("phaseTemplates.validation.nameRequired"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("common.description"),
+        type: FormFieldType.Text,
+      },
+    ],
   },
 ]);
 
@@ -124,15 +137,20 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/phasetemplate/${row.data.id}` });
 };
 
-const onCreateSubmit = async () => {
-  if (!phaseTemplateStore.phaseTemplate) return;
+const onCreateSubmit = async (values: FormValues) => {
+  const source = phaseTemplateStore.phaseTemplate;
+  if (!source) return;
 
-  const created = await phaseTemplateStore.create(
-    phaseTemplateStore.phaseTemplate,
-  );
+  const model: PhaseTemplate = {
+    ...source,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+  };
+
+  const created = await phaseTemplateStore.create(model);
   if (created)
     router.push({
-      path: `/phasetemplate/${phaseTemplateStore.phaseTemplate.id}`,
+      path: `/phasetemplate/${model.id}`,
     });
 };
 

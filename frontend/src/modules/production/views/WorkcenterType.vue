@@ -54,8 +54,7 @@
   });
   
   const toast = useToast();
-  const submitForm = async () => {
-    const data = workcenterType.value as WorkcenterType;
+  const submitForm = async (data: WorkcenterType) => {
     let result = false;
     let message = "";
   

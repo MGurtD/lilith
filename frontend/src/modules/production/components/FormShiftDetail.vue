@@ -1,83 +1,105 @@
-<template>
-  <form v-if="shiftdetail">
-    <section class="three-columns">
-      <DatePicker
-        class="mb-2"
-        :label="t('production.components.iniciTorn')"
-        v-model="shiftdetail.startTime"
-        timeOnly
-        hourFormat="24"
-      />
-      <DatePicker
-        class="mb-2"
-        :label="t('production.components.fiTorn')"
-        v-model="shiftdetail.endTime"
-        timeOnly
-        hourFormat="24"
-      />
-      <div class="mb-4">
-        <label class="block text-900 mb-2">{{ t("production.components.tempsProductiu") }}</label>
-        <Checkbox v-model="shiftdetail.isProductiveTime" :binary="true" />
-      </div>
-    </section>
-    <Button :label="t('production.components.confirmar')" @click="submitForm" style="float: right" />
-  </form>
-</template>
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import { ShiftDetail } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { booleanValue, dateValue } from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { extractTime } from "../../../utils/functions";
+import type { ShiftDetail } from "../types";
 
 const props = defineProps<{
   shiftdetail: ShiftDetail;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", shiftdetail: ShiftDetail): void;
-  (e: "cancel"): void;
+  (event: "submit", shiftdetail: ShiftDetail): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const timePattern = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/;
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.shiftdetail);
+// The entity stores times as "HH:mm:ss"; the time-only DatePicker needs a
+// native Date, so the time is placed on today's date.
+const timeToDate = (value: unknown): Date | null => {
+  if (value instanceof Date) return value;
+  if (typeof value !== "string") return null;
+
+  const match = timePattern.exec(value);
+  if (!match) return null;
+
+  const date = new Date();
+  date.setHours(
+    Number(match[1]),
+    Number(match[2]),
+    match[3] === undefined ? 0 : Number(match[3]),
+    0,
+  );
+  return date;
 };
 
-const submitForm = async () => {
-  props.shiftdetail.startTime = extractTime(props.shiftdetail.startTime);
-  props.shiftdetail.endTime = extractTime(props.shiftdetail.endTime);
+const initialValues = computed(() => ({
+  ...props.shiftdetail,
+  startTime: timeToDate(props.shiftdetail.startTime),
+  endTime: timeToDate(props.shiftdetail.endTime),
+}));
 
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.shiftdetail);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const timeProps = { timeOnly: true, hourFormat: "24" } as const;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "startTime",
+        label: t("production.fields.shiftStartTime"),
+        type: FormFieldType.Date,
+        props: timeProps,
+      },
+      {
+        name: "endTime",
+        label: t("production.fields.shiftEndTime"),
+        type: FormFieldType.Date,
+        props: timeProps,
+      },
+      {
+        name: "isProductiveTime",
+        label: t("production.fields.productiveTime"),
+        type: FormFieldType.Checkbox,
+        defaultValue: true,
+      },
+    ],
+  },
+]);
+
+// Converts the picked time back to the "HH:mm:ss" entity format, as the
+// legacy form did; a cleared picker yields an empty string.
+const timeValue = (value: unknown): string =>
+  extractTime(dateValue(value, null)?.toISOString() ?? null);
+
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.shiftdetail,
+    startTime: timeValue(values.startTime),
+    endTime: timeValue(values.endTime),
+    isProductiveTime: booleanValue(
+      values.isProductiveTime,
+      props.shiftdetail.isProductiveTime,
+    ),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>
