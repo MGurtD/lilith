@@ -1,21 +1,22 @@
 <template>
-  <PageActions>
-    <SplitButton
-      :label="t('sales.detail.actions.save')"
-      icon="pi pi-save"
-      @click="submitForm"
-      :model="items"
-    />
-  </PageActions>
-
-  <FormBudget class="mt-3 mb-3" ref="budgetForm" @submit="onBudgetSubmit" />
+  <FormBudget
+    v-if="budget"
+    ref="budgetForm"
+    class="mt-3 mb-3"
+    :budget="budget"
+    :order-number="budgetStore.order?.number"
+    @submit="onBudgetSubmit"
+    @download="printInvoice"
+    @print-pdf="printPdf"
+    @create-order="createSalesOrder"
+    @clone="cloneBudget"
+  />
 
   <Tabs value="0">
     <TabList>
       <Tab value="0">{{ t("sales.detail.tabs.detail") }}</Tab>
       <Tab value="1">{{ t("sales.detail.tabs.transport") }}</Tab>
       <Tab value="2">{{ t("sales.detail.tabs.externalServices") }}</Tab>
-      <Tab value="3">{{ t("sales.detail.tabs.notes") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0">
@@ -104,30 +105,6 @@
         </TableBudgetExternalServices>
         <p v-else class="mt-3 text-500">{{ t("sales.detail.labels.noExternalServices") }}</p>
       </TabPanel>
-      <TabPanel value="3">
-        <section v-if="budget" class="mt-2">
-          <div>
-            <label class="block text-900 mb-2">{{ t("sales.detail.labels.internalNotes") }}</label>
-            <Textarea
-              class="w-full"
-              rows="3"
-              :placeholder="t('sales.detail.labels.internalNotes')"
-              v-model="budget.userNotes"
-            />
-          </div>
-        </section>
-        <section v-if="budget" class="mt-2">
-          <div>
-            <BaseInput
-              :type="BaseInputType.TEXT"
-              :label="t('sales.detail.labels.automaticNotes')"
-              id="notes"
-              v-model="budget.notes"
-              disabled
-            />
-          </div>
-        </section>
-      </TabPanel>
     </TabPanels>
   </Tabs>
 
@@ -147,6 +124,7 @@
       :detail="budgetDetail"
       :readonly="false"
       @submit="onBudgetDetailSubmit"
+      @cancel="isDetailDialogVisible = false"
     />
   </Dialog>
   <Dialog
@@ -166,16 +144,17 @@
       :customerId="budget.customerId"
       :readonly="false"
       @submit="onBudgetTransportSubmit"
+      @cancel="isTransportDialogVisible = false"
     />
   </Dialog>
   <!--:readonly="budgetStore.order !== null"-->
 </template>
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { storeToRefs } from "pinia";
+import { cloneDeep } from "lodash";
 import {
   Budget,
   BudgetDetail,
@@ -183,7 +162,6 @@ import {
   SalesOrderDetail,
 } from "../types";
 import { useStore } from "../../../store";
-import { BaseInputType } from "../../../types/component";
 import {
   createBlobAndDownloadFile,
   getNewUuid,
@@ -215,7 +193,7 @@ import { useSalesOrderStore } from "../store/order";
 const referenceService = new ReferenceService("/reference");
 
 const formMode = ref(FormActionMode.EDIT);
-const budgetForm = ref();
+const budgetForm = ref<InstanceType<typeof FormBudget> | null>(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -332,29 +310,6 @@ watch(
   { deep: true }
 );
 
-const items = computed(() => [
-  {
-    label: t("sales.detail.actions.download"),
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(),
-  },
-  {
-    label: t("sales.detail.actions.printPdf"),
-    icon: PrimeIcons.FILE_PDF,
-    command: () => printPdf(),
-  },
-  {
-    label: t("sales.detail.actions.createOrder"),
-    icon: PrimeIcons.FLAG_FILL,
-    command: () => createSalesOrder(),
-  },
-  {
-    label: t("sales.detail.actions.cloneBudget"),
-    icon: PrimeIcons.COPY,
-    command: () => cloneBudget(),
-  },
-]);
-
 const detailDialogTitle = computed(() => t("sales.detail.dialogs.budgetLine"));
 const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
@@ -401,20 +356,6 @@ onUnmounted(() => {
   budgetStore.order = undefined;
 });
 
-const submitForm = () => {
-  if (!budget.value?.date) {
-    toast.add({
-      severity: "error",
-      summary: t("sales.detail.messages.error"),
-      detail: t("sales.detail.messages.dateRequired"),
-      life: 5000,
-    });
-    return false;
-  }
-  const form = budgetForm.value as any;
-  form.submitForm();
-};
-
 const openBudgetDetailDialog = (
   formMode: FormActionMode,
   detail: BudgetDetail,
@@ -449,7 +390,7 @@ const openBudgetDetailDialog = (
     } as BudgetDetail;
   }
 
-  budgetDetail.value = Object.assign({}, detail);
+  budgetDetail.value = cloneDeep(detail);
   formDetailMode.value = formMode;
   isDetailDialogVisible.value = true;
 };
@@ -554,8 +495,11 @@ const createSalesOrder = async () => {
     return;
   }
 
-  if (budget.value) {
-    const response = await salesOrderStore.CreateFromBudget(budget.value);
+  // Include unsaved header edits (customer, delivery days), as the legacy
+  // screen did when the form edited the store directly.
+  const currentBudget = budgetForm.value?.currentBudget() ?? budget.value;
+  if (currentBudget) {
+    const response = await salesOrderStore.CreateFromBudget(currentBudget);
 
     if (response.result) {
       const budgetId = response.content?.budgetId;
