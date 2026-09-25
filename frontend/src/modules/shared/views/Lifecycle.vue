@@ -87,6 +87,12 @@
       :status="selectedStatus"
       :formAction="auxiliarFormAction"
       @submit="onStatusSubmit"
+      @cancel="
+        () => {
+          dialogOptions.visible = false;
+          selectedStatus = undefined;
+        }
+      "
     />
     <FormStatusTransition
       v-if="selectedStatusTransition"
@@ -94,6 +100,12 @@
       :statuses="lifecycle!.statuses"
       :formAction="auxiliarFormAction"
       @submit="onStatusTransitionSubmit"
+      @cancel="
+        () => {
+          dialogOptions.visible = false;
+          selectedStatusTransition = undefined;
+        }
+      "
     />
     <FormLifecycleTag
       v-if="selectedTag"
@@ -178,7 +190,8 @@ const openStatus = (action: FormActionMode, status: Status) => {
   if (formMode.value === FormActionMode.CREATE) return;
 
   auxiliarFormAction.value = action;
-  selectedStatus.value = status;
+  // A copy: the form works on its own snapshot and the table row stays as is.
+  selectedStatus.value = { ...status };
   selectedStatusTransition.value = undefined;
   selectedTag.value = undefined;
 
@@ -241,7 +254,7 @@ const openStatusTransition = (
 
   auxiliarFormAction.value = action;
   selectedStatus.value = undefined;
-  selectedStatusTransition.value = transition;
+  selectedStatusTransition.value = { ...transition };
   selectedTag.value = undefined;
 
   dialogOptions.visible = true;

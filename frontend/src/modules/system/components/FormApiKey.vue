@@ -1,114 +1,111 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  optionalStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import * as yup from "yup";
-import { FormValidation } from "@/utils/form-validator";
-import { convertDateTimeToJSON } from "@/utils/functions";
+import * as Yup from "yup";
 
-interface ApiKeyFormData {
+// The expiry date stays a native Date inside the form; the parent converts it
+// to the API string when it builds the create request.
+export interface ApiKeyFormData {
   id: string;
   name: string;
   description?: string;
   scopes?: string;
-  expiresOn?: string | null;
+  expiresOn: Date | null;
 }
-
-interface ApiKeyFormState {
-  id: string;
-  name: string;
-  description?: string;
-  scopes?: string;
-  expiresOn?: Date | null;
-}
-
-const { t } = useI18n();
 
 const props = defineProps<{
-  initialData: Partial<ApiKeyFormData>;
+  initialData: ApiKeyFormData;
   submitting?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", data: Partial<ApiKeyFormData>): void;
+  (e: "submit", data: ApiKeyFormData): void;
+  (e: "cancel"): void;
 }>();
 
-const schema = yup.object({
-  name: yup.string().required(() => t("apiKeys.form.nameRequired")),
-});
-const validator = new FormValidation(schema as any);
+const { t } = useI18n();
 
-const form = ref<Partial<ApiKeyFormState>>({});
-const errors = ref<Record<string, string[]>>({});
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "name",
+        label: t("apiKeys.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(t("apiKeys.form.nameRequired")),
+      },
+      {
+        name: "description",
+        label: t("apiKeys.form.description"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "scopes",
+        label: t("apiKeys.form.scopes"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "expiresOn",
+        label: t("apiKeys.form.expiresOn"),
+        type: FormFieldType.Date,
+        defaultValue: null,
+        props: { dateFormat: "dd/mm/yy", showButtonBar: true },
+      },
+    ],
+  },
+]);
 
-onMounted(() => {
-  form.value = {
-    ...props.initialData,
-    expiresOn: props.initialData.expiresOn
-      ? new Date(props.initialData.expiresOn)
-      : null,
-  };
-});
-
-const validate = () => {
-  const r = validator.validate(form.value);
-  errors.value = r.errors;
-  return r.result;
-};
-
-const submit = () => {
-  if (!validate()) return;
+const submit = (values: FormValues): void => {
   emit("submit", {
-    ...form.value,
-    expiresOn: form.value.expiresOn
-      ? convertDateTimeToJSON(form.value.expiresOn)
-      : null,
+    ...props.initialData,
+    name: stringValue(values.name, ""),
+    description: optionalStringValue(
+      values.description,
+      props.initialData.description,
+    ),
+    scopes: optionalStringValue(values.scopes, props.initialData.scopes),
+    expiresOn: dateValue(values.expiresOn, null),
   });
 };
 </script>
 
 <template>
-  <div class="form-apikey">
-    <div class="formgrid grid">
-      <div class="field col-12 md:col-6">
-        <label class="block mb-2"
-          >{{ t("apiKeys.form.name") }} <span class="p-error">*</span></label
-        >
-        <InputText v-model="form.name" class="w-full" />
-        <small class="p-error" v-if="errors.name">{{ errors.name[0] }}</small>
-      </div>
-      <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t("apiKeys.form.description") }}</label>
-        <InputText v-model="form.description" class="w-full" />
-      </div>
-      <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t("apiKeys.form.scopes") }}</label>
-        <InputText
-          v-model="form.scopes"
-          class="w-full"
-          :placeholder="t('apiKeys.form.scopesPlaceholder')"
-        />
-        <small class="text-color-secondary">{{
-          t("apiKeys.form.scopesHelp")
-        }}</small>
-      </div>
-      <div class="field col-12 md:col-6">
-        <label class="block mb-2">{{ t("apiKeys.form.expiresOn") }}</label>
-        <DatePicker
-          v-model="form.expiresOn"
-          dateFormat="dd/mm/yy"
-          class="w-full"
-          :showButtonBar="true"
-        />
-      </div>
-    </div>
-    <div class="flex justify-content-end mt-4">
-      <Button
-        size="small"
-        :label="t('apiKeys.form.submitButton')"
-        icon="pi pi-key"
-        :loading="submitting"
-        @click="submit"
+  <Form
+    :rows="rows"
+    :initial-values="initialData"
+    :loading="submitting"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-scopes="{ value, setValue, disabled, inputId }">
+      <InputText
+        :id="inputId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :placeholder="t('apiKeys.form.scopesPlaceholder')"
+        :disabled="disabled"
+        class="w-full"
+        @update:model-value="setValue"
       />
-    </div>
-  </div>
+      <small class="text-color-secondary">{{
+        t("apiKeys.form.scopesHelp")
+      }}</small>
+    </template>
+  </Form>
 </template>

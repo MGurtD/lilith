@@ -1,101 +1,203 @@
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { ref, watch, onMounted, computed } from "vue";
-import { useI18n } from "vue-i18n";
-import * as yup from "yup";
-import { FormValidation } from "@/utils/form-validator";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormFieldConfig,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
 import IconPicker from "@/components/IconPicker.vue";
-import type { MenuItemFlat, MenuItemNode } from "@/modules/system/types/menuitem";
+import Message from "primevue/message";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type {
+  MenuItemFlat,
+  MenuItemNode,
+  MenuItemTranslation,
+} from "@/modules/system/types/menuitem";
 import { getMenuItemsHierarchy } from "@/modules/system/services/menuitem.service";
-import { BaseInputType } from "@/types/component";
 import LanguageService from "@/services/language.service";
 import type { Language } from "@/types";
 
-const props = defineProps<{
-  modelValue: Partial<MenuItemFlat>;
-  submitting?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    menuItem: MenuItemFlat;
+    submitting?: boolean;
+  }>(),
+  { submitting: false },
+);
+
 const emit = defineEmits<{
-  (e: "update:modelValue", value: Partial<MenuItemFlat>): void;
-  (e: "submit"): void;
+  (event: "submit", menuItem: MenuItemFlat): void;
 }>();
 
 const { t } = useI18n();
 
-const schema = yup.object({
-  key: yup.string().required(() => t("menuItems.form.validation.keyRequired")),
-  sortOrder: yup
-    .number()
-    .required(() => t("menuItems.form.validation.orderRequired"))
-    .min(0),
-});
-const validator = new FormValidation(schema as any);
-
-const form = ref<Partial<MenuItemFlat>>({ ...props.modelValue });
-const errors = ref<Record<string, string[]>>({});
+const languageService = new LanguageService();
 const hierarchy = ref<MenuItemNode[]>([]);
 const languages = ref<Language[]>([]);
-const languageService = new LanguageService();
-const withActiveLanguages = (value: Partial<MenuItemFlat>) => ({
-  ...value,
-  translations: languages.value.map((language) => ({
-    languageCode: language.code.toLowerCase(),
-    title:
-      value.translations?.find(
-        (translation) =>
-          translation.languageCode.toLowerCase() === language.code.toLowerCase(),
-      )?.title ?? "",
-  })),
-});
-const parentFlat = computed<MenuItemFlat[]>(() => {
+// The title fields are generated from the active languages, so the form is
+// rendered only once that list is loaded and stays stable while it is open.
+const languagesLoaded = ref(false);
+
+interface TitleField {
+  name: string;
+  languageCode: string;
+  languageName: string;
+}
+
+const titleFields = computed<TitleField[]>(() =>
+  languages.value.map((language) => {
+    const languageCode = language.code.toLowerCase();
+    return {
+      name: `title_${languageCode.replace(/[^a-z0-9_-]/g, "_")}`,
+      languageCode,
+      languageName: language.name || language.code,
+    };
+  }),
+);
+
+const translationTitle = (languageCode: string): string =>
+  props.menuItem.translations?.find(
+    (translation) => translation.languageCode.toLowerCase() === languageCode,
+  )?.title ?? "";
+
+const initialValues = computed<FormValues>(() => ({
+  ...props.menuItem,
+  ...Object.fromEntries(
+    titleFields.value.map((field) => [
+      field.name,
+      translationTitle(field.languageCode),
+    ]),
+  ),
+}));
+
+const parentOptions = computed<MenuItemFlat[]>(() => {
   const list: MenuItemFlat[] = [];
   const walk = (nodes: MenuItemNode[], depth = 0) => {
-    nodes.forEach((n) => {
-      list.push({ ...n, title: `${" > ".repeat(depth)}${n.title}` });
-      if (n.children?.length) walk(n.children, depth + 1);
+    nodes.forEach((node) => {
+      list.push({ ...node, title: `${" > ".repeat(depth)}${node.title}` });
+      if (node.children?.length) walk(node.children, depth + 1);
     });
   };
   walk(hierarchy.value);
-  return list.filter((i) => !form.value.id || i.id !== form.value.id);
+  return list.filter(
+    (item) => !props.menuItem.id || item.id !== props.menuItem.id,
+  );
 });
 
-// REMOVED: Bidirectional watcher that was causing infinite loops
-// The parent passes initial data via props, child maintains its own state
-// Child only syncs back to parent on submit, not on every change
-watch(
-  () => props.modelValue,
-  (v) => {
-    form.value = languages.value.length ? withActiveLanguages(v) : { ...v };
-  },
-  { immediate: true },
+// One title field per active language, named deterministically from its code
+// and mapped back to the translation collection at submit.
+const titleRows = computed<FormRowConfig[]>(() =>
+  titleFields.value.length
+    ? [
+        {
+          columns: { mobile: 1, desktop: 3 },
+          fields: titleFields.value.map(
+            (field): FormFieldConfig => ({
+              name: field.name,
+              label: t("menuItems.form.titleForLanguage", {
+                language: field.languageName,
+              }),
+              type: FormFieldType.Text,
+              defaultValue: "",
+              validation: Yup.string().test(
+                "title-not-blank",
+                t("menuItems.form.validation.titleRequired"),
+                (value) =>
+                  typeof value === "string" && value.trim().length > 0,
+              ),
+            }),
+          ),
+        },
+      ]
+    : [],
 );
 
-const validate = () => {
-  const r = validator.validate(form.value);
-  errors.value = r.errors;
-  let valid = r.result;
-  if (!languages.value.length) {
-    errors.value.translations = [
-      t("menuItems.form.validation.languagesRequired"),
-    ];
-    valid = false;
-  }
-  for (const translation of form.value.translations ?? []) {
-    if (!translation.title.trim()) {
-      errors.value[`translation-${translation.languageCode}`] = [
-        t("menuItems.form.validation.titleRequired"),
-      ];
-      valid = false;
-    }
-  }
-  return valid && form.value.translations?.length === languages.value.length;
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "key",
+        label: t("menuItems.form.key"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("menuItems.form.validation.keyRequired"),
+        ),
+      },
+      {
+        name: "route",
+        label: t("menuItems.form.route"),
+        type: FormFieldType.Text,
+        props: { placeholder: "/path" },
+      },
+      {
+        name: "sortOrder",
+        label: t("menuItems.form.sortOrder"),
+        type: FormFieldType.Number,
+        defaultValue: 0,
+        props: { locale: "en-US", min: 0 },
+        validation: Yup.number()
+          .typeError(t("menuItems.form.validation.orderRequired"))
+          .required(t("menuItems.form.validation.orderRequired"))
+          .min(0),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "parentId",
+        label: t("menuItems.form.parent"),
+        type: FormFieldType.Select,
+        props: {
+          options: parentOptions.value,
+          optionLabel: "title",
+          optionValue: "id",
+          placeholder: t("menuItems.form.parent"),
+          showClear: true,
+        },
+      },
+      {
+        name: "icon",
+        label: t("menuItems.form.icon"),
+        type: FormFieldType.Custom,
+      },
+    ],
+  },
+  ...titleRows.value,
+]);
 
-const submit = () => {
-  if (!validate()) return;
-  // Sync final state to parent before submit
-  emit("update:modelValue", form.value);
-  emit("submit");
+const submit = (values: FormValues): void => {
+  if (!titleFields.value.length) return;
+
+  const translations: MenuItemTranslation[] = titleFields.value.map(
+    (field) => ({
+      languageCode: field.languageCode,
+      title: stringValue(values[field.name], ""),
+    }),
+  );
+
+  emit("submit", {
+    ...props.menuItem,
+    key: stringValue(values.key, props.menuItem.key),
+    route: nullableStringValue(values.route, props.menuItem.route ?? null),
+    sortOrder: finiteNumberValue(values.sortOrder, props.menuItem.sortOrder),
+    parentId: nullableStringValue(
+      values.parentId,
+      props.menuItem.parentId ?? null,
+    ),
+    icon: nullableStringValue(values.icon, props.menuItem.icon ?? null),
+    translations,
+  });
 };
 
 const loadHierarchy = async () => {
@@ -106,86 +208,39 @@ const loadLanguages = async () => {
   languages.value = ((await languageService.GetAll()) ?? []).sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
-  form.value = withActiveLanguages(form.value);
+  languagesLoaded.value = true;
 };
 
 onMounted(async () => {
   await Promise.all([loadHierarchy(), loadLanguages()]);
 });
 </script>
+
 <template>
   <div class="form-menu-item">
-    <div class="formgrid grid">
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.key") }}</label>
-        <BaseInput v-model="form.key" />
-        <small class="p-error" v-if="errors.key">{{ errors.key[0] }}</small>
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.route") }}</label>
-        <BaseInput v-model="form.route" placeholder="/path" />
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.sortOrder") }}</label>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          v-model="form.sortOrder as any"
-          :min="0"
+    <Message
+      v-if="languagesLoaded && !titleFields.length"
+      severity="error"
+      class="mb-3"
+    >
+      {{ t("menuItems.form.validation.languagesRequired") }}
+    </Message>
+    <Form
+      v-if="languagesLoaded"
+      page-actions
+      :rows="rows"
+      :initial-values="initialValues"
+      :loading="submitting"
+      :disabled="!titleFields.length"
+      @submit="submit"
+    >
+      <template #field-icon="{ value, setValue, disabled }">
+        <IconPicker
+          :model-value="typeof value === 'string' ? value : null"
+          :class="{ 'pointer-events-none opacity-60': disabled }"
+          @update:model-value="setValue"
         />
-        <small class="p-error" v-if="errors.sortOrder">{{
-          errors.sortOrder[0]
-        }}</small>
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.parent") }}</label>
-        <Select
-          v-model="form.parentId"
-          :options="parentFlat"
-          optionLabel="title"
-          optionValue="id"
-          :placeholder="t('menuItems.form.parent')"
-          showClear
-          class="w-full"
-        />
-      </div>
-      <div class="field col-12 md:col-4">
-        <label class="block mb-2">{{ t("menuItems.form.icon") }}</label>
-        <IconPicker v-model="form.icon" />
-      </div>
-      <div
-        v-for="translation in form.translations"
-        :key="translation.languageCode"
-        class="field col-12 md:col-4"
-      >
-        <label class="block mb-2">
-          {{
-            t("menuItems.form.titleForLanguage", {
-              language:
-                languages.find(
-                  (language) => language.code === translation.languageCode,
-                )?.name ?? translation.languageCode,
-            })
-          }}
-        </label>
-        <BaseInput v-model="translation.title" />
-        <small
-          class="p-error"
-          v-if="errors[`translation-${translation.languageCode}`]"
-        >
-          {{ errors[`translation-${translation.languageCode}`][0] }}
-        </small>
-      </div>
-      <small class="p-error col-12" v-if="errors.translations">
-        {{ errors.translations[0] }}
-      </small>
-    </div>
-    <PageActions>
-      <Button
-        :label="t('menuItems.form.save')"
-        icon="pi pi-save"
-        :loading="submitting"
-        @click="submit"
-      />
-    </PageActions>
+      </template>
+    </Form>
   </div>
 </template>

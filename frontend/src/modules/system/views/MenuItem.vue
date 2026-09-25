@@ -20,7 +20,14 @@ const store = useStore();
 
 const id = route.params.id as string;
 const isNew = ref(false);
-const formData = ref<Partial<MenuItemFlat>>({ sortOrder: 0, translations: [] });
+const newMenuItem = (): MenuItemFlat => ({
+  id,
+  key: "",
+  title: "",
+  sortOrder: 0,
+  translations: [],
+});
+const formData = ref<MenuItemFlat | null>(null);
 const submitting = ref(false);
 const { t } = useI18n();
 
@@ -33,28 +40,29 @@ const load = async () => {
     } else {
       // 404 - menu item does not exist yet
       isNew.value = true;
-      formData.value = { id, sortOrder: 0, translations: [] };
+      formData.value = newMenuItem();
     }
   } catch (error: unknown) {
     // Network or unexpected error
     console.error("Failed to load menu item:", error);
     isNew.value = true;
-    formData.value = { id, sortOrder: 0, translations: [] };
+    formData.value = newMenuItem();
   }
 };
 
-const save = async () => {
+const save = async (menuItem: MenuItemFlat) => {
+  if (submitting.value) return;
   submitting.value = true;
   try {
     if (isNew.value) {
       const created = await createMenuItem({
         id,
-        key: formData.value.key!,
-        icon: formData.value.icon || undefined,
-        route: formData.value.route || undefined,
-        parentId: formData.value.parentId || undefined,
-        sortOrder: formData.value.sortOrder as number,
-        translations: formData.value.translations!,
+        key: menuItem.key,
+        icon: menuItem.icon || undefined,
+        route: menuItem.route || undefined,
+        parentId: menuItem.parentId || undefined,
+        sortOrder: menuItem.sortOrder,
+        translations: menuItem.translations,
       });
       toast.add({
         severity: "success",
@@ -62,17 +70,19 @@ const save = async () => {
         life: 3000,
       });
       isNew.value = false;
+      formData.value = menuItem;
       router.replace({ path: `/menuitem/${created.id}` });
     } else {
-      await updateMenuItem(formData.value.id!, {
-        id: formData.value.id!,
-        key: formData.value.key!,
-        icon: formData.value.icon || undefined,
-        route: formData.value.route || undefined,
-        parentId: formData.value.parentId || undefined,
-        sortOrder: formData.value.sortOrder as number,
-        translations: formData.value.translations!,
+      await updateMenuItem(menuItem.id, {
+        id: menuItem.id,
+        key: menuItem.key,
+        icon: menuItem.icon || undefined,
+        route: menuItem.route || undefined,
+        parentId: menuItem.parentId || undefined,
+        sortOrder: menuItem.sortOrder,
+        translations: menuItem.translations,
       });
+      formData.value = menuItem;
       toast.add({
         severity: "success",
         summary: t("menuItems.updated"),
@@ -102,6 +112,11 @@ onMounted(async () => {
 </script>
 <template>
   <div class="card">
-    <FormMenuItem v-model="formData" :submitting="submitting" @submit="save" />
+    <FormMenuItem
+      v-if="formData"
+      :menu-item="formData"
+      :submitting="submitting"
+      @submit="save"
+    />
   </div>
 </template>

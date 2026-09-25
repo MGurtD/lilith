@@ -165,7 +165,11 @@
     :style="{ width: '480px' }"
     @hide="showSupportDialog = false"
   >
-    <FormSupportRequest @close="showSupportDialog = false" />
+    <FormSupportRequest
+      :loading="supportStore.isSubmitting"
+      @submit="submitSupportRequest"
+      @cancel="showSupportDialog = false"
+    />
   </Dialog>
 </template>
 
@@ -174,6 +178,7 @@ import { computed, ref, watch, type FunctionalComponent } from "vue";
 import Avatar from "primevue/avatar";
 import Drawer from "primevue/drawer";
 import Popover from "primevue/popover";
+import { useToast } from "primevue/usetoast";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { SidebarMenu } from "vue-sidebar-menu";
@@ -184,6 +189,7 @@ import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
 import { useBrandingStore } from "@/store/branding";
 import FormSupportRequest from "../modules/shared/components/FormSupportRequest.vue";
+import { useSupportStore } from "../modules/shared/store/support";
 
 const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
 
@@ -216,6 +222,34 @@ const logoLoadFailed = ref(false);
 function openSupport() {
   store.sidebar.mobileOpen = false;
   showSupportDialog.value = true;
+}
+
+const supportStore = useSupportStore();
+const toast = useToast();
+
+// On failure the dialog stays open so the request can be sent again.
+async function submitSupportRequest(request: {
+  resum: string;
+  descripcio: string;
+}) {
+  const result = await supportStore.submit(request.resum, request.descripcio);
+
+  if (result.ok) {
+    toast.add({
+      severity: "success",
+      summary: t("shared.supportRequest.messages.sent"),
+      detail: t("shared.supportRequest.messages.sentDetail"),
+      life: 5000,
+    });
+    showSupportDialog.value = false;
+  } else {
+    toast.add({
+      severity: "error",
+      summary: t("shared.supportRequest.messages.error"),
+      detail: result.error,
+      life: 8000,
+    });
+  }
 }
 
 // Who is signed in: the plant operator once one has clocked in, else the user.

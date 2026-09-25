@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L6 in review as stacked PRs; next batch L7 (system and complex shared).
+> **Status**: In progress. L1–L7 in review as stacked PRs (SH-09 deferred); next batch L8 (login/register).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -95,7 +95,7 @@ Established patterns are **not** new features. These already cover:
 ## 2. Inventory
 
 Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
-`excluded`. Difficulty: `low` · `med` · `high`. Paths are relative to
+`deferred` · `excluded`. Difficulty: `low` · `med` · `high`. Paths are relative to
 `frontend/src/modules/` unless they start with `components/`.
 
 ### 2.1 Batch L1 — Shared masters
@@ -188,16 +188,16 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| SY-01 | `system/components/FormProfile.vue` | `Profile.vue` | low | — | pending | | |
-| SY-02 | `system/components/FormApiKey.vue` | `ApiKeys.vue` | low | — | pending | | Date string ↔ `Date` boundary |
-| SY-03 | `system/components/CreateUserForm.vue` | `Users.vue` | med | — | pending | | Password confirmation via `Yup.ref` |
-| SY-04 | `system/components/FormUser.vue` | `User.vue` | high | F-02? | pending | | Mutates prop; 2 emits; embedded password sub-form; SplitButton actions |
-| SY-05 | `system/components/FormMenuItem.vue` | `MenuItem.vue` | high | F-05 | pending | | One field per language, loaded asynchronously; IconPicker |
-| SY-06 | `system/components/FormApplicationBranding.vue` | `ApplicationBranding.vue` | high | F-04? | pending | | 2 self-submitting `FileUpload` logos + brand name + palette radio |
-| SH-06 | `shared/components/FormStatusTransition.vue` | `Lifecycle.vue` | med | — | pending | | Manual cross-field check outside the schema |
-| SH-07 | `shared/components/FormStatus.vue` | `Lifecycle.vue` | high | — | pending | | Loads tags on mount; 2-argument emit with tag diff |
-| SH-08 | `shared/components/FormSupportRequest.vue` | `TheSidebar.vue` | high | — | pending | | Markdown toolbar + live preview via slot; calls Pinia directly |
-| SH-09 | `shared/views/ReferenceManagement.vue` | — | high | F-03?, F-04? | pending | | 3 tabbed sub-forms with separate submits + supplier dialog; `FileEntityPicker` |
+| SY-01 | `system/components/FormProfile.vue` | `Profile.vue` | low | — | migrated | `b27d7ab` | |
+| SY-02 | `system/components/FormApiKey.vue` | `ApiKeys.vue` | low | — | migrated | `d097f06` | Date string ↔ `Date` boundary |
+| SY-03 | `system/components/CreateUserForm.vue` | `Users.vue` | med | — | migrated | `1a89858` | Password confirmation via `Yup.ref` |
+| SY-04 | `system/components/FormUser.vue` | `User.vue` | high | F-02? | migrated | `2e0aee4` | Mutates prop; 2 emits; embedded password sub-form; SplitButton actions |
+| SY-05 | `system/components/FormMenuItem.vue` | `MenuItem.vue` | high | F-05 | migrated | `4b8b6b8` | One field per language, loaded asynchronously; IconPicker |
+| SY-06 | `system/components/FormApplicationBranding.vue` | `ApplicationBranding.vue` | high | F-04? | migrated | `ec3445e` | 2 self-submitting `FileUpload` logos + brand name + palette radio |
+| SH-06 | `shared/components/FormStatusTransition.vue` | `Lifecycle.vue` | med | — | migrated | `86b7ddf` | Manual cross-field check outside the schema |
+| SH-07 | `shared/components/FormStatus.vue` | `Lifecycle.vue` | high | — | migrated | `86b7ddf` | Loads tags on mount; 2-argument emit with tag diff |
+| SH-08 | `shared/components/FormSupportRequest.vue` | `TheSidebar.vue` | high | — | migrated | `c7d05a2` | Markdown toolbar + live preview via slot; calls Pinia directly |
+| SH-09 | `shared/views/ReferenceManagement.vue` | — | high | F-03?, F-04? | deferred | — | 3 tabbed sub-forms with separate submits + supplier dialog; `FileEntityPicker` ; deferred on request: a teammate is reworking this screen (`refactor-reference-manager-view`) |
 
 ### 2.8 Batch L8 — Authentication
 
@@ -256,8 +256,8 @@ established pattern turned out to be enough).
 | F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | rejected | — | Section row rendered from slot `values` + Yup `.test` on `this.parent` (README pattern) covered both cases | — |
 | F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot | PR-18, PR-24 | rejected for screens | — | With `page-actions` the `actions` slot renders inside PageActions and receives `submit`; the SplitButton lives there (secondary action via a pending-action ref). Re-check for SY-04 (dialog/cancel needs) | — |
 | F-03 | Unique native field IDs for simultaneous forms | SH-04 | implemented | `Form.vue`, `README.md`, custom slots in purchase forms and `FormRejectionReason.vue` | See entry below | `770c1ae` |
-| F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06, SH-09 | candidate | | | |
-| F-05 | Repeatable or dynamically generated field groups | SY-05 | candidate | | | |
+| F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06 | rejected | — | Self-submitting uploads stay controls owned by the screen next to the Form (SY-06) | — |
+| F-05 | Repeatable or dynamically generated field groups | SY-05 | rejected | — | Rows computed from data stable while the form is open (languages loaded before render), fields `title_<code>` mapped back to `translations[]` at submit | — |
 | F-07 | Read current (unvalidated) values so a feature can persist in-progress edits with another save | PR-21, PR-26 | implemented | `Form.vue` (`getValues`), README, skill; `currentPhase()` in both phase forms | See entry below | `7cb2e10`, `f79be93` |
 
 Candidates come from the inventory and are hypotheses. Confirm one only when
@@ -387,6 +387,12 @@ Copy for each feature once it is `confirmed`:
 | SA-12 Create order/invoice | Date serialized once (legacy shifted it twice, sending the next day after ~22:00); double submit blocked | Bug fix |
 | SA-13 Delivery note | Only Save is disabled when the note is locked; Word/PDF downloads stay available (approved) | Bug fix |
 | SA-14, SA-15 Sales invoice | Header schema (date, payment method) now actually runs; fiscal data keeps its own save in the tab with the propagation check (approved) | Global decision |
+| All `Form.vue` forms | Labels of Password/Number/Currency/Date/Checkbox/MultiSelect/Select fields now target the focusable input (`inputId`/`labelId`) instead of the wrapper (`8853d4f`) | Bug fix |
+| SY-04 User | Form no longer mutates the user; activate/deactivate applies only on a valid save; "change password" is offered only on the signed-in user's own record (the endpoint always changes the signed-in user's password; approved) | Bug fix |
+| SY-03, SY-04 Passwords | Password fields have a show/hide toggle and no strength meter (PrimeVue's rules did not match the 5-character minimum) | UI |
+| SY-06 Branding | The no-permission message and loading spinner now render (never imported before) | Bug fix |
+| SH-07, SH-06 Status/transition | Status dialog no longer mutates the table row while loading tags; same-status rule is inline | Bug fix |
+| SH-08 Support request | Sending and its toasts move to the sidebar host; the button still reads "Enviar" | Refactor |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -416,3 +422,5 @@ there was none, and so on).
 | 2026-09-25 | L5 UI verification complete: customer header, address dialog (cancel keeps the row, unsaved header edits survive), contact add dialog, customer type, sales reference |
 | 2026-09-25 | L6 (12 forms) migrated in `b3f4a77`..`a007a24`; no new Form.vue feature needed; four product decisions applied (fiscal save, downloads, transport distance, budget notes) |
 | 2026-09-25 | L6 UI verification complete: budget (create dialog, header with notes, line recalculation and cancel, transport), sales order (header, line, transport rate required), delivery note (locked note keeps downloads; status required), sales invoice (date required, fiscal tab with its own save, line amount 3 × 10 = 30.00 €, rectificative dialog limits). Unverifiable with staging data: final-customer transport distance (customer address not geocoded) |
+| 2026-09-25 | L7 (9 forms) migrated in `8853d4f`..`c7d05a2`; F-04 and F-05 rejected (existing patterns); SH-09 ReferenceManagement deferred while a teammate reworks it |
+| 2026-09-25 | L7 UI verification complete: label focus fix (number, date), create user (password mismatch), user screen (change password only on own record; password section validation), API key dialog, menu item (per-language titles), branding (60-char name), lifecycle status and transition (same-status rule), support request (Enviar, markdown preview). Unverifiable with staging data: profile name (all profiles are system profiles with a locked name) |

@@ -1976,6 +1976,7 @@ const ca = {
       },
     },
     supportRequest: {
+      validation: { summaryRequired: "El resum és obligatori", summaryMax: "El resum no pot superar els 255 caràcters", descriptionRequired: "La descripció és obligatòria" },
       form: {
         summary: "Resum",
         description: "Descripció (Markdown)",

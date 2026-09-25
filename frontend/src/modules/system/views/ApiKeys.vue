@@ -6,8 +6,10 @@ import { useApiKeysStore } from "@/modules/system/store/apiKeys";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
-import { getNewUuid } from "@/utils/functions";
-import FormApiKey from "@/modules/system/components/FormApiKey.vue";
+import { convertDateTimeToJSON, getNewUuid } from "@/utils/functions";
+import FormApiKey, {
+  type ApiKeyFormData,
+} from "@/modules/system/components/FormApiKey.vue";
 import type { CreateApiKeyResponse } from "@/types";
 import Table from "@/components/tables/Table.vue";
 import type { Column } from "@/components/tables/types";
@@ -20,14 +22,11 @@ const toast = useToast();
 
 // New key dialog
 const showCreateDialog = ref(false);
-const newKeyId = ref<string>("");
-const formInitialData = ref<{
-  id: string;
-  name: string;
-  description?: string;
-  scopes?: string;
-  expiresOn?: string | null;
-}>({ id: "", name: "" });
+const formInitialData = ref<ApiKeyFormData>({
+  id: "",
+  name: "",
+  expiresOn: null,
+});
 
 // Show-once dialog
 const generatedKey = ref<CreateApiKeyResponse | null>(null);
@@ -74,24 +73,21 @@ const columns = computed<Column[]>(() => [
 ]);
 
 const openCreateDialog = () => {
-  newKeyId.value = getNewUuid();
-  formInitialData.value = { id: newKeyId.value, name: "" };
+  formInitialData.value = { id: getNewUuid(), name: "", expiresOn: null };
   showCreateDialog.value = true;
 };
 
-const handleCreate = async (data: {
-  id?: string;
-  name?: string;
-  description?: string;
-  scopes?: string;
-  expiresOn?: string | null;
-}) => {
+// The form works with a native Date; the API request carries the date string.
+// A copy is converted because convertDateTimeToJSON shifts the Date in place.
+const handleCreate = async (data: ApiKeyFormData) => {
   const result = await store.create({
-    id: data.id ?? newKeyId.value,
-    name: data.name ?? "",
+    id: data.id,
+    name: data.name,
     description: data.description,
     scopes: data.scopes,
-    expiresOn: data.expiresOn ?? null,
+    expiresOn: data.expiresOn
+      ? convertDateTimeToJSON(new Date(data.expiresOn))
+      : null,
   });
 
   if (result) {
@@ -221,9 +217,10 @@ onMounted(async () => {
     :closable="true"
   >
     <FormApiKey
-      :initialData="formInitialData"
+      :initial-data="formInitialData"
       :submitting="store.saving"
       @submit="handleCreate"
+      @cancel="showCreateDialog = false"
     />
   </Dialog>
 
