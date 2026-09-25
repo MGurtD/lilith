@@ -103,17 +103,16 @@ const rowClick = (row: DataTableRowClickEvent) => {
       "grid_delete_column_button"
     )
   ) {
-    selectedAddress.value = row.data;
+    selectedAddress.value = { ...(row.data as CustomerAddress) };
     formMode.value = FormActionMode.EDIT;
   }
 };
 
-const submitForm = () => {
-  const contact = selectedAddress.value as CustomerAddress;
+const submitForm = (address: CustomerAddress) => {
   if (formMode.value === FormActionMode.CREATE) {
-    emit("create", contact);
+    emit("create", address);
   } else {
-    emit("update", contact);
+    emit("update", address);
   }
   // Amb aquesta assignació es torna a pintar la grid
   selectedAddress.value = undefined;
