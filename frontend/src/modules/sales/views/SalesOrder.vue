@@ -1,18 +1,14 @@
 <template>
-  <PageActions>
-    <SplitButton
-      icon="pi pi-save"
-      :label="t('sales.detail.actions.save')"
-      @click="submitForm"
-      :model="items"
-    />
-  </PageActions>
-
   <FormSalesOrder
+    v-if="salesOrder"
     class="mt-3 mb-3"
-    ref="salesOrderForm"
-    salesOrder="salesOrder"
+    :sales-order="salesOrder"
+    :budget-number="budgetStore.budget?.number ?? ''"
+    :delivery-note-number="deliveryNoteStore.deliveryNote?.number ?? ''"
     @submit="onOrderSubmit"
+    @download="printInvoice"
+    @download-pdf="printPdf"
+    @create-delivery-note="createDeliveryNote"
   />
 
   <Tabs value="0">
@@ -139,6 +135,7 @@
       :header="salesOrder"
       :detail="selectedSalesOrderDetail"
       @submit="onOrderDetailSubmit"
+      @cancel="isDetailDialogVisible = false"
     />
   </Dialog>
   <Dialog
@@ -158,11 +155,12 @@
       :customerId="salesOrder.customerId"
       :readonly="false"
       @submit="onSalesOrderTransportSubmit"
+      @cancel="isTransportDialogVisible = false"
     />
   </Dialog>
 </template>
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
+import { cloneDeep } from "lodash";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
@@ -206,7 +204,6 @@ import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { useI18n } from "vue-i18n";
 
 const referenceService = new ReferenceService("/reference");
-const salesOrderForm = ref();
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -324,29 +321,6 @@ watch(
   { deep: true }
 );
 
-const items = computed(() => [
-  {
-    label: t("sales.detail.actions.download"),
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(true),
-  },
-  {
-    label: t("sales.detail.actions.printPdf"),
-    icon: PrimeIcons.FILE_PDF,
-    command: () => printPdf(),
-  },
-  {
-    label: t("sales.detail.actions.downloadWithoutPrice"),
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(false),
-  },
-  {
-    label: t("sales.detail.actions.createDeliveryNote"),
-    icon: PrimeIcons.TRUCK,
-    command: () => createDeliveryNote(),
-  },
-]);
-
 const detailDialogTitle = computed(() => t("sales.detail.dialogs.orderLine"));
 const isDetailDialogVisible = ref(false);
 const formDetailMode = ref(FormActionMode.EDIT);
@@ -426,11 +400,6 @@ onUnmounted(() => {
   externalServicesWithSuppliers.value = [];
 });
 
-const submitForm = () => {
-  const form = salesOrderForm.value as any;
-  form.submitForm();
-};
-
 const openOrderDetailDialog = (
   formMode: FormActionMode,
   salesOrderDetail: SalesOrderDetail,
@@ -470,8 +439,11 @@ const openOrderDetailDialog = (
     } as SalesOrderDetail;
   }
 
-  salesOrderDetail.salesOrderHeaderId = salesOrder.value!.id;
-  selectedSalesOrderDetail.value = Object.assign({}, salesOrderDetail);
+  // Edit a detached copy: closing the dialog without saving leaves the row as is.
+  selectedSalesOrderDetail.value = {
+    ...cloneDeep(salesOrderDetail),
+    salesOrderHeaderId: salesOrder.value!.id,
+  };
   formDetailMode.value = formMode;
   isDetailDialogVisible.value = true;
 };
@@ -638,7 +610,7 @@ const openSalesOrderTransportDialog = (
       price: 0,
     } as SalesOrderTransport;
   }
-  salesOrderTransport.value = Object.assign({}, transport);
+  salesOrderTransport.value = cloneDeep(transport);
   formTransportMode.value = formMode;
   isTransportDialogVisible.value = true;
 };
