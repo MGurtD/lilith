@@ -203,7 +203,7 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AU-01 | `components/forms/LoginForm.vue` | `Login.vue` | low | — | migrated | L8 | Manual empty checks + toast ; UI pending |
+| AU-01 | `components/forms/LoginForm.vue` | `Login.vue` | low | — | migrated | L8 | Manual empty checks + toast ; verified manually by the owner (empty submit shows inline errors, login works) |
 | AU-02 | `components/forms/RegisterForm.vue` | `Login.vue` | med | — | migrated | L8 | Vuelidate; password match via `Yup.ref` ; not reachable in the UI: the register link in LoginForm is commented out |
 
 ### 2.9 Excluded
@@ -427,3 +427,4 @@ there was none, and so on).
 | 2026-09-25 | L7 (9 forms) migrated in `8853d4f`..`c7d05a2`; F-04 and F-05 rejected (existing patterns); SH-09 ReferenceManagement deferred while a teammate reworks it |
 | 2026-09-25 | L7 UI verification complete: label focus fix (number, date), create user (password mismatch), user screen (change password only on own record; password section validation), API key dialog, menu item (per-language titles), branding (60-char name), lifecycle status and transition (same-status rule), support request (Enviar, markdown preview). Unverifiable with staging data: profile name (all profiles are system profiles with a locked name) |
 | 2026-09-25 | L8 login/register migrated; `src/utils/form-validator.ts` deleted, `@vuelidate/core` and `@vuelidate/validators` removed (approved); `frontend/AGENTS.md` and `frontend/README.md` point to Form.vue |
+| 2026-09-25 | Login verified manually by the owner; stacked PRs #135–#142 merged into `dev` |
