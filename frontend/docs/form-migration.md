@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L4 in review as stacked PRs #135–#138; L5 migrated, UI verification running.
+> **Status**: In progress. L1–L5 in review as stacked PRs; next batch L6 (sales documents).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -408,3 +408,4 @@ there was none, and so on).
 | 2026-09-24 | L4 UI verification complete: workorder phase header and step dialog, workmaster copy dialog (both modes), purchase rate duplicate (L3) pass. Unverifiable with staging data: lot code field (no lot-tracked route). Pre-existing: the copy dialog label `production.ui.Ruta d'origen` renders as a raw key (same call before the migration) |
 | 2026-09-25 | i18n keys with an apostrophe or dot fixed in `cf11060` and `be09c01` (#138) |
 | 2026-09-25 | L5 (5 forms) migrated in `7487304`..`dd91809`; no new Form.vue feature needed; customer type made required |
+| 2026-09-25 | L5 UI verification complete: customer header, address dialog (cancel keeps the row, unsaved header edits survive), contact add dialog, customer type, sales reference |
