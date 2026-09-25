@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L6 in review as stacked PRs; L7 migrated (SH-09 deferred), UI verification running.
+> **Status**: In progress. L1–L7 in review as stacked PRs (SH-09 deferred); next batch L8 (login/register).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -423,3 +423,4 @@ there was none, and so on).
 | 2026-09-25 | L6 (12 forms) migrated in `b3f4a77`..`a007a24`; no new Form.vue feature needed; four product decisions applied (fiscal save, downloads, transport distance, budget notes) |
 | 2026-09-25 | L6 UI verification complete: budget (create dialog, header with notes, line recalculation and cancel, transport), sales order (header, line, transport rate required), delivery note (locked note keeps downloads; status required), sales invoice (date required, fiscal tab with its own save, line amount 3 × 10 = 30.00 €, rectificative dialog limits). Unverifiable with staging data: final-customer transport distance (customer address not geocoded) |
 | 2026-09-25 | L7 (9 forms) migrated in `8853d4f`..`c7d05a2`; F-04 and F-05 rejected (existing patterns); SH-09 ReferenceManagement deferred while a teammate reworks it |
+| 2026-09-25 | L7 UI verification complete: label focus fix (number, date), create user (password mismatch), user screen (change password only on own record; password section validation), API key dialog, menu item (per-language titles), branding (60-char name), lifecycle status and transition (same-status rule), support request (Enviar, markdown preview). Unverifiable with staging data: profile name (all profiles are system profiles with a locked name) |
