@@ -1254,6 +1254,7 @@ const es = {
     },
   },
   login: {
+    usernameRequired: "El nombre de usuario es obligatorio", passwordRequired: "La contraseña es obligatoria", firstNameRequired: "El nombre es obligatorio", lastNameRequired: "Los apellidos son obligatorios", repeatPasswordRequired: "Debes repetir la contraseña", emailInvalid: "El correo electrónico no es válido",
     welcome: "Bienvenido a {brandName}",
     productCredit: "Zenith ERP, de Rawcraft Software",
     username: "Nombre de usuario",
@@ -1274,8 +1275,6 @@ const es = {
     registerTitle: "Registro de usuario",
     register: "Regístrate",
     registerSubtitle: "Completa el formulario para crear una cuenta",
-    invalid: "Inicio de sesión incorrecto",
-    credentialsRequired: "El nombre de usuario y la contraseña son obligatorios",
     passwordsDoNotMatch: "Las contraseñas introducidas no coinciden",
   },
   location: {
