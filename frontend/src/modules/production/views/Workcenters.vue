@@ -169,7 +169,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 };
 const deleteButton = (entity: Workcenter) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació de la màquina"),
+    message: t("production.detail.confirmDeleteWorkcenter"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -22,9 +22,9 @@
     @create="createButtonClick"
     @delete="deleteProductionPart"
   >
-    <template #empty> {{ pt("No s'han trobat tiquets.") }} </template>
+    <template #empty> {{ t("production.detail.noProductionParts") }} </template>
     <template #loading>
-      {{ pt("Carregant tiquets. Si us plau espera.") }}
+      {{ t("production.detail.loadingProductionParts") }}
     </template>
   </Table>
   <Dialog
@@ -34,9 +34,10 @@
     :modal="dialogOptions.modal"
   >
     <FormProductionPart
-      :productionPart="productionPartRequest"
+      :production-part="productionPartRequest"
       :avoid-work-order-refresh="false"
       @submit="createProductionPart"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -295,14 +296,14 @@ const columns = computed<Column[]>(() => [
   },
   {
     field: "workcenterTime",
-    header: pt("Temps Maq."),
+    header: t("production.detail.machineTimeShort"),
     columnType: ColumnType.Number,
     total: "sum",
     style: "width: 10%",
   },
   {
     field: "operatorTime",
-    header: pt("Temps Oper."),
+    header: t("production.detail.operatorTimeShort"),
     columnType: ColumnType.Number,
     total: "sum",
     style: "width: 10%",
@@ -392,9 +393,9 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const createProductionPart = async () => {
+const createProductionPart = async (productionPart: ProductionPart) => {
   dialogOptions.visible = false;
-  const created = await productionPartStore.create(productionPartRequest.value);
+  const created = await productionPartStore.create(productionPart);
   if (created) {
     router.push({ path: `/productionpart` });
     filterData();
@@ -403,7 +404,7 @@ const createProductionPart = async () => {
 
 const deleteProductionPart = (productionPart: ProductionPart) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació del tiquet de producció"),
+    message: t("production.detail.confirmDeleteProductionPart"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

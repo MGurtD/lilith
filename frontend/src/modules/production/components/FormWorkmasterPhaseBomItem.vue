@@ -1,142 +1,128 @@
-<template>
-  <form v-if="bomItem">
-    <div>
-        <DropdownReference
-          :label="t('production.components.material')"
-          :fullName="true"
-          v-model="bomItem.referenceId"
-          :class="{
-            'p-invalid': validation.errors.referenceId,
-          }"
-        ></DropdownReference>
-      </div>
-
-    <section class="three-columns">      
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :label="t('production.components.quantitat')"
-          v-model="bomItem.quantity"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :label="t('production.components.ampladaMm')"
-          :decimals="2"
-          v-model="bomItem.width"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :label="t('production.components.alcadaMm')"
-          v-model="bomItem.height"
-        />
-      </div>
-    </section>
-
-    <section class="three-columns">
-     
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :label="t('production.components.longitudMm')"
-          v-model="bomItem.length"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :label="t('production.components.diametreMm')"
-          v-model="bomItem.diameter"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :label="t('production.components.gruixMm')"
-          v-model="bomItem.thickness"
-        />
-      </div>
-    </section>
-
-    <br />
-    <div>
-      <Button
-        :label="t('production.components.guardarMaterial')"
-        style="float: right"
-        size="small"
-        @click="submitForm"
-      />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import DropdownReference from "../../shared/components/DropdownReference.vue";
-import { ref } from "vue";
-import { WorkMasterPhaseBillOfMaterials } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import { useReferenceStore } from "../../shared/store/reference";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
+import type { WorkMasterPhaseBillOfMaterials } from "../types";
 
 const props = defineProps<{
   bomItem: WorkMasterPhaseBillOfMaterials;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", phase: WorkMasterPhaseBillOfMaterials): void;
-  (e: "cancel"): void;
+  (event: "submit", bomItem: WorkMasterPhaseBillOfMaterials): void;
+  (event: "cancel"): void;
 }>();
 
-const referenceStore = useReferenceStore();
+const { t } = useI18n();
 
-const toast = useToast();
-const schema = Yup.object().shape({
-  referenceId: Yup.string().required(t("production.validation.elMaterialDeConsumEsObligatori")),
-  quantity: Yup.number()
-    .min(1, t("production.validation.laQuantitatAConsumirHaDeSerPositiva"))
-    .required(t("production.validation.laQuantitatAConsumirEsObligatoria")),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const measureProps = { locale: "en-US", minFractionDigits: 2 } as const;
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.bomItem);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "referenceId",
+        label: t("production.components.material"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("production.validation.elMaterialDeConsumEsObligatori"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "quantity",
+        label: t("production.components.quantitat"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .typeError(t("production.validation.laQuantitatAConsumirEsObligatoria"))
+          .min(1, t("production.validation.laQuantitatAConsumirHaDeSerPositiva"))
+          .required(t("production.validation.laQuantitatAConsumirEsObligatoria")),
+      },
+      {
+        name: "width",
+        label: t("production.components.ampladaMm"),
+        type: FormFieldType.Number,
+        props: measureProps,
+      },
+      {
+        name: "height",
+        label: t("production.components.alcadaMm"),
+        type: FormFieldType.Number,
+        props: measureProps,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "length",
+        label: t("production.components.longitudMm"),
+        type: FormFieldType.Number,
+        props: measureProps,
+      },
+      {
+        name: "diameter",
+        label: t("production.components.diametreMm"),
+        type: FormFieldType.Number,
+        props: measureProps,
+      },
+      {
+        name: "thickness",
+        label: t("production.components.gruixMm"),
+        type: FormFieldType.Number,
+        props: measureProps,
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.bomItem);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.bomItem,
+    referenceId: stringValue(values.referenceId, props.bomItem.referenceId),
+    quantity: finiteNumberValue(values.quantity, props.bomItem.quantity),
+    width: finiteNumberValue(values.width, 0),
+    height: finiteNumberValue(values.height, 0),
+    length: finiteNumberValue(values.length, 0),
+    diameter: finiteNumberValue(values.diameter, 0),
+    thickness: finiteNumberValue(values.thickness, 0),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="bomItem"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
+      <DropdownReference
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : null"
+        :full-name="true"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>

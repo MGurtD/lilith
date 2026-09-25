@@ -1,175 +1,55 @@
-<template>
-  <form v-if="phase">
-    <section class="two-columns-2575 mb-2">
-      <div>
-        <BaseInput :label="t('production.components.codiDeLaFase')" v-model="phase.code" />
-      </div>
-      <div>
-        <BaseInput :label="t('production.components.descripcio')" v-model="phase.description" />
-      </div>
-    </section>
-    <section class="four-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.tipusDeMaquina") }}</label>
-        <Select
-          v-model="phase.workcenterTypeId"
-          :options="plantModelStore.workcenterTypes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.workcenterTypeId,
-          }"
-          @change="workcenterTypeUpdated"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.maquinaPreferida") }}</label>
-        <Select
-          v-model="phase.preferredWorkcenterId"
-          :options="preferredWorkcenters"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          @change="workcenterUpdated"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.margeDeBenefici") }}</label>
-        <Select
-          v-if="workcenterProfitPercentages.length > 0"
-          v-model="phase.profitPercentage"
-          :options="workcenterProfitPercentages"
-          optionValue="profitPercentage"
-          optionLabel="profitPercentage"
-          class="w-full"
-          :placeholder="t('production.components.seleccionaUnPercentatge')"
-          @change="onProfitPercentageChanged"
-        >
-          <template #value="slotProps">
-            <span v-if="slotProps.value">{{ slotProps.value }}%</span>
-            <span v-else>{{ slotProps.placeholder }}</span>
-          </template>
-          <template #option="slotProps">
-            {{ slotProps.option.profitPercentage }}%
-          </template>
-        </Select>
-        <InputNumber
-          v-else
-          v-model="phase.profitPercentage"
-          :minFractionDigits="2"
-          :maxFractionDigits="2"
-          suffix="%"
-          class="w-full"
-          :disabled="true"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.tipusDOperari") }}</label>
-        <Select
-          v-model="phase.operatorTypeId"
-          :options="plantModelStore.operatorTypes"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.operatorTypeId,
-          }"
-        />
-      </div>
-    </section>
-    <section class="four-columns mb-2">
-      <div>
-        <label class="block text-900 mt-1 mb-1">{{ t("production.components.externa") }}</label>
-        <Checkbox
-          v-model="phase.isExternalWork"
-          class="w-full"
-          :binary="true"
-          @change="isExternalWorkChanged"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ t("production.components.servei") }}</label>
-        <Select
-          v-model="phase.serviceReferenceId"
-          :options="serviceReferences"
-          optionValue="id"
-          :optionLabel="(r) => r.code + ' - ' + r.description"
-          :disabled="!phase.isExternalWork"
-          class="w-full"
-          @change="onServiceReferenceChanged"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          :label="t('production.components.costServei')"
-          v-model="phase.externalWorkCost"
-          :disabled="!phase.isExternalWork"
-          :class="{
-            'p-invalid': validation.errors.externalWorkCost,
-          }"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          :label="t('production.components.costTransport')"
-          v-model="phase.transportCost"
-          :disabled="!phase.isExternalWork"
-          :class="{
-            'p-invalid': validation.errors.externalWorkCost,
-          }"
-        />
-      </div>
-    </section>
-    <PageActions :inline="inDialog">
-      <Button
-        icon="pi pi-save"
-        :label="t('production.components.guardarFase')"
-        @click="submitForm"
-      />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { useI18n } from "vue-i18n";
-
-const { t } = useI18n();
-import { computed, onMounted, ref } from "vue";
+import Form from "@/components/forms/Form.vue";
 import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { isEqual, omit } from "lodash";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { useExerciseStore } from "../../shared/store/exercise";
+import { useReferenceStore } from "../../shared/store/reference";
+import { ReferenceCategoryEnum, type Reference } from "../../shared/types";
+import { usePlantModelStore } from "../store/plantmodel";
+import type {
   WorkMaster,
   WorkMasterPhase,
   WorkcenterProfitPercentage,
 } from "../types";
-import * as Yup from "yup";
-import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import { usePlantModelStore } from "../store/plantmodel";
-import { useReferenceStore } from "../../shared/store/reference";
-import { Reference, ReferenceCategoryEnum } from "../../shared/types";
-import { useExerciseStore } from "../../shared/store/exercise";
 
 const props = defineProps<{
-  /** Rendered inside a dialog: keep Save in place instead of the header. */
+  /** Rendered inside a dialog: default Cancel/Save footer instead of the header. */
   inDialog?: boolean;
   workmaster: WorkMaster;
   phase: WorkMasterPhase;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", phase: WorkMasterPhase): void;
-  (e: "cancel"): void;
+  (event: "submit", phase: WorkMasterPhase): void;
+  (event: "cancel"): void;
 }>();
 
-const workcenterProfitPercentages = ref([] as WorkcenterProfitPercentage[]);
+const { t } = useI18n();
+const plantModelStore = usePlantModelStore();
+const referencesStore = useReferenceStore();
+const exerciseStore = useExerciseStore();
+const form = ref<{
+  getValues: () => FormValues;
+  setValues: (values: FormValues) => void;
+} | null>(null);
+
+const serviceReferences = ref<Reference[] | undefined>(undefined);
+const workcenterProfitPercentages = ref<WorkcenterProfitPercentage[]>([]);
+let workcenterRequestSequence = 0;
+let suppressCallbacks = false;
 
 onMounted(async () => {
   await exerciseStore.fetchActive();
@@ -180,15 +60,31 @@ onMounted(async () => {
     );
 });
 
-const toast = useToast();
-const plantModelStore = usePlantModelStore();
-const referencesStore = useReferenceStore();
-const exerciseStore = useExerciseStore();
+// The phase screen refreshes the store phase whenever a step or material is
+// saved. Only the form-owned scalar values feed the form, so an unchanged
+// refresh keeps unsaved edits; the latest collections are merged at submit.
+const phaseSnapshot = (phase: WorkMasterPhase) =>
+  omit(phase, ["details", "billOfMaterials"]);
+const initialPhase = shallowRef(phaseSnapshot(props.phase));
+const selectedWorkcenterTypeId = ref<string | null>(
+  props.phase.workcenterTypeId ?? null,
+);
 
-const serviceReferences = ref(undefined as undefined | Reference[]);
+watch(
+  () => phaseSnapshot(props.phase),
+  (snapshot) => {
+    if (isEqual(snapshot, initialPhase.value)) return;
+    if (snapshot.id !== initialPhase.value.id) {
+      workcenterProfitPercentages.value = [];
+    }
+    workcenterRequestSequence += 1;
+    selectedWorkcenterTypeId.value = snapshot.workcenterTypeId ?? null;
+    initialPhase.value = snapshot;
+  },
+);
+
 const currentExercise = computed(() => {
   const now = new Date();
-  // Assegura't que els exercicis estiguin carregats
   if (!exerciseStore.exercises) return undefined;
 
   return exerciseStore.exercises.find(
@@ -197,123 +93,312 @@ const currentExercise = computed(() => {
   );
 });
 
-const externalProfit = computed(() => {
-  return currentExercise.value?.externalProfit || 0;
-});
+const externalProfit = computed(
+  () => currentExercise.value?.externalProfit || 0,
+);
 
-const preferredWorkcenters = computed(() => {
-  return props.phase.workcenterTypeId
-    ? plantModelStore.getWorkcentersByTypeId(props.phase.workcenterTypeId)
-    : [];
-});
+const preferredWorkcenters = computed(() =>
+  selectedWorkcenterTypeId.value
+    ? plantModelStore.getWorkcentersByTypeId(selectedWorkcenterTypeId.value)
+    : [],
+);
 
-const workcenterTypeUpdated = () => {
-  props.phase.preferredWorkcenterId = null;
-  let selectedWorkcenterType = plantModelStore.workcenterTypes?.find(
-    (wt) => wt.id === props.phase.workcenterTypeId,
-  );
-  props.phase.profitPercentage = selectedWorkcenterType!.profitPercentage;
+const setFormValues = (values: FormValues): void => {
+  suppressCallbacks = true;
+  try {
+    form.value?.setValues(values);
+  } finally {
+    suppressCallbacks = false;
+  }
 };
-const workcenterUpdated = async () => {
-  let selectedWorkcenter = plantModelStore.workcenters?.find(
-    (wt) => wt.id === props.phase.preferredWorkcenterId,
+
+const workcenterTypeProfit = (workcenterTypeId: string | null) =>
+  plantModelStore.workcenterTypes?.find((wt) => wt.id === workcenterTypeId)
+    ?.profitPercentage;
+
+const workcenterTypeUpdated = (value: unknown): void => {
+  selectedWorkcenterTypeId.value = nullableStringValue(value, null);
+  if (suppressCallbacks) return;
+
+  workcenterRequestSequence += 1;
+  const profitPercentage = workcenterTypeProfit(selectedWorkcenterTypeId.value);
+  setFormValues({
+    preferredWorkcenterId: null,
+    ...(profitPercentage !== undefined ? { profitPercentage } : {}),
+  });
+};
+
+const loadWorkcenterProfit = async (
+  workcenterId: string | null,
+): Promise<void> => {
+  const requestSequence = ++workcenterRequestSequence;
+  const selectedWorkcenter = plantModelStore.workcenters?.find(
+    (wc) => wc.id === workcenterId,
   );
 
-  // Carregar percentatges de benefici del workcenter
-  if (props.phase.preferredWorkcenterId) {
+  let percentages: WorkcenterProfitPercentage[] = [];
+  if (workcenterId) {
     await plantModelStore.fetchWorkcenterProfitPercentagesByWorkcenterId(
-      props.phase.preferredWorkcenterId,
+      workcenterId,
     );
-    workcenterProfitPercentages.value =
-      plantModelStore.workcenterProfitPercentages || [];
-  } else {
-    workcenterProfitPercentages.value = [];
+    if (requestSequence !== workcenterRequestSequence) return;
+    percentages = plantModelStore.workcenterProfitPercentages ?? [];
   }
+  workcenterProfitPercentages.value = percentages;
 
-  // Establir el valor per defecte
-  if (workcenterProfitPercentages.value.length > 0) {
-    // Si hi ha percentatges personalitzats, seleccionar el primer
-    props.phase.profitPercentage =
-      workcenterProfitPercentages.value[0].profitPercentage;
+  if (percentages.length > 0) {
+    setFormValues({ profitPercentage: percentages[0].profitPercentage });
   } else if (selectedWorkcenter && selectedWorkcenter.profitPercentage > 0) {
-    // Si no hi ha percentatges personalitzats, usar el del workcenter
-    props.phase.profitPercentage = selectedWorkcenter.profitPercentage;
+    setFormValues({ profitPercentage: selectedWorkcenter.profitPercentage });
   } else {
-    // Si no, usar el del tipus de workcenter
-    let selectedWorkcenterType = plantModelStore.workcenterTypes?.find(
-      (wt) => wt.id === props.phase.workcenterTypeId,
-    );
-    props.phase.profitPercentage =
-      selectedWorkcenterType?.profitPercentage || 0;
-  }
-};
-
-const onProfitPercentageChanged = () => {
-  // El v-model ja actualitza automàticament el valor
-};
-const isExternalWorkChanged = async () => {
-  if (props.phase.isExternalWork) {
-    props.phase.operatorTypeId = null;
-    props.phase.workcenterTypeId = null;
-    props.phase.preferredWorkcenterId = null;
-    props.phase.profitPercentage = externalProfit.value;
-  } else {
-    props.phase.externalWorkCost = 0;
-    props.phase.transportCost = 0;
-    props.phase.serviceReferenceId = null;
-    props.phase.profitPercentage = 0;
-  }
-};
-
-const onServiceReferenceChanged = () => {
-  if (serviceReferences.value) {
-    const selectedReference = serviceReferences.value.find(
-      (r) => r.id === props.phase.serviceReferenceId,
-    );
-    if (selectedReference) {
-      props.phase.externalWorkCost = selectedReference.price;
-      props.phase.transportCost = selectedReference.transportAmount;
-    }
-  }
-};
-
-const schema = Yup.object().shape({
-  code: Yup.string().required(t("production.validation.elCodiEsObligatori")),
-  /*.test("unique-code", "El codi ja existeix", function (value) {
-      const { phases } = props.workmaster || {}; // Accede a workmaster.phases
-      if (!phases || !Array.isArray(phases)) return true; // Si no hay fases, no valida como duplicado
-      return  !phases.some((phase) => phase.code === value); // Verifica duplicados
-    }),*/
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.phase);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    if (props.phase.preferredWorkcenterId === "") {
-      props.phase.preferredWorkcenterId = null;
-    }
-
-    emit("submit", props.phase);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("production.components.formulariInvalid"),
-      detail: errors,
-      life: 5000,
+    setFormValues({
+      profitPercentage:
+        workcenterTypeProfit(selectedWorkcenterTypeId.value) || 0,
     });
   }
 };
+
+const workcenterUpdated = (value: unknown): void => {
+  if (suppressCallbacks) return;
+  void loadWorkcenterProfit(nullableStringValue(value, null));
+};
+
+const isExternalWorkChanged = (value: unknown): void => {
+  if (suppressCallbacks) return;
+
+  workcenterRequestSequence += 1;
+  if (value === true) {
+    setFormValues({
+      operatorTypeId: null,
+      workcenterTypeId: null,
+      preferredWorkcenterId: null,
+      profitPercentage: externalProfit.value,
+    });
+  } else {
+    setFormValues({
+      externalWorkCost: 0,
+      transportCost: 0,
+      serviceReferenceId: null,
+      profitPercentage: 0,
+    });
+  }
+};
+
+const serviceReferenceChanged = (value: unknown): void => {
+  if (suppressCallbacks) return;
+
+  const selectedReference = serviceReferences.value?.find(
+    (r) => r.id === value,
+  );
+  if (selectedReference) {
+    setFormValues({
+      externalWorkCost: selectedReference.price,
+      transportCost: selectedReference.transportAmount,
+    });
+  }
+};
+
+const isInternalWork = (values: Readonly<FormValues>): boolean =>
+  values.isExternalWork !== true;
+
+const currencyProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+} as const;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "code",
+        label: t("production.components.codiDeLaFase"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("production.validation.elCodiEsObligatori"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+        span: { desktop: 3 },
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "workcenterTypeId",
+        label: t("production.components.tipusDeMaquina"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.workcenterTypes ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        onChange: workcenterTypeUpdated,
+      },
+      {
+        name: "preferredWorkcenterId",
+        label: t("production.components.maquinaPreferida"),
+        type: FormFieldType.Select,
+        props: {
+          options: preferredWorkcenters.value,
+          optionLabel: "description",
+          optionValue: "id",
+        },
+        onChange: workcenterUpdated,
+      },
+      {
+        name: "profitPercentage",
+        label: t("production.components.margeDeBenefici"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "operatorTypeId",
+        label: t("production.components.tipusDOperari"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.operatorTypes ?? [],
+          optionLabel: "description",
+          optionValue: "id",
+        },
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "isExternalWork",
+        label: t("production.components.externa"),
+        type: FormFieldType.Checkbox,
+        onChange: isExternalWorkChanged,
+      },
+      {
+        name: "serviceReferenceId",
+        label: t("production.components.servei"),
+        type: FormFieldType.Select,
+        props: {
+          options: serviceReferences.value ?? [],
+          optionLabel: (r: Reference) => `${r.code} - ${r.description}`,
+          optionValue: "id",
+        },
+        disabled: isInternalWork,
+        onChange: serviceReferenceChanged,
+      },
+      {
+        name: "externalWorkCost",
+        label: t("production.components.costServei"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: isInternalWork,
+      },
+      {
+        name: "transportCost",
+        label: t("production.components.costTransport"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: isInternalWork,
+      },
+    ],
+  },
+]);
+
+const toPhase = (values: FormValues): WorkMasterPhase => {
+  const preferredWorkcenterId = nullableStringValue(
+    values.preferredWorkcenterId,
+    props.phase.preferredWorkcenterId ?? null,
+  );
+
+  return {
+    ...props.phase,
+    code: stringValue(values.code, props.phase.code),
+    description: stringValue(values.description, props.phase.description),
+    workcenterTypeId: nullableStringValue(
+      values.workcenterTypeId,
+      props.phase.workcenterTypeId ?? null,
+    ),
+    preferredWorkcenterId:
+      preferredWorkcenterId === "" ? null : preferredWorkcenterId,
+    profitPercentage: finiteNumberValue(
+      values.profitPercentage,
+      props.phase.profitPercentage,
+    ),
+    operatorTypeId: nullableStringValue(
+      values.operatorTypeId,
+      props.phase.operatorTypeId ?? null,
+    ),
+    isExternalWork: booleanValue(
+      values.isExternalWork,
+      props.phase.isExternalWork,
+    ),
+    serviceReferenceId: nullableStringValue(
+      values.serviceReferenceId,
+      props.phase.serviceReferenceId ?? null,
+    ),
+    externalWorkCost: finiteNumberValue(values.externalWorkCost, 0),
+    transportCost: finiteNumberValue(values.transportCost, 0),
+  };
+};
+
+const submit = (values: FormValues): void => {
+  emit("submit", toPhase(values));
+};
+
+// Unsaved header edits, used by the screen when saving steps or materials
+// so the reload that follows does not discard them (no validation, as
+// before the migration).
+const currentPhase = (): WorkMasterPhase => {
+  const values = form.value?.getValues();
+  return values ? toPhase(values) : props.phase;
+};
+defineExpose({ currentPhase });
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="initialPhase"
+    :page-actions="!inDialog"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-profitPercentage="{ value, setValue, disabled, inputId }">
+      <Select
+        v-if="workcenterProfitPercentages.length > 0"
+        :label-id="inputId"
+        :model-value="value"
+        :options="workcenterProfitPercentages"
+        option-value="profitPercentage"
+        option-label="profitPercentage"
+        class="w-full"
+        :placeholder="t('production.components.seleccionaUnPercentatge')"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      >
+        <template #value="slotProps">
+          <span v-if="slotProps.value">{{ slotProps.value }}%</span>
+          <span v-else>{{ slotProps.placeholder }}</span>
+        </template>
+        <template #option="slotProps">
+          {{ slotProps.option.profitPercentage }}%
+        </template>
+      </Select>
+      <InputNumber
+        v-else
+        :input-id="inputId"
+        :model-value="typeof value === 'number' ? value : null"
+        :min-fraction-digits="2"
+        :max-fraction-digits="2"
+        suffix="%"
+        class="w-full"
+        disabled
+      />
+    </template>
+  </Form>
+</template>

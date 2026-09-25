@@ -29,7 +29,7 @@
         </IconField>
       </div>
     </template>
-    <template #empty>{{ pt("Sense ordres de fabricació en producció.") }}</template>
+    <template #empty>{{ t("production.detail.noWorkordersInProduction") }}</template>
 
     <Column field="code" header="OF" sortable />
     <Column :header="pt('Referència')" sortable field="referenceCode">

@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1 in review (#135); L2 and L3 migrated, UI verification running.
+> **Status**: In progress. L1–L4 in review as stacked PRs #135–#138; next batch L5 (sales masters).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -143,19 +143,19 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PR-18 | `production/components/FormWorkmaster.vue` | `Workmaster.vue` | med | F-02? | pending | | SplitButton "calculate cost" next to Save |
-| PR-19 | `production/views/Workmasters.vue` (create dialog) | — | low | — | pending | | 1 selector |
-| PR-20 | `production/views/Workmasters.vue` (copy dialog) | — | high | F-01 | pending | | RadioButton switches between existing and new reference fields |
-| PR-21 | `production/components/FormWorkmasterPhase.vue` | `WorkmasterPhase.vue`, `TableWorkmasterPhases.vue` | high | F-03? | pending | | Cascades (workcenter type/workcenter/external work/service reference), async profit lookup |
-| PR-22 | `production/components/FormWorkmasterPhaseDetail.vue` | `WorkmasterPhase.vue` | low | — | pending | | |
-| PR-23 | `production/components/FormWorkmasterPhaseBomItem.vue` | `WorkmasterPhase.vue` | low | — | pending | | `DropdownReference` slot |
-| PR-24 | `production/components/FormWorkorder.vue` | `Workorder.vue` | med | F-02? | pending | | SplitButton exports; computed date range; lifecycle status dropdown |
-| PR-25 | `production/components/FormCreateWorkorder.vue` | `Workorders.vue`, `sales/components/TableSalesOrderDetails.vue` | high | F-01 | pending | | Lot code field shown when the selected work master's reference requires a lot |
-| PR-26 | `production/components/FormWorkorderPhase.vue` | `WorkorderPhase.vue`, `TableWorkorderPhases.vue` | high | F-03? | pending | | Same cascade pattern as PR-21 |
-| PR-27 | `production/components/FormWorkorderPhaseDetail.vue` | `WorkorderPhase.vue` | low | — | pending | | |
-| PR-28 | `production/components/FormWorkorderPhaseBomItem.vue` | `WorkorderPhase.vue` | low | — | pending | | `DropdownReference` slot |
-| PR-29 | `production/components/FormProductionPart.vue` | `ProductionParts.vue` | med | — | pending | | Work order selection fills 3 dependent fields |
-| PR-30 | `production/components/FormWorkOrderProductionPart.vue` | `Workorder.vue` | med | — | pending | | Filtered options; async `getWorkOrders` on change |
+| PR-18 | `production/components/FormWorkmaster.vue` | `Workmaster.vue` | med | F-02? | migrated | `beceff8` | SplitButton "calculate cost" next to Save |
+| PR-19 | `production/views/Workmasters.vue` (create dialog) | — | low | — | migrated | `6003a06` | 1 selector |
+| PR-20 | `production/views/Workmasters.vue` (copy dialog) | — | high | F-01 | migrated | `6003a06` | RadioButton switches between existing and new reference fields |
+| PR-21 | `production/components/FormWorkmasterPhase.vue` | `WorkmasterPhase.vue`, `TableWorkmasterPhases.vue` | high | F-03? | migrated | `03e62ce` | Cascades (workcenter type/workcenter/external work/service reference), async profit lookup |
+| PR-22 | `production/components/FormWorkmasterPhaseDetail.vue` | `WorkmasterPhase.vue` | low | — | migrated | `03e62ce` | |
+| PR-23 | `production/components/FormWorkmasterPhaseBomItem.vue` | `WorkmasterPhase.vue` | low | — | migrated | `03e62ce` | `DropdownReference` slot |
+| PR-24 | `production/components/FormWorkorder.vue` | `Workorder.vue` | med | F-02? | migrated | `7b9e7f1` | SplitButton exports; computed date range; lifecycle status dropdown |
+| PR-25 | `production/components/FormCreateWorkorder.vue` | `Workorders.vue`, `sales/components/TableSalesOrderDetails.vue` | high | F-01 | migrated | `c2f9c94` | Lot code field shown when the selected work master's reference requires a lot |
+| PR-26 | `production/components/FormWorkorderPhase.vue` | `WorkorderPhase.vue`, `TableWorkorderPhases.vue` | high | F-03? | migrated | `76225d4` | Same cascade pattern as PR-21 |
+| PR-27 | `production/components/FormWorkorderPhaseDetail.vue` | `WorkorderPhase.vue` | low | — | migrated | `76225d4` | |
+| PR-28 | `production/components/FormWorkorderPhaseBomItem.vue` | `WorkorderPhase.vue` | low | — | migrated | `76225d4` | `DropdownReference` slot |
+| PR-29 | `production/components/FormProductionPart.vue` | `ProductionParts.vue` | med | — | migrated | `3b9bc7f` | Work order selection fills 3 dependent fields |
+| PR-30 | `production/components/FormWorkOrderProductionPart.vue` | `Workorder.vue` | med | — | migrated | `7b9e7f1` | Filtered options; async `getWorkOrders` on change |
 
 ### 2.5 Batch L5 — Sales masters
 
@@ -253,11 +253,12 @@ established pattern turned out to be enough).
 
 | F | Capability | Motivated by | Status | Files | Verification | PR |
 | --- | --- | --- | --- | --- | --- | --- |
-| F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | candidate | | | |
-| F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot. First check whether a Save `SplitButton` in `PageActions` driven through an external form ref (frontend save convention) is enough | PR-18, PR-24, SY-04 | candidate | | | |
+| F-01 | Field visibility from current values, with matching conditional validation | PR-25, PR-20 | rejected | — | Section row rendered from slot `values` + Yup `.test` on `this.parent` (README pattern) covered both cases | — |
+| F-02 | Secondary actions next to Save (split button) and `cancel` exposed to the `actions` slot | PR-18, PR-24 | rejected for screens | — | With `page-actions` the `actions` slot renders inside PageActions and receives `submit`; the SplitButton lives there (secondary action via a pending-action ref). Re-check for SY-04 (dialog/cancel needs) | — |
 | F-03 | Unique native field IDs for simultaneous forms | SH-04 | implemented | `Form.vue`, `README.md`, custom slots in purchase forms and `FormRejectionReason.vue` | See entry below | `770c1ae` |
 | F-04 | File upload field, or a documented pattern for self-submitting uploads next to a form | SY-06, SH-09 | candidate | | | |
 | F-05 | Repeatable or dynamically generated field groups | SY-05 | candidate | | | |
+| F-07 | Read current (unvalidated) values so a feature can persist in-progress edits with another save | PR-21, PR-26 | implemented | `Form.vue` (`getValues`), README, skill; `currentPhase()` in both phase forms | See entry below | `7cb2e10`, `f79be93` |
 
 Candidates come from the inventory and are hypotheses. Confirm one only when
 migrating its form proves that the patterns in section 1 are not enough;
@@ -298,6 +299,33 @@ otherwise mark it `rejected` and note the pattern used.
 - **Docs updated**: README limitation removed · skill custom-field step and
   Proven Patterns (`FormLifecycle`, `FormRejectionReason`).
 - **PR**: shipped with batch L1 (branch `forms/l1-shared-masters`).
+
+### F-07 — Current values for in-progress saves
+
+- **Motivated by**: PR-21/PR-26. On the route and work-order phase screens the
+  user often edits the header and then manages steps or materials. Those saves
+  reload the phase; the legacy form edited the store entity, so the step save
+  also persisted the header edits. With `Form.vue` they were no longer sent and
+  were lost on reload. The user asked to keep the legacy behaviour.
+- **Design**: `Form.vue` exposes `getValues()`, a detached copy of the current
+  values without validation. Each phase form exposes a typed `currentPhase()`
+  built with the same narrowing as submit; the screens pass it to
+  `updatePhase` in the four step/material handlers. The parent never reads raw
+  form values.
+- **Files**: `src/components/forms/Form.vue`, `README.md` (limitation removed,
+  usage rule), `frontend-form` skill, `FormWorkmasterPhase.vue`,
+  `FormWorkorderPhase.vue`, `WorkmasterPhase.vue`, `WorkorderPhase.vue`.
+- **Verification** (2026-09-24, `lilith-ui-tester`): route "4020-207-1", phase
+  "10 - Serrar material": header description edited without saving, then an
+  existing step saved from its dialog. The phase PUT carried
+  `"description":"Serrar material (test)"` with the `details` array, the header
+  kept the value after the reload, and the API returned it after a full reload.
+  Test data restored afterwards.
+- **Found, not caused by the migration**: loading a phase URL directly does not
+  render the header, because `WorkmasterPhase.vue` only fetches the phase while
+  the header requires the work master (same `v-if` before the migration). The
+  step detail PUT returned 404 "No s'ha trobat el cost del centre de treball"
+  for this staging record (backend data).
 
 ### Form.vue fixes found during migration
 
@@ -344,6 +372,12 @@ Copy for each feature once it is `confirmed`:
 | WH-03 Inventory movement | Changing the reference clears the selected lot (legacy could submit a lot from another reference); hardcoded Catalan messages replaced by keys | Bug fix |
 | PU-01 Purchase rate duplicate | Name and both dates now required, end date on or after start; confirm button reads Save instead of Duplicate | Global decision |
 | i18n | `common.lot` was referenced by inventory, stock and stock movement screens but missing from every locale; added | Bug fix |
+| PR-21..PR-28 Phase screens (workmaster and workorder) | Saving or deleting a step/material still persists unsaved header edits (kept on user request, F-07); header edits also survive the reload | Kept legacy |
+| PR-21 Workmaster phase | Stale profit-percentage responses are ignored; a missing workcenter type no longer crashes | Bug fix |
+| PR-18, PR-19, PR-20 Workmasters | Split-button save kept; create dialog requires a reference; copy dialog radios sit above the chosen group; footer reads Save instead of Crear/Copiar | Global decision |
+| PR-24 Workorder | Clearing the status falls back to the saved status; execution period gets its own row | Layout |
+| PR-25 Create workorder | Lot code is submitted only when the route's reference requires a lot (hidden stale codes no longer sent); still optional | Bug fix |
+| PR-29 Production part | Changing the workcenter clears the selected work order detail (stale phase could be submitted); integer/greater-than-zero rules now have localized messages | Bug fix |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -357,4 +391,14 @@ there was none, and so on).
 | 2026-09-24 | Tracker created with full inventory and candidate features |
 | 2026-09-24 | L1 stopped at SH-04 by F-03; F-03 implemented and verified with SH-04 (`770c1ae`, `7251692`) |
 | 2026-09-24 | L1 SH-01, SH-02, SH-03, SH-05 migrated; `Form.vue` InputNumber binding fix (`fddf84d`) |
-| 2026-09-24 | L1 UI verification complete; purchase Number regression for `fddf84d` queued |
+| 2026-09-24 | L1 UI verification complete; purchase regression for `fddf84d` passes (Expenses screen unreachable) |
+| 2026-09-24 | L1 rebased onto `dev` and opened as #135 |
+| 2026-09-24 | L2 (17 forms) migrated in `eed879d`..`e91d2e7`; no new Form.vue feature needed |
+| 2026-09-24 | L2 UI verification complete: enterprise, area, site, workcenter and its dialogs, operators, operator type, machine status, shifts, phase templates. Unverifiable with staging data: duplicate reason code (no status has reasons) |
+| 2026-09-24 | L3 (4 forms) migrated in `7fcaff0`..`6a8c993`; no new Form.vue feature needed |
+| 2026-09-24 | L3 UI: warehouse, location dialog copy-on-edit, inventory movement validation pass; lot reset unverifiable (tested reference has no lots) |
+| 2026-09-24 | L4 (13 forms) migrated in `beceff8`..`c2f9c94`; F-01 and F-02 rejected in favour of section rows and the actions slot |
+| 2026-09-24 | L4 stopped on the phase screens: keeping unsaved header edits needed F-07 (`getValues`), implemented in `7cb2e10`/`f79be93` and verified |
+| 2026-09-24 | Pre-existing cold-load bugs fixed: phase screens load their parent (`9bcb6ec`) and the work order phase loads the WorkOrder lifecycle so the status shows (`ba7d69e`); verified by loading the four URLs directly |
+| 2026-09-24 | Stacked PRs opened: #136 (L2 → L1), #137 (L3 → L2), #138 (L4 → L3) |
+| 2026-09-24 | L4 UI verification complete: workorder phase header and step dialog, workmaster copy dialog (both modes), purchase rate duplicate (L3) pass. Unverifiable with staging data: lot code field (no lot-tracked route). Pre-existing: the copy dialog label `production.ui.Ruta d'origen` renders as a raw key (same call before the migration) |

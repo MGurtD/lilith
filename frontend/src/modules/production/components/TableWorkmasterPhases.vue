@@ -64,6 +64,7 @@
       :workmaster="workmaster"
       :phase="newPhase"
       @submit="onAddHandler"
+      @cancel="dialogOptions.visible = false"
     ></FormWorkmasterPhase>
   </Dialog>
 </template>

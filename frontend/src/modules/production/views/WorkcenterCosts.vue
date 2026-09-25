@@ -180,7 +180,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteButton = (workcentercost: WorkcenterCost) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació del cost"),
+    message: t("production.detail.confirmDeleteWorkcenterCost"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

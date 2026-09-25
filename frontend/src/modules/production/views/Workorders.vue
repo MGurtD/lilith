@@ -44,9 +44,10 @@
     :style="{ width: '600px' }"
   >
     <FormCreateWorkorder
-      :createWorkOrderDto="createWorkOrderDto"
+      :create-work-order-dto="createWorkOrderDto"
       @submit="createWorkOrder"
-    ></FormCreateWorkorder>
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 <script setup lang="ts">
@@ -260,12 +261,13 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
-const createWorkOrderDto = ref({
+const newCreateWorkOrderDto = (): CreateWorkOrderDto => ({
   workMasterId: "",
-  plannedDate: "",
+  plannedDate: null,
   plannedQuantity: 0,
   comment: "",
-} as CreateWorkOrderDto);
+});
+const createWorkOrderDto = ref<CreateWorkOrderDto>(newCreateWorkOrderDto());
 
 onMounted(async () => {
   await referenceStore.fetchReferencesByModule("sales");
@@ -307,6 +309,7 @@ const getUserFilter = () => {
 };
 
 const createButtonClick = () => {
+  createWorkOrderDto.value = newCreateWorkOrderDto();
   dialogOptions.visible = true;
 };
 
@@ -314,17 +317,15 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workorder/${row.data.id}` });
 };
 
-const createWorkOrder = async () => {
-  if (!createWorkOrderDto.value) return;
-
-  const created = await workOrderStore.create(createWorkOrderDto.value);
+const createWorkOrder = async (dto: CreateWorkOrderDto) => {
+  const created = await workOrderStore.create(dto);
   if (created && workOrderStore.workorder)
     router.push({ path: `/workorder/${workOrderStore.workorder.id}` });
 };
 
 const deleteButton = (workorder: WorkOrder) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació de l'ordre de fabricació"),
+    message: t("production.detail.confirmDeleteWorkorder"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

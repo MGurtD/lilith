@@ -78,7 +78,8 @@
       :workorder="workorder"
       :phase="newPhase"
       @submit="onAddHandler"
-    ></FormWorkOrderPhase>
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 

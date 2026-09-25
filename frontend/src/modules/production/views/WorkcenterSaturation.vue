@@ -155,7 +155,7 @@ const detailColumns = computed<Column[]>(() => [
   },
   {
     field: "workOrderPlannedDate",
-    header: pt("Data Plan."),
+    header: t("production.detail.plannedDateShort"),
     sortable: true,
     columnType: ColumnType.Date,
     style: "width: 12%",

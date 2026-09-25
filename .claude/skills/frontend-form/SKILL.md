@@ -122,7 +122,10 @@ open decisions or verification work.
 10. When parent-owned collections can change independently, pass a stable scalar
    initial snapshot rather than the whole entity. Merge the latest collections
    at submit and exchange only narrowly required derived state through feature
-   events or methods. Do not add generic form-state access solely for a parent.
+   events or methods. When another save must also persist unsaved scalar edits
+   (the legacy form mutated the shared entity), expose a typed feature method
+   built on the form's `getValues()` and the submit narrowing; never read raw
+   form values in the parent.
 11. For dialogs, clone selected rows when closing without save must leave the
    source unchanged. Treat the snapshot's discard-on-cancel behavior as an
    observable change and verify it.
@@ -179,6 +182,14 @@ open decisions or verification work.
   out of the snapshot, and the parent's own save button replaced by
   `page-actions`.
 - `FormRejectionReason.vue`: custom `ColorPicker` bound to the slot `inputId`.
+- `FormWorkmasterPhase.vue` / `FormWorkorderPhase.vue`: sequenced async
+  cascades, a Custom field that switches control from feature state, and
+  `currentPhase()` (built on `getValues()`) so step/material saves keep
+  unsaved header edits.
+- `FormWorkorder.vue`: split-button save in the `actions` slot and a
+  date-range control writing two fields through a section row.
+- `FormCreateWorkorder.vue` and the Workmasters copy dialog: fields shown from
+  current values via conditionally rendered section rows with Yup tests.
 
 ## Anti-Patterns
 

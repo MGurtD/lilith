@@ -75,12 +75,14 @@
         v-if="selectedDetail"
         :detail="selectedDetail"
         @submit="onWorkOrderPhaseDetailSubmit"
-      ></FormWorkOrderPhaseDetail>
+        @cancel="dialogOptions.visible = false"
+      />
       <FormWorkOrderPhaseBomItem
         v-if="selectedBomItem"
         :bomItem="selectedBomItem"
         @submit="onWorkmasterPhasBomItemSubmit"
-      ></FormWorkOrderPhaseBomItem>
+        @cancel="dialogOptions.visible = false"
+      />
     </Dialog>
   </main>
 </template>
@@ -99,6 +101,7 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { usePlantModelStore } from "../store/plantmodel";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
@@ -119,6 +122,7 @@ const store = useStore();
 const referenceStore = useReferenceStore();
 const plantModelStore = usePlantModelStore();
 const workorderStore = useWorkOrderStore();
+const lifecycleStore = useLifecyclesStore();
 const { workorder, workorderPhase } = storeToRefs(workorderStore);
 const id = ref("");
 const phaseId = ref("");
@@ -160,9 +164,23 @@ onMounted(async () => {
 
 const loadViewData = async () => {
   await workorderStore.fetchPhaseById(phaseId.value);
+  // The header needs the work order; it is only in the store when the user
+  // came from the work order screen, not on a direct load of this URL.
+  if (workorder.value?.id !== id.value) {
+    await workorderStore.fetchOne(id.value);
+  }
+  // The status dropdown names the current status from the loaded lifecycle.
+  if (lifecycleStore.lifecycle?.name !== "WorkOrder") {
+    await lifecycleStore.fetchOneByName("WorkOrder");
+  }
   phaseRejections.value =
     (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
 };
+
+// Step and material changes reload the phase; send the header as currently
+// edited so unsaved header changes are persisted instead of lost.
+const headerPhase = (): WorkOrderPhase =>
+  workorderPhaseForm.value?.currentPhase() ?? workorderStore.workorderPhase!;
 
 const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
   const updated = await workorderStore.updatePhase(phaseId.value, phase);
@@ -205,10 +223,7 @@ const onEditDetail = (detail: WorkOrderPhaseDetail) => {
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkOrderPhaseDetail) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseDetail(detail.id);
 };
 
@@ -219,10 +234,7 @@ const onWorkOrderPhaseDetailSubmit = async (detail: WorkOrderPhaseDetail) => {
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseDetail(detail.id, detail);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {
@@ -246,10 +258,7 @@ const onEditBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkOrderPhaseBillOfMaterials) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseBomItem(bomItem.id);
 };
 
@@ -262,10 +271,7 @@ const onWorkmasterPhasBomItemSubmit = async (
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseBomItem(bomItem.id, bomItem);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {

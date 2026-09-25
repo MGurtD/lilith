@@ -100,7 +100,7 @@ const filterConfig = computed<Array<FilterConfig>>(() => [
       label: option.value,
       value: option.id,
     })),
-    placeholder: pt("Selecciona..."),
+    placeholder: t("shared.common.selectPlaceholder"),
     size: "xl",
   },
 ]);
