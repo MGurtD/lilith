@@ -24,7 +24,7 @@
   >
     <template #empty> {{ t("production.detail.noProductionParts") }} </template>
     <template #loading>
-      {{ pt("Carregant tiquets. Si us plau espera.") }}
+      {{ t("production.detail.loadingProductionParts") }}
     </template>
   </Table>
   <Dialog
@@ -296,14 +296,14 @@ const columns = computed<Column[]>(() => [
   },
   {
     field: "workcenterTime",
-    header: pt("Temps Maq."),
+    header: t("production.detail.machineTimeShort"),
     columnType: ColumnType.Number,
     total: "sum",
     style: "width: 10%",
   },
   {
     field: "operatorTime",
-    header: pt("Temps Oper."),
+    header: t("production.detail.operatorTimeShort"),
     columnType: ColumnType.Number,
     total: "sum",
     style: "width: 10%",
