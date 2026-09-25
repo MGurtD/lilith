@@ -1,191 +1,190 @@
-<template>
-  <form v-if="exercise">
-    <div class="four-columns">
-      <BaseInput
-        class="mb-2"
-        :label="$t('shared.exercises.form.name')"
-        id="name"
-        v-model="exercise.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        :label="$t('shared.exercises.form.description')"
-        id="description"
-        v-model="exercise.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.exercises.form.startDate') }}</label>
-        <DatePicker
-          v-model="exercise.startDate"
-          dateFormat="dd/mm/yy"
-          :class="{
-            'p-invalid': validation.errors.startDate,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.exercises.form.endDate') }}</label>
-        <DatePicker
-          v-model="exercise.endDate"
-          dateFormat="dd/mm/yy"
-          :class="{
-            'p-invalid': validation.errors.endDate,
-          }"
-        />
-      </div>
-    </div>
-
-    <section class="four-columns">
-      <div>
-        <BaseInput :label="$t('shared.exercises.form.budgetCounter')" v-model="exercise.budgetCounter" />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.salesOrderCounter')"
-          v-model="exercise.salesOrderCounter"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.deliveryNoteCounter')"
-          v-model="exercise.deliveryNoteCounter"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.salesInvoiceCounter')"
-          v-model="exercise.salesInvoiceCounter"
-        />
-      </div>
-    </section>
-
-    <div class="four-columns mt-2">
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.purchaseOrderCounter')"
-          v-model="exercise.purchaseOrderCounter"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.receiptCounter')"
-          v-model="exercise.receiptCounter"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.purchaseInvoiceCounter')"
-          v-model="exercise.purchaseInvoiceCounter"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.exercises.form.disabled') }}</label>
-        <Checkbox v-model="exercise.disabled" class="w-full" :binary="true" />
-      </div>
-    </div>
-
-    <section class="four-columns mt-2">
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.materialProfit')"
-          v-model.number="exercise.materialProfit"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :label="$t('shared.exercises.form.externalProfit')"
-          v-model.number="exercise.externalProfit"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-        />
-      </div>
-    </section>
-
-    <PageActions>
-      <Button icon="pi pi-save" :label="$t('shared.exercises.form.save')" @click="submitForm" />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import { Exercise } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { convertDateTimeToJSON } from "../../../utils/functions";
-import { BaseInputType } from "@/types/component";
-
-const { t } = useI18n();
+  FormFieldType,
+  type FormFieldConfig,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  dateValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { Exercise } from "../types";
 
 const props = defineProps<{
   exercise: Exercise;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", exercise: Exercise): void;
-  (e: "cancel"): void;
+  (event: "submit", exercise: Exercise): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 carácters"),
-  description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-  startDate: Yup.date().required("La data d'inici es obligatoria"),
-  endDate: Yup.date()
-    .required("La data final es obligatoria")
-    .min(
-      Yup.ref("startDate"),
-      "La data final de l'exercici ha de ser posterior a l'inici",
+const counterFields = [
+  "budgetCounter",
+  "salesOrderCounter",
+  "deliveryNoteCounter",
+  "salesInvoiceCounter",
+  "purchaseOrderCounter",
+  "receiptCounter",
+  "purchaseInvoiceCounter",
+] as const;
+
+const counterField = (
+  name: (typeof counterFields)[number],
+  label: string,
+): FormFieldConfig => ({ name, label, type: FormFieldType.Text });
+
+const profitProps = { locale: "en-US", minFractionDigits: 2 };
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "name",
+        label: t("shared.exercises.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.exercises.validation.nameRequired"))
+          .max(250, t("shared.exercises.validation.nameMax")),
+      },
+      {
+        name: "description",
+        label: t("shared.exercises.form.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.exercises.validation.descriptionRequired"))
+          .max(250, t("shared.exercises.validation.descriptionMax")),
+      },
+      {
+        name: "startDate",
+        label: t("shared.exercises.form.startDate"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("shared.exercises.validation.startDateRequired"))
+          .required(t("shared.exercises.validation.startDateRequired")),
+      },
+      {
+        name: "endDate",
+        label: t("shared.exercises.form.endDate"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("shared.exercises.validation.endDateRequired"))
+          .required(t("shared.exercises.validation.endDateRequired"))
+          .min(
+            Yup.ref("startDate"),
+            t("shared.exercises.validation.endDateAfterStart"),
+          ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      counterField(
+        "budgetCounter",
+        t("shared.exercises.form.budgetCounter"),
+      ),
+      counterField(
+        "salesOrderCounter",
+        t("shared.exercises.form.salesOrderCounter"),
+      ),
+      counterField(
+        "deliveryNoteCounter",
+        t("shared.exercises.form.deliveryNoteCounter"),
+      ),
+      counterField(
+        "salesInvoiceCounter",
+        t("shared.exercises.form.salesInvoiceCounter"),
+      ),
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      counterField(
+        "purchaseOrderCounter",
+        t("shared.exercises.form.purchaseOrderCounter"),
+      ),
+      counterField(
+        "receiptCounter",
+        t("shared.exercises.form.receiptCounter"),
+      ),
+      counterField(
+        "purchaseInvoiceCounter",
+        t("shared.exercises.form.purchaseInvoiceCounter"),
+      ),
+      {
+        name: "disabled",
+        label: t("shared.exercises.form.disabled"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "materialProfit",
+        label: t("shared.exercises.form.materialProfit"),
+        type: FormFieldType.Number,
+        props: profitProps,
+      },
+      {
+        name: "externalProfit",
+        label: t("shared.exercises.form.externalProfit"),
+        type: FormFieldType.Number,
+        props: profitProps,
+      },
+    ],
+  },
+]);
+
+// Dates stay native Date values; Date.prototype.toJSON serializes them.
+const submit = (values: FormValues): void => {
+  const counters = Object.fromEntries(
+    counterFields.map((name) => [
+      name,
+      stringValue(values[name], props.exercise[name]),
+    ]),
+  ) as Pick<Exercise, (typeof counterFields)[number]>;
+
+  emit("submit", {
+    ...props.exercise,
+    ...counters,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    startDate: dateValue(values.startDate, props.exercise.startDate),
+    endDate: dateValue(values.endDate, props.exercise.endDate),
+    materialProfit: finiteNumberValue(
+      values.materialProfit,
+      props.exercise.materialProfit,
     ),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.exercise);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    props.exercise.startDate = convertDateTimeToJSON(props.exercise.startDate);
-    props.exercise.endDate = convertDateTimeToJSON(props.exercise.endDate);
-
-    emit("submit", props.exercise);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("shared.exercises.form.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+    externalProfit: finiteNumberValue(
+      values.externalProfit,
+      props.exercise.externalProfit,
+    ),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="exercise"
+    @submit="submit"
+  />
+</template>

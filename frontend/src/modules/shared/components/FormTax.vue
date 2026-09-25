@@ -1,103 +1,83 @@
-<template>
-  <form v-if="tax">
-    <div class="two-columns">
-      <BaseInput
-        class="mb-2"
-        :label="$t('shared.taxes.form.name')"
-        id="name"
-        v-model="tax.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        :type="BaseInputType.NUMERIC"
-        :label="$t('shared.taxes.form.percentage')"
-        id="percentatge"
-        v-model="tax.percentatge"
-        :class="{
-          'p-invalid': validation.errors.percentatge,
-        }"
-      ></BaseInput>
-    </div>
-
-    <div class="two-columns mt-2">
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.taxes.form.reverseCharge') }}</label>
-        <Checkbox v-model="tax.isReverseCharge" class="w-full" :binary="true" />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">{{ $t('shared.taxes.form.disabled') }}</label>
-        <Checkbox v-model="tax.disabled" class="w-full" :binary="true" />
-      </div>
-    </div>
-
-    <PageActions>
-      <Button icon="pi pi-save" :label="$t('shared.taxes.form.save')" @click="submitForm" />
-    </PageActions>
-  </form>
-</template>
-
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
-import { ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "../../../components/BaseInput.vue";
-import { Tax } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { BaseInputType } from "../../../types/component";
-
-const { t } = useI18n();
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { Tax } from "../types";
 
 const props = defineProps<{
   tax: Tax;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", tax: Tax): void;
-  (e: "cancel"): void;
+  (event: "submit", tax: Tax): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom comercial no pot superar els 250 carácters"),
-  percentatge: Yup.number().required("La freqüència és obligatoria"),
-  isReverseCharge: Yup.bool().required("El camp inversió del subjecte passiu és obligatori"),
-  disabled: Yup.bool().required("El camp deshabilitat és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "name",
+        label: t("shared.taxes.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("shared.taxes.validation.nameRequired"))
+          .max(250, t("shared.taxes.validation.nameMax")),
+      },
+      {
+        name: "percentatge",
+        label: t("shared.taxes.form.percentage"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US" },
+        validation: Yup.number()
+          .typeError(t("shared.taxes.validation.percentageRequired"))
+          .required(t("shared.taxes.validation.percentageRequired")),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "isReverseCharge",
+        label: t("shared.taxes.form.reverseCharge"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+      {
+        name: "disabled",
+        label: t("shared.taxes.form.disabled"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.tax);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.tax);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t("shared.common.invalidForm"),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.tax,
+    name: stringValue(values.name, ""),
+    percentatge: finiteNumberValue(values.percentatge, props.tax.percentatge),
+    isReverseCharge: booleanValue(values.isReverseCharge, false),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form page-actions :rows="rows" :initial-values="tax" @submit="submit" />
+</template>

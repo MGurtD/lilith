@@ -139,8 +139,9 @@ const submit = (values: FormValues): void => {
     :show-cancel="false"
     @submit="submit"
   >
-    <template #field-referenceId="{ value, setValue, disabled }">
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
       <Select
+        :input-id="inputId"
         :model-value="typeof value === 'string' ? value : undefined"
         :options="referenceStore.references"
         optionLabel="code"

@@ -1558,8 +1558,6 @@ const ca = {
         disabled: "Desactivat",
         materialProfit: "Marge material per defecte (%)",
         externalProfit: "Marge extern per defecte (%)",
-        save: "Guardar",
-        invalidForm: "Formulari invàlid",
       },
       validation: {
         nameRequired: "El nom és obligatori",
@@ -1587,7 +1585,6 @@ const ca = {
     lifecycle: {
       tabStatesTransitions: "Estats i Transicions",
       tabTags: "Etiquetes",
-      save: "Guardar",
       dialogAddStatus: "Introducció d'estats",
       dialogAddTransition: "Introducció de transicions",
       dialogNewTag: "Nova etiqueta",
@@ -1607,7 +1604,6 @@ const ca = {
         name: "Nom",
         description: "Descripció",
         initialStatus: "Estat inicial",
-        invalidForm: "Formulari invàlid",
       },
       validation: {
         nameRequired: "El nom és obligatori",
@@ -1713,8 +1709,6 @@ const ca = {
         numberOfPayments: "Número de pagaments",
         frequency: "Freqüència",
         disabled: "Desactivada",
-        save: "Guardar",
-        invalidForm: "Formulari invàlid",
       },
       messages: {
         confirmDelete: "Estàs segur que vols eliminar la forma de pagament {name}?",
@@ -1746,10 +1740,7 @@ const ca = {
         density: "Densitat g/cm^3",
         primaryColor: "Color Primari",
         secondaryColor: "Color Secundari",
-        colorLabel: "Color",
         disabled: "Desactivat",
-        save: "Guardar",
-        invalidForm: "Formulari invàlid",
       },
       messages: {
         confirmDelete: "Estàs segur que vols eliminar el tipus de materials {name}?",
@@ -1776,8 +1767,6 @@ const ca = {
         percentage: "Percentatge",
         reverseCharge: "Inversió del subjecte passiu (ISP)",
         disabled: "Desactivada",
-        save: "Guardar",
-        invalidForm: "Formulari invàlid",
       },
       messages: {
         confirmDelete: "Està segur que vol eliminar l'impost?",
@@ -1789,6 +1778,11 @@ const ca = {
       pageTitles: {
         create: "Alta d'impost",
         edit: "Impost {name}",
+      },
+      validation: {
+        nameRequired: "El nom és obligatori",
+        nameMax: "El nom no pot superar els 250 caràcters",
+        percentageRequired: "El percentatge és obligatori",
       },
     },
     references: {

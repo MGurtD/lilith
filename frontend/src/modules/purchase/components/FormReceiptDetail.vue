@@ -438,8 +438,9 @@ const submit = (values: FormValues): void => {
 
 <template>
   <Form ref="form" :rows="rows" :initial-values="detail" @submit="submit">
-    <template #field-referenceId="{ value, setValue, disabled }">
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
       <DropdownReference
+        :input-id="inputId"
         label=""
         :model-value="typeof value === 'string' ? value : null"
         :full-name="true"

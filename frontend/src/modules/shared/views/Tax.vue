@@ -49,8 +49,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = tax.value as Tax;
+const submitForm = async (data: Tax) => {
   let result = false;
   let message = "";
 

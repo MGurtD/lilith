@@ -1,10 +1,11 @@
 <template>
   <main class="container">
-    <PageActions>
-      <Button icon="pi pi-save" :label="$t('shared.lifecycle.save')" @click="submitForm" />
-    </PageActions>
     <section class="section_lifecycle mt-5">
-      <FormLifecycle v-if="lifecycle" :lifecycle="lifecycle" />
+      <FormLifecycle
+        v-if="lifecycle"
+        :lifecycle="lifecycle"
+        @submit="submitForm"
+      />
     </section>
 
     <Tabs v-if="formMode === FormActionMode.EDIT && lifecycle" value="0">
@@ -109,7 +110,6 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
 import { onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import TableStatuses from "../components/TableStatuses.vue";
@@ -326,8 +326,7 @@ const onTagSubmit = async (tag: LifecycleTag) => {
 
 // Lifecycle submit
 const toast = useToast();
-const submitForm = async () => {
-  const data = lifecycle.value as Lifecycle;
+const submitForm = async (data: Lifecycle) => {
   let result = false;
   let message = "";
 

@@ -48,8 +48,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = referenceType.value as ReferenceType;
+const submitForm = async (data: ReferenceType) => {
   let result = false;
   let message = "";
 

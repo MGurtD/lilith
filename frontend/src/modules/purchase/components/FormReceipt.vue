@@ -134,8 +134,9 @@ defineExpose({ submitForm });
       :show-cancel="false"
       @submit="submit"
     >
-      <template #field-statusId="{ value, setValue, disabled }">
+      <template #field-statusId="{ value, setValue, disabled, inputId }">
         <DropdownLifecycleStatusTransitions
+          :input-id="inputId"
           label=""
           :status-id="receipt.statusId"
           :model-value="typeof value === 'string' ? value : undefined"
