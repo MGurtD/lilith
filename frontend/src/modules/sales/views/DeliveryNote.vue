@@ -1,22 +1,13 @@
 <template>
-  <PageActions>
-    <SplitButton
-      icon="pi pi-save"
-      :label="t('sales.detail.actions.save')"
-      @click="submitForm"
-      :model="items"
-      :disabled="!canSave"
-    />
-  </PageActions>
-
   <FormDeliveryNote
     v-if="deliveryNote"
     class="mt-3 mb-3"
-    ref="deliveryNoteForm"
-    :deliveryNote="deliveryNote"
+    :delivery-note="deliveryNote"
     :lock-header="isDelivered || isInvoiced"
     :lock-status="isInvoiced"
     @submit="onDeliveryNoteSubmit"
+    @download="printInvoice"
+    @download-pdf="printPdf"
   />
 
   <TableDeliveryNoteDetails
@@ -57,7 +48,6 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import PageActions from "@/components/PageActions.vue";
 import SelectorOrders from "../components/SelectorOrders.vue";
 import FormDeliveryNote from "../components/FormDeliveryNote.vue";
 import TableDeliveryNoteDetails from "../components/TableDeliveryNoteDetails.vue";
@@ -80,8 +70,6 @@ import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import { useI18n } from "vue-i18n";
 
-const deliveryNoteForm = ref();
-
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const router = useRouter();
@@ -95,24 +83,6 @@ const referenceStore = useReferenceStore();
 const lifecycleStore = useLifecyclesStore();
 const { deliveryNote } = storeToRefs(deliveryNoteStore);
 const { t } = useI18n();
-
-const items = computed(() => [
-  {
-    label: t("sales.detail.actions.download"),
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(true),
-  },
-  {
-    label: t("sales.detail.actions.printPdf"),
-    icon: PrimeIcons.FILE_PDF,
-    command: () => printPdf(),
-  },
-  {
-    label: t("sales.detail.actions.downloadWithoutPrice"),
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(false),
-  },
-]);
 
 const dialogTitle = computed(() => t("sales.detail.dialogs.orderSelector"));
 const isDialogVisible = ref(false);
@@ -146,12 +116,6 @@ const isDelivered = computed(() => {
 });
 
 const isInvoiced = computed(() => !!deliveryNote.value?.salesInvoiceId);
-
-const canSave = computed(() => {
-  if (isInvoiced.value) return false;
-  if (!isDelivered.value) return true;
-  return deliveryNote.value?.statusId !== initialStatusId.value;
-});
 
 const loadView = async () => {
   const id = route.params.id as string;
@@ -188,23 +152,19 @@ onUnmounted(() => {
   salesOrderStore.salesOrdersToDeliver = undefined;
 });
 
-const submitForm = () => {
-  if (!deliveryNote.value?.createdOn) {
+const toast = useToast();
+
+const onDeliveryNoteSubmit = async (deliveryNote: DeliveryNote) => {
+  if (!deliveryNote.createdOn) {
     toast.add({
       severity: "error",
       summary: t("sales.detail.messages.error"),
       detail: t("sales.detail.messages.dateRequired"),
       life: 5000,
     });
-    return false;
+    return;
   }
-  const form = deliveryNoteForm.value as any;
-  form.submitForm();
-};
 
-const toast = useToast();
-
-const onDeliveryNoteSubmit = async (deliveryNote: DeliveryNote) => {
   let result = false;
   let message = "";
 
