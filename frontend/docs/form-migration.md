@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L5 in review as stacked PRs; L6 migrated, UI verification running.
+> **Status**: In progress. L1–L6 in review as stacked PRs; next batch L7 (system and complex shared).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -415,3 +415,4 @@ there was none, and so on).
 | 2026-09-25 | L5 (5 forms) migrated in `7487304`..`dd91809`; no new Form.vue feature needed; customer type made required |
 | 2026-09-25 | L5 UI verification complete: customer header, address dialog (cancel keeps the row, unsaved header edits survive), contact add dialog, customer type, sales reference |
 | 2026-09-25 | L6 (12 forms) migrated in `b3f4a77`..`a007a24`; no new Form.vue feature needed; four product decisions applied (fiscal save, downloads, transport distance, budget notes) |
+| 2026-09-25 | L6 UI verification complete: budget (create dialog, header with notes, line recalculation and cancel, transport), sales order (header, line, transport rate required), delivery note (locked note keeps downloads; status required), sales invoice (date required, fiscal tab with its own save, line amount 3 × 10 = 30.00 €, rectificative dialog limits). Unverifiable with staging data: final-customer transport distance (customer address not geocoded) |
