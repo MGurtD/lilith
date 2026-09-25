@@ -72,7 +72,9 @@
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createOrder"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 
@@ -181,6 +183,7 @@ const cleanFilter = () => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -220,19 +223,26 @@ const filterBudget = async () => {
   }
 };
 
-const createOrder = async () => {
-  const response = await budgetStore.Create(createRequest.value);
-  if (!response) {
-    toast.add({
-      severity: "warn",
-      summary: t("sales.budgets.messages.createError"),
-      detail: t("sales.list.messages.unknownError"),
-      life: 10000,
-    });
-    return;
+const createOrder = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const response = await budgetStore.Create(request);
+    if (!response) {
+      toast.add({
+        severity: "warn",
+        summary: t("sales.budgets.messages.createError"),
+        detail: t("sales.list.messages.unknownError"),
+        life: 10000,
+      });
+      return;
+    }
+    dialogOptions.visible = false;
+    router.push({ path: `/budget/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-  dialogOptions.visible = false;
-  router.push({ path: `/budget/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {

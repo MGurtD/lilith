@@ -51,7 +51,9 @@
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createInvoice"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -210,6 +212,7 @@ const getLastDueDate = (invoice: SalesInvoice): string => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -224,25 +227,32 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const createInvoice = async () => {
-  const response = await invoiceStore.Create(createRequest.value);
-  if (response && !response?.result) {
-    const errorMessage =
-      response.errors.length > 0
-        ? response.errors[0]
-        : t("sales.list.messages.unknownError");
+const createInvoice = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
 
-    toast.add({
-      severity: "warn",
-      summary: t("sales.invoices.messages.createError"),
-      detail: errorMessage,
-      life: 10000,
-    });
-    return;
+  creating.value = true;
+  try {
+    const response = await invoiceStore.Create(request);
+    if (response && !response?.result) {
+      const errorMessage =
+        response.errors.length > 0
+          ? response.errors[0]
+          : t("sales.list.messages.unknownError");
+
+      toast.add({
+        severity: "warn",
+        summary: t("sales.invoices.messages.createError"),
+        detail: errorMessage,
+        life: 10000,
+      });
+      return;
+    }
+
+    if (response)
+      router.push({ path: `/sales-invoice/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-
-  if (response)
-    router.push({ path: `/sales-invoice/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
