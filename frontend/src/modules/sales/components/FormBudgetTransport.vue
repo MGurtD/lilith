@@ -1,151 +1,34 @@
-<template>
-  <form v-if="transport" @submit.prevent>
-    <section class="mt-2 mb-4">
-      <div class="flex align-items-center gap-2">
-        <Checkbox
-          v-model="isFinalCustomer"
-          :binary="true"
-          @change="onCustomerToggleChange"
-          inputId="isFinalCustomer"
-        />
-        <label for="isFinalCustomer" class="text-900 font-bold"
-          >Enviament a client final ({{ customerName }})</label
-        >
-      </div>
-    </section>
-
-    <!-- Logistics / Transport Selection -->
-    <section class="two-columns">
-      <div class="mb-2">
-        <label class="block text-900 mb-2"
-          >{{ t('sales.components.proveidorLogisticTransportista') }}</label
-        >
-        <Select
-          v-model="localSupplierId"
-          :options="logisticSuppliers"
-          optionLabel="comercialName"
-          optionValue="id"
-          :placeholder="t('sales.components.seleccionaTransportista')"
-          class="w-full"
-          @change="onTransportSupplierChange"
-        />
-      </div>
-      <div class="mb-2">
-        <label class="block text-900 mb-2">{{ t('sales.components.tarifaDeTransport') }}</label>
-        <Select
-          v-model="transport.transportRateDetailId"
-          :options="compatibleTransportRates"
-          optionLabel="label"
-          optionValue="id"
-          :placeholder="t('sales.components.seleccionaTarifa')"
-          class="w-full"
-          :disabled="!localSupplierId"
-          @change="onRateChange"
-          :class="{ 'p-invalid': validation.errors.transportRateDetailId }"
-        />
-      </div>
-    </section>
-
-    <!-- Destination Selection -->
-    <section class="mt-3" v-if="!isFinalCustomer">
-      <div class="mb-2">
-        <label class="block text-900 mb-2"
-          >{{ t('sales.components.proveidorDeDestinacioServeisExternsMagatzem') }}</label
-        >
-        <Select
-          v-model="destinationSupplierId"
-          :options="allSuppliers"
-          optionLabel="comercialName"
-          optionValue="id"
-          :placeholder="t('sales.components.seleccionaProveidorDeDestinacio')"
-          class="w-full"
-          @change="onDestinationSupplierChange"
-        />
-      </div>
-    </section>
-
-    <section class="four-columns mt-3">
-      <div>
-        <BaseInput
-          class="mb-2"
-          :label="t('sales.components.pesKg')"
-          v-model="transport.weight"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.weight }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          disabled
-          class="mb-2"
-          :label="t('sales.components.volumM')"
-          v-model="transport.volume"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.volume }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          disabled
-          class="mb-2"
-          :label="t('sales.components.distanciaKm')"
-          v-model="transport.distance"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.distance }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          class="mb-2"
-          :label="t('sales.components.preu')"
-          v-model="transport.price"
-          :type="BaseInputType.CURRENCY"
-          :class="{ 'p-invalid': validation.errors.price }"
-        ></BaseInput>
-      </div>
-    </section>
-
-    <section class="mt-3">
-      <div class="mb-2">
-        <label class="block text-900 mb-2">{{ t('sales.components.descripcio') }}</label>
-        <BaseInput
-          class="w-full"
-          v-model="transport.description"
-          :type="BaseInputType.TEXT"
-        ></BaseInput>
-      </div>
-    </section>
-
-    <Button
-      :disabled="readonly"
-      :label="textActionButton"
-      @click="submitForm"
-      style="float: right"
-      class="mt-4"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import { computed, ref, toRefs, onMounted } from "vue";
-import { Budget, BudgetTransport } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { BaseInputType, FormActionMode } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  useId,
+  watch,
+} from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { FormActionMode } from "../../../types/component";
 import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { useTransportRateStore } from "../../purchase/store/transportRate";
+import type { TransportRate } from "../../purchase/types";
 import { useCustomersStore } from "../store/customers";
+import type { Budget, BudgetTransport } from "../types";
 
-const { t } = useI18n();
-const toast = useToast();
 const props = defineProps<{
   formAction: FormActionMode;
   header: Budget;
@@ -155,122 +38,117 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", transport: BudgetTransport): void;
+  (event: "submit", transport: BudgetTransport): void;
+  (event: "cancel"): void;
 }>();
 
-const { transport } = toRefs(props);
+interface TransportRateOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
+const { t } = useI18n();
 const supplierStore = useSuppliersStore();
 const transportRateStore = useTransportRateStore();
 const customerStore = useCustomersStore();
+const form = shallowRef<{ setValues: (values: FormValues) => void } | null>(
+  null,
+);
+const destinationInputId = `budget-transport-destination-${useId()}`;
 
-const localSupplierId = ref<string | null>(null);
-const destinationSupplierId = ref<string | null>(null);
-const isFinalCustomer = ref(true);
+const finalCustomer = computed(() =>
+  customerStore.customers?.find((c) => c.id === props.header.customerId),
+);
 
-const textActionButton = computed(() => {
-  return props.formAction === FormActionMode.CREATE ? "Afegir" : "Modificar";
+const customerName = computed(
+  () => finalCustomer.value?.comercialName ?? t("sales.components.client"),
+);
+
+const initialIsFinalCustomer = (transport: BudgetTransport): boolean => {
+  if (transport.destinationSupplierId) return false;
+  if (!transport.destination) return true;
+  return transport.destination === finalCustomer.value?.comercialName;
+};
+
+// The hidden `destination` travels with the form values (section row) and
+// `isFinalCustomer` is UI state only; it is not part of the payload.
+const createInitialValues = (transport: BudgetTransport): FormValues => ({
+  ...transport,
+  isFinalCustomer: initialIsFinalCustomer(transport),
 });
 
-const allSuppliers = computed(() => {
-  return supplierStore.suppliers || [];
+const initialValues = shallowRef<FormValues>(
+  createInitialValues(props.transport),
+);
+
+// Feature-owned mirrors of the values the rate filter depends on, and the
+// rates of the selected carrier (kept locally so stale responses are ignored).
+const isFinalCustomer = ref(
+  booleanValue(initialValues.value.isFinalCustomer, true),
+);
+const destinationSupplierId = ref<string | null>(
+  props.transport.destinationSupplierId,
+);
+const transportRates = ref<TransportRate[]>([]);
+let rateRequestSequence = 0;
+let suppressCallbacks = false;
+
+// The individually loaded customer includes its addresses; the customer list
+// does not, so its distance would always be 0.
+const finalCustomerDistance = computed<number>(() => {
+  const customer =
+    customerStore.customer?.id === props.header.customerId
+      ? customerStore.customer
+      : finalCustomer.value;
+  return customer?.address?.find((a) => a.main)?.distanceFromSite || 0;
 });
 
-const logisticSuppliers = computed(() => {
-  return supplierStore.logisticSuppliers || [];
-});
-
-const customerName = computed(() => {
-  const cust = customerStore.customers?.find(
-    (c) => c.id === props.header.customerId,
+const rateDistance = computed<number>(() => {
+  if (isFinalCustomer.value) return finalCustomerDistance.value;
+  return (
+    supplierStore.suppliers?.find((s) => s.id === destinationSupplierId.value)
+      ?.distanceFromSite ?? 0
   );
-  return cust ? cust.comercialName : "Client";
 });
 
-const distance = computed(() => {
-  if (isFinalCustomer.value) {
-    // Usem el customer carregat individualment (té les adreces incloses)
-    const cust =
-      customerStore.customer?.id === props.header.customerId
-        ? customerStore.customer
-        : customerStore.customers?.find(
-            (c) => c.id === props.header.customerId,
-          );
-    if (cust) {
-      return cust.address?.find((a) => a.main)?.distanceFromSite ?? 0;
-    }
-  } else {
-    const destSup = supplierStore.suppliers?.find(
-      (s) => s.id === destinationSupplierId.value,
-    );
-    if (destSup) {
-      return destSup.distanceFromSite ?? 0;
-    }
-  }
-  return 0;
-});
-
-const compatibleTransportRates = computed(() => {
-  if (!transportRateStore.transportRates) return [];
+const compatibleTransportRates = computed<TransportRateOption[]>(() => {
   const now = new Date();
-
-  const validRates = transportRateStore.transportRates.filter((r) => {
-    if (r.disabled) return false;
-    const from = new Date(r.validFrom);
-    const to = new Date(r.validTo);
-    return now >= from && now <= to;
-  });
-
   const weight = props.header.totalWeight || 0;
   const volume = props.transport.volume || 0;
-  const dist = distance.value || 0;
+  const distance = rateDistance.value || 0;
 
-  let compatibleDetails: any[] = [];
+  const compatibleDetails = transportRates.value
+    .filter((rate) => {
+      if (rate.disabled) return false;
+      return now >= new Date(rate.validFrom) && now <= new Date(rate.validTo);
+    })
+    .flatMap((rate) =>
+      (rate.details ?? [])
+        .filter((detail) => {
+          const weightOk =
+            weight === 0 ||
+            (detail.minWeight <= weight &&
+              (detail.maxWeight === 0 || detail.maxWeight >= weight));
+          const volumeOk =
+            volume === 0 ||
+            (detail.minVolume <= volume &&
+              (detail.maxVolume === 0 || detail.maxVolume >= volume));
+          const distanceOk =
+            distance === 0 ||
+            (detail.minDistance <= distance &&
+              (detail.maxDistance === 0 || detail.maxDistance >= distance));
+          return weightOk && volumeOk && distanceOk;
+        })
+        .map((detail) => ({ rate, detail })),
+    )
+    .sort((a, b) => a.detail.price - b.detail.price);
 
-  validRates.forEach((rate) => {
-    if (!rate.details || rate.details.length === 0) return;
+  return compatibleDetails.map(({ rate, detail }, index) => {
+    let label = `${rate.name}`;
+    if (rate.description) label += ` (${rate.description})`;
 
-    rate.details.forEach((detail) => {
-      const weightOk =
-        weight === 0 ||
-        (detail.minWeight <= weight &&
-          (detail.maxWeight === 0 || detail.maxWeight >= weight));
-      const volumeOk =
-        volume === 0 ||
-        (detail.minVolume <= volume &&
-          (detail.maxVolume === 0 || detail.maxVolume >= volume));
-      const distOk =
-        dist === 0 ||
-        (detail.minDistance <= dist &&
-          (detail.maxDistance === 0 || detail.maxDistance >= dist));
-
-      if (weightOk && volumeOk && distOk) {
-        compatibleDetails.push({
-          id: detail.id,
-          rateName: rate.name,
-          rateDescription: rate.description,
-          price: detail.price,
-          minWeight: detail.minWeight,
-          maxWeight: detail.maxWeight,
-          minVolume: detail.minVolume,
-          maxVolume: detail.maxVolume,
-          minDistance: detail.minDistance,
-          maxDistance: detail.maxDistance,
-        });
-      }
-    });
-  });
-
-  // Ordenar per preu (ascendent)
-  compatibleDetails.sort((a, b) => a.price - b.price);
-
-  // Formatejar el label
-  return compatibleDetails.map((detail, index) => {
-    const isCheapest = index === 0;
-    let label = `${detail.rateName}`;
-    if (detail.rateDescription) label += ` (${detail.rateDescription})`;
-
-    // Limits
-    const limits = [];
+    const limits: string[] = [];
     if (detail.maxWeight > 0)
       limits.push(`${detail.minWeight}-${detail.maxWeight} kg`);
     if (detail.maxDistance > 0)
@@ -280,151 +158,303 @@ const compatibleTransportRates = computed(() => {
 
     if (limits.length > 0) label += ` | ${limits.join(", ")}`;
     label += ` — ${detail.price} €`;
-    if (isCheapest) label += " ⭐️ (Millor preu)";
+    if (index === 0) label += ` ⭐️ (${t("sales.customers.bestPrice")})`;
 
-    return {
-      id: detail.id,
-      label: label,
-      price: detail.price,
-    };
+    return { id: detail.id, label, price: detail.price };
   });
 });
 
-onMounted(async () => {
+const setFormValues = (values: FormValues): void => {
+  suppressCallbacks = true;
+  try {
+    form.value?.setValues(values);
+  } finally {
+    suppressCallbacks = false;
+  }
+};
+
+const finalCustomerDestination = (): FormValues => {
+  const customer = finalCustomer.value;
+  return {
+    ...(customer
+      ? {
+          destination: customer.comercialName,
+          distance: finalCustomerDistance.value,
+        }
+      : {}),
+    destinationSupplierId: null,
+  };
+};
+
+const supplierDestination = (supplierId: string | null): FormValues => {
+  const supplier = supplierStore.suppliers?.find((s) => s.id === supplierId);
+  return supplier
+    ? {
+        destination: supplier.comercialName,
+        distance: supplier.distanceFromSite || 0,
+        destinationSupplierId: supplier.id,
+      }
+    : { destination: "", distance: 0, destinationSupplierId: null };
+};
+
+const applyDestination = (
+  finalCustomerSelected: boolean,
+  supplierId: string | null,
+): void => {
+  setFormValues(
+    finalCustomerSelected
+      ? finalCustomerDestination()
+      : supplierDestination(supplierId),
+  );
+};
+
+const loadTransportRates = async (supplierId: string | null): Promise<void> => {
+  const requestSequence = ++rateRequestSequence;
+  if (!supplierId) {
+    transportRates.value = [];
+    return;
+  }
+  await transportRateStore.fetchTransportRatesBySupplierId(supplierId);
+  if (requestSequence !== rateRequestSequence) return;
+  transportRates.value = transportRateStore.transportRates ?? [];
+};
+
+const updateFinalCustomer = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  isFinalCustomer.value = booleanValue(value, true);
+  if (suppressCallbacks) return;
+  applyDestination(
+    isFinalCustomer.value,
+    nullableStringValue(values.destinationSupplierId, null),
+  );
+};
+
+const updateDestinationSupplier = (value: unknown): void => {
+  destinationSupplierId.value = nullableStringValue(value, null);
+  if (suppressCallbacks) return;
+  setFormValues(supplierDestination(destinationSupplierId.value));
+};
+
+const updateLogisticSupplier = (value: unknown): void => {
+  if (suppressCallbacks) return;
+  setFormValues({ transportRateDetailId: "" });
+  void loadTransportRates(nullableStringValue(value, null));
+};
+
+const updateRate = (value: unknown): void => {
+  if (suppressCallbacks) return;
+  const rate = compatibleTransportRates.value.find((r) => r.id === value);
+  if (rate) setFormValues({ price: rate.price });
+};
+
+const numberProps = { locale: "en-US", minFractionDigits: 2 } as const;
+const currencyProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+} as const;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "isFinalCustomer",
+        label: t("sales.customers.shipToFinalCustomer", { customer: customerName.value }),
+        type: FormFieldType.Checkbox,
+        onChange: updateFinalCustomer,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "logisticSupplierId",
+        label: t("sales.components.proveidorLogisticTransportista"),
+        type: FormFieldType.Select,
+        props: {
+          options: supplierStore.logisticSuppliers ?? [],
+          optionLabel: "comercialName",
+          optionValue: "id",
+          placeholder: t("sales.components.seleccionaTransportista"),
+        },
+        onChange: updateLogisticSupplier,
+      },
+      {
+        name: "transportRateDetailId",
+        label: t("sales.components.tarifaDeTransport"),
+        type: FormFieldType.Select,
+        props: {
+          options: compatibleTransportRates.value,
+          optionLabel: "label",
+          optionValue: "id",
+          placeholder: t("sales.components.seleccionaTarifa"),
+        },
+        disabled: (values) => !values.logisticSupplierId,
+        onChange: updateRate,
+        validation: Yup.string().required(
+          t("sales.validation.transportRateRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    // Shown only when the transport goes to a supplier instead of the final
+    // customer; `destination` is derived hidden state kept registered here.
+    section: "destination",
+    fields: [
+      {
+        name: "destinationSupplierId",
+        label: "",
+        type: FormFieldType.Custom,
+        onChange: updateDestinationSupplier,
+      },
+      { name: "destination", label: "", type: FormFieldType.Custom },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "weight",
+        label: t("sales.components.pesKg"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        validation: Yup.number().min(0, t("sales.validation.weightNotNegative")),
+      },
+      {
+        name: "volume",
+        label: t("sales.components.volumM"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        disabled: true,
+        validation: Yup.number().min(0, t("sales.validation.volumeNotNegative")),
+      },
+      {
+        name: "distance",
+        label: t("sales.components.distanciaKm"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        disabled: true,
+        validation: Yup.number().min(0, t("sales.validation.distanceNotNegative")),
+      },
+      {
+        name: "price",
+        label: t("sales.components.preu"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        validation: Yup.number()
+          .min(0, t("sales.validation.priceNotNegative"))
+          .required(t("sales.validation.priceRequired")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "description",
+        label: t("sales.components.descripcio"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+]);
+
+const restoreTransport = async (transport: BudgetTransport): Promise<void> => {
+  const startSequence = rateRequestSequence;
   await supplierStore.fetchLogisticSuppliers();
   await supplierStore.fetchSuppliers();
-
-  // Carreguem el client concret per tenir les adreces amb distanceFromSite
-  // (fetchCustomers no inclou adreces al GetAll del backend)
+  // The single customer includes the addresses with distanceFromSite
+  // (the customer list does not).
   if (props.header.customerId) {
     await customerStore.fetchCustomer(props.header.customerId);
   }
+  if (transport !== props.transport) return;
 
-  if (
-    props.formAction === FormActionMode.CREATE &&
-    !transport.value.destination
+  if (props.formAction === FormActionMode.CREATE && !transport.destination) {
+    applyDestination(isFinalCustomer.value, destinationSupplierId.value);
+  } else if (
+    transport.logisticSupplierId &&
+    // Skip when the user already chose another carrier meanwhile.
+    startSequence === rateRequestSequence
   ) {
-    onCustomerToggleChange();
-  } else {
-    // Restaurar el proveïdor logístic seleccionat
-    if (transport.value.logisticSupplierId) {
-      localSupplierId.value = transport.value.logisticSupplierId;
-      await transportRateStore.fetchTransportRatesBySupplierId(
-        transport.value.logisticSupplierId,
-      );
-    }
-
-    // Restaurar destinació
-    if (transport.value.destinationSupplierId) {
-      isFinalCustomer.value = false;
-      destinationSupplierId.value = transport.value.destinationSupplierId;
-    } else {
-      const cust = customerStore.customers?.find(
-        (c) => c.id === props.header.customerId,
-      );
-      if (cust && transport.value.destination === cust.comercialName) {
-        isFinalCustomer.value = true;
-      } else if (transport.value.destination) {
-        isFinalCustomer.value = false;
-      }
-    }
+    await loadTransportRates(transport.logisticSupplierId);
   }
+};
+
+watch(
+  () => props.transport,
+  (transport) => {
+    rateRequestSequence += 1;
+    transportRates.value = [];
+    initialValues.value = createInitialValues(transport);
+    isFinalCustomer.value = booleanValue(
+      initialValues.value.isFinalCustomer,
+      true,
+    );
+    destinationSupplierId.value = transport.destinationSupplierId;
+    void restoreTransport(transport);
+  },
+);
+
+onMounted(() => {
+  void restoreTransport(props.transport);
 });
 
-const onCustomerToggleChange = () => {
-  if (isFinalCustomer.value) {
-    const cust = customerStore.customers?.find(
-      (c) => c.id === props.header.customerId,
-    );
-    if (cust) {
-      transport.value.destination = cust.comercialName;
-      const mainAddr = cust.address?.find((a) => a.main);
-      transport.value.distance = mainAddr?.distanceFromSite || 0;
-    }
-    destinationSupplierId.value = null;
-    transport.value.destinationSupplierId = null;
-  } else {
-    if (destinationSupplierId.value) {
-      onDestinationSupplierChange();
-    } else {
-      transport.value.destination = "";
-      transport.value.distance = 0;
-      transport.value.destinationSupplierId = null;
-    }
-  }
-};
-
-const onTransportSupplierChange = async () => {
-  transport.value.transportRateDetailId = "";
-  transport.value.logisticSupplierId = localSupplierId.value ?? "";
-  if (localSupplierId.value) {
-    await transportRateStore.fetchTransportRatesBySupplierId(
-      localSupplierId.value,
-    );
-  } else {
-    transportRateStore.transportRates = [];
-  }
-};
-
-const onRateChange = () => {
-  const selectedRate = compatibleTransportRates.value.find(
-    (r) => r.id === transport.value.transportRateDetailId,
-  );
-  if (selectedRate) {
-    transport.value.price = selectedRate.price;
-  }
-};
-
-const onDestinationSupplierChange = () => {
-  const sup = supplierStore.suppliers?.find(
-    (s) => s.id === destinationSupplierId.value,
-  );
-  if (sup) {
-    transport.value.destination = sup.comercialName;
-    transport.value.distance = sup.distanceFromSite || 0;
-    transport.value.destinationSupplierId = sup.id;
-  } else {
-    transport.value.destination = "";
-    transport.value.distance = 0;
-    transport.value.destinationSupplierId = null;
-  }
-};
-
-const schema = Yup.object().shape({
-  transportRateDetailId: Yup.string().required(t("sales.validation.transportRateRequired")),
-  weight: Yup.number().min(0, "El pes no pot ser negatiu"),
-  volume: Yup.number().min(0, "El volum no pot ser negatiu"),
-  distance: Yup.number().min(0, "La distància no pot ser negativa"),
-  price: Yup.number()
-    .min(0, "El preu no pot ser negatiu")
-    .required(t("sales.validation.priceRequired")),
+onUnmounted(() => {
+  rateRequestSequence += 1;
 });
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.transport);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.transport);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: t('sales.components.formulariInvalid'),
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.transport,
+    logisticSupplierId: stringValue(
+      values.logisticSupplierId,
+      props.transport.logisticSupplierId,
+    ),
+    transportRateDetailId: stringValue(values.transportRateDetailId, ""),
+    destinationSupplierId: nullableStringValue(
+      values.destinationSupplierId,
+      null,
+    ),
+    destination: stringValue(values.destination, props.transport.destination),
+    weight: finiteNumberValue(values.weight, props.transport.weight),
+    volume: finiteNumberValue(values.volume, props.transport.volume),
+    distance: finiteNumberValue(values.distance, props.transport.distance),
+    price: finiteNumberValue(values.price, props.transport.price),
+    description: stringValue(values.description, props.transport.description),
+  });
 };
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="initialValues"
+    :disabled="readonly"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #section-destination="{ values, setFieldValue, disabled }">
+      <div v-if="!booleanValue(values.isFinalCustomer, true)">
+        <label class="block text-900 mb-2" :for="destinationInputId">
+          {{ t("sales.components.proveidorDeDestinacioServeisExternsMagatzem") }}
+        </label>
+        <Select
+          :input-id="destinationInputId"
+          :model-value="nullableStringValue(values.destinationSupplierId, null)"
+          :options="supplierStore.suppliers ?? []"
+          option-label="comercialName"
+          option-value="id"
+          :placeholder="t('sales.components.seleccionaProveidorDeDestinacio')"
+          class="w-full"
+          :disabled="disabled"
+          @update:model-value="setFieldValue('destinationSupplierId', $event)"
+        />
+      </div>
+    </template>
+  </Form>
+</template>

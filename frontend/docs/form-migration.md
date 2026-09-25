@@ -1,6 +1,6 @@
 # Form.vue Migration Tracker
 
-> **Status**: In progress. L1–L5 in review as stacked PRs; next batch L6 (sales documents).
+> **Status**: In progress. L1–L6 in review as stacked PRs; next batch L7 (system and complex shared).
 > **Created**: 2026-09-24 · **Owner**: mgurt
 > **Procedure**: `.claude/skills/frontend-form/SKILL.md` ("Migrate A Legacy Form")
 
@@ -171,18 +171,18 @@ Status values: `pending` · `in progress` · `blocked (F-xx)` · `migrated` ·
 
 | ID | Component | Consumers | Diff. | Features | Status | Commit / PR | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| SA-06 | `sales/components/FormBudget.vue` | `Budget.vue` | med | — | pending | | Pinia state; lifecycle transitions dropdown |
-| SA-07 | `sales/views/Budget.vue` (notes block) | — | low | — | pending | | Editable notes + read-only auto notes outside `FormBudget` |
-| SA-08 | `sales/components/FormBudgetOrderDetail.vue` | `Budget.vue`, `SalesOrder.vue` | high | — | pending | | Embeds `TableWorkmasterProfit` (parent-owned collection) |
-| SA-09 | `sales/components/FormBudgetTransport.vue` | `Budget.vue` | med | — | pending | | Async supplier/rate lookups |
-| SA-10 | `sales/components/FormSalesOrder.vue` | `SalesOrder.vue` | high | — | pending | | 4 stores |
-| SA-11 | `sales/components/FormSalesOrderTransport.vue` | `SalesOrder.vue` | med | — | pending | | Async lookups |
-| SA-12 | `sales/components/FormCreateOrderOrInvoice.vue` | `SalesOrders.vue`, `DeliveryNotes.vue`, `Budgets.vue`, `SalesInvoices.vue` | med | — | pending | | Reused by 4 screens; test every caller |
-| SA-13 | `sales/components/FormDeliveryNote.vue` | `DeliveryNote.vue` | med | — | pending | | `lockHeader`/`lockStatus` flags → disabled predicates |
-| SA-14 | `sales/components/FormSalesInvoice.vue` | `SalesInvoice.vue` | med | — | pending | | Lifecycle transitions dropdown |
-| SA-15 | `sales/views/SalesInvoice.vue` (fiscal data block) | — | low | — | pending | | 7 text fields + `DropdownCountry` outside `FormSalesInvoice` |
-| SA-16 | `sales/components/FormSalesInvoiceDetail.vue` | `SalesInvoice.vue` | med | — | pending | | |
-| SA-17 | `sales/components/FormRectificativeInvoice.vue` | `SalesInvoice.vue` | med | — | pending | | Quantity limited by `maximumQuantity` prop |
+| SA-06 | `sales/components/FormBudget.vue` | `Budget.vue` | med | — | migrated | `840531f` | Pinia state; lifecycle transitions dropdown |
+| SA-07 | `sales/views/Budget.vue` (notes block) | — | low | — | migrated | `840531f` | Editable notes + read-only auto notes outside `FormBudget` |
+| SA-08 | `sales/components/FormBudgetOrderDetail.vue` | `Budget.vue`, `SalesOrder.vue` | high | — | migrated | `840531f` | Embeds `TableWorkmasterProfit` (parent-owned collection) |
+| SA-09 | `sales/components/FormBudgetTransport.vue` | `Budget.vue` | med | — | migrated | `840531f` | Async supplier/rate lookups |
+| SA-10 | `sales/components/FormSalesOrder.vue` | `SalesOrder.vue` | high | — | migrated | `abcbe27` | 4 stores |
+| SA-11 | `sales/components/FormSalesOrderTransport.vue` | `SalesOrder.vue` | med | — | migrated | `abcbe27` | Async lookups |
+| SA-12 | `sales/components/FormCreateOrderOrInvoice.vue` | `SalesOrders.vue`, `DeliveryNotes.vue`, `Budgets.vue`, `SalesInvoices.vue` | med | — | migrated | `62614eb` | Reused by 4 screens; test every caller |
+| SA-13 | `sales/components/FormDeliveryNote.vue` | `DeliveryNote.vue` | med | — | migrated | `7c1ab76` | `lockHeader`/`lockStatus` flags → disabled predicates |
+| SA-14 | `sales/components/FormSalesInvoice.vue` | `SalesInvoice.vue` | med | — | migrated | `a007a24` | Lifecycle transitions dropdown |
+| SA-15 | `sales/views/SalesInvoice.vue` (fiscal data block) | — | low | — | migrated | `a007a24` | 7 text fields + `DropdownCountry` outside `FormSalesInvoice` |
+| SA-16 | `sales/components/FormSalesInvoiceDetail.vue` | `SalesInvoice.vue` | med | — | migrated | `a007a24` | |
+| SA-17 | `sales/components/FormRectificativeInvoice.vue` | `SalesInvoice.vue` | med | — | migrated | `a007a24` | Quantity limited by `maximumQuantity` prop |
 
 ### 2.7 Batch L7 — System and complex shared
 
@@ -382,6 +382,11 @@ Copy for each feature once it is `confirmed`:
 | SA-02, SA-03 Customer address/contact | Edits work on a copy of the row (cancel no longer leaks into the table); location errors show per field; phone error highlights its field | Bug fix |
 | SA-05 Reference | Dead `FormReferenceType` import and unused `defaultCustomerId` prop removed; rule on the hidden `cost` field dropped (not editable) | Cleanup |
 | i18n (production) | Twelve `production.ui` keys containing an apostrophe or a dot never resolved in vue-i18n and rendered raw (source route label, delete confirmations, ticket table headers and messages); moved to camelCase `production.detail` keys | Bug fix |
+| SA-06..SA-09 Budget | Notes block moved into the header form (the separate Notes tab is gone; approved); header keeps a scalar snapshot so line/transport reloads keep unsaved edits; create order sends the header as edited | Approved |
+| SA-09, SA-11 Transport dialogs | The distance saved for the final customer is the one shown (legacy showed the real distance but saved 0; approved) | Bug fix |
+| SA-12 Create order/invoice | Date serialized once (legacy shifted it twice, sending the next day after ~22:00); double submit blocked | Bug fix |
+| SA-13 Delivery note | Only Save is disabled when the note is locked; Word/PDF downloads stay available (approved) | Bug fix |
+| SA-14, SA-15 Sales invoice | Header schema (date, payment method) now actually runs; fiscal data keeps its own save in the tab with the propagation check (approved) | Global decision |
 | SH-04 Lifecycle | Name and description are now validated (required, max 250). The legacy schema existed but was never run because the screen saved the store ref directly | Covered by the global validation decision |
 | All `Form.vue` forms | Native field ids change from `form-field-<name>` to `form-<instance>-<name>` (F-03) | Internal; no consumer depended on the old ids |
 
@@ -409,3 +414,5 @@ there was none, and so on).
 | 2026-09-25 | i18n keys with an apostrophe or dot fixed in `cf11060` and `be09c01` (#138) |
 | 2026-09-25 | L5 (5 forms) migrated in `7487304`..`dd91809`; no new Form.vue feature needed; customer type made required |
 | 2026-09-25 | L5 UI verification complete: customer header, address dialog (cancel keeps the row, unsaved header edits survive), contact add dialog, customer type, sales reference |
+| 2026-09-25 | L6 (12 forms) migrated in `b3f4a77`..`a007a24`; no new Form.vue feature needed; four product decisions applied (fiscal save, downloads, transport distance, budget notes) |
+| 2026-09-25 | L6 UI verification complete: budget (create dialog, header with notes, line recalculation and cancel, transport), sales order (header, line, transport rate required), delivery note (locked note keeps downloads; status required), sales invoice (date required, fiscal tab with its own save, line amount 3 × 10 = 30.00 €, rectificative dialog limits). Unverifiable with staging data: final-customer transport distance (customer address not geocoded) |

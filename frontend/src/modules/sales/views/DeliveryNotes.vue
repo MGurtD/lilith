@@ -51,7 +51,9 @@
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createDeliveryNote"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -161,6 +163,7 @@ const cleanFilter = () => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -199,21 +202,28 @@ const filterData = async () => {
   }
 };
 
-const createDeliveryNote = async () => {
-  const response = await deliveryNoteStore.Create(createRequest.value);
-  if (!response?.result) {
-    toast.add({
-      severity: "warn",
-      summary: t("sales.deliveryNotes.messages.createError"),
-      detail:
-        response?.errors?.[0] ??
-        t("sales.list.messages.unknownError"),
-      life: 10000,
-    });
-    return;
+const createDeliveryNote = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const response = await deliveryNoteStore.Create(request);
+    if (!response?.result) {
+      toast.add({
+        severity: "warn",
+        summary: t("sales.deliveryNotes.messages.createError"),
+        detail:
+          response?.errors?.[0] ??
+          t("sales.list.messages.unknownError"),
+        life: 10000,
+      });
+      return;
+    }
+    dialogOptions.visible = false;
+    router.push({ path: `/deliverynote/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-  dialogOptions.visible = false;
-  router.push({ path: `/deliverynote/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
