@@ -1,7 +1,7 @@
 <template>
   <FormCustomerType
-    v-if="customerStore.customerType"
-    :customerType="customerStore.customerType"
+    v-if="customerType"
+    :customer-type="customerType"
     @submit="submitForm"
   />
 </template>
@@ -54,8 +54,7 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = customerType.value as CustomerType;
+const submitForm = async (data: CustomerType) => {
   let result = false;
   let message = "";
 
