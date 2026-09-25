@@ -237,6 +237,24 @@ const isFieldDisabled = (field: FormFieldConfig): boolean =>
     ? field.disabled(formValues.value)
     : field.disabled === true);
 
+// Composite PrimeVue controls put a plain `id` on their wrapper; their own
+// prop targets the focusable element, so labels focus the real input.
+const nativeIdProp = (type: FormFieldType): string => {
+  switch (type) {
+    case FormFieldType.Password:
+    case FormFieldType.Number:
+    case FormFieldType.Currency:
+    case FormFieldType.Date:
+    case FormFieldType.Checkbox:
+    case FormFieldType.MultiSelect:
+      return "inputId";
+    case FormFieldType.Select:
+      return "labelId";
+    default:
+      return "id";
+  }
+};
+
 const controlProps = (
   field: FormFieldConfig,
   state: FormFieldState,
@@ -247,7 +265,7 @@ const controlProps = (
     field.type === FormFieldType.Checkbox ? undefined : "w-full";
 
   return mergeProps(formControlProps ?? {}, field.props ?? {}, {
-    id: fieldId(field.name),
+    [nativeIdProp(field.type)]: fieldId(field.name),
     class: [widthClass, { "p-invalid": invalid }],
     disabled: isFieldDisabled(field),
     "aria-invalid": invalid ? "true" : undefined,
