@@ -219,8 +219,7 @@ onUnmounted(() => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = reference.value as Reference;
+const submitForm = async (data: Reference) => {
   let result = false;
   let message = "";
 
