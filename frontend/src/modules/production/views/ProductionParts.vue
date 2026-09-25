@@ -22,7 +22,7 @@
     @create="createButtonClick"
     @delete="deleteProductionPart"
   >
-    <template #empty> {{ pt("No s'han trobat tiquets.") }} </template>
+    <template #empty> {{ t("production.detail.noProductionParts") }} </template>
     <template #loading>
       {{ pt("Carregant tiquets. Si us plau espera.") }}
     </template>
@@ -404,7 +404,7 @@ const createProductionPart = async (productionPart: ProductionPart) => {
 
 const deleteProductionPart = (productionPart: ProductionPart) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació del tiquet de producció"),
+    message: t("production.detail.confirmDeleteProductionPart"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

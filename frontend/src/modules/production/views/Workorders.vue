@@ -325,7 +325,7 @@ const createWorkOrder = async (dto: CreateWorkOrderDto) => {
 
 const deleteButton = (workorder: WorkOrder) => {
   confirm.require({
-    message: pt("Confirmar l'eliminació de l'ordre de fabricació"),
+    message: t("production.detail.confirmDeleteWorkorder"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

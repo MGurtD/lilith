@@ -98,7 +98,7 @@
     <div v-if="copyInitialValues" class="flex flex-column gap-3">
       <div class="flex flex-column gap-1">
         <label class="font-semibold text-sm text-color-secondary">{{
-          pt("Ruta d'origen")
+          t("production.detail.sourceWorkmaster")
         }}</label>
         <span class="text-lg">{{ copySourceName }}</span>
       </div>
