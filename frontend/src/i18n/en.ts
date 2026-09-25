@@ -1950,6 +1950,7 @@ const en = {
       },
     },
     supportRequest: {
+      validation: { summaryRequired: "Summary is required", summaryMax: "Summary cannot exceed 255 characters", descriptionRequired: "Description is required" },
       form: {
         summary: "Summary",
         description: "Description (Markdown)",

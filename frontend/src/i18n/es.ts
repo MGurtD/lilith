@@ -1917,6 +1917,7 @@ const es = {
       },
     },
     supportRequest: {
+      validation: { summaryRequired: "El resumen es obligatorio", summaryMax: "El resumen no puede superar los 255 caracteres", descriptionRequired: "La descripción es obligatoria" },
       form: {
         summary: "Resumen",
         description: "Descripción (Markdown)",
