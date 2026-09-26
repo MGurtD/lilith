@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import type { Column } from "./types";
+import { CARD_META_MAX, ColumnType, type CardLayout, type Column } from "./types";
 import type { FilterConfig } from "./TableFilter.vue";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
@@ -9,6 +9,8 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { hydrateFilter } from "@/utils/filter-hydrate";
 import { resolveFilterDisplayValue } from "./filterDisplay";
+import { resolveCardLayout } from "./card-layout";
+import TableCardList from "./TableCardList.vue";
 import { useI18n } from "vue-i18n";
 
 
@@ -20,11 +22,22 @@ const props = defineProps<{
   filterValues?: any;
   activeSortConfig?: SortConfig | null;
   filterConfig?: FilterConfig[];
+  /** The screen's default phone card. */
+  cardLayout?: CardLayout;
+  /** The active view's phone card; null when it keeps the screen default. */
+  activeCardConfig?: CardLayout | null;
+  /** A row to preview the phone card with. */
+  previewItem?: unknown;
 }>();
 
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
-  (e: "apply-config", columns: Column[], viewId: string): void;
+  (
+    e: "apply-config",
+    columns: Column[],
+    viewId: string,
+    card: CardLayout | null,
+  ): void;
   (e: "update:filterValues", value: any): void;
   (e: "filter"): void;
   (e: "update:sortConfig", value: SortConfig | null): void;
@@ -44,6 +57,10 @@ const isDragging = ref(false);
 const dragSourceIndex = ref<number | null>(null);
 const dragOverIndex = ref<number | null>(null);
 const newViewNameInput = ref<HTMLInputElement | null>(null);
+
+// Phone card of the view being edited; null keeps the screen default.
+const localCard = ref<CardLayout | null>(null);
+const activeTab = ref("columns");
 
 // Local sort config
 const localSortField = ref<string>("");
@@ -127,6 +144,7 @@ watch(
       }));
       // Clear the new view name field — it is for creating only
       newViewName.value = "";
+      localCard.value = props.activeCardConfig ?? null;
       // Initialize sort from active sort config
       localSortField.value = props.activeSortConfig?.field ?? "";
       localSortOrder.value = (props.activeSortConfig?.order ?? 1) as 1 | -1;
@@ -180,7 +198,8 @@ function applyViewLocally(viewId: string, clearMissingFilters = false) {
   if (!view) return;
 
   localColumns.value = viewStore.applyView(view, props.columns);
-  emit("apply-config", localColumns.value, viewId);
+  localCard.value = viewStore.applyCardConfig(view);
+  emit("apply-config", localColumns.value, viewId, localCard.value);
 
   const filterValues = viewStore.applyFilterConfig(view);
   if (filterValues) {
@@ -208,7 +227,8 @@ function resetToBaseColumns() {
     visible: col.visible !== false ? true : col.visible,
     order: col.order ?? index,
   }));
-  emit("apply-config", props.columns, "");
+  localCard.value = null;
+  emit("apply-config", props.columns, "", null);
   emit("update:filterValues", {});
   emit("filter");
   localSortField.value = "";
@@ -330,7 +350,7 @@ async function saveView() {
       detail: t("tables.views.updateSuccess"),
       life: 3000,
     });
-    emit("apply-config", localColumns.value, selectedViewId.value);
+    emit("apply-config", localColumns.value, selectedViewId.value, localCard.value);
   }
 }
 
@@ -359,6 +379,7 @@ async function saveAsNewView() {
     localSortField.value
       ? { field: localSortField.value, order: localSortOrder.value }
       : undefined,
+    localCard.value,
   );
 
   const created = await viewStore.create(newView);
@@ -473,6 +494,50 @@ async function toggleDefault() {
   }
 }
 
+// --- Phone card ---
+
+// Columns the card can use: the ones visible in this view, in its order.
+// Hiding a column above removes it from the card options straight away.
+const cardColumns = computed(() =>
+  localColumns.value.filter(
+    (col) =>
+      col.visible !== false && col.columnType !== ColumnType.ProgressBar,
+  ),
+);
+
+const cardColumnOptions = computed(() =>
+  cardColumns.value.map((col) => ({ label: col.header, value: col.field })),
+);
+
+// What the phone shows for this view: its own card, else the screen's.
+const resolvedCard = computed(() =>
+  resolveCardLayout(localCard.value, props.cardLayout, cardColumns.value),
+);
+
+type SingleCardSlot = "title" | "subtitle" | "badge" | "trailing";
+
+const singleCardSlots = computed<
+  Array<{ slot: SingleCardSlot; label: string; clearable: boolean }>
+>(() => [
+  { slot: "title", label: t("tables.views.card.titleField"), clearable: false },
+  { slot: "subtitle", label: t("tables.views.card.subtitleField"), clearable: true },
+  { slot: "badge", label: t("tables.views.card.badgeField"), clearable: true },
+  { slot: "trailing", label: t("tables.views.card.trailingField"), clearable: true },
+]);
+
+// The first edit starts from the card the user sees, so customising one
+// slot keeps the others as they were.
+function updateCardSlot(
+  slot: keyof CardLayout,
+  value: string | string[] | null | undefined,
+) {
+  localCard.value = { ...resolvedCard.value, [slot]: value ?? undefined };
+}
+
+function resetCardToScreenDefault() {
+  localCard.value = null;
+}
+
 // Build unified view config JSON from local columns, filter values, and sort
 function buildViewConfig(): string {
   const columns = localColumns.value
@@ -490,6 +555,9 @@ function buildViewConfig(): string {
   if (localSortField.value) {
     config.sort = { field: localSortField.value, order: localSortOrder.value };
   }
+  if (localCard.value) {
+    config.card = localCard.value;
+  }
   return JSON.stringify(config);
 }
 </script>
@@ -502,6 +570,7 @@ function buildViewConfig(): string {
     :modal="true"
     :closable="true"
     :style="{ width: '600px' }"
+    :breakpoints="{ '767px': '95vw' }"
     class="table-view-config-dialog"
   >
     <div class="view-config-content">
@@ -569,90 +638,180 @@ function buildViewConfig(): string {
         </div>
       </div>
 
-      <!-- Saved filters (read-only, sourced from DB via selectedView.viewConfig) -->
-      <div v-if="savedFilterRows.length > 0" class="saved-filters-section">
-        <label>{{ $t("tables.views.savedFilters") }}</label>
-        <div class="saved-filters-list">
-          <div
-            v-for="row in savedFilterRows"
-            :key="row.key"
-            class="saved-filters-row"
-          >
-            <span class="saved-filters-label">{{ row.label }}</span>
-            <span class="saved-filters-value">
-              {{ resolveDisplayValue(row.field, row.value) }}
-            </span>
-          </div>
-        </div>
-      </div>
+      <Tabs v-model:value="activeTab">
+        <TabList>
+          <Tab value="columns">{{ $t("tables.views.tabs.columns") }}</Tab>
+          <Tab value="card">{{ $t("tables.views.tabs.card") }}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="columns">
+            <div class="columns-tab">
+              <!-- Saved filters (read-only, sourced from DB via selectedView.viewConfig) -->
+              <div v-if="savedFilterRows.length > 0" class="saved-filters-section">
+                <label>{{ $t("tables.views.savedFilters") }}</label>
+                <div class="saved-filters-list">
+                  <div
+                    v-for="row in savedFilterRows"
+                    :key="row.key"
+                    class="saved-filters-row"
+                  >
+                    <span class="saved-filters-label">{{ row.label }}</span>
+                    <span class="saved-filters-value">
+                      {{ resolveDisplayValue(row.field, row.value) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-      <!-- Column configuration list -->
-      <div class="field">
-        <label>{{ $t("tables.views.columnConfiguration") }}</label>
-        <div class="columns-config-list">
-          <div
-            v-for="(col, index) in localColumns"
-            :key="col.field"
-            class="column-config-row"
-            :class="{
-              'dragging': dragSourceIndex === index,
-              'drag-over': dragOverIndex === index && dragSourceIndex !== index,
-              'drop-before': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex > index,
-              'drop-after': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex < index,
-            }"
-            draggable="true"
-            @dragstart="onDragStart(index, $event)"
-            @dragover="onDragOver(index, $event)"
-            @dragleave="onDragLeave(index, $event)"
-            @drop="onDrop(index, $event)"
-            @dragend="onDragEnd"
-          >
-            <i class="pi pi-bars drag-handle"></i>
-            <Checkbox
-              :model-value="col.visible !== false"
-              :binary="true"
-              @update:model-value="toggleVisibility(index)"
-            />
-            <span class="column-name">{{ col.header }}</span>
-            <Checkbox
-              v-if="col.total !== undefined"
-              :model-value="col.total !== undefined"
-              :binary="true"
-              @update:model-value="toggleTotal(index)"
-            />
-            <span v-if="col.total !== undefined" class="total-label">{{ $t("tables.views.total") }}</span>
-            <!-- Sort toggle -->
-            <Button
-              :icon="
-                localSortField !== col.field
-                  ? 'pi pi-sort'
-                  : localSortOrder === 1
-                    ? 'pi pi-sort-amount-up'
-                    : 'pi pi-sort-amount-down'
-              "
-              :severity="localSortField === col.field ? 'primary' : 'secondary'"
-              size="small"
-              rounded
-              text
-              :aria-label="
-                localSortField !== col.field
-                  ? $t('tables.views.noSort')
-                  : localSortOrder === 1
-                    ? $t('tables.views.ascending')
-                    : $t('tables.views.descending')
-              "
-              v-tooltip.top="
-                localSortField !== col.field
-                  ? $t('tables.views.noSort')
-                  : localSortOrder === 1
-                    ? $t('tables.views.ascending')
-                    : $t('tables.views.descending')
-              "
-              @click.stop="cycleSortForColumn(col.field)"
-            />
-          </div>
-        </div>
-      </div>
+              <!-- Column configuration list -->
+              <div class="field">
+                <label>{{ $t("tables.views.columnConfiguration") }}</label>
+                <div class="columns-config-list">
+                  <div
+                    v-for="(col, index) in localColumns"
+                    :key="col.field"
+                    class="column-config-row"
+                    :class="{
+                      'dragging': dragSourceIndex === index,
+                      'drag-over': dragOverIndex === index && dragSourceIndex !== index,
+                      'drop-before': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex > index,
+                      'drop-after': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex < index,
+                    }"
+                    draggable="true"
+                    @dragstart="onDragStart(index, $event)"
+                    @dragover="onDragOver(index, $event)"
+                    @dragleave="onDragLeave(index, $event)"
+                    @drop="onDrop(index, $event)"
+                    @dragend="onDragEnd"
+                  >
+                    <i class="pi pi-bars drag-handle"></i>
+                    <Checkbox
+                      :model-value="col.visible !== false"
+                      :binary="true"
+                      @update:model-value="toggleVisibility(index)"
+                    />
+                    <span class="column-name">{{ col.header }}</span>
+                    <Checkbox
+                      v-if="col.total !== undefined"
+                      :model-value="col.total !== undefined"
+                      :binary="true"
+                      @update:model-value="toggleTotal(index)"
+                    />
+                    <span v-if="col.total !== undefined" class="total-label">{{ $t("tables.views.total") }}</span>
+                    <!-- Sort toggle -->
+                    <Button
+                      :icon="
+                        localSortField !== col.field
+                          ? 'pi pi-sort'
+                          : localSortOrder === 1
+                            ? 'pi pi-sort-amount-up'
+                            : 'pi pi-sort-amount-down'
+                      "
+                      :severity="localSortField === col.field ? 'primary' : 'secondary'"
+                      size="small"
+                      rounded
+                      text
+                      :aria-label="
+                        localSortField !== col.field
+                          ? $t('tables.views.noSort')
+                          : localSortOrder === 1
+                            ? $t('tables.views.ascending')
+                            : $t('tables.views.descending')
+                      "
+                      v-tooltip.top="
+                        localSortField !== col.field
+                          ? $t('tables.views.noSort')
+                          : localSortOrder === 1
+                            ? $t('tables.views.ascending')
+                            : $t('tables.views.descending')
+                      "
+                      @click.stop="cycleSortForColumn(col.field)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabPanel>
+          <TabPanel value="card">
+            <div class="card-config">
+              <p class="card-config__status" role="status">
+                <span>{{
+                  localCard
+                    ? $t("tables.views.card.customized")
+                    : $t("tables.views.card.usingScreenDefault")
+                }}</span>
+                <Button
+                  :label="$t('tables.views.card.resetToScreenDefault')"
+                  icon="pi pi-undo"
+                  size="small"
+                  text
+                  :disabled="!localCard"
+                  @click="resetCardToScreenDefault"
+                />
+              </p>
+
+              <div class="card-config__fields">
+                <div
+                  v-for="item in singleCardSlots"
+                  :key="item.slot"
+                  class="card-config__field"
+                >
+                  <label :for="`card-slot-${item.slot}`">{{ item.label }}</label>
+                  <Select
+                    :input-id="`card-slot-${item.slot}`"
+                    :model-value="resolvedCard[item.slot]"
+                    :options="cardColumnOptions"
+                    option-label="label"
+                    option-value="value"
+                    :show-clear="item.clearable"
+                    :placeholder="$t('tables.views.card.none')"
+                    size="small"
+                    class="w-full"
+                    @update:model-value="updateCardSlot(item.slot, $event)"
+                  />
+                </div>
+                <div class="card-config__field card-config__field--wide">
+                  <label for="card-slot-meta">{{ $t("tables.views.card.metaFields") }}</label>
+                  <MultiSelect
+                    input-id="card-slot-meta"
+                    :model-value="resolvedCard.meta"
+                    :options="cardColumnOptions"
+                    option-label="label"
+                    option-value="value"
+                    :selection-limit="CARD_META_MAX"
+                    :show-toggle-all="false"
+                    :placeholder="$t('tables.views.card.none')"
+                    display="chip"
+                    size="small"
+                    class="w-full"
+                    @update:model-value="updateCardSlot('meta', $event)"
+                  />
+                  <small class="card-config__hint">{{
+                    $t("tables.views.card.metaHint", { max: CARD_META_MAX })
+                  }}</small>
+                </div>
+              </div>
+
+              <div class="card-config__preview">
+                <span id="card-config-preview-label" class="card-config__label">{{
+                  $t("tables.views.card.preview")
+                }}</span>
+                <TableCardList
+                  v-if="previewItem"
+                  aria-labelledby="card-config-preview-label"
+                  :items="[previewItem]"
+                  :columns="cardColumns"
+                  :layout="resolvedCard"
+                  :interactive="false"
+                />
+                <p v-else class="card-config__hint">
+                  {{ $t("tables.views.card.previewEmpty") }}
+                </p>
+              </div>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       <!-- Bottom: Create new view -->
       <div class="create-view-section">
@@ -896,6 +1055,68 @@ function buildViewConfig(): string {
 .column-name {
   flex: 1;
   font-size: 0.875rem;
+}
+
+.columns-tab,
+.card-config {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-config__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.card-config__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.card-config__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.card-config__field--wide {
+  grid-column: 1 / -1;
+}
+
+.card-config__field label,
+.card-config__label {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+}
+
+.card-config__hint {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.8571rem;
+}
+
+.card-config__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.card-config__preview :deep(.table-cards__list) {
+  padding: 0;
+}
+
+@media (max-width: 767.98px) {
+  .card-config__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .total-label {

@@ -21,7 +21,7 @@ Use current domain code as the template. Do not paste generic screens.
 2. Extend `BaseService<T>` only for conventional CRUD. Use `apiClient` directly for custom endpoints following a current service analogue.
 3. Add a Pinia store only for state shared across the flow. Preserve the module's naming and refresh behavior.
 4. Build list/detail/forms with Composition API and typed props/emits.
-5. Prefer internal `Table.vue` for list views only when it supports every required behavior. Load `migrate-datatable-to-table` for an existing raw DataTable.
+5. Prefer internal `Table.vue` for list views only when it supports every required behavior. Load `migrate-datatable-to-table` for an existing raw DataTable. Give a list view with a `page` a `cardLayout` next to its columns so phones show a meaningful card (identifier as title, status as badge, the key amount or date as trailing).
 6. Reuse the feature's validation framework and PrimeVue 4 component APIs.
 7. Add lazy routes and required route metadata using the domain's current pattern.
 8. Add every user-facing key to `ca`, `es`, and `en`. Do not introduce literal Catalan UI.

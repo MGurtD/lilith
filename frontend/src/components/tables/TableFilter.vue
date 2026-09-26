@@ -654,7 +654,7 @@ const tableFilterClassName = computed(() => ({
   margin-left: auto;
 }
 
-.table-filter-compact__create {
+.table-filter-compact__create.p-button.p-button-icon-only {
   width: 44px;
   height: 44px;
 }

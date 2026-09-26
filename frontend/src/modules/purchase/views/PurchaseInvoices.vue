@@ -7,6 +7,7 @@
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="PurchaseInvoices"
+    :card-layout="cardLayout"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sortMode="multiple"
@@ -26,7 +27,11 @@
 </template>
 <script setup lang="ts">
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -114,6 +119,15 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%; text-align: right",
   },
 ]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierId",
+  badge: "statusId",
+  trailing: "netAmount",
+  meta: ["purchaseInvoiceDate", "dueDate", "supplierNumber"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

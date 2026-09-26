@@ -3,7 +3,11 @@ import { UserTableView } from "../types";
 import AppServices from "../services";
 import { useStore } from "./index";
 import { getNewUuid } from "../utils/functions";
-import type { Column, Aggregation } from "@/components/tables/types";
+import type {
+  Column,
+  Aggregation,
+  CardLayout,
+} from "@/components/tables/types";
 import { hydrateFilter } from "../utils/filter-hydrate";
 
 // Module-level cache for in-flight EnsureDefault promises. Keyed by
@@ -28,6 +32,8 @@ interface ViewConfig {
   columns: ColumnConfig[];
   filters?: Record<string, unknown>;
   sort?: SortConfig;
+  /** Phone card slots; absent means the screen's default card. */
+  card?: CardLayout;
 }
 
 export const useUserTableViewStore = defineStore("userTableViewStore", {
@@ -320,6 +326,20 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
     },
 
     /**
+     * Apply a saved view's phone card configuration.
+     * Returns null when the view keeps the screen's default card.
+     */
+    applyCardConfig(view: UserTableView): CardLayout | null {
+      if (!view || !view.viewConfig) return null;
+      try {
+        const config: ViewConfig = JSON.parse(view.viewConfig);
+        return config.card ?? null;
+      } catch {
+        return null;
+      }
+    },
+
+    /**
      * Create a new view model for saving
      */
     createNewView(
@@ -329,7 +349,8 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       columns: Column[],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       filterValues?: any,
-      sort?: SortConfig
+      sort?: SortConfig,
+      card?: CardLayout | null
     ): UserTableView {
       // Build column config from current column state
       const columnConfig: ColumnConfig[] = columns
@@ -349,6 +370,9 @@ export const useUserTableViewStore = defineStore("userTableViewStore", {
       }
       if (sort) {
         viewConfig.sort = sort;
+      }
+      if (card) {
+        viewConfig.card = card;
       }
 
       return {
