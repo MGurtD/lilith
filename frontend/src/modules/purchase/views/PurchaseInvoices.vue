@@ -20,6 +20,17 @@
     @delete="deletePurchaseInvoice"
     @row-click="editPurchaseInvoice"
   >
+    <template #action-prepend>
+      <Button
+        v-tooltip.bottom="t('purchase.purchaseInvoices.importPdf')"
+        :aria-label="t('purchase.purchaseInvoices.importPdf')"
+        icon="pi pi-file-pdf"
+        size="small"
+        severity="secondary"
+        outlined
+        @click="router.push({ name: 'PurchaseInvoiceImport' })"
+      />
+    </template>
     <template #filter-supplierId="{ value, update }">
       <DropdownSupplier size="small" label="" :model-value="value" @update:model-value="update" />
     </template>

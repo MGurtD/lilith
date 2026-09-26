@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
 import PurchaseService from "../services";
 import {
+  IngestPurchaseInvoiceResponse,
   PurchaseInvoice,
   PurchaseInvoiceImport,
   PurchaseInvoiceUpdateStatues,
   PurchaseInvoiceDueDate,
 } from "../types";
+import { getNewUuid } from "@/utils/functions";
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -40,6 +42,32 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceDueDates: [],
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
+    },
+    // Prefills a draft PurchaseInvoice from an ingestion result. Supplier and
+    // taxes come resolved from the backend; unresolved ones stay empty.
+    setFromIngestion(payload: IngestPurchaseInvoiceResponse) {
+      const id = getNewUuid();
+      this.setNewPurchaseInvoice(id);
+      if (!this.purchaseInvoice) return undefined;
+
+      this.purchaseInvoice.supplierId = payload.supplierId ?? "";
+      this.purchaseInvoice.supplierNumber = payload.invoiceNumber ?? "--";
+      if (payload.issueDate) {
+        this.purchaseInvoice.purchaseInvoiceDate = new Date(payload.issueDate);
+      }
+      this.purchaseInvoice.extraTaxPercentatge = payload.extraTaxPercentatge ?? 0;
+      this.purchaseInvoice.purchaseInvoiceImports = payload.taxBreakdown.map(
+        (row): PurchaseInvoiceImport => ({
+          id: getNewUuid(),
+          taxId: row.taxId ?? "",
+          baseAmount: row.baseAmount,
+          taxAmount: row.taxAmount,
+          netAmount: row.baseAmount + row.taxAmount,
+          purchaseInvoiceId: id,
+        }),
+      );
+
+      return this.purchaseInvoice;
     },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =

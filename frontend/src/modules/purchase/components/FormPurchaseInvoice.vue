@@ -453,7 +453,15 @@ const getSupplierId = (): string =>
     props.purchaseInvoice.supplierId,
   );
 
-defineExpose({ submitForm, calcAmounts, getSupplierId });
+// Skips the mount delay so importers can recompute totals right after
+// pre-filling purchaseInvoiceImports.
+const calcAmountsNow = (): Promise<void> => {
+  if (mountTimer !== undefined) clearTimeout(mountTimer);
+  calculationsReady = true;
+  return calculateAmounts();
+};
+
+defineExpose({ submitForm, calcAmounts, calcAmountsNow, getSupplierId });
 </script>
 
 <template>

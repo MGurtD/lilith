@@ -2002,6 +2002,7 @@ const es = {
     },
     purchaseInvoices: {
       title: "Facturas de compra",
+      importPdf: "Importar factura (PDF)",
       filters: { period: "Período", supplier: "Proveedor", paymentMethod: "Método de pago", accountNumber: "Número de cuenta", dueDate: "Vencimiento" },
       placeholders: { selectPeriod: "Selecciona un período" },
       columns: { number: "Número", date: "Fecha", supplier: "Proveedor", supplierInvoiceNumber: "N.º fra. proveedor", status: "Estado", dueDate: "Vencimiento", amount: "Importe" },

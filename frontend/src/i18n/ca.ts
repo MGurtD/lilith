@@ -2061,6 +2061,7 @@ const ca = {
     },
     purchaseInvoices: {
       title: "Factures de compra",
+      importPdf: "Importar factura (PDF)",
       filters: { period: "Període", supplier: "Proveïdor", paymentMethod: "Mètode de pagament", accountNumber: "Número de compte", dueDate: "Venciment" },
       placeholders: { selectPeriod: "Selecciona un període" },
       columns: { number: "Número", date: "Data", supplier: "Proveïdor", supplierInvoiceNumber: "Núm. fra. proveïdor", status: "Estat", dueDate: "Venciment", amount: "Import" },

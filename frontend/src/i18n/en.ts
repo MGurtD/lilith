@@ -2035,6 +2035,7 @@ const en = {
     },
     purchaseInvoices: {
       title: "Purchase invoices",
+      importPdf: "Import invoice (PDF)",
       filters: { period: "Period", supplier: "Supplier", paymentMethod: "Payment method", accountNumber: "Account number", dueDate: "Due date" },
       placeholders: { selectPeriod: "Select a period" },
       columns: { number: "Number", date: "Date", supplier: "Supplier", supplierInvoiceNumber: "Supplier invoice no.", status: "Status", dueDate: "Due date", amount: "Amount" },
