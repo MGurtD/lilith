@@ -317,8 +317,8 @@ watch(
 
   :deep(.menu-translation-matrix-dialog) {
     width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     margin: 0;
     border-radius: 0;
   }

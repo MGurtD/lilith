@@ -160,8 +160,10 @@ const logoutOperator = () => {
     <HelpDrawer />
     <MenuSearchDialog />
     <main class="app__view" :class="{ collapsed: store.sidebar.collapsed }">
-      <ScrollPanel style="height: calc(100vh - 5rem)">
-        <RouterView />
+      <ScrollPanel class="app__scroll">
+        <div class="app__content">
+          <RouterView />
+        </div>
       </ScrollPanel>
     </main>
   </div>
@@ -193,6 +195,19 @@ const logoutOperator = () => {
   padding: 1rem;
   width: calc(100vw - var(--side-bar-width));
   transition: all 0.3s ease-in-out;
+}
+
+/* Only this panel scrolls, never the page, so mobile Chrome keeps its URL
+   bar: dvh is the height actually visible, where vh would assume the bar
+   hidden and push the end of the content below the screen. */
+.app__scroll {
+  height: calc(100dvh - 5rem);
+}
+
+/* Room above Android's gesture bar and the iOS home indicator, which the
+   page draws under (viewport-fit=cover). */
+.app__content {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .collapsed {

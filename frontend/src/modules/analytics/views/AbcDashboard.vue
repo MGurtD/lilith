@@ -258,7 +258,7 @@ onMounted(async () => {
   min-width: 20rem;
 }
 .abc-chart {
-  height: calc(100vh - var(--top-panel-height) - 12rem);
+  height: calc(100dvh - var(--top-panel-height) - 12rem);
   min-height: 22rem;
 }
 .abc-legend {

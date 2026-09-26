@@ -202,7 +202,7 @@ const onSubmit = async () => {
 .clockin {
   display: grid;
   grid-template-columns: minmax(0, 29rem) minmax(0, 1fr);
-  min-height: calc(100vh - var(--top-panel-height) - 2rem);
+  min-height: calc(100dvh - var(--top-panel-height) - 2rem);
   border: 1px solid var(--p-surface-200);
   border-radius: var(--p-border-radius-md);
   overflow: hidden;

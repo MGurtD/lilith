@@ -90,7 +90,7 @@ onUnmounted(() => clearInterval(timer));
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  min-height: calc(100vh - var(--top-panel-height) - 2rem);
+  min-height: calc(100dvh - var(--top-panel-height) - 2rem);
 }
 
 .home__welcome {

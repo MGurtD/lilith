@@ -541,7 +541,7 @@ watch(locale, () => {
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--top-panel-height) - 10rem);
+  height: calc(100dvh - var(--top-panel-height) - 10rem);
 }
 .chart-area {
   flex: 1;
@@ -576,7 +576,7 @@ watch(locale, () => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    height: calc(100vh - var(--top-panel-height) - 10rem);
+    height: calc(100dvh - var(--top-panel-height) - 10rem);
   }
 
   .dashboard-filter {

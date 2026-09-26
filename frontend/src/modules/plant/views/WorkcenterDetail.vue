@@ -747,7 +747,7 @@ const handlePhaseUnloaded = async (
 .workcenter-detail {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--top-panel-height) - 1rem);
+  height: calc(100dvh - var(--top-panel-height) - 1rem);
   overflow: hidden;
 }
 

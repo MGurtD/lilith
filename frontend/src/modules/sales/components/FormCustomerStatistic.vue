@@ -213,7 +213,7 @@ const chartOptions = {
 .chart-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 350px);
+  height: calc(100dvh - 350px);
   min-height: 400px;
 }
 
@@ -250,7 +250,7 @@ const chartOptions = {
   }
 
   .chart-container {
-    height: calc(100vh - 450px);
+    height: calc(100dvh - 450px);
   }
 }
 
@@ -274,7 +274,7 @@ const chartOptions = {
   }
 
   .chart-container {
-    height: calc(100vh - 600px);
+    height: calc(100dvh - 600px);
   }
 }
 </style>
