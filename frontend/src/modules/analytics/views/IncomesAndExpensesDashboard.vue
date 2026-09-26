@@ -2,7 +2,7 @@
   <div class="dashboard-filter">
     <div class="dashboard-filter-left">
       <TableFilter
-        :config="[]"
+        :config="filterConfig"
         v-model="filter"
         :show-title="false"
         :show-filter-action="false"
@@ -11,26 +11,7 @@
         :body-width="filterBodyWidth"
         embedded
         @clear="clearFilter"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">
-              {{ t("analytics.cashflow.filters.period") }}
-            </label>
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('analytics.cashflow.filters.periodPlaceholder')"
-              showIcon
-              size="small"
-              class="w-full"
-            />
-          </div>
-        </template>
-      </TableFilter>
+      />
     </div>
     <div class="dashboard-kpis">
       <div class="kpi-card">
@@ -133,6 +114,7 @@ import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import TableFilter, {
   type FilterBodyWidth,
+  type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
@@ -161,6 +143,15 @@ const filter = ref({
     Array<Date> | undefined,
   consolidatedBy: undefined as string | undefined,
 });
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("analytics.cashflow.filters.period"),
+    type: "date-range",
+    placeholder: t("analytics.cashflow.filters.periodPlaceholder"),
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "28rem",

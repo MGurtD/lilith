@@ -25,6 +25,7 @@ Never rely on a static feature matrix. Inspect the current component and current
 
 - Use `crud-list` for a CRUD listing when its current behavior matches that purpose. Use another existing preset when it is a closer fit; override only real differences.
 - Define typed, locale-reactive column and filter configuration using current APIs.
+- Declare every filter in the `filterConfig` computed, the single source of truth for fields, labels and readable values. Inputs that need their own component (e.g. `DropdownSupplier`) are `type: "slot"` entries rendered in a `#filter-{key}="{ value, update }"` slot; give id-like filters a `valueLabel`. `#prepend` is only for content that is not a filter, such as a title.
 - Keep list titles and create actions in the table's integrated header when the current API supports them. Prefer the standard create event over a separate floating button.
 - Do not use a filter slot merely as layout without checking its side effects. A title-only header must not accidentally display apply or clear actions; extend the base API rather than hiding unintended controls locally when necessary.
 - Use the table's delete event and `canDelete` predicate instead of inspecting click-target class names when those APIs preserve the behavior.
@@ -41,12 +42,12 @@ Never rely on a static feature matrix. Inspect the current component and current
 - Confirm which specialized column types invoke resolvers. Boolean and progress columns currently have dedicated rendering paths; extend the shared component or keep a slot if they need calculated values.
 - Replace manual footer reductions and footer slots with `total` and `totalFormat` when the total is a supported aggregation over the table's actual `items`. Preserve labels and currency/date formatting through `totalFormat`.
 - Preserve numeric alignment in both body and footer. If the shared footer does not inherit column styles, fix that globally rather than adding repeated local footer CSS.
-- Keep lookup resolvers distinct from filter-value resolvers. Calculated display resolvers should not automatically format persisted filter values unless that behavior is explicitly supported.
+- Keep column resolvers distinct from a filter's `valueLabel`. A filter's readable value is declared on its own `filterConfig` entry, even when it reuses the same lookup function as a column.
 
 ## Shared Fixes
 
 - Fix layout defects in the owning shared component when the expected behavior is global; do not add per-view CSS for a base-component defect.
-- For integrated-header alignment, preserve filter field wrappers at their intended bottom alignment while vertically centering simple `prepend` content such as titles.
+- Filter layout belongs to `TableFilter.vue`: fields align to the bottom of the header row and `prepend` titles are vertically centred there. Up to 1024px it switches to a filter button, applied-filter chips and a sheet; do not add per-view filter CSS.
 - Keep shared API defaults backward compatible for existing consumers. New sizing or layout options should retain the previous visual value unless explicitly overridden.
 - When broadening a shared callback such as `resolver`, preserve existing lookup call sites and narrow `unknown` values before formatting.
 

@@ -3,9 +3,7 @@
     preset="crud-list"
     :columns="columns"
     :items="receiptsStore.receipts ?? []"
-    :filter-config="[]"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="Receipts"
@@ -22,31 +20,8 @@
     @delete="deleteReceipt"
     @row-click="editReceipt"
   >
-    <template #prepend>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("purchase.receipts.filters.period") }}</label
-        >
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('purchase.receipts.placeholders.selectPeriod')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("purchase.receipts.filters.supplier") }}</label
-        >
-        <DropdownSupplier label="" v-model="filter.supplierId" />
-      </div>
+    <template #filter-supplierId="{ value, update }">
+      <DropdownSupplier size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
   </Table>
 
@@ -70,10 +45,12 @@ import {
   ColumnType,
   type Column,
 } from "../../../components/tables/types";
-import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -137,14 +114,20 @@ const columns = computed<Column[]>(() => [
   },
 ]);
 
-const filterMetadata = computed(() =>
-  createTableViewFilterMetadata(columns.value, {
-    labels: {
-      dates: t("purchase.receipts.filters.period"),
-      supplierId: t("purchase.receipts.filters.supplier"),
-    },
-  }),
-);
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("purchase.receipts.filters.period"),
+    type: "date-range",
+    placeholder: t("purchase.receipts.placeholders.selectPeriod"),
+  },
+  {
+    key: "supplierId",
+    label: t("purchase.receipts.filters.supplier"),
+    type: "slot",
+    valueLabel: (value) => getSupplierNameById(String(value)),
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 

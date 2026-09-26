@@ -76,8 +76,6 @@ const props = withDefaults(
     columns: Column[];
     items: readonly any[];
     filterConfig?: FilterConfig[];
-    filterLabels?: Record<string, string>;
-    filterValueResolvers?: Record<string, (value: unknown) => string>;
     filterValues?: any;
     filterBodyWidth?: FilterBodyWidth;
     showFilters?: boolean;
@@ -595,17 +593,10 @@ function formatTotal(col: Column): string {
 
 // --- Filter slot helpers ---
 
-function isFilterSlot(name: string | number | symbol): boolean {
-  return (
-    typeof name === "string" &&
-    name.startsWith("filter-") &&
-    name !== "filter-append"
-  );
-}
-
-function filterSlotName(name: string | number | symbol): string {
-  return typeof name === "string" ? name.slice(7) : "";
-}
+// Slots named filter-{key} render the inputs of `type: "slot"` filters.
+const filterSlotNames = computed(() =>
+  Object.keys(slots).filter((name) => name.startsWith("filter-")),
+);
 
 // Empty-value guard: prevents Date/DateTime/Time columns from rendering
 // the epoch (01/01/1970) when the field is null/undefined/empty string.
@@ -724,6 +715,7 @@ function resolveBooleanValue(
         :config="filterConfig"
         :model-value="filterValues"
         :body-width="filterBodyWidth"
+        :result-count="items.length"
         :show-title="false"
         :show-action-labels="false"
         :show-filter-action="showFilterAction ?? showFilterActions"
@@ -738,9 +730,6 @@ function resolveBooleanValue(
         <!-- Forward #prepend and #append to TableFilter -->
         <template v-if="slots.prepend" #prepend>
           <slot name="prepend" />
-        </template>
-        <template v-if="slots['filter-append']" #filter-append>
-          <slot name="filter-append" />
         </template>
         <template v-if="slots.append" #append>
           <slot name="append" />
@@ -759,15 +748,13 @@ function resolveBooleanValue(
             @click="viewConfigVisible = true"
           />
         </template>
-        <!-- Forward #filter-{name} slots -->
+        <!-- Forward the #filter-{key} slots of type "slot" filter fields -->
         <template
-          v-for="(_, name) in slots"
-          :key="String(name)"
-          #[filterSlotName(name)]
+          v-for="name in filterSlotNames"
+          :key="name"
+          #[name]="slotProps"
         >
-          <template v-if="isFilterSlot(name)">
-            <slot :name="name" />
-          </template>
+          <slot :name="name" v-bind="slotProps" />
         </template>
       </TableFilter>
     </template>
@@ -966,8 +953,6 @@ function resolveBooleanValue(
     :filter-values="filterValues"
     :active-sort-config="activeSortConfig"
     :filter-config="filterConfig"
-    :filter-labels="filterLabels"
-    :filter-value-resolvers="filterValueResolvers"
     @apply-config="onApplyViewConfig"
     @update:sort-config="onSortConfigUpdate"
     @update:filter-values="emit('update:filterValues', $event)"

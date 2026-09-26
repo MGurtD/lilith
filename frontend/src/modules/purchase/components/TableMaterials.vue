@@ -11,8 +11,9 @@
   >
     <template #header>
       <TableFilter
-        :config="[]"
+        :config="filterConfig"
         :model-value="filter"
+        @update:model-value="Object.assign(filter, $event)"
         :show-title="false"
         :show-action-labels="false"
         :body-width="filterBodyWidth"
@@ -20,37 +21,23 @@
         @clear="cleanFilter"
         @create="createButtonClick"
       >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >{{ t("purchase.materials.fields.category") }}</label
-            >
-            <DropdownReferenceCategory
-              label=""
-              v-model="filter.referenceCategory"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label">{{ t("purchase.materials.fields.code") }}</label>
-            <BaseInput v-model="filter.code" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">{{ t("purchase.materials.fields.type") }}</label>
-            <DropdownReferenceTypes
-              label=""
-              v-model="filter.referenceTypeId"
-              :disabled="
-                filter.referenceCategory !== ReferenceCategoryEnum.MATERIAL
-              "
-              @change="cleanFilter"
-            />
-          </div>
+        <template #filter-referenceCategory="{ value, update }">
+          <DropdownReferenceCategory size="small"
+            label=""
+            :model-value="value"
+            @update:model-value="update"
+          />
+        </template>
+        <template #filter-referenceTypeId="{ value, update }">
+          <DropdownReferenceTypes size="small"
+            label=""
+            :model-value="value"
+            :disabled="
+              filter.referenceCategory !== ReferenceCategoryEnum.MATERIAL
+            "
+            @update:model-value="update"
+            @change="cleanFilter"
+          />
         </template>
       </TableFilter>
     </template>
@@ -117,9 +104,11 @@
 
 <script setup lang="ts">
 import DropdownReferenceTypes from "../../../modules/shared/components/DropdownReferenceType.vue";
-import BaseInput from "../../../components/BaseInput.vue";
 import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { computed, onMounted, onUnmounted, Ref, ref } from "vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import { PrimeIcons } from "@primevue/core/api";
@@ -139,6 +128,30 @@ const plantModelStore = usePlantModelStore();
 const { t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "referenceCategory",
+    label: t("purchase.materials.fields.category"),
+    type: "slot",
+    valueLabel: (value) =>
+      referenceStore.referenceCategories.find(
+        (category) => category.code === value,
+      )?.description ?? "",
+  },
+  {
+    key: "code",
+    label: t("purchase.materials.fields.code"),
+    type: "text",
+    size: "sm",
+  },
+  {
+    key: "referenceTypeId",
+    label: t("purchase.materials.fields.type"),
+    type: "slot",
+    valueLabel: (value) => getTypeDescription(String(value)),
+  },
+]);
 
 const props = defineProps<{
   references: Array<Reference> | undefined;

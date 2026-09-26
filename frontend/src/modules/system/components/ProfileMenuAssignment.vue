@@ -5,6 +5,8 @@ import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useProfileMenuSelectionStore } from "@/modules/system/store/profile-menu-selection";
 import { useStore } from "@/store";
+import TableFilter from "@/components/tables/TableFilter.vue";
+import type { FilterConfig } from "@/components/tables/TableFilter.vue";
 
 const props = defineProps<{ profileId: string }>();
 
@@ -15,15 +17,24 @@ const selectionStore = useProfileMenuSelectionStore();
 const appStore = useStore();
 
 // Search filter
-const searchFilter = ref("");
+const filter = ref({ search: "" });
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "search",
+    label: t("common.search"),
+    type: "text",
+    placeholder: t("common.search"),
+  },
+]);
 
 // Computed properties derivadas del store (sin estado local)
 const loading = computed(() => selectionStore.loading);
 
 const filteredRows = computed(() => {
-  if (!searchFilter.value) return selectionStore.rows;
+  if (!filter.value.search) return selectionStore.rows;
 
-  const searchLower = searchFilter.value.toLowerCase();
+  const searchLower = filter.value.search.toLowerCase();
   return selectionStore.rows.filter(
     (row) =>
       row.title.toLowerCase().includes(searchLower) ||
@@ -103,30 +114,25 @@ onMounted(async () => {
       "
     >
       <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
+        <TableFilter
+          v-model="filter"
+          :config="filterConfig"
+          embedded
+          :show-title="false"
+          :show-action-labels="false"
+          :show-create="false"
+          :show-filter-action="false"
+          :show-clear-action="false"
         >
-          <div class="datatable-filter-1">
-            <IconField iconPosition="left">
-              <InputIcon>
-                <i class="pi pi-search" />
-              </InputIcon>
-              <InputText
-                v-model="searchFilter"
-                :placeholder="t('common.search')"
-                class="w-full"
-              />
-            </IconField>
-          </div>
-          <div class="datatable-buttons">
+          <template #append>
             <Button
               size="small"
               icon="pi pi-link"
-            :label="t('common.assign')"
+              :label="t('common.assign')"
               @click="saveSelection"
             />
-          </div>
-        </div>
+          </template>
+        </TableFilter>
       </template>
 
       <Column selectionMode="multiple" headerStyle="width: 3rem" />

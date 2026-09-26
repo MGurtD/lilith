@@ -2,10 +2,8 @@
   <Table
     :items="filteredData"
     :columns="columns"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
-    :filter-labels="filterLabels"
-    :filter-value-resolvers="filterValueResolvers"
     :filter-body-width="filterBodyWidth"
     :show-filter-action="false"
     page="Workmasters"
@@ -19,38 +17,21 @@
     @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          pt("Client")
-        }}</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          pt("Referència")
-        }}</label>
-        <DropdownReference
-          label=""
-          v-model="filter.referenceId"
-          :customer-id="filter.customerId"
-          :fullName="true"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          pt("lastUpdated")
-        }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :showIcon="true"
-          class="w-full"
-          :placeholder="pt('Selecciona periode')"
-          size="small"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
+    </template>
+    <template #filter-referenceId="{ value, update }">
+      <DropdownReference size="small"
+        label=""
+        :model-value="value"
+        :customer-id="filter.customerId"
+        :fullName="true"
+        @update:model-value="update"
+      />
     </template>
     <template #body-copyAction="{ data }">
       <i
@@ -242,7 +223,10 @@ import {
 } from "@/components/forms/value-utils";
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
@@ -275,22 +259,32 @@ const customersStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
-const filterLabels = computed<Record<string, string>>(() => ({
-  customerId: pt("Client"),
-  referenceId: pt("Referència"),
-  dates: pt("lastUpdated"),
-}));
-
-const filterValueResolvers: Record<string, (value: unknown) => string> = {
-  customerId: (value) =>
-    typeof value === "string"
-      ? (customersStore.getCustomerNameById(value) ?? "")
-      : "",
-  referenceId: (value) =>
-    typeof value === "string"
-      ? (referenceStore.getFullNameById(value) ?? "")
-      : "",
-};
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "customerId",
+    label: pt("Client"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (customersStore.getCustomerNameById(value) ?? "")
+        : "",
+  },
+  {
+    key: "referenceId",
+    label: pt("Referència"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (referenceStore.getFullNameById(value) ?? "")
+        : "",
+  },
+  {
+    key: "dates",
+    label: pt("lastUpdated"),
+    type: "date-range",
+    placeholder: pt("Selecciona periode"),
+  },
+]);
 
 const columns = computed<Column[]>(() => [
   {

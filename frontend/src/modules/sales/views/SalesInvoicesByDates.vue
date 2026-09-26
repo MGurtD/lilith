@@ -18,20 +18,16 @@
     @clear="clearFilter"
     @filter="filterInvoices"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          t("common.period")
-        }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          :numberOfMonths="2"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          size="small"
-          class="w-full"
-        />
-      </div>
+    <template #filter-dates="{ value, update }">
+      <DatePicker
+        :model-value="value"
+        :numberOfMonths="2"
+        selectionMode="range"
+        dateFormat="dd/mm/yy"
+        size="small"
+        class="w-full"
+        @update:model-value="update"
+      />
     </template>
 
     <template #append>
@@ -109,6 +105,11 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "100%",
 };
 const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "slot",
+  },
   {
     key: "showManaged",
     label: t("sales.invoiceAccounting.filters.showManaged"),

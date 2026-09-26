@@ -6,8 +6,6 @@
       :columns="columns"
       :filter-config="filterConfig"
       v-model:filter-values="filter"
-      :filter-labels="filterLabels"
-      :filter-value-resolvers="filterValueResolvers"
       :filter-body-width="filterBodyWidth"
       :show-create="false"
       page="StockMovements"
@@ -21,42 +19,20 @@
       @filter="filterMovements"
       @clear="cleanFilter"
     >
-      <template #filter-append>
-        <div class="table-filter-prepend-field table-filter-prepend-field--sm">
-          <label class="filter-label table-filter-prepend-label">
-            {{ t("warehouse.fields.location") }}
-          </label>
-          <DropdownWarehousesWithLocations
-            label=""
-            v-model="filter.locationId"
-          />
-        </div>
-        <div class="table-filter-prepend-field table-filter-prepend-field--md">
-          <label class="filter-label table-filter-prepend-label">
-            {{ t("warehouse.fields.reference") }}
-          </label>
-          <DropdownReference
-            label=""
-            :fullName="true"
-            v-model="filter.referenceId"
-          />
-        </div>
-        <div class="table-filter-prepend-field table-filter-prepend-field--md">
-          <label class="filter-label table-filter-prepend-label">
-            {{ t("common.lot") }}
-          </label>
-          <Select
-            showClear
-            filter
-            :filter-fields="['code']"
-            :options="lotOptions"
-            :placeholder="t('common.lot')"
-            optionValue="id"
-            optionLabel="code"
-            class="w-full"
-            v-model="filter.lotId"
-          />
-        </div>
+      <template #filter-locationId="{ value, update }">
+        <DropdownWarehousesWithLocations size="small"
+          label=""
+          :model-value="value"
+          @update:model-value="update"
+        />
+      </template>
+      <template #filter-referenceId="{ value, update }">
+        <DropdownReference size="small"
+          label=""
+          :fullName="true"
+          :model-value="value"
+          @update:model-value="update"
+        />
       </template>
       <template #body-lotId="{ data }">
         {{ getLotCode(data.lotId) }}
@@ -134,27 +110,38 @@ const filterConfig = computed<FilterConfig[]>(() => [
     placeholder: t("warehouse.placeholders.selectPeriod"),
     size: "sm",
   },
-]);
-
-const filterLabels = computed<Record<string, string>>(() => ({
-  locationId: t("warehouse.fields.location"),
-  referenceId: t("warehouse.fields.reference"),
-  lotId: t("common.lot"),
-}));
-
-const filterValueResolvers: Record<string, (value: unknown) => string> = {
-  locationId: (value) => {
-    if (typeof value !== "string") return "";
-    for (const warehouse of warehouseStore.warehouses ?? []) {
-      const location = warehouse.locations?.find((item) => item.id === value);
-      if (location) return `${warehouse.name} - ${location.description}`;
-    }
-    return "";
+  {
+    key: "locationId",
+    label: t("warehouse.fields.location"),
+    type: "slot",
+    size: "sm",
+    valueLabel: (value) => {
+      if (typeof value !== "string") return "";
+      for (const warehouse of warehouseStore.warehouses ?? []) {
+        const location = warehouse.locations?.find((item) => item.id === value);
+        if (location) return `${warehouse.name} - ${location.description}`;
+      }
+      return "";
+    },
   },
-  referenceId: (value) =>
-    typeof value === "string" ? referenceStore.getFullNameById(value) : "",
-  lotId: (value) => (typeof value === "string" ? getLotCode(value) : ""),
-};
+  {
+    key: "referenceId",
+    label: t("warehouse.fields.reference"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string" ? referenceStore.getFullNameById(value) : "",
+  },
+  {
+    key: "lotId",
+    label: t("common.lot"),
+    type: "select",
+    options: lotOptions.value,
+    optionLabel: "code",
+    optionValue: "id",
+    placeholder: t("common.lot"),
+    valueLabel: (value) => (typeof value === "string" ? getLotCode(value) : ""),
+  },
+]);
 
 const columns = computed<Column[]>(() => [
   {

@@ -14,20 +14,22 @@
     rowHover
   >
     <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
+      <TableFilter
+        v-model="filterValues"
+        :config="filterConfig"
+        embedded
+        :show-title="false"
+        :show-action-labels="false"
+        :show-create="false"
+        :show-filter-action="false"
+        :show-clear-action="false"
       >
-        <label class="block text-900 text-xl font-semibold"
-          >{{ pt("Seguiment de marges i temps de producció") }}</label
-        >
-        <IconField iconPosition="left">
-          <InputIcon class="pi pi-search" />
-          <InputText
-            v-model="filters['global'].value"
-            :placeholder="pt('Cercar OF o referència')"
-          />
-        </IconField>
-      </div>
+        <template #prepend>
+          <label class="block text-900 text-xl font-semibold"
+            >{{ pt("Seguiment de marges i temps de producció") }}</label
+          >
+        </template>
+      </TableFilter>
     </template>
     <template #empty>{{ t("production.detail.noWorkordersInProduction") }}</template>
 
@@ -118,7 +120,7 @@
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
@@ -126,6 +128,8 @@ import { FilterMatchMode } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 
 import { useStore } from "@/store";
+import TableFilter from "@/components/tables/TableFilter.vue";
+import type { FilterConfig } from "@/components/tables/TableFilter.vue";
 import { formatCurrency } from "../../../utils/functions";
 import { WorkOrderDashboardItem } from "../types";
 import { WorkOrderService } from "../services/workorder.service";
@@ -141,6 +145,25 @@ const loading = ref(false);
 
 const filters = ref({
   global: { value: null as string | null, matchMode: FilterMatchMode.CONTAINS },
+});
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "global",
+    label: t("common.search"),
+    type: "text",
+    placeholder: pt("Cercar OF o referència"),
+    size: "lg",
+  },
+]);
+
+// The filter bar edits the DataTable's global filter directly, so the table
+// keeps filtering as the user types.
+const filterValues = computed({
+  get: () => ({ global: filters.value.global.value }),
+  set: (values: { global?: string | null }) => {
+    filters.value.global.value = values.global ?? null;
+  },
 });
 
 const costBreakdown = (data: WorkOrderDashboardItem) =>

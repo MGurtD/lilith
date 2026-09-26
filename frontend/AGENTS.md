@@ -74,6 +74,7 @@ There is no frontend unit/component test framework and no lint script. Smoke and
 ## UI And Routing
 
 - Prefer shared components such as `Table.vue` when they preserve required behavior. Audit unsupported table features before replacing raw PrimeVue `DataTable`.
+- Table filters: `components/tables/TableFilter.vue` is the only filter bar. Declare every filter in its config (`filterConfig` on `Table.vue`, `config` on `TableFilter`) as a locale-reactive computed; custom inputs use `type: "slot"` with a `#filter-{key}` slot, and id-like values get a `valueLabel`. Never place filter fields in `#prepend`, which is for non-filter content such as a title.
 - PrimeVue components are globally registered unless the local code demonstrates otherwise.
 - Use PrimeVue components rather than raw controls when an established equivalent exists.
 - Lazy-load route views. Follow the route naming, metadata, and authorization pattern of the current domain.

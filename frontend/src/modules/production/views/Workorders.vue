@@ -4,8 +4,6 @@
     :columns="columns"
     :filter-config="filterConfig"
     v-model:filter-values="filter"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     :filter-body-width="filterBodyWidth"
     page="Workorders"
     preset="crud-list"
@@ -17,24 +15,7 @@
     @create="createButtonClick"
     @delete="deleteButton"
     @row-click="editRow"
-  >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{
-          pt("Període")
-        }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="pt('Seleccioni un període')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-    </template>
-  </Table>
+  />
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -53,7 +34,6 @@
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import { createTableViewFilterMetadata } from "@/components/tables/table-view-filter-metadata";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -143,26 +123,6 @@ const columns = computed<Column[]>(() => [
   },
 ]);
 
-const filterMetadata = computed(() =>
-  createTableViewFilterMetadata(columns.value, {
-    labels: {
-      dates: pt("Període"),
-      customerId: pt("Client"),
-      referenceId: pt("Referència"),
-    },
-    valueResolvers: {
-      customerId: (value) =>
-        typeof value === "string"
-          ? (customersStore.getCustomerNameById(value) ?? "")
-          : "",
-      referenceId: (value) =>
-        typeof value === "string"
-          ? (referenceStore.getFullNameById(value) ?? "")
-          : "",
-    },
-  }),
-);
-
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   referenceId: undefined,
@@ -172,6 +132,12 @@ const filter = ref({
 });
 
 const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: pt("Període"),
+    type: "date-range",
+    placeholder: pt("Seleccioni un període"),
+  },
   {
     key: "customerId",
     label: pt("Client"),

@@ -4,8 +4,6 @@
     :columns="columns"
     :filter-config="filterConfig"
     v-model:filter-values="filter"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     :filter-body-width="filterBodyWidth"
     page="ProductionParts"
     class="p-datatable-sm small-datatable"
@@ -44,7 +42,6 @@
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import { createTableViewFilterMetadata } from "@/components/tables/table-view-filter-metadata";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -123,6 +120,10 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionValue: "id",
     optionLabel: "description",
     size: "md",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? plantModelStore.getWorkcenterNameById(value)
+        : "",
   },
   {
     key: "operatorId",
@@ -132,6 +133,10 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionValue: "value",
     optionLabel: "label",
     size: "md",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? plantModelStore.getOperatorNameById(value)
+        : "",
   },
   {
     key: "workorderId",
@@ -141,6 +146,11 @@ const filterConfig = computed<FilterConfig[]>(() => [
     optionValue: "id",
     optionLabel: "code",
     size: "md",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (workOrderStore.workorders?.find((item) => item.id === value)
+            ?.code ?? "")
+        : "",
   },
 ]);
 
@@ -326,19 +336,6 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
-
-const filterMetadata = computed(() =>
-  createTableViewFilterMetadata(columns.value, {
-    labels: { dates: pt("Període") },
-    valueResolvers: {
-      workorderId: (value) =>
-        typeof value === "string"
-          ? (workOrderStore.workorders?.find((item) => item.id === value)
-              ?.code ?? "")
-          : "",
-    },
-  }),
-);
 
 const productionPartRequest = ref({} as ProductionPart);
 const generateNewRequest = (): ProductionPart => {

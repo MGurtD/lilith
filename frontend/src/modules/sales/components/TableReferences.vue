@@ -3,8 +3,6 @@
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -21,23 +19,8 @@
     @delete="onDeleteRow"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t('sales.components.client') }}</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t('sales.components.dataCreacio') }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :showIcon="true"
-          class="w-full"
-          size="small"
-          :placeholder="t('sales.components.seleccionaPeriode')"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
     <template #body-cost="{ data }">
       {{ formatCurrency(data.workMasterCost) }}
@@ -56,14 +39,25 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency } from "../../../utils/functions";
-import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const { t } = useI18n();
 const customerStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
 
-const filterConfig: FilterConfig[] = [
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "customerId",
+    label: t('sales.components.client'),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+  {
+    key: "dates",
+    label: t('sales.components.dataCreacio'),
+    type: "date-range",
+    placeholder: t('sales.components.seleccionaPeriode'),
+  },
   {
     key: "code",
     label: t('sales.components.codi'),
@@ -78,7 +72,7 @@ const filterConfig: FilterConfig[] = [
     placeholder: t('sales.components.descripcio'),
     size: "md",
   },
-];
+]);
 
 const columns = ref<Column[]>([
   { field: "code", header: t('sales.components.codi'), style: "width: 10%" },
@@ -96,10 +90,6 @@ const columns = ref<Column[]>([
   { field: "cost", header: t('sales.components.cost'), style: "width: 8%" },
   { field: "isService", header: t('sales.components.servei'), columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
-
-const filterMetadata = createSalesTableViewFilterMetadata(columns.value, {
-  dateLabel: t('sales.components.dataCreacio'),
-});
 
 const filter = ref({
   code: "",
@@ -185,17 +175,3 @@ const onDeleteRow = (reference: Reference) => {
   emit("delete", reference);
 };
 </script>
-
-<style scoped>
-.filter-toolbar {
-  align-items: flex-start;
-}
-
-.filter-toolbar__actions {
-  align-self: flex-end;
-}
-
-.filter-toolbar__field--date {
-  min-width: 15rem;
-}
-</style>

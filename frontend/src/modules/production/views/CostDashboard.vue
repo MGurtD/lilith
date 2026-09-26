@@ -10,22 +10,7 @@
       :body-width="filterBodyWidth"
       embedded
       @clear="clearFilter"
-    >
-      <template #prepend>
-        <div class="table-filter-prepend-field table-filter-prepend-field--lg">
-          <label class="filter-label table-filter-prepend-label">{{ pt("Període") }}</label>
-          <DatePicker
-            v-model="filter.dates"
-            selectionMode="range"
-            dateFormat="dd/mm/yy"
-            :placeholder="pt('Selecciona període')"
-            showIcon
-            size="small"
-            class="w-full"
-          />
-        </div>
-      </template>
-    </TableFilter>
+    />
   </div>
   <Tabs value="0" class="dashboard-tabs">
     <TabList>
@@ -92,6 +77,13 @@ const filter = ref({
 });
 
 const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "dates",
+    label: pt("Període"),
+    type: "date-range",
+    placeholder: pt("Selecciona període"),
+    size: "lg",
+  },
   {
     key: "consolidatedBy",
     label: pt("Concepte"),

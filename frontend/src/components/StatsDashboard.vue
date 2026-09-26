@@ -4,7 +4,7 @@
     <div class="dashboard-filter">
       <div class="dashboard-filter-left">
         <TableFilter
-          :config="[]"
+          :config="filterConfig ?? []"
           :model-value="filterValues ?? {}"
           :show-title="false"
           :show-filter-action="true"
@@ -16,8 +16,17 @@
           @filter="emit('filter')"
           @clear="emit('clear')"
         >
-          <template #prepend>
-            <slot name="filter" />
+          <!-- Leading content that is not a filter, e.g. a title. -->
+          <template v-if="slots.prepend" #prepend>
+            <slot name="prepend" />
+          </template>
+          <!-- Forward the #filter-{key} slots of type "slot" filter fields -->
+          <template
+            v-for="name in filterSlotNames"
+            :key="name"
+            #[name]="slotProps"
+          >
+            <slot :name="name" v-bind="slotProps" />
           </template>
         </TableFilter>
       </div>
@@ -64,6 +73,7 @@
 import { computed, useSlots } from "vue";
 import TableFilter, {
   type FilterBodyWidth,
+  type FilterConfig,
 } from "@/components/tables/TableFilter.vue";
 import Table from "@/components/tables/Table.vue";
 import type { Column } from "@/components/tables/types";
@@ -80,6 +90,7 @@ withDefaults(
     columns: Column[];
     items: readonly unknown[];
     kpis?: StatKpi[];
+    filterConfig?: FilterConfig[];
     filterValues?: Record<string, any>;
     filterBodyWidth?: FilterBodyWidth;
     page?: string;
@@ -97,19 +108,26 @@ const emit = defineEmits<{
   (e: "row-click", event: DataTableRowClickEvent): void;
 }>();
 
+// `prepend` is non-filter lead content of the filter bar, `kpis` replaces the
+// KPI line, `filter-{key}` renders a `type: "slot"` filter of `filterConfig`
+// (props `{ field, value, update }`) and every other slot goes to the Table
+// (e.g. body-{field}, props `{ data, index }`).
 defineSlots<
   {
-    filter?: () => unknown;
+    prepend?: () => unknown;
     kpis?: () => unknown;
-  } & Record<string, (props: { data: any; index: number }) => unknown>
+  } & Record<string, (props: Record<string, any>) => unknown>
 >();
 
 const slots = useSlots();
-// Forward only table-facing slots; filter/kpis are consumed locally.
+const isFilterSlot = (name: string) => name.startsWith("filter-");
+// Slots named filter-{key} render the inputs of `type: "slot"` filters.
+const filterSlotNames = computed(() => Object.keys(slots).filter(isFilterSlot));
+// Forward only table-facing slots; the filter bar and KPI slots stay here.
 const tableSlots = computed(() =>
   Object.fromEntries(
     Object.entries(slots).filter(
-      ([name]) => name !== "filter" && name !== "kpis",
+      ([name]) => name !== "prepend" && name !== "kpis" && !isFilterSlot(name),
     ),
   ),
 );

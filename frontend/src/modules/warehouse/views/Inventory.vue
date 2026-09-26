@@ -14,13 +14,12 @@
     @create="newMovement"
     @clear="cleanFilter"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("warehouse.fields.location") }}
-        </label>
-        <DropdownWarehousesWithLocations label="" v-model="filter.locationId" />
-      </div>
+    <template #filter-locationId="{ value, update }">
+      <DropdownWarehousesWithLocations size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
     <template #append>
       <Button
@@ -87,6 +86,15 @@ const filter = ref({
 });
 
 const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "locationId",
+    label: t("warehouse.fields.location"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (warehouseStore.getLocationName(value) ?? "")
+        : "",
+  },
   {
     key: "referenceName",
     label: t("warehouse.fields.reference"),
