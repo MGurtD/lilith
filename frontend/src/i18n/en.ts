@@ -884,8 +884,6 @@ const en = {
         loadError: "Error loading pending invoices",
         integrateSuccess: "Invoice {number} integrated successfully",
         integrateError: "Error integrating invoice {number}",
-        bulkIntegrateSuccess: "Selected invoices integrated successfully",
-        bulkIntegrateError: "Error integrating selected invoices",
         requestsError: "Error loading invoice requests",
         integrationFailed: "Integration failed",
         unexpectedError: "An unexpected error occurred",

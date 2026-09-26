@@ -59,16 +59,6 @@ export const useLifecyclesStore = defineStore({
       } as Lifecycle;
     },
 
-    async getStatusNameById(lifecycleName: string, statusId: string) {
-      const lifecycle = await Services.Lifecycle.getByName(lifecycleName);
-
-      if (lifecycle && lifecycle.statuses.length > 0) {
-        const status = lifecycle.statuses.find((s) => s.id === statusId);
-        return status ? status.name : "";
-      }
-      return "";
-    },
-
     async fetchAll() {
       this.lifecycles = await Services.Lifecycle.getAll();
     },

@@ -750,7 +750,7 @@ const bodySlotNames = computed(() =>
     <TableFilter
       :key="clearKey"
       :config="filterConfig"
-      :model-value="filterValues"
+      :model-value="filterValues ?? {}"
       :body-width="filterBodyWidth"
       :result-count="items.length"
       :show-title="false"
