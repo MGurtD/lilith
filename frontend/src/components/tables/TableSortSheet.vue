@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { SortConfig } from "@/store/usertableview";
 import type { Column } from "./types";
@@ -31,7 +32,9 @@ function cycle(field: string) {
 
 function icon(field: string) {
   if (props.sort?.field !== field) return "pi pi-sort-alt";
-  return props.sort.order === 1 ? "pi pi-sort-amount-up" : "pi pi-sort-amount-down";
+  return props.sort.order === 1
+    ? "pi pi-sort-amount-up-alt"
+    : "pi pi-sort-amount-down";
 }
 
 function state(field: string) {
@@ -39,6 +42,37 @@ function state(field: string) {
   return props.sort.order === 1
     ? t("tables.views.ascending")
     : t("tables.views.descending");
+}
+
+// Read out after each tap, since the button's own state cycles.
+const announcement = computed(() => {
+  const col = props.columns.find((c) => c.field === props.sort?.field);
+  if (!col || !props.sort) return t("tables.sort.none");
+  return t("tables.sort.status", {
+    column: col.header,
+    direction: state(col.field),
+  });
+});
+
+// The drawer does not give focus back when it closes: return it to the
+// button that opened the sheet, as the filter sheet does.
+let opener: HTMLElement | null = null;
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      opener =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+    }
+  },
+);
+
+function restoreFocus() {
+  if (opener?.isConnected) opener.focus();
+  opener = null;
 }
 </script>
 
@@ -50,6 +84,7 @@ function state(field: string) {
     blockScroll
     class="table-sort-sheet"
     @update:visible="emit('update:visible', $event)"
+    @after-hide="restoreFocus"
   >
     <ul class="table-sort-sheet__list">
       <li v-for="col in columns" :key="col.field">
@@ -57,7 +92,6 @@ function state(field: string) {
           type="button"
           class="table-sort-sheet__option"
           :class="{ 'table-sort-sheet__option--active': sort?.field === col.field }"
-          :aria-pressed="sort?.field === col.field"
           @click="cycle(col.field)"
         >
           <span class="table-sort-sheet__label">{{ col.header }}</span>
@@ -66,10 +100,13 @@ function state(field: string) {
         </button>
       </li>
     </ul>
+    <p class="table-sort-sheet__status" aria-live="polite">
+      {{ announcement }}
+    </p>
     <template #footer>
       <Button
         :label="t('tables.filters.done')"
-        class="w-full"
+        class="table-sort-sheet__done"
         @click="emit('update:visible', false)"
       />
     </template>
@@ -102,6 +139,15 @@ function state(field: string) {
   cursor: pointer;
 }
 
+.table-sort-sheet__option:hover {
+  background: var(--p-content-hover-background);
+}
+
+.table-sort-sheet__option:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+
 .table-sort-sheet__option--active {
   border-color: var(--p-primary-color);
   color: var(--p-primary-color);
@@ -109,6 +155,22 @@ function state(field: string) {
 
 .table-sort-sheet__label {
   flex: 1;
+}
+
+/* Visually hidden; screen readers hear the new sort after each tap. */
+.table-sort-sheet__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.table-sort-sheet__done {
+  width: 100%;
+  min-height: 2.75rem;
 }
 
 .table-sort-sheet__state {

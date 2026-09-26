@@ -108,6 +108,12 @@ function rowKey(item: any, index: number | string) {
   return props.dataKey ? item?.[props.dataKey] : index;
 }
 
+// Names each card's action buttons after its title ("Delete" + "25686").
+const listId = `table-cards-${Math.random().toString(36).slice(2, 9)}`;
+function titleId(item: any) {
+  return `${listId}-${props.items.indexOf(item)}`;
+}
+
 // Same payload shape the table's row click emits, so consumers'
 // handlers (which read `event.data`) work unchanged.
 function onCardClick(originalEvent: Event, item: any) {
@@ -129,6 +135,8 @@ function onCardClick(originalEvent: Event, item: any) {
     :rows="rows"
     :sort-field="sortField"
     :sort-order="sortOrder"
+    paginator-template="PrevPageLink CurrentPageReport NextPageLink"
+    current-page-report-template="{currentPage} / {totalPages}"
     class="table-cards"
     :class="{ 'table-cards--loading': loading }"
     :aria-busy="loading || undefined"
@@ -140,18 +148,28 @@ function onCardClick(originalEvent: Event, item: any) {
     <template #list="{ items: pageItems }">
       <ul class="table-cards__list">
         <li v-for="(item, index) in pageItems" :key="rowKey(item, index)">
+          <!-- The title is the card's main action; its hit area covers the
+               whole card, while the action buttons stay separate stops. -->
           <div
             class="table-card"
             :class="{ 'table-card--interactive': interactive }"
-            :role="interactive ? 'button' : undefined"
-            :tabindex="interactive ? 0 : undefined"
-            @click="onCardClick($event, item)"
-            @keydown.enter.self="onCardClick($event, item)"
-            @keydown.space.self.prevent="onCardClick($event, item)"
           >
             <div class="table-card__body">
               <div class="table-card__top">
-                <span v-if="titleColumn" class="table-card__title">
+                <button
+                  v-if="interactive && titleColumn"
+                  :id="titleId(item)"
+                  type="button"
+                  class="table-card__title table-card__primary"
+                  @click="onCardClick($event, item)"
+                >
+                  <CardValue
+                    :col="titleColumn"
+                    :data="item"
+                    :index="items.indexOf(item)"
+                  />
+                </button>
+                <span v-else-if="titleColumn" class="table-card__title">
                   <CardValue
                     :col="titleColumn"
                     :data="item"
@@ -209,9 +227,10 @@ function onCardClick(originalEvent: Event, item: any) {
                 icon="pi pi-paperclip"
                 text
                 rounded
+                class="table-card__action"
                 :aria-label="t('table.attachments.tooltip')"
-                @click.stop="emit('attachments', item)"
-                @keydown.stop
+                :aria-describedby="titleColumn ? titleId(item) : undefined"
+                @click="emit('attachments', item)"
               />
               <Button
                 v-if="showDelete && (canDelete ? canDelete(item) : true)"
@@ -219,9 +238,10 @@ function onCardClick(originalEvent: Event, item: any) {
                 severity="danger"
                 text
                 rounded
+                class="table-card__action"
                 :aria-label="t('tables.cards.delete')"
-                @click.stop="emit('delete', item)"
-                @keydown.stop
+                :aria-describedby="titleColumn ? titleId(item) : undefined"
+                @click="emit('delete', item)"
               />
             </div>
           </div>
@@ -229,8 +249,10 @@ function onCardClick(originalEvent: Event, item: any) {
       </ul>
     </template>
 
-    <template v-if="slots.empty" #empty>
-      <slot name="empty" />
+    <template #empty>
+      <slot name="empty">
+        <p class="table-cards__empty">{{ t("tables.cards.empty") }}</p>
+      </slot>
     </template>
 
     <template v-if="totals.length" #footer>
@@ -262,7 +284,15 @@ function onCardClick(originalEvent: Event, item: any) {
   gap: 0.5rem;
 }
 
+.table-cards__empty {
+  margin: 0;
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  color: var(--p-text-muted-color);
+}
+
 .table-card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
@@ -270,19 +300,39 @@ function onCardClick(originalEvent: Event, item: any) {
   border: 1px solid var(--p-content-border-color);
   border-radius: var(--p-content-border-radius);
   background: var(--p-content-background);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.table-card--interactive {
-  cursor: pointer;
-}
-
-.table-card--interactive:active {
+.table-card--interactive:has(.table-card__primary:active) {
   background: var(--p-content-hover-background);
 }
 
-.table-card--interactive:focus-visible {
+.table-card--interactive:has(.table-card__primary:focus-visible) {
   outline: 2px solid var(--p-primary-color);
   outline-offset: 2px;
+}
+
+/* A plain button that reads as the title. */
+.table-card__primary {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.table-card__primary:focus-visible {
+  outline: none;
+}
+
+/* Stretch the title's hit area over the whole card. */
+.table-card__primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 }
 
 .table-card__body {
@@ -311,6 +361,10 @@ function onCardClick(originalEvent: Event, item: any) {
 
 .table-card__trailing {
   flex-shrink: 0;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -348,6 +402,10 @@ function onCardClick(originalEvent: Event, item: any) {
 .table-cards__total dt {
   color: var(--p-text-muted-color);
   flex-shrink: 0;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-card__meta dt::after,
@@ -374,10 +432,21 @@ function onCardClick(originalEvent: Event, item: any) {
   font-weight: 600;
 }
 
+/* Fixed width, so values line up whether or not a card can be deleted;
+   above the title's stretched hit area. */
 .table-card__actions {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
+  align-items: center;
   flex-shrink: 0;
-  margin: -0.5rem -0.5rem -0.5rem 0;
+  width: 44px;
+  margin: -0.5rem -0.25rem -0.5rem 0;
+}
+
+.table-card__action.p-button {
+  width: 44px;
+  height: 44px;
 }
 </style>

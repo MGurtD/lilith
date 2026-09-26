@@ -734,7 +734,7 @@ function buildViewConfig(): string {
           </TabPanel>
           <TabPanel value="card">
             <div class="card-config">
-              <p class="card-config__status">
+              <p class="card-config__status" role="status">
                 <span>{{
                   localCard
                     ? $t("tables.views.card.customized")
@@ -793,9 +793,12 @@ function buildViewConfig(): string {
               </div>
 
               <div class="card-config__preview">
-                <label>{{ $t("tables.views.card.preview") }}</label>
+                <span id="card-config-preview-label" class="card-config__label">{{
+                  $t("tables.views.card.preview")
+                }}</span>
                 <TableCardList
                   v-if="previewItem"
+                  aria-labelledby="card-config-preview-label"
                   :items="[previewItem]"
                   :columns="cardColumns"
                   :layout="resolvedCard"
@@ -1067,7 +1070,7 @@ function buildViewConfig(): string {
   justify-content: space-between;
   gap: 0.5rem;
   margin: 0;
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   font-size: 0.875rem;
 }
 
@@ -1089,14 +1092,14 @@ function buildViewConfig(): string {
 }
 
 .card-config__field label,
-.card-config__preview label {
+.card-config__label {
   font-weight: 600;
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
 }
 
 .card-config__hint {
   margin: 0;
-  color: var(--text-color-secondary);
+  color: var(--p-text-muted-color);
   font-size: 0.8571rem;
 }
 

@@ -116,8 +116,11 @@ const props = withDefaults(
     multiSortMeta?: Array<{ field: string; order: 1 | -1 }>;
     /** The screen's default phone card; a saved view may override it. */
     cardLayout?: CardLayout;
-    /** "auto" shows cards on phones when the table supports them. */
-    phoneLayout?: "auto" | "table";
+    /**
+     * Phone layout. "auto" shows cards on list screens (those with a
+     * `page`), "cards" opts any other table in, "table" never shows cards.
+     */
+    phoneLayout?: "auto" | "cards" | "table";
   }>(),
   {
     phoneLayout: "auto",
@@ -638,19 +641,20 @@ function columnPt(col: Column) {
 
 // --- Phone cards ---
 
-// Cards replace the table on phones for list screens, unless the table
-// relies on something a card cannot show (selection, reordering, groups
-// or expansion). Tablets keep the table.
-const showCards = computed(
-  () =>
-    isPhone.value &&
-    props.phoneLayout === "auto" &&
-    !!props.page &&
-    !props.showSelectionColumn &&
-    !props.showRowReorderColumn &&
-    !props.rowGroupMode &&
-    props.expandedRows === undefined,
-);
+// Cards replace the table on phones for list screens, or for any table
+// that opts in, unless it relies on something a card cannot show
+// (selection, reordering, groups or expansion). Tablets keep the table.
+const showCards = computed(() => {
+  if (!isPhone.value || props.phoneLayout === "table") return false;
+  if (
+    props.showSelectionColumn ||
+    props.showRowReorderColumn ||
+    props.rowGroupMode ||
+    props.expandedRows !== undefined
+  )
+    return false;
+  return props.phoneLayout === "cards" || !!props.page;
+});
 
 const resolvedCardLayout = computed(() =>
   resolveCardLayout(
@@ -676,6 +680,27 @@ const sortableColumns = computed(() =>
 );
 
 const sortSheetVisible = ref(false);
+
+// The sort button shows the active sort, since cards have no headers.
+const sortButtonIcon = computed(() => {
+  if (!cardSort.value) return "pi pi-sort-alt";
+  return cardSort.value.order === 1
+    ? "pi pi-sort-amount-up-alt"
+    : "pi pi-sort-amount-down";
+});
+
+const sortButtonLabel = computed(() => {
+  const sort = cardSort.value;
+  const col = sort && visibleColumns.value.find((c) => c.field === sort.field);
+  if (!sort || !col) return t("tables.sort.open");
+  return t("tables.sort.openActive", {
+    column: col.header,
+    direction:
+      sort.order === 1
+        ? t("tables.views.ascending")
+        : t("tables.views.descending"),
+  });
+});
 
 const cardTotals = computed<CardTotal[]>(() =>
   columnsWithTotal.value.map((col) => ({
@@ -727,18 +752,21 @@ const bodySlotNames = computed(() =>
           size="small"
           text
           rounded
+          class="table-header-action"
           :aria-label="t('tables.views.configuration')"
           v-tooltip.top="t('tables.views.configuration')"
           @click="viewConfigVisible = true"
         />
         <Button
           v-if="showCards && sortableColumns.length"
-          icon="pi pi-sort-alt"
+          :icon="sortButtonIcon"
           size="small"
           text
           rounded
-          :aria-label="t('tables.sort.open')"
-          v-tooltip.top="t('tables.sort.open')"
+          class="table-header-action"
+          aria-haspopup="dialog"
+          :aria-expanded="sortSheetVisible"
+          :aria-label="sortButtonLabel"
           @click="sortSheetVisible = true"
         />
       </template>
@@ -1086,6 +1114,14 @@ const bodySlotNames = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Touch-sized header actions on phones and tablets. */
+@media (max-width: 1024px) {
+  .table-header-action.p-button.p-button-icon-only {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 .p-datatable .numeric-cell {
