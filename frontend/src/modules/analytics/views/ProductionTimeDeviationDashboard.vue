@@ -1,5 +1,6 @@
 <template>
   <StatsDashboard
+    :card-layout="cardLayout"
     :columns="columns"
     :items="result?.rows ?? []"
     :kpis="kpis"
@@ -37,7 +38,11 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import StatsDashboard, { type StatKpi } from "@/components/StatsDashboard.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -123,6 +128,13 @@ const columns = computed<Column[]>(() => [
     columnType: ColumnType.Number,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "workOrderCode",
+  subtitle: "phaseName",
+  trailing: "quantity",
+  meta: ["statusName", "machineDeviation", "operatorDeviation"],
+};
 
 const kpis = computed<StatKpi[]>(() => [
   {

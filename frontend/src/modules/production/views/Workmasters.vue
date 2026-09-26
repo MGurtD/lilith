@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :items="filteredData"
     :columns="columns"
     :filter-config="filterConfig"
@@ -38,6 +39,15 @@
         :class="PrimeIcons.COPY"
         class="grid_copy_column_button"
         @click.stop="copyButton(data)"
+      />
+    </template>
+    <template #card-actions="{ data }">
+      <Button
+        :icon="PrimeIcons.COPY"
+        text
+        rounded
+        :aria-label="t('production.actions.copy')"
+        @click="copyButton(data)"
       />
     </template>
   </Table>
@@ -222,7 +232,11 @@ import {
   stringValue,
 } from "@/components/forms/value-utils";
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -357,6 +371,13 @@ const columns = computed<Column[]>(() => [
     truncate: false,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "reference.code",
+  subtitle: "reference.customerId",
+  trailing: "totalCost",
+  meta: ["mode", "baseQuantity", "disabled"],
+};
 
 const filter = ref({
   referenceId: undefined,
@@ -552,6 +573,8 @@ onMounted(async () => {
   });
 
   referenceStore.fetchReferencesByModule("sales");
+  // The customer column (and the card's subtitle) resolves names from here.
+  if (!customersStore.customers) customersStore.fetchCustomers();
   await workmasterStore.fetchAll();
 
   const userFilter = userFilterStore.getFilter("Workmasters", "");

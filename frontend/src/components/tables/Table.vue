@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  getCurrentInstance,
   useSlots,
   useAttrs,
   ref,
@@ -13,7 +14,10 @@ import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
 import TableViewConfig from "./TableViewConfig.vue";
 import TableAttachmentViewer from "./TableAttachmentViewer.vue";
-import TableCardList, { type CardTotal } from "./TableCardList.vue";
+import TableCardList, {
+  type CardRowReorderEvent,
+  type CardTotal,
+} from "./TableCardList.vue";
 import TableSortSheet from "./TableSortSheet.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
@@ -566,6 +570,11 @@ const visibleColumns = computed(() => {
   return result;
 });
 
+// The desktop table leaves out the columns meant only for cards.
+const tableColumns = computed(() =>
+  visibleColumns.value.filter((c) => !c.cardOnly),
+);
+
 // --- Totals ---
 
 const columnsWithTotal = computed(() =>
@@ -643,18 +652,34 @@ function columnPt(col: Column) {
 
 // Cards replace the table on phones for list screens, or for any table
 // that opts in, unless it relies on something a card cannot show
-// (selection, reordering, groups or expansion). Tablets keep the table.
+// (groups or expansion). Tablets keep the table.
 const showCards = computed(() => {
   if (!isPhone.value || props.phoneLayout === "table") return false;
-  if (
-    props.showSelectionColumn ||
-    props.showRowReorderColumn ||
-    props.rowGroupMode ||
-    props.expandedRows !== undefined
-  )
-    return false;
+  if (props.rowGroupMode || props.expandedRows !== undefined) return false;
   return props.phoneLayout === "cards" || !!props.page;
 });
+
+// A card only reads as tappable when the screen handles row clicks.
+const instance = getCurrentInstance();
+const hasRowClickListener = !!instance?.vnode.props?.onRowClick;
+
+// Selection (v-model:selection) and row-reorder reach DataTable as
+// attrs; cards call the same consumer handlers.
+function callAttrHandler(name: string, payload: unknown) {
+  const handler = attrs[name];
+  const handlers = Array.isArray(handler) ? handler : [handler];
+  for (const fn of handlers) {
+    if (typeof fn === "function") fn(payload);
+  }
+}
+
+function onCardSelection(value: unknown[]) {
+  callAttrHandler("onUpdate:selection", value);
+}
+
+function onCardRowReorder(event: CardRowReorderEvent) {
+  callAttrHandler("onRowReorder", event);
+}
 
 const resolvedCardLayout = computed(() =>
   resolveCardLayout(
@@ -711,8 +736,11 @@ const cardTotals = computed<CardTotal[]>(() =>
 );
 
 // Consumer #body-{field} slots render the same values inside the cards.
+// Cell templates, plus #card-{field} templates that apply only to cards.
 const bodySlotNames = computed(() =>
-  Object.keys(slots).filter((name) => name.startsWith("body-")),
+  Object.keys(slots).filter(
+    (name) => name.startsWith("body-") || name.startsWith("card-"),
+  ),
 );
 </script>
 
@@ -798,9 +826,15 @@ const bodySlotNames = computed(() =>
     :show-attachments="!!attachmentConfig"
     :totals="cardTotals"
     :loading="loading"
+    :interactive="hasRowClickListener"
+    :selectable="showSelectionColumn"
+    :selection="(attrs.selection as unknown[] | null | undefined) ?? null"
+    :reorderable="showRowReorderColumn"
     @row-click="onRowClick"
     @delete="emit('delete', $event)"
     @attachments="openAttachments"
+    @update:selection="onCardSelection"
+    @row-reorder="onCardRowReorder"
   >
     <template v-if="showFilters && filterConfig" #header>
       <ReuseHeader />
@@ -859,7 +893,7 @@ const bodySlotNames = computed(() =>
     />
 
     <!-- Dynamic columns -->
-    <template v-for="col in visibleColumns" :key="col.field">
+    <template v-for="col in tableColumns" :key="col.field">
       <ProgressColumn
         v-if="col.columnType === ColumnType.ProgressBar"
         :field="col.field"
@@ -973,7 +1007,7 @@ const bodySlotNames = computed(() =>
           }"
         />
         <Column
-          v-for="col in visibleColumns"
+          v-for="col in tableColumns"
           :key="col.field"
           :style="col.style"
         >

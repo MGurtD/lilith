@@ -33,6 +33,7 @@
   />
   <Table
     v-else
+    :card-layout="customerTypeCardLayout"
     :columns="customerTypeColumns"
     :items="customerStore.customerTypes ?? []"
     :filter-config="[]"
@@ -121,6 +122,12 @@ const customerTypeColumns = computed<Column[]>(() => [
   { field: "description", header: t("sales.customers.description"), style: "width: 33%" },
   { field: "disabled", header: t("sales.customers.disabled"), columnType: ColumnType.Boolean, style: "width: 33%" },
 ]);
+
+const customerTypeCardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 const customerFilter = ref({
   code: "",

@@ -10,6 +10,7 @@
     selection-column-width="2%"
     preset="crud-list"
     page="SalesInvoicesByDates"
+    :card-layout="cardLayout"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-mode="multiple"
@@ -65,6 +66,15 @@
         @click="downloadInvoices(data)"
       />
     </template>
+    <template #card-actions="{ data }">
+      <Button
+        :icon="PrimeIcons.DOWNLOAD"
+        text
+        rounded
+        :aria-label="t('sales.invoiceAccounting.actions.download')"
+        @click="downloadInvoices(data)"
+      />
+    </template>
   </Table>
 </template>
 <script setup lang="ts">
@@ -87,7 +97,11 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useCustomersStore } from "../store/customers";
 import { PurchaseInvoiceUpdateStatues as InvoiceUpdateStatues } from "../../purchase/types";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 
 const toast = useToast();
 const store = useStore();
@@ -153,6 +167,14 @@ const columns = computed<Column[]>(() => [
   },
   { field: "download", header: "", style: "width: 2%" },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  trailing: "baseAmount",
+  subtitle: "customerId",
+  badge: "_status",
+  meta: ["invoiceDate", "_dueDate"],
+};
 
 const selectedInvoices = ref([] as Array<SalesInvoice>);
 const lifecycleName = "SalesInvoice";

@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
@@ -32,7 +33,11 @@
 import { useI18n } from "vue-i18n";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { computed, ref } from "vue";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -90,6 +95,13 @@ const columns = ref<Column[]>([
   { field: "cost", header: t('sales.components.cost'), style: "width: 8%" },
   { field: "isService", header: t('sales.components.servei'), columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "code",
+  subtitle: "description",
+  trailing: "price",
+  meta: ["version", "customerId", "cost"],
+};
 
 const filter = ref({
   code: "",

@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="deliveryNoteStore.deliveryNotes ?? []"
     :filter-config="filterConfig"
@@ -44,7 +45,11 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -98,6 +103,14 @@ const columns = computed<Column[]>(() => [
     style: "width: 30%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "deliveryDate",
+  meta: ["createdOn"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

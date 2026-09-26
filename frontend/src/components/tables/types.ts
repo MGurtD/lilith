@@ -82,4 +82,9 @@ export interface Column {
   severity?: (value: unknown, data: unknown) => string | undefined;
   truncate?: boolean;
   props?: ColumnProps;
+  /**
+   * Shown only in the phone card, never as a table column: a summary
+   * of other columns, such as the dimensions, filled by a slot.
+   */
+  cardOnly?: boolean;
 }

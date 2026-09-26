@@ -5,6 +5,7 @@ import DataView from "primevue/dataview";
 import Tag from "primevue/tag";
 import type { DataTableRowClickEvent } from "primevue/datatable";
 import BooleanColumn from "./BooleanColumn.vue";
+import { resolveFieldValue } from "./field-value";
 import {
   formatCellValue,
   hasValue,
@@ -13,6 +14,13 @@ import {
   statusSeverity,
 } from "./cell-format";
 import { ColumnType, type CardLayout, type Column } from "./types";
+
+/** Same shape as PrimeVue's row-reorder event, which consumers read. */
+export interface CardRowReorderEvent {
+  value: any[];
+  dragIndex: number;
+  dropIndex: number;
+}
 
 export interface CardTotal {
   field: string;
@@ -37,8 +45,13 @@ const props = withDefaults(
     showAttachments?: boolean;
     totals?: CardTotal[];
     loading?: boolean;
-    /** False for the settings preview: cards are not clickable. */
+    /** False when nothing listens for row clicks, and in the settings preview. */
     interactive?: boolean;
+    /** A checkbox per card, bound like the table's v-model:selection. */
+    selectable?: boolean;
+    selection?: readonly any[] | null;
+    /** Move up/down buttons, the card version of the table's drag handle. */
+    reorderable?: boolean;
   }>(),
   {
     paginator: false,
@@ -46,6 +59,9 @@ const props = withDefaults(
     showAttachments: false,
     totals: () => [],
     interactive: true,
+    selectable: false,
+    selection: null,
+    reorderable: false,
   },
 );
 
@@ -53,6 +69,8 @@ const emit = defineEmits<{
   (e: "row-click", event: DataTableRowClickEvent): void;
   (e: "delete", item: any): void;
   (e: "attachments", item: any): void;
+  (e: "update:selection", value: any[]): void;
+  (e: "row-reorder", event: CardRowReorderEvent): void;
 }>();
 
 const slots = useSlots();
@@ -75,11 +93,82 @@ const metaColumns = computed(() =>
     .filter((col): col is Column => !!col),
 );
 
-const hasActions = computed(() => props.showDelete || props.showAttachments);
+const hasActions = computed(
+  () =>
+    props.showDelete ||
+    props.showAttachments ||
+    props.reorderable ||
+    !!slots["card-actions"],
+);
 
-// A consumer's #body-{field} slot wins, as it does in the table cells.
+// A tap on the card opens the row, or else toggles it when selectable.
+const clickable = computed(() => props.interactive || props.selectable);
+
+// --- Selection ---
+
+function sameRow(a: any, b: any) {
+  return props.dataKey ? a?.[props.dataKey] === b?.[props.dataKey] : a === b;
+}
+
+function isSelected(item: any) {
+  return (props.selection ?? []).some((row) => sameRow(row, item));
+}
+
+function toggleSelection(item: any) {
+  const current = [...(props.selection ?? [])];
+  emit(
+    "update:selection",
+    isSelected(item)
+      ? current.filter((row) => !sameRow(row, item))
+      : [...current, item],
+  );
+}
+
+// Like the table's header checkbox: every row, not just this page.
+const allSelected = computed(
+  () => props.items.length > 0 && props.items.every(isSelected),
+);
+
+function toggleAll() {
+  emit("update:selection", allSelected.value ? [] : [...props.items]);
+}
+
+// --- Reordering ---
+
+function compareValues(a: unknown, b: unknown): number {
+  if (a == null) return b == null ? 0 : -1;
+  if (b == null) return 1;
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b), undefined, { numeric: true });
+}
+
+// The rows in card order. A move reorders these, as the table's drag
+// reorders its sorted rows, and emits the same payload.
+const orderedItems = computed(() => {
+  const rows = [...props.items];
+  const field = props.sortField;
+  const order = props.sortOrder;
+  if (!field || !order) return rows;
+  return rows.sort(
+    (a, b) =>
+      order *
+      compareValues(resolveFieldValue(a, field), resolveFieldValue(b, field)),
+  );
+});
+
+function moveRow(item: any, step: -1 | 1) {
+  const rows = [...orderedItems.value];
+  const dragIndex = rows.indexOf(item);
+  const dropIndex = dragIndex + step;
+  if (dragIndex < 0 || dropIndex < 0 || dropIndex >= rows.length) return;
+  rows.splice(dropIndex, 0, ...rows.splice(dragIndex, 1));
+  emit("row-reorder", { value: rows, dragIndex, dropIndex });
+}
+
+// A consumer's #card-{field} slot wins, then its #body-{field} slot, as
+// in the table cells.
 function renderValue(col: Column, data: unknown, index: number): VNodeChild {
-  const custom = slots[`body-${col.field}`];
+  const custom = slots[`card-${col.field}`] ?? slots[`body-${col.field}`];
   if (custom) return custom({ data, field: col.field, index });
   if (col.columnType === ColumnType.Boolean) {
     return h(BooleanColumn, {
@@ -117,7 +206,10 @@ function titleId(item: any) {
 // Same payload shape the table's row click emits, so consumers'
 // handlers (which read `event.data`) work unchanged.
 function onCardClick(originalEvent: Event, item: any) {
-  if (!props.interactive) return;
+  if (!props.interactive) {
+    if (props.selectable) toggleSelection(item);
+    return;
+  }
   emit("row-click", {
     originalEvent,
     data: item,
@@ -146,18 +238,42 @@ function onCardClick(originalEvent: Event, item: any) {
     </template>
 
     <template #list="{ items: pageItems }">
+      <div v-if="selectable" class="table-cards__selection">
+        <Checkbox
+          :input-id="`${listId}-all`"
+          :model-value="allSelected"
+          binary
+          @update:model-value="toggleAll"
+        />
+        <label :for="`${listId}-all`">{{ t("tables.cards.selectAll") }}</label>
+        <span class="table-cards__selection-count">{{
+          t("tables.cards.selectedCount", { count: selection?.length ?? 0 })
+        }}</span>
+      </div>
       <ul class="table-cards__list">
         <li v-for="(item, index) in pageItems" :key="rowKey(item, index)">
           <!-- The title is the card's main action; its hit area covers the
                whole card, while the action buttons stay separate stops. -->
           <div
             class="table-card"
-            :class="{ 'table-card--interactive': interactive }"
+            :class="{
+              'table-card--interactive': clickable,
+              'table-card--selected': selectable && isSelected(item),
+            }"
           >
+            <Checkbox
+              v-if="selectable"
+              class="table-card__select"
+              :model-value="isSelected(item)"
+              binary
+              :aria-label="t('tables.cards.select')"
+              :aria-labelledby="titleColumn ? titleId(item) : undefined"
+              @update:model-value="toggleSelection(item)"
+            />
             <div class="table-card__body">
               <div class="table-card__top">
                 <button
-                  v-if="interactive && titleColumn"
+                  v-if="clickable && titleColumn"
                   :id="titleId(item)"
                   type="button"
                   class="table-card__title table-card__primary"
@@ -222,6 +338,29 @@ function onCardClick(originalEvent: Event, item: any) {
             </div>
 
             <div v-if="hasActions" class="table-card__actions">
+              <slot name="card-actions" :data="item" />
+              <template v-if="reorderable">
+                <Button
+                  icon="pi pi-arrow-up"
+                  text
+                  rounded
+                  class="table-card__action"
+                  :aria-label="t('tables.cards.moveUp')"
+                  :aria-describedby="titleColumn ? titleId(item) : undefined"
+                  :disabled="orderedItems.indexOf(item) <= 0"
+                  @click="moveRow(item, -1)"
+                />
+                <Button
+                  icon="pi pi-arrow-down"
+                  text
+                  rounded
+                  class="table-card__action"
+                  :aria-label="t('tables.cards.moveDown')"
+                  :aria-describedby="titleColumn ? titleId(item) : undefined"
+                  :disabled="orderedItems.indexOf(item) >= orderedItems.length - 1"
+                  @click="moveRow(item, 1)"
+                />
+              </template>
               <Button
                 v-if="showAttachments"
                 icon="pi pi-paperclip"
@@ -303,6 +442,32 @@ function onCardClick(originalEvent: Event, item: any) {
   -webkit-tap-highlight-color: transparent;
 }
 
+.table-card--selected {
+  border-color: var(--p-primary-color);
+  background: var(--p-highlight-background);
+}
+
+/* Above the title's stretched hit area, like the action buttons. */
+.table-card__select {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.table-cards__selection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem 0;
+}
+
+.table-cards__selection-count {
+  margin-left: auto;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
 .table-card--interactive:has(.table-card__primary:active) {
   background: var(--p-content-hover-background);
 }
@@ -333,6 +498,13 @@ function onCardClick(originalEvent: Event, item: any) {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+}
+
+/* Controls a screen puts in a card, such as a select or a link, sit
+   above the title's stretched hit area so they stay usable. */
+.table-card__body :deep(:is(a, input, .p-select, .p-checkbox, .p-button)) {
+  position: relative;
+  z-index: 1;
 }
 
 .table-card__body {
@@ -368,6 +540,11 @@ function onCardClick(originalEvent: Event, item: any) {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* A row whose values all came out empty takes no space. */
+.table-card__second:not(:has(> :not(:empty))) {
+  display: none;
 }
 
 .table-card__subtitle {

@@ -63,7 +63,7 @@ import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 import TagMovementType from "../../../components/TagMovementType.vue";
-import DimensionChips from "../../plant/components/workcenter-detail/DimensionChips.vue";
+import DimensionChips from "@/components/DimensionChips.vue";
 import { useReferenceStore } from "../../shared/store/reference";
 import { formatDateTime } from "../../../utils/functions";
 import { StockMovement } from "../../warehouse/types";

@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="workOrderStore.workorderPhases ?? []"
@@ -47,6 +48,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import { useRouter } from "vue-router";
@@ -110,6 +112,12 @@ const columns = computed<Column[]>(() => [
     truncate: false,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "workOrder.code",
+  subtitle: "description",
+  meta: ["serviceReferenceId", "workOrder.plannedQuantity", "supplierId"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

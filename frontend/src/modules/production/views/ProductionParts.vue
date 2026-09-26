@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :items="calculatedProductionParts ?? []"
     :columns="columns"
     :filter-config="filterConfig"
@@ -41,7 +42,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -336,6 +341,13 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "workOrderId",
+  subtitle: "workcenterId",
+  trailing: "date",
+  meta: ["operatorId", "quantity", "workcenterTime"],
+};
 
 const productionPartRequest = ref({} as ProductionPart);
 const generateNewRequest = (): ProductionPart => {

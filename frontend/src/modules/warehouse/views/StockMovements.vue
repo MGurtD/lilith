@@ -8,6 +8,7 @@
       v-model:filter-values="filter"
       :filter-body-width="filterBodyWidth"
       :show-create="false"
+      :card-layout="cardLayout"
       page="StockMovements"
       tableStyle="min-width: 100%"
       scrollable
@@ -40,6 +41,19 @@
       <template #body-movementType="{ data }">
         <TagMovementType :movementType="data.movementType" />
       </template>
+      <!-- The tag gives the direction; the card shows the amount moved. -->
+      <template #card-quantity="{ data }">
+        {{ t("warehouse.fields.unitsCount", { count: Math.abs(data.quantity) }) }}
+      </template>
+      <template #card-dimensions="{ data }">
+        <DimensionChips
+          :width="data.width"
+          :length="data.length"
+          :height="data.height"
+          :diameter="data.diameter"
+          :thickness="data.thickness"
+        />
+      </template>
       <template #body-lotTraceability="{ data }">
         <Button
           v-if="hasVisibleLot(data.lotId)"
@@ -57,7 +71,11 @@
 
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -65,6 +83,7 @@ import type {
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import TagMovementType from "@/components/TagMovementType.vue";
+import DimensionChips from "@/components/DimensionChips.vue";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "@/store";
@@ -199,6 +218,11 @@ const columns = computed<Column[]>(() => [
     style: "width: 5%; min-width: 8rem",
   },
   {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
+  {
     field: "description",
     header: t("common.description"),
     style: "width: 25%",
@@ -222,6 +246,14 @@ const columns = computed<Column[]>(() => [
     truncate: false,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "referenceId",
+  trailing: "quantity",
+  subtitle: "movementDate",
+  badge: "movementType",
+  meta: ["lotId", "location.name", "dimensions"],
+};
 
 onMounted(async () => {
   store.setMenuItem({

@@ -272,7 +272,7 @@ const en = {
     cancel: "Cancel",
   },
   production: {
-    actions: { create: "Create", delete: "Delete" },
+    actions: { create: "Create", delete: "Delete", copy: "Copy" },
       components: {
         afegirMotiu: "Add reason",
         alcadaMm: "Height (mm)",
@@ -1997,7 +1997,7 @@ const en = {
   warehouse: {
     actions: { all: "All", create: "Create" },
     fields: {
-      warehouse: "Warehouse", name: "Name", site: "Site", defaultLocation: "Default location", disabled: "Disabled", locationType: "Type", material: "Material", quantity: "Quantity", widthMm: "Width (mm)", lengthMm: "Length (mm)", heightMm: "Height (mm)", diameterMm: "Diameter (mm)", thicknessMm: "Thickness (mm)", widthMmAxis: "Width (x) mm", lengthMmAxis: "Length (y) mm", heightMmAxis: "Height (z) mm", reference: "Reference", location: "Location", units: "Units", movementType: "Movement type",
+      warehouse: "Warehouse", name: "Name", site: "Site", defaultLocation: "Default location", disabled: "Disabled", locationType: "Type", material: "Material", quantity: "Quantity", widthMm: "Width (mm)", lengthMm: "Length (mm)", heightMm: "Height (mm)", diameterMm: "Diameter (mm)", thicknessMm: "Thickness (mm)", widthMmAxis: "Width (x) mm", lengthMmAxis: "Length (y) mm", heightMmAxis: "Height (z) mm", reference: "Reference", location: "Location", units: "Units", unitsCount: "{count} pcs", dimensions: "Dimensions", movementType: "Movement type",
     },
     locationTypes: { supply: "Supply", receiving: "Receiving", shipping: "Shipping", storage: "Storage" },
     placeholders: { selectWarehouse: "Select a warehouse", selectLocation: "Select a location", noLocationType: "No type", allLocationTypes: "All types", selectPeriod: "Select a period" },
@@ -2097,6 +2097,7 @@ const en = {
       filters: { period: "Period", supplier: "Supplier", showManaged: "Processed" },
       placeholders: { selectSupplier: "Select a supplier" },
       columns: { number: "Number", supplier: "Supplier", supplierInvoiceNumber: "Supplier invoice no.", status: "Status", date: "Date", dueDate: "Due date", baseAmount: "Base amount" },
+      actions: { download: "Download invoice" },
       messages: { selectPeriod: "Select a period", accountingCompleted: "Invoice accounting", accountedInvoices: "Invoices accounted for: {count}" },
     },
     purchaseInvoiceImport: {
@@ -2203,7 +2204,14 @@ const en = {
     filters: { title: "Filters", selectPlaceholder: "Select...", apply: "Filter", clear: "Clear", clearTooltip: "Clear filters", create: "New", createTooltip: "Create new", active: "Applied filters", openCount: "Filters | Filters, {n} applied | Filters, {n} applied", editFilter: "Change the {label} filter", resultCount: "No results | {n} result | {n} results", done: "Done" },
     views: { selectView: "Select a view", selectExistingToUpdate: "Select an existing view to update", updated: "View updated", updateSuccess: "The configuration was saved successfully", nameRequired: "Name required", enterName: "Enter a name for the new view", created: "View created", createSuccess: "The new view was created successfully", selectToDelete: "Select a view to delete", confirmDelete: "Are you sure you want to delete the \"{name}\" view?", confirmation: "Confirmation", deleted: "View deleted", selectToSetDefault: "Select a view to set as default", normal: "Normal view", default: "Default view", defaultRemoved: "The view is no longer the default", defaultSet: "The view has been set as default", configuration: "View configuration", current: "Current view", selectPlaceholder: "Select a view...", removeDefault: "Remove as default", setDefault: "Set as default", saveChanges: "Save changes", delete: "Delete", savedFilters: "Saved filters", columnConfiguration: "Column configuration", total: "Total", noSort: "No sorting", ascending: "Ascending", descending: "Descending", new: "New view", newNamePlaceholder: "New view name...", createNew: "Create new view", tabs: { columns: "Columns", card: "Phone card" }, card: { titleField: "Title", subtitleField: "Subtitle", badgeField: "Status tag", trailingField: "Highlighted value", metaFields: "Extra details", metaHint: "Up to {max} fields, in column order.", none: "None", usingScreenDefault: "Using the screen's default card.", customized: "Card customized for this view.", resetToScreenDefault: "Reset", preview: "Preview", previewEmpty: "There are no rows to preview." } },
     sort: { title: "Sort", open: "Sort", none: "Not sorted", status: "Sorted by {column}, {direction}", openActive: "Sort: {column}, {direction}" },
-    cards: { delete: "Delete", empty: "No records" },
+    cards: {
+      delete: "Delete", empty: "No records",
+      moveUp: "Move up",
+      moveDown: "Move down",
+      select: "Select",
+      selectAll: "Select all",
+      selectedCount: "{count} selected",
+    },
   },
 };
 

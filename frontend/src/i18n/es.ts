@@ -272,7 +272,7 @@ const es = {
     cancel: "Cancelar",
   },
   production: {
-    actions: { create: "Crear", delete: "Eliminar" },
+    actions: { create: "Crear", delete: "Eliminar", copy: "Copiar" },
       components: {
         afegirMotiu: "Añadir motivo",
         alcadaMm: "Altura (mm)",
@@ -1964,7 +1964,7 @@ const es = {
   warehouse: {
     actions: { all: "Todos", create: "Crear" },
     fields: {
-      warehouse: "Almacén", name: "Nombre", site: "Centro", defaultLocation: "Ubicación predeterminada", disabled: "Desactivado", locationType: "Tipología", material: "Material", quantity: "Cantidad", widthMm: "Anchura (mm)", lengthMm: "Longitud (mm)", heightMm: "Altura (mm)", diameterMm: "Diámetro (mm)", thicknessMm: "Grosor (mm)", widthMmAxis: "Ancho (x) mm", lengthMmAxis: "Largo (y) mm", heightMmAxis: "Alto (z) mm", reference: "Referencia", location: "Ubicación", units: "Uds.", movementType: "Tipo de movimiento",
+      warehouse: "Almacén", name: "Nombre", site: "Centro", defaultLocation: "Ubicación predeterminada", disabled: "Desactivado", locationType: "Tipología", material: "Material", quantity: "Cantidad", widthMm: "Anchura (mm)", lengthMm: "Longitud (mm)", heightMm: "Altura (mm)", diameterMm: "Diámetro (mm)", thicknessMm: "Grosor (mm)", widthMmAxis: "Ancho (x) mm", lengthMmAxis: "Largo (y) mm", heightMmAxis: "Alto (z) mm", reference: "Referencia", location: "Ubicación", units: "Uds.", unitsCount: "{count} u.", dimensions: "Medidas", movementType: "Tipo de movimiento",
     },
     locationTypes: { supply: "Suministro", receiving: "Recepción", shipping: "Expedición", storage: "Almacenamiento" },
     placeholders: { selectWarehouse: "Selecciona un almacén", selectLocation: "Selecciona una ubicación", noLocationType: "Sin tipo", allLocationTypes: "Todos los tipos", selectPeriod: "Selecciona un período" },
@@ -2064,6 +2064,7 @@ const es = {
       filters: { period: "Período", supplier: "Proveedor", showManaged: "Gestionadas" },
       placeholders: { selectSupplier: "Selecciona un proveedor" },
       columns: { number: "Número", supplier: "Proveedor", supplierInvoiceNumber: "N.º fra. proveedor", status: "Estado", date: "Fecha", dueDate: "Vencimiento", baseAmount: "Importe base" },
+      actions: { download: "Descargar factura" },
       messages: { selectPeriod: "Selecciona un período", accountingCompleted: "Contabilización de facturas", accountedInvoices: "Facturas contabilizadas: {count}" },
     },
     purchaseInvoiceImport: {
@@ -2170,7 +2171,14 @@ const es = {
     filters: { title: "Filtros", selectPlaceholder: "Selecciona...", apply: "Filtrar", clear: "Limpiar", clearTooltip: "Limpiar filtros", create: "Nuevo", createTooltip: "Crear nuevo", active: "Filtros aplicados", openCount: "Filtros | Filtros, {n} aplicado | Filtros, {n} aplicados", editFilter: "Cambiar el filtro {label}", resultCount: "Ningún resultado | {n} resultado | {n} resultados", done: "Hecho" },
     views: { selectView: "Selecciona una vista", selectExistingToUpdate: "Selecciona una vista existente para actualizar", updated: "Vista actualizada", updateSuccess: "La configuración se ha guardado correctamente", nameRequired: "Nombre requerido", enterName: "Introduce un nombre para la nueva vista", created: "Vista creada", createSuccess: "La nueva vista se ha creado correctamente", selectToDelete: "Selecciona una vista para eliminar", confirmDelete: "¿Seguro que quieres eliminar la vista \"{name}\"?", confirmation: "Confirmación", deleted: "Vista eliminada", selectToSetDefault: "Selecciona una vista para establecer como predeterminada", normal: "Vista normal", default: "Vista predeterminada", defaultRemoved: "La vista ya no es la predeterminada", defaultSet: "La vista se ha establecido como predeterminada", configuration: "Configuración de la vista", current: "Vista actual", selectPlaceholder: "Selecciona una vista...", removeDefault: "Quitar como predeterminada", setDefault: "Establecer como predeterminada", saveChanges: "Guardar cambios", delete: "Eliminar", savedFilters: "Filtros guardados", columnConfiguration: "Configuración de columnas", total: "Total", noSort: "Sin ordenación", ascending: "Ascendente", descending: "Descendente", new: "Nueva vista", newNamePlaceholder: "Nombre de la nueva vista...", createNew: "Crear nueva vista", tabs: { columns: "Columnas", card: "Tarjeta móvil" }, card: { titleField: "Título", subtitleField: "Subtítulo", badgeField: "Etiqueta de estado", trailingField: "Valor destacado", metaFields: "Datos adicionales", metaHint: "Hasta {max} campos, en el orden de las columnas.", none: "Ninguno", usingScreenDefault: "Se usa la tarjeta por defecto de la pantalla.", customized: "Tarjeta personalizada para esta vista.", resetToScreenDefault: "Restablecer", preview: "Vista previa", previewEmpty: "No hay ninguna fila para mostrar la vista previa." } },
     sort: { title: "Ordenar", open: "Ordenar", none: "Sin ordenación", status: "Ordenado por {column}, {direction}", openActive: "Ordenar: {column}, {direction}" },
-    cards: { delete: "Eliminar", empty: "No hay ningún registro" },
+    cards: {
+      delete: "Eliminar", empty: "No hay ningún registro",
+      moveUp: "Subir",
+      moveDown: "Bajar",
+      select: "Seleccionar",
+      selectAll: "Seleccionar todo",
+      selectedCount: "{count} seleccionados",
+    },
   },
 };
 

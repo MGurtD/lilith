@@ -49,6 +49,7 @@
       :show-filters="false"
       :show-create="false"
       :page="page"
+      :card-layout="cardLayout"
       :paginator="true"
       :rows="rows"
       scrollable
@@ -59,7 +60,7 @@
       row-hover
       class="small-datatable"
       tableStyle="min-width: 100%"
-      @row-click="(e) => emit('row-click', e)"
+      v-on="rowClickListeners"
     >
       <!-- Forward consumer table slots (e.g. body-customerName) to Table -->
       <template v-for="(_, name) in tableSlots" #[name]="slotData">
@@ -70,13 +71,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useSlots } from "vue";
+import { computed, getCurrentInstance, useSlots } from "vue";
 import TableFilter, {
   type FilterBodyWidth,
   type FilterConfig,
 } from "@/components/tables/TableFilter.vue";
 import Table from "@/components/tables/Table.vue";
-import type { Column } from "@/components/tables/types";
+import type { CardLayout, Column } from "@/components/tables/types";
 import type { DataTableRowClickEvent } from "primevue/datatable";
 
 export interface StatKpi {
@@ -94,6 +95,7 @@ withDefaults(
     filterValues?: Record<string, any>;
     filterBodyWidth?: FilterBodyWidth;
     page?: string;
+    cardLayout?: CardLayout;
     rows?: number;
     sortField?: string;
     sortOrder?: number;
@@ -107,6 +109,12 @@ const emit = defineEmits<{
   (e: "clear"): void;
   (e: "row-click", event: DataTableRowClickEvent): void;
 }>();
+
+// Forward row clicks only when the dashboard's consumer listens, so the
+// table's phone cards do not look tappable when nothing happens.
+const rowClickListeners = getCurrentInstance()?.vnode.props?.onRowClick
+  ? { "row-click": (event: DataTableRowClickEvent) => emit("row-click", event) }
+  : {};
 
 // `prepend` is non-filter lead content of the filter bar, `kpis` replaces the
 // KPI line, `filter-{key}` renders a `type: "slot"` filter of `filterConfig`
