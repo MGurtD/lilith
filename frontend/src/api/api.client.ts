@@ -4,6 +4,7 @@ import { useStore } from "../store";
 import { globalToast } from "@/utils/global-toast";
 import { parseAxiosError } from "@/utils/error-parser";
 import { attachBearerToken, handle401 } from "./auth.interceptor";
+import { i18n } from "@/i18n";
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) || "";
 const requestTimeout =
@@ -29,8 +30,8 @@ if (typeof window !== "undefined") {
   window.addEventListener("online", () => {
     if (isOfflineToastShown) {
       globalToast.success(
-        "Connexió restaurada",
-        "La connexió a Internet s'ha restablert correctament.",
+        i18n.global.t("connectivity.restored"),
+        i18n.global.t("connectivity.restoredDetail"),
         5000,
       );
       isOfflineToastShown = false;
@@ -40,9 +41,8 @@ if (typeof window !== "undefined") {
   window.addEventListener("offline", () => {
     globalToast.showPersistent({
       severity: "warn",
-      summary: "Sense connexió",
-      detail:
-        "No hi ha connexió a Internet. Les dades es sincronitzaran quan es restableixi la connexió.",
+      summary: i18n.global.t("connectivity.offline"),
+      detail: i18n.global.t("connectivity.offlineSyncDetail"),
     });
     isOfflineToastShown = true;
   });
@@ -98,9 +98,8 @@ apiClient.interceptors.response.use(
       if (!isOfflineToastShown) {
         globalToast.showPersistent({
           severity: "warn",
-          summary: "Sense connexió",
-          detail:
-            "No hi ha connexió a Internet. Comprova la connexió i torna-ho a intentar.",
+          summary: i18n.global.t("connectivity.offline"),
+          detail: i18n.global.t("connectivity.offlineRetryDetail"),
         });
         isOfflineToastShown = true;
       }

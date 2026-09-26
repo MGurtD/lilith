@@ -1,136 +1,332 @@
-<template>
-  <div>
-    <Button
-      label="Guardar"
-      class="grid_add_row_button"
-      size="small"
-      @click="submitForm"
-    />
-    <br />
-  </div>
-  <form v-if="reference">
-    <section class="three-columns">
-      <div class="mt-1">
-        <BaseInput
-          class="mb-2"
-          label="Codi"
-          id="code"
-          v-model="reference.code"
-        ></BaseInput>
-      </div>
-      <div class="mt-1">
-        <BaseInput
-          class="mb-2"
-          label="Descripció"
-          id="description"
-          v-model="reference.description"
-        ></BaseInput>
-      </div>
-      <div class="mt-1">
-        <DropdownReferenceCategory
-          label="Categoria"
-          v-model="reference.categoryName"
-          disabled
-        />
-      </div>
-    </section>
-    <FormReferenceMaterial
-      v-if="reference.categoryName === ReferenceCategoryEnum.MATERIAL"
-      :reference="reference"
-    />
-    <FormReferenceTool
-      v-if="reference.categoryName === ReferenceCategoryEnum.TOOL"
-      :reference="reference"
-    />
-    <FormReferenceService
-      v-if="reference.categoryName === ReferenceCategoryEnum.SERVICE"
-      :reference="reference"
-    />
-  </form>
-</template>
 <script setup lang="ts">
-import BaseInput from "../../../components/BaseInput.vue";
-import DropdownReferenceCategory from "../../shared/components/DropdownReferenceCategory.vue";
-import FormReferenceMaterial from "../components/FormReferenceMaterial.vue";
-import FormReferenceTool from "../components/FormReferenceTool.vue";
-import FormReferenceService from "../components/FormReferenceService.vue";
-import { Reference, ReferenceCategoryEnum } from "../../shared/types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
+import PageActions from "@/components/PageActions.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { ref } from "vue";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  nullableStringValue,
+  optionalStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { usePlantModelStore } from "../../production/store/plantmodel";
+import { useReferenceStore } from "../../shared/store/reference";
+import { useReferenceTypeStore } from "../../shared/store/referenceType";
+import { useTaxesStore } from "../../shared/store/tax";
+import {
+  type Reference,
+  ReferenceCategoryEnum,
+  type ReferenceType,
+} from "../../shared/types";
+import Services from "../services";
 
 const props = defineProps<{
+  /** Rendered inside a dialog: keep Save in place instead of the header. */
+  inDialog?: boolean;
   reference: Reference;
 }>();
+
 const emit = defineEmits<{
-  (e: "submit", reference: Reference): void;
+  (event: "submit", reference: Reference): void;
 }>();
 
-const toast = useToast();
-const schema = {
-  code: Yup.string()
-    .required("El codi és obligatoria")
-    .max(50, "El codi no pot superar els 50 carácters"),
-  description: Yup.string()
-    .required("La descripció és obligatori")
-    .max(250, "La descripció pot superar els 250 carácters"),
-};
+const referenceStore = useReferenceStore();
+const referenceTypeStore = useReferenceTypeStore();
+const taxesStore = useTaxesStore();
+const plantModelStore = usePlantModelStore();
+const { t } = useI18n();
+const form = ref<{ submit: () => void } | null>(null);
+const lastCostDisabled = ref(false);
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-const validate = () => {
-  let categorySchema = {} as Yup.ObjectSchema<any>;
+const currencyProps = {
+  currency: "EUR",
+  locale: "en-US",
+  minFractionDigits: 2,
+} as const;
 
+const referenceTypeLabel = (referenceType: ReferenceType): string =>
+  `${referenceType.name} - ${referenceType.description}`;
+
+const commonRows = (): FormRowConfig[] => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "code",
+        label: t("purchase.materials.fields.code"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("purchase.materials.validation.codeRequired"))
+          .max(50, t("purchase.materials.validation.codeMaxLength")),
+      },
+      {
+        name: "description",
+        label: t("purchase.materials.fields.description"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("purchase.materials.validation.descriptionRequired"))
+          .max(250, t("purchase.materials.validation.descriptionMaxLength")),
+      },
+      {
+        name: "categoryName",
+        label: t("purchase.materials.fields.category"),
+        type: FormFieldType.Select,
+        disabled: true,
+        props: {
+          options: referenceStore.referenceCategories,
+          optionValue: "code",
+          optionLabel: "description",
+          placeholder: t("shared.dropdowns.selectPlaceholder"),
+        },
+      },
+    ],
+  },
+];
+
+const materialRows = (): FormRowConfig[] => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "referenceTypeId",
+        label: t("purchase.materials.fields.materialType"),
+        type: FormFieldType.Select,
+        props: {
+          options: referenceTypeStore.referenceTypes ?? [],
+          optionValue: "id",
+          optionLabel: referenceTypeLabel,
+          placeholder: t("shared.dropdowns.selectPlaceholder"),
+          showClear: true,
+          filter: true,
+          filterFields: ["name", "description"],
+        },
+        validation: Yup.string().required(
+          t("purchase.materials.validation.referenceTypeRequired"),
+        ),
+      },
+      {
+        name: "referenceFormatId",
+        label: t("purchase.materials.fields.format"),
+        type: FormFieldType.Select,
+        props: {
+          options: referenceStore.referenceFormats ?? [],
+          optionValue: "id",
+          optionLabel: "description",
+        },
+        validation: Yup.string().required(
+          t("purchase.materials.validation.formatRequired"),
+        ),
+      },
+      {
+        name: "taxId",
+        label: t("purchase.materials.fields.tax"),
+        type: FormFieldType.Select,
+        props: {
+          options: taxesStore.taxes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("purchase.materials.validation.taxRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "lastCost",
+        label: t("purchase.materials.fields.lastCost"),
+        type: FormFieldType.Currency,
+        props: currencyProps,
+        disabled: lastCostDisabled.value,
+      },
+      {
+        name: "disabled",
+        label: t("purchase.materials.fields.disabled"),
+        type: FormFieldType.Checkbox,
+      },
+    ],
+  },
+];
+
+const toolRows = (): FormRowConfig[] => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "taxId",
+        label: t("purchase.materials.fields.tax"),
+        type: FormFieldType.Select,
+        props: {
+          options: taxesStore.taxes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("purchase.materials.validation.taxRequired"),
+        ),
+      },
+      {
+        name: "areaId",
+        label: t("purchase.materials.fields.productionArea"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.areas ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("purchase.materials.validation.areaRequired"),
+        ),
+      },
+    ],
+  },
+];
+
+const serviceRows = (): FormRowConfig[] => [
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "price",
+        label: t("purchase.materials.fields.servicePrice"),
+        type: FormFieldType.Currency,
+        props: currencyProps,
+        validation: Yup.number().required(
+          t("purchase.materials.validation.priceRequired"),
+        ),
+      },
+      {
+        name: "transportAmount",
+        label: t("purchase.materials.fields.transportPrice"),
+        type: FormFieldType.Currency,
+        props: currencyProps,
+        validation: Yup.number().required(
+          t("purchase.materials.validation.transportPriceRequired"),
+        ),
+      },
+      {
+        name: "taxId",
+        label: t("purchase.materials.fields.tax"),
+        type: FormFieldType.Select,
+        props: {
+          options: taxesStore.taxes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+      },
+      {
+        name: "disabled",
+        label: t("purchase.materials.fields.disabled"),
+        type: FormFieldType.Checkbox,
+      },
+    ],
+  },
+];
+
+const rows = computed<FormRowConfig[]>(() => {
+  let categoryRows: FormRowConfig[] = [];
   if (props.reference.categoryName === ReferenceCategoryEnum.MATERIAL) {
-    categorySchema = Yup.object().shape({
-      ...schema,
-      taxId: Yup.string().required("L'IVA és obligatori"),
-      referenceTypeId: Yup.string().required(
-        "El tipus de referència és obligatori",
-      ),
-      referenceFormatId: Yup.string().required("El format és obligatori"),
-    });
-  } else if (props.reference.categoryName === ReferenceCategoryEnum.SERVICE) {
-    categorySchema = Yup.object().shape({
-      ...schema,
-      price: Yup.number().required("El preu és obligatori"),
-      transportAmount: Yup.number().required(
-        "El preu de transport és obligatori",
-      ),
-    });
+    categoryRows = materialRows();
   } else if (props.reference.categoryName === ReferenceCategoryEnum.TOOL) {
-    categorySchema = Yup.object().shape({
-      ...schema,
-      areaId: Yup.string().required("L'àrea és obligatoria"),
-      taxId: Yup.string().required("L'IVA és obligatori"),
-    });
+    categoryRows = toolRows();
+  } else if (props.reference.categoryName === ReferenceCategoryEnum.SERVICE) {
+    categoryRows = serviceRows();
   }
 
-  const formValidation = new FormValidation(categorySchema);
-  validation.value = formValidation.validate(props.reference);
+  return [...commonRows(), ...categoryRows];
+});
+
+onMounted(async () => {
+  if (props.reference.categoryName === ReferenceCategoryEnum.MATERIAL) {
+    await referenceTypeStore.fetchAll();
+    const receipts = await Services.Receipt.GetByReferenceId(props.reference.id);
+    lastCostDisabled.value = Boolean(receipts?.length);
+  } else if (props.reference.categoryName === ReferenceCategoryEnum.TOOL) {
+    if (!taxesStore.taxes) await taxesStore.fetchAll();
+    await plantModelStore.fetchAreas();
+  } else if (props.reference.categoryName === ReferenceCategoryEnum.SERVICE) {
+    if (!taxesStore.taxes) await taxesStore.fetchAll();
+  }
+});
+
+const submit = (values: FormValues): void => {
+  const reference: Reference = {
+    ...props.reference,
+    code: stringValue(values.code, props.reference.code),
+    description: stringValue(values.description, props.reference.description),
+    categoryName: stringValue(
+      values.categoryName,
+      props.reference.categoryName,
+    ),
+  };
+
+  if (reference.categoryName === ReferenceCategoryEnum.MATERIAL) {
+    reference.referenceTypeId = nullableStringValue(
+      values.referenceTypeId,
+      props.reference.referenceTypeId,
+    );
+    reference.referenceFormatId = nullableStringValue(
+      values.referenceFormatId,
+      props.reference.referenceFormatId,
+    );
+    reference.taxId = optionalStringValue(values.taxId, props.reference.taxId);
+    reference.lastCost = finiteNumberValue(
+      values.lastCost,
+      props.reference.lastCost,
+    );
+    reference.disabled = booleanValue(
+      values.disabled,
+      props.reference.disabled,
+    );
+  } else if (reference.categoryName === ReferenceCategoryEnum.TOOL) {
+    reference.taxId = optionalStringValue(values.taxId, props.reference.taxId);
+    reference.areaId = nullableStringValue(
+      values.areaId,
+      props.reference.areaId,
+    );
+  } else if (reference.categoryName === ReferenceCategoryEnum.SERVICE) {
+    reference.price = finiteNumberValue(values.price, props.reference.price);
+    reference.transportAmount = finiteNumberValue(
+      values.transportAmount,
+      props.reference.transportAmount,
+    );
+    reference.taxId = optionalStringValue(values.taxId, props.reference.taxId);
+    reference.disabled = booleanValue(
+      values.disabled,
+      props.reference.disabled,
+    );
+  }
+
+  emit("submit", reference);
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.reference);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
+const submitForm = (): void => form.value?.submit();
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="reference"
+    :show-submit="false"
+    :show-cancel="false"
+    @submit="submit"
+  />
+  <PageActions :inline="inDialog">
+    <Button
+      icon="pi pi-save"
+      :label="t('purchase.materials.actions.save')"
+      @click="submitForm"
+    />
+  </PageActions>
+</template>

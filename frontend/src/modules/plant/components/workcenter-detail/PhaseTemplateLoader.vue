@@ -13,12 +13,12 @@
       sortField="name"
       :sortOrder="1"
     >
-      <Column field="name" header="Nom" :sortable="true" style="width: 30%" />
-      <Column field="description" header="Descripció" style="width: 50%" />
-      <Column header="Detalls" style="width: 20%">
+      <Column field="name" :header='$t("plant.nom")' :sortable="true" style="width: 30%" />
+      <Column field="description" :header='$t("plant.descripcio")' style="width: 50%" />
+      <Column :header='$t("plant.detalls")' style="width: 20%">
         <template #body="slotProps">
           <Tag
-            :value="`${slotProps.data.details?.length || 0} activitats`"
+            :value="t('plant.messages.activityCount', { count: slotProps.data.details?.length || 0 })"
             severity="info"
             rounded
           />
@@ -27,14 +27,14 @@
       <template #empty>
         <div class="no-data">
           <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-          <p>No s'han trobat plantilles de fase actives</p>
+          <p>{{ $t("plant.no-s-han-trobat-plantilles-de-fase-actives") }}</p>
         </div>
       </template>
     </DataTable>
 
     <!-- Template details preview -->
     <div v-if="selectedTemplate" class="template-preview">
-      <span class="font-semibold text-sm text-500 uppercase">Activitats de la plantilla</span>
+      <span class="font-semibold text-sm text-500 uppercase">{{ $t("plant.activitats-de-la-plantilla") }}</span>
       <DataTable
         :value="selectedTemplate.details"
         class="p-datatable-sm"
@@ -43,13 +43,13 @@
         sortField="order"
         :sortOrder="1"
       >
-        <Column field="order" header="Ordre" style="width: 15%" />
-        <Column header="Estat de màquina" style="width: 45%">
+        <Column field="order" :header='$t("plant.ordre")' style="width: 15%" />
+        <Column :header='$t("plant.estat-de-maquina")' style="width: 45%">
           <template #body="slotProps">
             {{ getMachineStatusName(slotProps.data.machineStatusId) }}
           </template>
         </Column>
-        <Column field="comment" header="Comentari" style="width: 40%" />
+        <Column field="comment" :header='$t("plant.comentari")' style="width: 40%" />
       </DataTable>
     </div>
 
@@ -57,15 +57,15 @@
     <div v-if="selectedTemplate" class="form-section">
       <div class="form-fields">
         <div class="form-field">
-          <label class="form-label">Codi de la fase</label>
+          <label class="form-label">{{ $t("plant.codi-de-la-fase") }}</label>
           <BaseInput v-model="phaseCode" class="w-full" />
         </div>
         <div class="form-field">
-          <label class="form-label">Descripció de la fase</label>
+          <label class="form-label">{{ $t("plant.descripcio-de-la-fase") }}</label>
           <BaseInput v-model="phaseDescription" class="w-full" />
         </div>
         <div class="form-field">
-          <DropdownWorkcenter label="Centre de treball" v-model="selectedWorkcenterId" />
+          <DropdownWorkcenter :label='$t("plant.centre-de-treball")' v-model="selectedWorkcenterId" />
         </div>
       </div>
     </div>
@@ -74,7 +74,7 @@
     <div v-if="selectedTemplate" class="action-section">
       <Button
         :icon="PrimeIcons.PLUS"
-        label="Crear fase"
+        :label='$t("plant.crear-fase")'
         severity="success"
         :loading="creating"
         :disabled="!phaseCode.trim() || !phaseDescription.trim()"
@@ -86,6 +86,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -98,6 +99,8 @@ import { usePlantModelStore } from "../../../production/store/plantmodel";
 import Services from "../../../production/services";
 import { WorkOrderPhaseService } from "../../../production/services/workorder.service";
 import DropdownWorkcenter from "../../../production/components/DropdownWorkcenter.vue";
+
+const { t } = useI18n();
 
 interface Props {
   workOrderId: string;
@@ -161,7 +164,7 @@ const load = async () => {
     console.error("Error loading phase templates:", error);
     toast.add({
       severity: "error",
-      summary: "Error al carregar les plantilles de fase",
+      summary: t("plant.error-al-carregar-les-plantilles-de-fase"),
       life: 4000,
     });
     templates.value = [];
@@ -176,7 +179,7 @@ const onCreatePhase = async () => {
   if (!/^\d+$/.test(phaseCode.value.trim())) {
     toast.add({
       severity: "warn",
-      summary: "El codi de la fase ha de ser numèric",
+      summary: t("plant.el-codi-de-la-fase-ha-de-ser-numeric"),
       life: 4000,
     });
     return;
@@ -197,7 +200,7 @@ const onCreatePhase = async () => {
     if (response.result) {
       toast.add({
         severity: "success",
-        summary: "Fase creada correctament des de la plantilla",
+        summary: t("plant.fase-creada-correctament-des-de-la-plantilla"),
         life: 4000,
       });
       phaseCode.value = "";
@@ -206,7 +209,7 @@ const onCreatePhase = async () => {
     } else {
       toast.add({
         severity: "error",
-        summary: response.errors?.join("\n") || "Error al crear la fase",
+        summary: response.errors?.join("\n") || t("plant.messages.phaseCreationError"),
         life: 4000,
       });
     }
@@ -214,7 +217,7 @@ const onCreatePhase = async () => {
     console.error("Error creating phase from template:", error);
     toast.add({
       severity: "error",
-      summary: "Error al crear la fase des de la plantilla",
+      summary: t("plant.error-al-crear-la-fase-des-de-la-plantilla"),
       life: 4000,
     });
   } finally {

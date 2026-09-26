@@ -1,91 +1,37 @@
 <template>
-  <DataTable
-    :value="filteredData"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="filteredData"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="workcenterName"
     :sort-order="1"
+    show-delete-column
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
-  >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Màquina</label
-            >
-            <Select
-              v-model="filter.workcenterId"
-              :options="plantmodelStore.workcenters"
-              optionValue="id"
-              optionLabel="name"
-              class="w-full"
-              size="small"
-              showClear
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Cost 0</label
-            >
-            <div class="table-filter-checkbox-field">
-              <Checkbox :binary="true" v-model="filter.zerocost" />
-            </div>
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="workcenterName" header="Màquina" style="width: 30%" sortable>
-    </Column>
-    <Column
-      field="machineStatusName"
-      header="Estat de màquina"
-      style="width: 30%"
-    >
-    </Column>
-    <Column field="cost" header="Cost" style="width: 30%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.cost) }}
-      </template>
-    </Column>
-    <Column header="Desactivada" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  />
 </template>
 
 <script setup lang="ts">
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
@@ -95,9 +41,11 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkcenterCost } from "../types";
-import { formatCurrency } from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { useUserFilterStore } from "../../../store/userfilter";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
@@ -106,6 +54,57 @@ const toast = useToast();
 const confirm = useConfirm();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "workcenterId",
+    label: pt("Màquina"),
+    type: "select",
+    options: plantmodelStore.workcenters ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    size: "md",
+  },
+  {
+    key: "zerocost",
+    label: pt("Cost 0"),
+    type: "checkbox",
+    size: "sm",
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "workcenterName",
+    header: pt("Màquina"),
+    sortable: true,
+    style: "width: 30%",
+  },
+  {
+    field: "machineStatusName",
+    header: pt("Estat de màquina"),
+    style: "width: 30%",
+  },
+  {
+    field: "cost",
+    header: pt("Cost"),
+    columnType: ColumnType.Currency,
+    style: "width: 30%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivada"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "workcenterName",
+  trailing: "cost",
+  subtitle: "machineStatusName",
+  meta: ["disabled"],
+};
 
 const getUserFilter = () => {
   const userFilter = userFilterStore.getFilter("WorkcenterCosts", "");
@@ -117,7 +116,7 @@ const getUserFilter = () => {
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Costs per màquina",
+    title: pt("Costs per màquina"),
   });
 
   await plantmodelStore.fetchWorkcenterCosts();
@@ -185,23 +184,16 @@ const getMachineStatusById = (id: string) => {
 };
 
 const createButtonClick = () => {
-  router.push({ path: `/workcentercost/${uuidv4()}` });
+  router.push({ path: `/workcentercost/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/workcentercost/${row.data.id}` });
-  }
+  router.push({ path: `/workcentercost/${row.data.id}` });
 };
 
-const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
+const deleteButton = (workcentercost: WorkcenterCost) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar el cost  ${workcentercost.id}?`,
+    message: t("production.detail.confirmDeleteWorkcenterCost"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -213,7 +205,7 @@ const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenterCosts();
@@ -222,11 +214,3 @@ const deleteButton = (event: any, workcentercost: WorkcenterCost) => {
   });
 };
 </script>
-
-<style scoped>
-.table-filter-checkbox-field {
-  display: flex;
-  align-items: center;
-  min-height: 2.375rem;
-}
-</style>

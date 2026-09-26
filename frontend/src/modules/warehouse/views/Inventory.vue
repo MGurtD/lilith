@@ -1,86 +1,90 @@
 <template>
-  <DataTable
-    :value="filteredInventories"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="filteredInventories"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
     :paginator="(inventoryStore.inventories?.length ?? 0) > 20"
     :rows="20"
+    @create="newMovement"
+    @clear="cleanFilter"
   >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @create="newMovement"
-        @clear="cleanFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Ubicació</label>
-            <DropdownWarehousesWithLocations
-              label=""
-              v-model="filter.locationId"
-            />
-          </div>
-        </template>
-        <template #append>
-          <Button
-            label="Guardar"
-            icon="pi pi-save"
-            size="small"
-            rounded
-            aria-label="Guardar moviments"
-            @click="saveMovement"
-          />
-        </template>
-      </TableFilter>
+    <template #filter-locationId="{ value, update }">
+      <DropdownWarehousesWithLocations size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
-    <Column field="referenceName" header="Referència" style="width: 28%">
-    </Column>
-    <Column field="locationName" header="Ubicació"></Column>
-    <Column field="oldQuantity" header="Uds."></Column>
-    <Column header="Recompte" style="width: 12%">
-      <template #body="slotProps">
-        <BaseInput
-          label=""
-          id="newQuantity"
-          v-model="slotProps.data.newQuantity"
-        ></BaseInput>
-      </template>
-    </Column>
-    <Column field="width" header="Ample (x) mm"></Column>
-    <Column field="length" header="Llarg (y) mm"></Column>
-    <Column field="height" header="Alt (z) mm"></Column>
-    <Column field="diameter" header="Diàmetre mm"></Column>
-    <Column field="thickness" header="Gruix mm"></Column>
-  </DataTable>
+    <template #append>
+      <Button
+        :label="t('common.save')"
+        icon="pi pi-save"
+        size="small"
+        rounded
+        :aria-label="t('warehouse.inventory.saveMovementsAria')"
+        @click="saveMovement"
+      />
+    </template>
+    <template #body-lotCode="{ data }">
+      {{ data.lotCode || "-" }}
+    </template>
+    <template #card-oldQuantity="{ data }">
+      {{ t("warehouse.fields.unitsCount", { count: data.oldQuantity }) }}
+    </template>
+    <template #card-dimensions="{ data }">
+      <DimensionChips
+        :width="data.width"
+        :length="data.length"
+        :height="data.height"
+        :diameter="data.diameter"
+        :thickness="data.thickness"
+        hide-empty
+      />
+    </template>
+    <template #body-newQuantity="{ data }">
+      <BaseInput label="" id="newQuantity" v-model="data.newQuantity" />
+    </template>
+  </Table>
   <Dialog :closable="true" v-model:visible="isDialogVisible" :modal="true">
     <FormInventoryNewMovements
       :newMovement="newStockMovement"
       @submit="submitDetailForm"
+      @cancel="isDialogVisible = false"
     />
   </Dialog>
 </template>
+
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
 import BaseInput from "../../../components/BaseInput.vue";
-import TableFilter, {
+import {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import DimensionChips from "@/components/DimensionChips.vue";
+import type {
+  CardLayout,
+  Column,
+} from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
 import { useReferenceStore } from "../../shared/store/reference";
-
-import { computed, onMounted, ref } from "vue";
+import { useWarehouseStore } from "../store/warehouse";
+import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { Inventory, StockMovement } from "../types";
+import { GenericResponse } from "../../../types";
 import { useStockMovementStore } from "../store/stockMovement";
 import FormInventoryNewMovements from "../components/FormInventoryNewMovements.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
@@ -88,39 +92,111 @@ import { getNewUuid } from "../../../utils/functions";
 
 const store = useStore();
 const toast = useToast();
-
+const { t, locale } = useI18n();
 const stockStore = useStockStore();
 const inventoryStore = useInventoryStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
+const warehouseStore = useWarehouseStore();
 
 const filter = ref({
   referenceName: "",
   locationId: undefined as string | undefined,
 });
 
-const filterConfig: Array<FilterConfig> = [
+const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "locationId",
+    label: t("warehouse.fields.location"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (warehouseStore.getLocationName(value) ?? "")
+        : "",
+  },
   {
     key: "referenceName",
-    label: "Referència",
+    label: t("warehouse.fields.reference"),
     type: "text",
-    placeholder: "Referència",
+    placeholder: t("warehouse.fields.reference"),
     size: "md",
     row: 0,
   },
-];
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "referenceName",
+    header: t("warehouse.fields.reference"),
+    style: "width: 28%",
+  },
+  {
+    field: "lotCode",
+    header: t("common.lot"),
+    style: "width: 10%",
+  },
+  {
+    field: "locationName",
+    header: t("warehouse.fields.location"),
+  },
+  {
+    field: "oldQuantity",
+    header: t("warehouse.fields.units"),
+  },
+  {
+    field: "newQuantity",
+    header: t("warehouse.inventory.count"),
+    style: "width: 12%",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
+  },
+  {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "referenceName",
+  trailing: "oldQuantity",
+  subtitle: "dimensions",
+  meta: ["lotCode", "locationName", "newQuantity"],
+};
 
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "55%",
   tablet: "70%",
 };
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Inventari",
+    title: t("warehouse.inventory.title"),
   });
+};
 
+watch(locale, setMenuTitle, { immediate: true });
+
+onMounted(async () => {
   await refreshData();
 });
 
@@ -128,14 +204,16 @@ const refreshData = async () => {
   await stockStore.fetchStocks();
   inventoryStore.inventories = [];
   stockStore.stocks?.forEach((stock) => {
-    let invent = {
-      id: uuidv4(),
+    const invent = {
+      id: getNewUuid(),
       stockId: stock.id,
       movementType: "bal",
       locationId: stock.locationId,
       locationName: stock.locationName,
       referenceId: stock.referenceId,
       referenceName: stock.referenceDisplay,
+      lotId: stock.lotId,
+      lotCode: stock.lotCode,
       oldQuantity: stock.quantity,
       newQuantity: stock.quantity,
       width: stock.width,
@@ -177,6 +255,9 @@ const newStockMovement = ref({} as Inventory);
 
 const submitDetailForm = (inventory: Inventory) => {
   inventory.referenceName = referenceStore.getFullNameById(inventory.referenceId);
+  inventory.locationName = inventory.locationId
+    ? warehouseStore.getLocationName(inventory.locationId)
+    : undefined;
   inventoryStore.inventories?.push(inventory);
   isDialogVisible.value = false;
 };
@@ -187,8 +268,10 @@ const newMovement = () => {
     id: getNewUuid(),
     stockId: getNewUuid(),
     movementType: "",
-    locationId: null,
+    locationId: filter.value.locationId ?? null,
     referenceId: "",
+    lotId: null,
+    lotCode: "",
     oldQuantity: 0,
     newQuantity: 0,
     width: 0,
@@ -201,10 +284,10 @@ const newMovement = () => {
 };
 
 const saveMovement = async () => {
-  const promises = [] as Array<Promise<boolean>>;
+  const promises = [] as Array<Promise<GenericResponse<StockMovement>>>;
 
   inventoryStore.inventories
-    ?.filter((el) => el.newQuantity != el.oldQuantity)
+    ?.filter((el) => el.newQuantity !== el.oldQuantity)
     .forEach((m) => {
       const isOutput = m.newQuantity < m.oldQuantity;
       const stock: StockMovement = {
@@ -214,6 +297,7 @@ const saveMovement = async () => {
         locationId: m.locationId || null,
         location: null,
         referenceId: m.referenceId,
+        lotId: m.lotId,
         quantity: m.newQuantity - m.oldQuantity,
         width: m.width,
         length: m.length,
@@ -230,20 +314,24 @@ const saveMovement = async () => {
     });
 
   const results = await Promise.all(promises);
-  // Check if all promises resolved successfully
-  if (results.filter((p) => p === true).length === promises.length) {
+  const failed = results.filter((result) => !result.result);
+  if (failed.length === 0) {
     toast.add({
       severity: "success",
-      summary: "Inventari creat correctament",
+      summary: t("warehouse.messages.inventoryCreated"),
       life: 5000,
     });
 
     refreshData();
   } else {
+    const detail = Array.from(
+      new Set(failed.flatMap((result) => result.errors ?? [])),
+    ).join(" ");
     toast.add({
       severity: "error",
-      summary: "Error al crear el moviment d'inventari",
-      life: 5000,
+      summary: t("warehouse.messages.inventoryMovementError"),
+      detail: detail || undefined,
+      life: 7000,
     });
   }
 };

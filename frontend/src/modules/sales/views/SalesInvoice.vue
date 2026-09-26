@@ -1,17 +1,14 @@
 <template>
-  <div class="button-panel">
-    <div class="flex align-items-end justify-content-end">
-      <SplitButton
-        label="Guardar"
-        @click="updateInvoice"
-        :model="items"
-        :size="'small'"
-      />
-    </div>
-  </div>
-
   <main v-if="invoice">
-    <FormSalesInvoice class="mt-3 mr-3" :invoice="invoice" />
+    <FormSalesInvoice
+      class="mt-3 mr-3"
+      :invoice="invoice"
+      :saving="saving"
+      @submit="updateInvoice"
+      @download="printInvoice"
+      @download-pdf="printInvoicePdf"
+      @rectificative="requestRectificativeQuantity"
+    />
 
     <section class="invoice-totals-section mt-3">
       <div class="invoice-totals-grid">
@@ -20,7 +17,7 @@
             <i class="pi pi-wallet" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Base imposable</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.taxableBase") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.baseAmount)
             }}</span>
@@ -32,7 +29,7 @@
             <i class="pi pi-percentage" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Impostos</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.taxes") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.taxAmount)
             }}</span>
@@ -44,7 +41,7 @@
             <i class="pi pi-calculator" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Total factura</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.invoiceTotal") }}</span>
             <span class="total-card-value">{{
               formatCurrency(invoice.netAmount)
             }}</span>
@@ -59,7 +56,7 @@
             <i class="pi pi-verified" />
           </div>
           <div class="total-card-content">
-            <span class="total-card-label">Verifactu</span>
+            <span class="total-card-label">{{ t("sales.detail.labels.verifactu") }}</span>
             <span
               class="total-card-value"
               :class="getVerifactuStatusClass()"
@@ -78,11 +75,11 @@
       <TabList>
         <Tab value="0">
           <i :class="PrimeIcons.LIST" class="mr-2"></i>
-          <span>Detalls de la factura</span>
+          <span>{{ t("sales.detail.labels.invoiceDetails") }}</span>
         </Tab>
         <Tab v-if="canEditCustomerData" value="1">
           <i :class="PrimeIcons.ID_CARD" class="mr-2"></i>
-          <span>Dades fiscals</span>
+          <span>{{ t("sales.detail.labels.fiscalData") }}</span>
         </Tab>
       </TabList>
       <TabPanels>
@@ -99,18 +96,18 @@
               <div
                 class="flex flex-wrap align-items-center justify-content-between gap-2"
               >
-                <span class="text-900 font-bold">Detall de la factura</span>
+                <span class="text-900 font-bold">{{ t("sales.detail.labels.invoiceDetails") }}</span>
                 <div>
                   <Button
                     :size="'small'"
-                    label="Afegir albarà"
+                    :label="t('sales.detail.actions.createDeliveryNote')"
                     @click="openDeliveryNoteSelector"
                     :disabled="!isEditable"
                   />
-                  &nbsp;&nbsp;
                   <Button
                     :size="'small'"
-                    label="Afegir linia lliure"
+                    :label="t('sales.detail.actions.addLine')"
+                    class="ml-2"
                     @click="openAddDetail"
                     :disabled="!isEditable"
                   />
@@ -130,72 +127,11 @@
                   {{ $t("salesInvoice.customerData.hint") }}
                 </small>
               </div>
-              <div class="customer-fiscal-grid">
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerComercialName"
-                    :label="$t('salesInvoice.customerData.labels.comercialName')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerTaxName"
-                    :label="$t('salesInvoice.customerData.labels.taxName')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerVatNumber"
-                    :label="$t('salesInvoice.customerData.labels.vatNumber')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerAccountNumber"
-                    :label="$t('salesInvoice.customerData.labels.accountNumber')"
-                  />
-                </div>
-                <div class="mt-2 customer-fiscal-full">
-                  <BaseInput
-                    v-model="customerFiscalData.customerAddress"
-                    :label="$t('salesInvoice.customerData.labels.address')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerCity"
-                    :label="$t('salesInvoice.customerData.labels.city')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerPostalCode"
-                    :label="$t('salesInvoice.customerData.labels.postalCode')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <BaseInput
-                    v-model="customerFiscalData.customerRegion"
-                    :label="$t('salesInvoice.customerData.labels.region')"
-                  />
-                </div>
-                <div class="mt-2">
-                  <DropdownCountry
-                    v-model="customerFiscalData.customerCountry"
-                    :label="$t('salesInvoice.customerData.labels.country')"
-                  />
-                </div>
-              </div>
-              <div class="customer-fiscal-actions">
-                <Button
-                  :label="$t('salesInvoice.customerData.saveButton')"
-                  icon="pi pi-save"
-                  :size="'small'"
-                  :loading="savingCustomerData"
-                  :disabled="savingCustomerData"
-                  @click="saveCustomerFiscalDataWithPropagationCheck"
-                />
-              </div>
+              <FormSalesInvoiceCustomerData
+                :invoice="invoice"
+                :saving="savingCustomerData"
+                @submit="saveCustomerFiscalData"
+              />
             </div>
           </section>
         </TabPanel>
@@ -219,9 +155,10 @@
     :maximizable="currentDialogType === dialogType.FromDeliveryNote"
   >
     <FormSalesInvoiceDetail
-      v-if="currentDialogType === dialogType.Free"
-      :invoiceDetail="currentInvoiceDetail"
+      v-if="currentDialogType === dialogType.Free && currentInvoiceDetail"
+      :invoice-detail="currentInvoiceDetail"
       @submit="createInvoiceDetail"
+      @cancel="closeDialog"
     />
     <SelectorDeliveryNotes
       v-if="currentDialogType === dialogType.FromDeliveryNote"
@@ -240,11 +177,12 @@
       :rectificative-invoice="rectificativeRequest"
       :maximum-quantity="invoice.baseAmount"
       @submit="createRectificativeInvoice"
+      @cancel="closeDialog"
     />
   </Dialog>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
@@ -262,45 +200,26 @@ import {
   formatDate,
   formatCurrency,
 } from "../../../utils/functions";
-import {
+import type {
   CreateRectificativeInvoiceRequest,
   DeliveryNote,
+  SalesInvoice,
   SalesInvoiceCustomerDataUpdate,
   SalesInvoiceDetail,
 } from "../types";
 import { DialogOptions } from "../../../types/component";
 import FormSalesInvoice from "../components/FormSalesInvoice.vue";
+import FormSalesInvoiceCustomerData from "../components/FormSalesInvoiceCustomerData.vue";
 import TableInvoiceDetails from "../components/TableInvoiceDetails.vue";
 import FormSalesInvoiceDetail from "../components/FormSalesInvoiceDetail.vue";
 import FormRectificativeInvoice from "../components/FormRectificativeInvoice.vue";
 import SelectorDeliveryNotes from "../components/SelectorDeliveryNotes.vue";
 import Services from "../services";
-import DropdownCountry from "../../shared/components/DropdownCountry.vue";
 import { REPORTS, ReportService } from "../../../services/report.service";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useVerifactuStore } from "../../verifactu/store/verifactu";
 import { useSharedDataStore } from "../../shared/store/masterData";
-
-const items = computed(() => {
-  const options = [
-    {
-      label: "Descarregar",
-      icon: PrimeIcons.FILE_WORD,
-      command: () => printInvoice(),
-    },
-  ];
-
-  if (!invoice.value?.parentSalesInvoiceId) {
-    options.push({
-      label: "Rectificativa",
-      icon: PrimeIcons.FILE_IMPORT,
-      command: () => requestRectificativeQuantity(),
-    });
-  }
-
-  return options;
-});
 
 const route = useRoute();
 const router = useRouter();
@@ -348,7 +267,7 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.WALLET,
-    title: `Factura de venta ${invoice.value!.invoiceNumber} - ${
+    title: `${t("sales.invoices.title")} ${invoice.value!.invoiceNumber} - ${
       invoice.value!.customerComercialName
     }`,
     backButtonVisible: true,
@@ -380,51 +299,53 @@ const canEditCustomerData = computed(() => {
   return status === "Pendent" || status === "Error";
 });
 
-const customerFiscalData = reactive<SalesInvoiceCustomerDataUpdate>({
-  customerComercialName: "",
-  customerTaxName: "",
-  customerVatNumber: "",
-  customerAccountNumber: "",
-  customerAddress: "",
-  customerCity: "",
-  customerPostalCode: "",
-  customerRegion: "",
-  customerCountry: "",
-});
-
+const saving = ref(false);
 const savingCustomerData = ref(false);
 
-function syncCustomerFiscalDataFromInvoice() {
-  if (!invoice.value) return;
-  customerFiscalData.customerComercialName =
-    invoice.value.customerComercialName ?? "";
-  customerFiscalData.customerTaxName = invoice.value.customerTaxName ?? "";
-  customerFiscalData.customerVatNumber =
-    invoice.value.customerVatNumber ?? "";
-  customerFiscalData.customerAccountNumber =
-    invoice.value.customerAccountNumber ?? "";
-  customerFiscalData.customerAddress = invoice.value.customerAddress ?? "";
-  customerFiscalData.customerCity = invoice.value.customerCity ?? "";
-  customerFiscalData.customerPostalCode =
-    invoice.value.customerPostalCode ?? "";
-  customerFiscalData.customerRegion = invoice.value.customerRegion ?? "";
-  customerFiscalData.customerCountry = invoice.value.customerCountry ?? "";
-}
+const confirmCustomerDataPropagation = (count: number): Promise<boolean> =>
+  new Promise((resolve) => {
+    confirm.require({
+      header: t("salesInvoice.customerData.messages.propagationHeader"),
+      message: t("salesInvoice.customerData.messages.propagationMessage", {
+        count,
+      }),
+      icon: "pi pi-exclamation-triangle",
+      acceptLabel: t("salesInvoice.customerData.messages.acceptLabel"),
+      rejectLabel: t("salesInvoice.customerData.messages.rejectLabel"),
+      acceptClass: "p-button-warning",
+      accept: () => resolve(true),
+      // A true cancel saves nothing, so the admin can fix the data and
+      // trigger the dialog again intentionally (issue #69 follow-up).
+      reject: () => resolve(false),
+      onHide: () => resolve(false),
+    });
+  });
 
-watch(
-  () => invoice.value?.id,
-  () => syncCustomerFiscalDataFromInvoice(),
-  { immediate: true },
-);
+// The fiscal tab's own Save: persists the fiscal data through its own endpoint
+// and stays on the screen. When sibling invoices (same customer, Verifactu
+// Pendent | Error) exist, the user decides whether they are updated too; a
+// cancel saves nothing. The store reloads the invoice after a successful save.
+const saveCustomerFiscalData = async (
+  customerData: SalesInvoiceCustomerDataUpdate,
+): Promise<void> => {
+  if (!invoice.value || savingCustomerData.value) return;
+  const invoiceId = invoice.value.id;
 
-const saveCustomerFiscalData = async (propagateToAll = false) => {
-  if (!invoice.value) return;
   savingCustomerData.value = true;
   try {
-    const response = await invoiceStore.UpdateCustomerData(
-      invoice.value.id,
-      { ...customerFiscalData, propagateToAll },
-    );
+    const propagation =
+      await invoiceStore.GetCustomerDataPropagation(invoiceId);
+    const pendingCount = propagation?.pendingInvoicesCount ?? 0;
+    let propagateToAll = false;
+    if (pendingCount > 0) {
+      if (!(await confirmCustomerDataPropagation(pendingCount))) return;
+      propagateToAll = true;
+    }
+
+    const response = await invoiceStore.UpdateCustomerData(invoiceId, {
+      ...customerData,
+      propagateToAll,
+    });
     if (response?.result) {
       const propagatedCount =
         (response.content as { propagatedInvoiceCount?: number } | undefined)
@@ -441,59 +362,22 @@ const saveCustomerFiscalData = async (propagateToAll = false) => {
         detail,
         life: 5000,
       });
-      syncCustomerFiscalDataFromInvoice();
-    } else {
-      const errorMessage =
-        response?.errors && response.errors.length > 0
-          ? response.errors.join(", ")
-          : t("salesInvoice.customerData.messages.error");
-      toast.add({
-        severity: "error",
-        summary: t("salesInvoice.customerData.title"),
-        detail: errorMessage,
-        life: 7000,
-      });
+      return;
     }
+
+    const errorMessage =
+      response?.errors && response.errors.length > 0
+        ? response.errors.join(", ")
+        : t("salesInvoice.customerData.messages.error");
+    toast.add({
+      severity: "error",
+      summary: t("salesInvoice.customerData.title"),
+      detail: errorMessage,
+      life: 7000,
+    });
   } finally {
     savingCustomerData.value = false;
   }
-};
-
-const saveCustomerFiscalDataWithPropagationCheck = async () => {
-  if (!invoice.value) return;
-
-  // Ask the backend whether there are sibling invoices (same customer, status
-  // Pendent | Error) that would also be updated if the user confirms
-  // propagation. If none, just save normally (issue #69 follow-up).
-  const propagation =
-    await invoiceStore.GetCustomerDataPropagation(invoice.value.id);
-  const pendingCount = propagation?.pendingInvoicesCount ?? 0;
-
-  if (pendingCount === 0) {
-    await saveCustomerFiscalData(false);
-    return;
-  }
-
-  confirm.require({
-    header: t("salesInvoice.customerData.messages.propagationHeader"),
-    message: t("salesInvoice.customerData.messages.propagationMessage", {
-      count: pendingCount,
-    }),
-    icon: "pi pi-exclamation-triangle",
-    acceptLabel: t("salesInvoice.customerData.messages.acceptLabel"),
-    rejectLabel: t("salesInvoice.customerData.messages.rejectLabel"),
-    acceptClass: "p-button-warning",
-    accept: async () => {
-      await saveCustomerFiscalData(true);
-    },
-    reject: () => {
-      // User cancelled — do NOT save anything. The previous implementation
-      // silently called saveCustomerFiscalData(false) on reject, which still
-      // persisted the current invoice's fiscal data while skipping propagation.
-      // Issue #69 follow-up: a true cancel must leave the invoice untouched so
-      // the admin can fix the data and re-trigger the dialog intentionally.
-    },
-  });
 };
 
 const getVerifactuStatusClass = () => {
@@ -518,29 +402,35 @@ const getVerifactuStatusClass = () => {
   return "";
 };
 
-const updateInvoice = async () => {
-  if (invoice.value) {
-    const updated = await invoiceStore.Update(invoice.value);
+// The header Save persists the invoice only; the fiscal data has its own Save
+// in the fiscal tab.
+const updateInvoice = async (updatedInvoice: SalesInvoice) => {
+  if (saving.value) return;
+  saving.value = true;
+  try {
+    const updated = await invoiceStore.Update(updatedInvoice);
     if (updated) {
       router.back();
     }
+  } finally {
+    saving.value = false;
   }
 };
 
-// Report print
 const printInvoice = async () => {
+  if (!invoice.value) return;
+
   const invoiceReport = await Services.SalesInvoice.GetReportDataById(
-    invoice.value!.id
+    invoice.value.id,
   );
 
   if (invoiceReport) {
-    const fileName = `Factura_${invoice.value?.invoiceNumber}.docx`;
-
+    const fileName = `Factura_${invoice.value.invoiceNumber}.docx`;
     const reportService = new ReportService();
     const report = await reportService.Download(
       invoiceReport,
       REPORTS.Invoice,
-      fileName
+      fileName,
     );
 
     if (report) {
@@ -548,20 +438,36 @@ const printInvoice = async () => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("sales.detail.messages.error"),
+        detail: t("sales.detail.messages.reportError"),
       });
     }
   }
 };
 
+const printInvoicePdf = async () => {
+  if (!invoice.value) return;
+
+  try {
+    const report = await Services.SalesInvoice.DownloadPdf(invoice.value.id);
+    if (!report) throw new Error("No s'ha pogut generar el PDF");
+
+    createBlobAndDownloadFile(`Factura_${invoice.value.invoiceNumber}.pdf`, report);
+  } catch {
+    toast.add({
+      severity: "error",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.reportError"),
+    });
+  }
+};
 // Invoice details
 const openDeliveryNoteSelector = async () => {
   if (invoice.value) {
     await deliveryNoteStore.GetToInvoice(invoice.value.customerId);
 
     currentDialogType.value = dialogType.FromDeliveryNote;
-    dialogOptions.title = "Selector d'albarans d'entrega";
+    dialogOptions.title = t("sales.detail.dialogs.deliveryNoteSelector");
     dialogOptions.visible = true;
   }
 };
@@ -572,37 +478,49 @@ const addDeliveryNotes = async (deliveryNotes: Array<DeliveryNote>) => {
   }
 
   dialogOptions.visible = false;
-  loadDetails();
+  await loadDetails();
 };
 const deleteDeliveryNote = async (deliveryNote: DeliveryNote) => {
   await invoiceStore.RemoveDeliveryNote(invoice.value!.id, deliveryNote);
-  loadDetails();
+  await loadDetails();
+  toast.add({
+    severity: "success",
+    summary: "Albarà desassignat",
+    detail: "L'albarà s'ha desassignat correctament de la factura",
+    life: 4000,
+  });
 };
 const loadDetails = async () => {
-  lifecycleStore.fetchOneByName("SalesInvoice");
+  await invoiceStore.GetById(invoiceId.value);
   await deliveryNoteStore.GetByInvoiceId(invoiceId.value);
 };
 
-const currentInvoiceDetail = reactive({} as SalesInvoiceDetail);
+const closeDialog = () => {
+  dialogOptions.visible = false;
+};
+
+const currentInvoiceDetail = ref<SalesInvoiceDetail>();
 const openAddDetail = () => {
   currentDialogType.value = dialogType.Free;
   if (invoice.value) {
-    currentInvoiceDetail.salesInvoiceId = invoice.value.id;
-    currentInvoiceDetail.quantity = 1;
-    currentInvoiceDetail.description = "";
-    currentInvoiceDetail.unitPrice = 0;
-    currentInvoiceDetail.amount = 0;
-    currentInvoiceDetail.totalCost = 0;
-
     const tax = taxesStore.taxes?.find((t) => t.percentatge === 21);
-    if (tax) currentInvoiceDetail.taxId = tax.id;
+    currentInvoiceDetail.value = {
+      salesInvoiceId: invoice.value.id,
+      quantity: 1,
+      description: "",
+      unitPrice: 0,
+      amount: 0,
+      unitCost: 0,
+      totalCost: 0,
+      ...(tax ? { taxId: tax.id } : {}),
+    } as SalesInvoiceDetail;
 
-    dialogOptions.title = "Introducció de línea lliure";
+    dialogOptions.title = t("sales.detail.dialogs.freeLine");
     dialogOptions.visible = true;
   }
 };
-const createInvoiceDetail = async () => {
-  await invoiceStore.CreateInvoiceDetail(currentInvoiceDetail);
+const createInvoiceDetail = async (detail: SalesInvoiceDetail) => {
+  await invoiceStore.CreateInvoiceDetail(detail);
   dialogOptions.visible = false;
 };
 const deleteInvoiceDetail = async (detail: SalesInvoiceDetail) => {
@@ -621,31 +539,29 @@ const requestRectificativeQuantity = async () => {
   };
 
   dialogOptions.visible = true;
-  dialogOptions.title = "Crear factura rectificativa";
+  dialogOptions.title = t("sales.detail.dialogs.rectificativeInvoice");
   currentDialogType.value = dialogType.Rectificative;
 };
-const createRectificativeInvoice = async () => {
-  if (rectificativeRequest.value) {
-    const response = await invoiceStore.CreateRectificative(
-      rectificativeRequest.value
-    );
-    if (response && response.result && response.content) {
-      toast.add({
-        summary: "Factura rectificativa",
-        detail: `Creada correctament amb el número ${response.content.invoiceNumber}`,
-        severity: "success",
-        life: 10000,
-      });
+const createRectificativeInvoice = async (
+  request: CreateRectificativeInvoiceRequest,
+) => {
+  const response = await invoiceStore.CreateRectificative(request);
+  if (response && response.result && response.content) {
+    toast.add({
+      summary: t("sales.detail.messages.rectificativeInvoice"),
+      detail: t("sales.detail.messages.rectificativeCreated", { number: response.content.invoiceNumber }),
+      severity: "success",
+      life: 10000,
+    });
 
-      router.back();
-    } else {
-      toast.add({
-        summary: "Factura rectificativa",
-        detail: "Error en la creació de la factura",
-        severity: "error",
-        life: 10000,
-      });
-    }
+    router.back();
+  } else {
+    toast.add({
+      summary: t("sales.detail.messages.rectificativeInvoice"),
+      detail: t("sales.detail.messages.invoiceCreationError"),
+      severity: "error",
+      life: 10000,
+    });
   }
 };
 
@@ -656,17 +572,17 @@ const sendToVerifactu = async () => {
     if (response && response.result) {
       toast.add({
         severity: "success",
-        summary: "Enviament a Verifactu",
-        detail: "Factura enviada correctament a Verifactu",
+        summary: t("sales.detail.labels.verifactu"),
+        detail: t("sales.detail.messages.verifactuSent"),
         life: 5000,
       });
       await invoiceStore.GetById(invoiceId.value);
     } else {
       toast.add({
         severity: "error",
-        summary: "Error en l'enviament",
+        summary: t("sales.detail.messages.error"),
         detail:
-          "No s'ha pogut enviar la factura" +
+          t("sales.detail.messages.sendError") +
           (response?.errors && response?.errors.length > 0
             ? `: ${response.errors[0]}`
             : ""),
@@ -678,12 +594,6 @@ const sendToVerifactu = async () => {
 </script>
 
 <style scoped>
-.button-panel {
-  position: absolute;
-  top: 0;
-  right: 2rem;
-  z-index: 1000;
-}
 
 .invoice-totals-section {
   padding-right: 0.75rem;
@@ -741,7 +651,7 @@ const sendToVerifactu = async () => {
 }
 
 .total-card-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
   white-space: nowrap;
   line-height: 1.1;
@@ -807,38 +717,7 @@ const sendToVerifactu = async () => {
   font-size: 0.8rem;
 }
 
-.customer-fiscal-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem 0.85rem;
-}
-
-.customer-fiscal-full {
-  grid-column: span 4;
-}
-
-.customer-fiscal-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.85rem;
-}
-
-@media (max-width: 1100px) {
-  .customer-fiscal-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .customer-fiscal-full {
-    grid-column: span 2;
-  }
-}
-
 @media (max-width: 640px) {
-  .customer-fiscal-grid {
-    grid-template-columns: 1fr;
-  }
-  .customer-fiscal-full {
-    grid-column: span 1;
-  }
   .customer-fiscal-section {
     padding-right: 0;
   }

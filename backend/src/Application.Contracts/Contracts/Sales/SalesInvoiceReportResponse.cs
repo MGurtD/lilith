@@ -27,8 +27,10 @@ public class InvoiceReportDto(string languageCode, ILocalizationService localiza
     public required DateTime DueDate { get; set; }
     public required decimal Total { get; set; }
     public required Customer Customer { get; set; }
+    public required string EnterpriseName { get; set; }
     public required Site Site { get; set; }
     public required PaymentMethod PaymentMethod { get; set; }
+    public required string Iban { get; set; }
     public required string QrCodeUrl { get; set; }
     public required string QrCodeReportTag { get; set; }
     public List<InvoiceReportDtoDeliveryNote> DeliveryNotes { get; set; } = [];

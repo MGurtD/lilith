@@ -18,16 +18,15 @@
         class="grid_delete_column_button"
         @click="onGroupDeleteRow($event, slotProps.data)"
       />
-      &nbsp;
       <span class="vertical-align-middle ml-2 font-bold line-height-3">{{
         slotProps.data.deliveryNoteNumber
       }}</span>
     </template>
-    <Column header="Albarà" field="deliveryNoteNumber" style="width: 5%" />
+    <Column :header="t('sales.components.albara')" field="deliveryNoteNumber" style="width: 5%" />
     <Column header="" field="" style="width: 2%" />
 
-    <Column header="Quantitat" field="quantity" style="width: 10%"></Column>
-    <Column header="Referència" field="reference.code" style="width: 15%">
+    <Column :header="t('sales.components.quantitat')" field="quantity" style="width: 10%"></Column>
+    <Column :header="t('sales.components.referencia')" field="reference.code" style="width: 15%">
       <template #body="slotProps">
         <span v-if="slotProps.data.deliveryNoteDetail">
           <LinkReference :id="slotProps.data.deliveryNoteDetail.referenceId" />
@@ -35,18 +34,18 @@
         <span v-else>--</span>
       </template>
     </Column>
-    <Column header="Descripció" field="description" style="width: 40%"></Column>
-    <Column header="Preu unitat" style="width: 10%">
+    <Column :header="t('sales.components.descripcio')" field="description" style="width: 40%"></Column>
+    <Column :header="t('sales.components.preuUnitat')" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.unitPrice) }}
       </template>
     </Column>
-    <Column header="Impost" style="width: 10%">
+    <Column :header="t('sales.components.impost')" style="width: 10%">
       <template #body="slotProps">
         {{ getTaxNameById(slotProps.data.taxId) }}
       </template>
     </Column>
-    <Column header="Total" field="totalCost" style="width: 10%">
+    <Column :header="t('sales.components.total')" field="totalCost" style="width: 10%">
       <template #body="slotProps">
         {{ formatCurrency(slotProps.data.amount) }}
       </template>
@@ -64,6 +63,7 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import LinkReference from "../../shared/components/LinkReference.vue";
 import { computed, onMounted } from "vue";
 import { DeliveryNote, SalesInvoiceDetail } from "../types";
@@ -76,6 +76,7 @@ import _ from "lodash";
 import { Reference } from "../../shared/types";
 import { useTaxesStore } from "../../shared/store/tax";
 
+const { t } = useI18n();
 const confirm = useConfirm();
 const lifecycleStore = useLifecyclesStore();
 const taxesStore = useTaxesStore();
@@ -154,7 +155,7 @@ const emit = defineEmits<{
 
 const onDeleteRow = (event: any, SalesInvoiceDetail: any) => {
   confirm.require({
-    message: `Està segur que vol eliminar la línea ${SalesInvoiceDetail.description}?`,
+    message: t("sales.componentMessages.deleteInvoiceLine", { description: SalesInvoiceDetail.description }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

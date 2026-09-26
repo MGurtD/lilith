@@ -1,73 +1,98 @@
 <template>
-  <DataTable
-    :value="plantmodelStore.operators"
-    tableStyle="min-width: 100%"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="tableItems"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Operaris</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ pt("Operaris") }}</span>
     </template>
-    <Column field="code" header="Codi" style="width: 15%"></Column>
-    <Column header="Nom complet" style="width: 35%">
-      <template #body="slotProps">
-        {{ slotProps.data.name }} {{ slotProps.data.surname }}
-      </template>
-    </Column>
-    <Column field="vatNumber" header="NIF" style="width: 15%"></Column>
-    <Column header="Tipus" style="width: 15%">
-      <template #body="slotProps">
-        {{
-          operatorTypeStore.getOperatorTypeNameById(
-            slotProps.data.operatorTypeId
-          )
-        }}
-      </template>
-    </Column>
-    <Column header="Desactivat" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { useI18n } from "vue-i18n";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useOperatorTypeStore } from "../store/operatortype";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Operator } from "../types";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const operatorTypeStore = useOperatorTypeStore();
 const toast = useToast();
 const confirm = useConfirm();
+
+const tableItems = computed(() =>
+  (plantmodelStore.operators ?? []).map((operator) => ({
+    ...operator,
+    fullName: `${operator.name} ${operator.surname}`.trim(),
+  })),
+);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "code",
+    header: pt("Codi"),
+    style: "width: 15%",
+  },
+  {
+    field: "fullName",
+    header: pt("Nom complet"),
+    style: "width: 35%",
+  },
+  {
+    field: "vatNumber",
+    header: "NIF",
+    style: "width: 15%",
+  },
+  {
+    field: "operatorTypeId",
+    header: pt("Tipus"),
+    columnType: ColumnType.Lookup,
+    resolver: (value) =>
+      typeof value === "string"
+        ? operatorTypeStore.getOperatorTypeNameById(value)
+        : "",
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivat"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "fullName",
+  trailing: "code",
+  subtitle: "operatorTypeId",
+  meta: ["vatNumber", "disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchOperators();
@@ -77,28 +102,23 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'operaris",
+    title: t("production.detail.operatorsTitle"),
   });
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/operator/${uuidv4()}` });
+  router.push({ path: `/operator/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/operator/${row.data.id}` });
-  }
+  router.push({ path: `/operator/${row.data.id}` });
 };
 
-const deleteButton = (event: any, operator: Operator) => {
+const deleteButton = (operator: Operator) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar l'operari ${operator.surname}, ${operator.name}?`,
+    message: t("production.messages.confirmDeleteOperator", {
+      name: `${operator.surname}, ${operator.name}`,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -108,7 +128,7 @@ const deleteButton = (event: any, operator: Operator) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchOperators();

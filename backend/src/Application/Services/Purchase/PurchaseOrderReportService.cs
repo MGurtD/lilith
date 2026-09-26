@@ -15,6 +15,9 @@ namespace Application.Services.Purchase
             var site = (await unitOfWork.Sites.FindAsync(s => !s.Disabled)).FirstOrDefault();
             if (site == null) return null;
 
+            var enterprise = await unitOfWork.Enterprises.Get(site.EnterpriseId);
+            if (enterprise == null) return null;
+
             var referenceIds = order.Details.Select(detail => detail.ReferenceId).ToList();
             var references = await unitOfWork.References.FindAsync(r => referenceIds.Contains(r.Id));
             var supplierReferences = unitOfWork.Suppliers.GetSupplierReferences(supplier.Id);
@@ -51,6 +54,7 @@ namespace Application.Services.Purchase
             {
                 Supplier = supplier,
                 Site = site,
+                Enterprise = enterprise,
                 Order = orderDto,
                 Details = orderDetails.GroupBy(d => d.Description).Select(g => new PurchaseOrderDetailReportDto()
                 {

@@ -13,39 +13,44 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Fases</span>
+        <span class="text-900 font-bold">{{ t("production.components.fases") }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
       </div>
     </template>
-    <Column field="code" header="Codi" sortable style="width: 10%"></Column>
-    <Column field="description" header="Descripció" style="width: 15%"></Column>
-    <Column header="Tipus de màquina" style="width: 15%">
+    <Column field="code" :header="t('production.components.codi')" sortable style="width: 10%"></Column>
+    <Column field="description" :header="t('production.components.descripcio')" style="width: 15%"></Column>
+    <Column :header="t('production.components.tipusDeMaquina')" style="width: 15%">
       <template #body="slotProps">
         {{ getWorkcenterType(slotProps.data.workcenterTypeId) }}
       </template>
     </Column>
-    <Column header="Màquina preferida" style="width: 15%">
+    <Column :header="t('production.components.maquinaPreferida')" style="width: 15%">
       <template #body="slotProps">
         {{ getWorkcenter(slotProps.data.preferredWorkcenterId) }}
       </template>
     </Column>
-    <Column header="Tipus d'operari" style="width: 15%">
+    <Column :header="t('production.components.tipusDOperari')" style="width: 15%">
       <template #body="slotProps">
         {{ getOperatorType(slotProps.data.operatorTypeId) }}
       </template>
     </Column>
-    <Column header="Estat">
+    <Column :header="t('production.components.estat')">
       <template #body="slotProps">
-        {{ getStatus(slotProps.data.statusId) }}
+        <Tag
+          v-if="getStatus(slotProps.data.statusId)"
+          :value="getStatus(slotProps.data.statusId)"
+          :severity="(lifecycleStore.getStatusColorById(slotProps.data.statusId) || 'secondary') as any"
+          class="lifecycle-status-tag"
+        />
       </template>
     </Column>
-    <Column header="Quantitat">
+    <Column :header="t('production.components.quantitat')">
       <template #body="slotProps">
         <span class="quantity-ok">{{ slotProps.data.quantityOk }}</span> /
         <span class="quantity-ko">{{ slotProps.data.quantityKo }}</span>
       </template>
     </Column>
-    <Column header="Extern" style="width: 5%">
+    <Column :header="t('production.components.extern')" style="width: 5%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isExternalWork"></BooleanColumn>
       </template>
@@ -68,15 +73,20 @@
     :modal="dialogOptions.modal"
   >
     <FormWorkOrderPhase
+      in-dialog
       v-if="newPhase"
       :workorder="workorder"
       :phase="newPhase"
       @submit="onAddHandler"
-    ></FormWorkOrderPhase>
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkOrder, WorkOrderPhase } from "../types";
@@ -102,7 +112,7 @@ const emit = defineEmits<{
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Nova fase",
+  title: t("production.components.novaFase"),
   closable: true,
   position: "center",
   modal: true,
@@ -189,8 +199,8 @@ const onAddHandler = (phase: WorkOrderPhase) => {
   if (existsPhase) {
     toast.add({
       severity: "warn",
-      summary: `Fase invàlida`,
-      detail: `La fase ${phase.code} ja existeix`,
+      summary: t("production.components.invalidPhase"),
+      detail: t("production.components.duplicatePhase", { code: phase.code }),
       life: 5000,
     });
     return;
@@ -213,7 +223,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, phase: WorkOrderPhase) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la fase?`,
+    message: t("production.components.confirmDeletePhase", { code: phase.code, description: phase.description }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

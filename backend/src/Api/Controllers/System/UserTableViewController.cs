@@ -84,11 +84,27 @@ namespace Api.Controllers.Auth
             return BadRequest(response);
         }
 
-        // PATCH /api/usertableview/{id:guid}/default — set or unset as default
+// PATCH /api/usertableview/{id:guid}/default — set or unset as default
         [HttpPatch("{id:guid}/default")]
         public async Task<IActionResult> SetDefault(Guid id, [FromQuery] bool isDefault = true)
         {
             var response = await service.SetDefault(id, isDefault);
+            if (response.Result)
+                return Ok(response.Content);
+
+            return BadRequest(response);
+        }
+
+        // POST /api/usertableview/ensure-default — idempotent get-or-create
+        // for the per-user, per-page default view. Returns 200 with the view
+        // whether it was newly created or already existed.
+        [HttpPost("ensure-default")]
+        public async Task<IActionResult> EnsureDefault([FromBody] EnsureDefaultRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState.ValidationState);
+
+            var response = await service.EnsureDefault(request);
             if (response.Result)
                 return Ok(response.Content);
 

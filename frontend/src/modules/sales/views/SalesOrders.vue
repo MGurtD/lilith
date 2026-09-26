@@ -1,16 +1,22 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="salesOrderStore.salesOrders ?? []"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
+    page="SalesOrders"
     preset="crud-list"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="salesOrderNumber"
-    sort-mode="single"
     :sort-order="1"
+    :attachment-config="{
+      entity: 'SalesOrder',
+      title: t('sales.orders.attachmentsTitle'),
+      titleField: 'number',
+    }"
     showDeleteColumn
     :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @filter="filterSalesOrder"
@@ -19,55 +25,32 @@
     @delete="deleteSalesInvoice"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >Període</label
-        >
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >Client</label
-        >
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label">Estat</label>
-        <DropdownLifecycle
-          label=""
-          name="SalesOrder"
-          v-model="filter.statusId"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
+    </template>
+    <template #filter-statusId="{ value, update }">
+      <DropdownLifecycle size="small"
+        label=""
+        name="SalesOrder"
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
 
   </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.orders.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createOrder"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -76,9 +59,17 @@ import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import DropdownLifecycle from "../../shared/components/DropdownLifecycle.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
@@ -105,19 +96,50 @@ const userFilterStore = useUserFilterStore();
 const salesOrderStore = useSalesOrderStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
-const columns = ref<Column[]>([
-  { field: "number", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
-  { field: "expectedDate", header: "Data Entrega", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
-  { field: "customerComercialName", header: "Client", style: "width: 30%" },
-  { field: "customerNumber", header: "Comanda client", style: "width: 15%" },
+const columns = computed<Column[]>(() => [
+  { field: "number", header: t("common.number"), sortable: true, style: "width: 10%" },
+  { field: "date", header: t("common.date"), sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "expectedDate", header: t("sales.list.columns.deliveryDate"), sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "customerComercialName", header: t("common.customer"), style: "width: 30%" },
+  { field: "customerNumber", header: t("sales.orders.columns.customerOrder"), style: "width: 15%" },
   {
     field: "statusId",
-    header: "Estat",
-    columnType: ColumnType.Lookup,
+    header: t("common.status"),
+    columnType: ColumnType.Status,
     resolver: lifecycleStore.getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
     style: "width: 20%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "customerComercialName",
+  badge: "statusId",
+  trailing: "date",
+  meta: ["expectedDate", "customerNumber"],
+};
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+  {
+    key: "statusId",
+    label: t("common.status"),
+    type: "slot",
+    valueLabel: (value) => lifecycleStore.getStatusNameById(String(value)),
   },
 ]);
 
@@ -130,7 +152,6 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear comanda",
   closable: true,
   position: "center",
   modal: true,
@@ -152,11 +173,14 @@ onMounted(async () => {
   getUserFilter();
   await filterSalesOrder();
 
-  store.setMenuItem({
-    icon: PrimeIcons.APPLE,
-    title: "Comandes",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.APPLE, title: t("sales.orders.title") });
+};
+
+watch(locale, setMenuItem);
 onUnmounted(() => {
   userFilterStore.addFilter("SalesOrders", "", filter.value);
   salesOrderStore.salesOrders = undefined;
@@ -184,6 +208,7 @@ const cleanFilter = () => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -216,28 +241,35 @@ const filterSalesOrder = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
 };
 
-const createOrder = async () => {
-  const response = await salesOrderStore.Create(createRequest.value);
-  if (!response?.result) {
-    toast.add({
-      severity: "warn",
-      summary: "Error al crear la comanda",
-      detail:
-        response?.errors?.[0] ??
-        "Error desconegut, contacte amb l'administrador.",
-      life: 10000,
-    });
-    return;
+const createOrder = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const response = await salesOrderStore.Create(request);
+    if (!response?.result) {
+      toast.add({
+        severity: "warn",
+        summary: t("sales.orders.messages.createError"),
+        detail:
+          response?.errors?.[0] ??
+          t("sales.list.messages.unknownError"),
+        life: 10000,
+      });
+      return;
+    }
+    dialogOptions.visible = false;
+    router.push({ path: `/salesorder/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-  dialogOptions.visible = false;
-  router.push({ path: `/salesorder/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
@@ -246,7 +278,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteSalesInvoice = (order: any) => {
   confirm.require({
-    message: `Està segur que vol eliminar la comanda?`,
+    message: t("sales.orders.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -255,7 +287,7 @@ const deleteSalesInvoice = (order: any) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
 

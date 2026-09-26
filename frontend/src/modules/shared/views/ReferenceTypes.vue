@@ -1,60 +1,38 @@
 <template>
-  <DataTable
-    :value="referenceTypeStore.referenceTypes"
-    tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    sort-mode="single"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="referenceTypeStore.referenceTypes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     sort-field="name"
     :sort-order="1"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Tipus de matèries primes</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{
+        t("shared.referenceTypes.title")
+      }}</span>
     </template>
-    <Column field="name" sortable header="Nom" style="width: 25%"></Column>
-    <Column
-      field="description"
-      sortable
-      header="Descripció"
-      style="width: 40%"
-    ></Column>
-    <Column
-      field="density"
-      header="Densitat (cm/m3)"
-      style="width: 15%"
-    ></Column>
-    <Column header="Desactivada" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
@@ -67,34 +45,63 @@ const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const referenceTypeStore = useReferenceTypeStore();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.referenceTypes.columns.name"),
+    sortable: true,
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("shared.referenceTypes.columns.description"),
+    sortable: true,
+    style: "width: 40%",
+  },
+  {
+    field: "density",
+    header: t("shared.referenceTypes.columns.density"),
+    columnType: ColumnType.Number,
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.referenceTypes.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["density", "disabled"],
+};
 
 onMounted(async () => {
   await referenceTypeStore.fetchAll();
 
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Gestió de tipus de materials",
+    title: t("shared.referenceTypes.menuTitle"),
   });
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/referencetype/${uuidv4()}` });
+  router.push({ path: `/referencetype/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/referencetype/${row.data.id}` });
-  }
+  router.push({ path: `/referencetype/${row.data.id}` });
 };
 
-const deleteButton = (event: any, rawmaterialtype: ReferenceType) => {
+const deleteButton = (rawmaterialtype: ReferenceType) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar el tipus de materials ${rawmaterialtype.name}?`,
+    message: t("shared.referenceTypes.messages.confirmDelete", {
+      name: rawmaterialtype.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -106,7 +113,7 @@ const deleteButton = (event: any, rawmaterialtype: ReferenceType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("shared.referenceTypes.messages.deleted"),
           life: 3000,
         });
         await referenceTypeStore.fetchAll();

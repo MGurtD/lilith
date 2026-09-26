@@ -1,63 +1,44 @@
 <template>
-  <DataTable
-    :value="workorders"
+  <Table
+    :items="workorders"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    :show-create="false"
+    page="WorkorderPlanning"
+    :card-layout="cardLayout"
+    show-row-reorder-column
     tableStyle="min-width: 100%"
     class="p-datatable-sm small-datatable"
     sortField="order"
     :sortOrder="1"
     scrollable
     scrollHeight="flex"
-    @rowReorder="onRowReorder"
+    @row-reorder="onRowReorder"
   >
-    <template #header>
-      <div class="flex flex-wrap align-items-end justify-content-end gap-2">
-        <div class="datatable-buttons">
-          <Button :icon="PrimeIcons.SAVE" rounded raised @click="updateOrder" />
-        </div>
-      </div>
+    <template #append>
+      <Button :icon="PrimeIcons.SAVE" rounded raised @click="updateOrder" />
     </template>
-    <Column rowReorder headerStyle="width: 3rem" :reorderableColumn="false" />
-    <Column field="code" header="Codi">
-      <template #body="slotProps">
-        <LinkWorkorder :id="slotProps.data.id" :code="slotProps.data.code" />
-      </template>
-    </Column>
-    <Column header="Estat">
-      <template #body="slotProps">
-        {{ slotProps.data.status?.name }}
-      </template>
-    </Column>
-    <Column header="Client">
-      <template #body="slotProps">
-        {{ slotProps.data.reference?.customer?.comercialName }}
-      </template>
-    </Column>
-    <Column header="Referència">
-      <template #body="slotProps">
-        {{
-          slotProps.data.reference?.code +
-          " - " +
-          slotProps.data.reference?.description
-        }}
-      </template>
-    </Column>
-    <Column field="plannedDate" header="Data Prevista" style="width: 12%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.plannedDate) }}
-      </template>
-    </Column>
-    <Column field="order" header="Prioritat"></Column>
-    <Column field="plannedQuantity" header="Quantitat"></Column>
-  </DataTable>
+    <template #body-code="{ data }">
+      <LinkWorkorder :id="data.id" :code="data.code" />
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import LinkWorkorder from "../components/LinkWorkorder.vue";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { useWorkOrderStore } from "../store/workorder";
 import { PrimeIcons } from "@primevue/core/api";
-import { computed } from "vue";
-import { formatDate } from "../../../utils/functions";
-import { WorkOrderOrder } from "../types";
+import { WorkOrder, WorkOrderOrder } from "../types";
 import { useStore } from "@/store";
 import { useToast } from "primevue/usetoast";
 
@@ -65,11 +46,54 @@ const store = useStore();
 const toast = useToast();
 const workorderStore = useWorkOrderStore();
 
+const columns = computed<Column[]>(() => [
+  { field: "code", header: pt("Codi") },
+  { field: "status.name", header: pt("Estat") },
+  {
+    field: "reference.customer.comercialName",
+    header: pt("Client"),
+  },
+  {
+    field: "reference.code",
+    header: pt("Referència"),
+    resolver: (_value, data) => {
+      const workorder = data as WorkOrder;
+      return workorder.reference
+        ? `${workorder.reference.code} - ${workorder.reference.description}`
+        : "";
+    },
+  },
+  {
+    field: "plannedDate",
+    header: pt("Data Prevista"),
+    columnType: ColumnType.Date,
+    style: "width: 12%",
+  },
+  {
+    field: "order",
+    header: pt("Prioritat"),
+    columnType: ColumnType.Number,
+  },
+  {
+    field: "plannedQuantity",
+    header: pt("Quantitat"),
+    columnType: ColumnType.Number,
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "code",
+  trailing: "order",
+  subtitle: "reference.code",
+  badge: "status.name",
+  meta: ["reference.customer.comercialName", "plannedDate", "plannedQuantity"],
+};
+
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     backButtonVisible: false,
-    title: "Prioritzar ordres de fabricació",
+    title: pt("Prioritzar ordres de fabricació"),
   });
 
   await workorderStore.fetchPlannable();
@@ -81,33 +105,32 @@ const workorders = computed(() => {
     : [];
 });
 
-const onRowReorder = async (event: any) => {
-  workorderStore.workorders = event.value.map((item: any, index: number) => {
-    item.order = index + 1;
-    return item;
-  });
+const onRowReorder = (event: { value: WorkOrder[] }) => {
+  workorderStore.workorders = event.value.map((item, index) => ({
+    ...item,
+    order: index + 1,
+  }));
 };
 
 const updateOrder = async () => {
-  const payload: Array<WorkOrderOrder> = workorders.value.map((item: any) => {
+  const payload: Array<WorkOrderOrder> = workorders.value.map((item) => {
     return {
       id: item.id,
       order: item.order,
     };
   });
   const response = await workorderStore.priorize(payload);
-  console.log(response);
   if (response.result) {
     toast.add({
       severity: "success",
-      summary: "Ordres de fabricació actualitzades",
-      detail: "L'ordre de les ordres de fabricació s'ha actualitzat.",
+      summary: pt("Ordres de fabricació actualitzades"),
+      detail: t("production.messages.updatedWorkorderPlanning"),
       life: 3000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error actualitzant les ordres de fabricació",
+      summary: pt("Error actualitzant les ordres de fabricació"),
       detail:
         response.errors?.join(", ") || "S'ha produït un error desconegut.",
       life: 5000,

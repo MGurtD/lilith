@@ -1,74 +1,20 @@
-<template>
-  <form v-if="referenceSupplier">
-    <section class="three-columns pt-5">
-      <DropdownReference
-        v-if="!referenceId"
-        label="Referència"
-        v-model="referenceSupplier.referenceId"
-        :fullName="true"
-      ></DropdownReference>
-      <DropdownSupplier
-        v-if="!supplierId"
-        label="Proveïdor"
-        v-model="referenceSupplier.supplierId"
-      />
-      <BaseInput
-        label="Codi proveïdor"
-        id="supplierCode"
-        v-model="referenceSupplier.supplierCode"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.supplierCode,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Descripció proveïdor"
-        id="supplierDescription"
-        v-model="referenceSupplier.supplierDescription"
-        class="mb-2"
-      ></BaseInput>
-    </section>
-    <section class="three-columns">
-      <BaseInput
-        label="Preu proveïdor"
-        id="supplierPrice"
-        v-model="referenceSupplier.supplierPrice"
-        :type="BaseInputType.CURRENCY"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.supplierPrice,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Dies de subministrament"
-        id="supplyDays"
-        v-model="referenceSupplier.supplyDays"
-        :type="BaseInputType.NUMERIC"
-        class="mb-2"
-        :class="{
-          'p-invalid': validation.errors.supplyDays,
-        }"
-      ></BaseInput>
-    </section>
-    <div class="mt-2 flex justify-content-end gap-2">
-      <Button label="Guardar" @click="submitForm" />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import BaseInput from "../../../components/BaseInput.vue";
-import DropdownSupplier from "../components/DropdownSupplier.vue";
-import DropdownReference from "../../../modules/shared/components/DropdownReference.vue";
-import { ref } from "vue";
-import { SupplierReference } from "../types";
-import * as Yup from "yup";
-import { BaseInputType } from "../../../types/component";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import DropdownReference from "@/modules/shared/components/DropdownReference.vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { SupplierReference } from "../types";
+import DropdownSupplier from "./DropdownSupplier.vue";
 
 const props = defineProps<{
   referenceId?: string;
@@ -77,44 +23,138 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", reference: SupplierReference): void;
-  (e: "cancel"): void;
+  (event: "submit", reference: SupplierReference): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  supplierCode: Yup.string().required("El codi és obligatori"),
-  supplierPrice: Yup.number().required("El preu és obligatori"),
-  supplyDays: Yup.number().required(
-    "Els dies de subministrament són obligatoris",
-  ),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      ...(!props.referenceId
+        ? [
+            {
+              name: "referenceId",
+              label: t("purchase.supplierReference.fields.reference"),
+              type: FormFieldType.Custom as const,
+            },
+          ]
+        : []),
+      ...(!props.supplierId
+        ? [
+            {
+              name: "supplierId",
+              label: t("purchase.supplierReference.fields.supplier"),
+              type: FormFieldType.Custom as const,
+            },
+          ]
+        : []),
+      {
+        name: "supplierCode",
+        label: t("purchase.supplierReference.fields.supplierCode"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .trim()
+          .required(
+            t(
+              "purchase.supplierReference.validation.supplierCodeRequired",
+            ),
+          ),
+      },
+      {
+        name: "supplierDescription",
+        label: t("purchase.supplierReference.fields.supplierDescription"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "supplierPrice",
+        label: t("purchase.supplierReference.fields.supplierPrice"),
+        type: FormFieldType.Currency,
+        props: {
+          currency: "EUR",
+          locale: "en-US",
+          minFractionDigits: 2,
+        },
+        validation: Yup.number()
+          .typeError(
+            t(
+              "purchase.supplierReference.validation.supplierPriceRequired",
+            ),
+          )
+          .required(
+            t(
+              "purchase.supplierReference.validation.supplierPriceRequired",
+            ),
+          ),
+      },
+      {
+        name: "supplyDays",
+        label: t("purchase.supplierReference.fields.supplyDays"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .typeError(
+            t("purchase.supplierReference.validation.supplyDaysRequired"),
+          )
+          .required(
+            t("purchase.supplierReference.validation.supplyDaysRequired"),
+          ),
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.referenceSupplier);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.referenceSupplier);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.referenceSupplier,
+    referenceId: stringValue(values.referenceId, props.referenceId ?? ""),
+    supplierId: stringValue(values.supplierId, props.supplierId ?? ""),
+    supplierCode: stringValue(values.supplierCode, "").trim(),
+    supplierDescription: stringValue(values.supplierDescription, "").trim(),
+    supplierPrice: finiteNumberValue(
+      values.supplierPrice,
+      props.referenceSupplier.supplierPrice,
+    ),
+    supplyDays: finiteNumberValue(
+      values.supplyDays,
+      props.referenceSupplier.supplyDays,
+    ),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="referenceSupplier"
+    :show-cancel="false"
+    @submit="submit"
+  >
+    <template #field-referenceId="{ value, setValue, disabled, inputId }">
+      <DropdownReference
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : undefined"
+        :full-name="true"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #field-supplierId="{ value, setValue, disabled, inputId }">
+      <DropdownSupplier
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>

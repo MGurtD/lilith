@@ -1,87 +1,58 @@
 <template>
-  <DataTable
-    :value="phaseTemplateStore.phaseTemplates"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="phaseTemplateStore.phaseTemplates ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="name"
     :sort-order="1"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Plantilles de fase</span>
-        <div class="datatable-buttons">
-          <Button
-            :icon="PrimeIcons.PLUS"
-            rounded
-            raised
-            @click="createButtonClick"
-          />
-        </div>
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("phaseTemplates.title") }}</span>
     </template>
-    <Column field="name" sortable header="Nom" style="width: 30%"></Column>
-    <Column
-      field="description"
-      header="Descripció"
-      style="width: 50%"
-    ></Column>
-    <Column header="Desactivada" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('phaseTemplates.dialogs.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
   >
-    <div>
-      <BaseInput
-        label="Nom"
-        v-model="phaseTemplateStore.phaseTemplate!.name"
-        class="w-full mb-2"
-      />
-    </div>
-    <div>
-      <BaseInput
-        label="Descripció"
-        v-model="phaseTemplateStore.phaseTemplate!.description"
-        class="w-full mb-2"
-      />
-    </div>
-    <br />
-    <div>
-      <Button
-        label="Crear"
-        style="float: right"
-        @click="onCreateSubmit"
-      ></Button>
-    </div>
+    <Form
+      v-if="phaseTemplateStore.phaseTemplate"
+      :rows="createRows"
+      :initial-values="phaseTemplateStore.phaseTemplate"
+      @submit="onCreateSubmit"
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -90,30 +61,83 @@ import { usePhaseTemplateStore } from "../store/phasetemplate";
 import { PhaseTemplate } from "../types";
 import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
-import BaseInput from "../../../components/BaseInput.vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const phaseTemplateStore = usePhaseTemplateStore();
+const { t, locale } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("phaseTemplates.fields.name"),
+    sortable: true,
+    style: "width: 30%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("phaseTemplates.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
+
+const createRows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 1 },
+    fields: [
+      {
+        name: "name",
+        label: t("phaseTemplates.fields.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("phaseTemplates.validation.nameRequired"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("common.description"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+]);
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear plantilla de fase",
   closable: true,
   position: "center",
   modal: true,
 } as DialogOptions);
 
-onMounted(async () => {
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.LIST,
-    title: "Gestió de plantilles de fase",
+    title: t("phaseTemplates.menuTitle"),
   });
+};
 
+onMounted(async () => {
+  setMenuTitle();
   await phaseTemplateStore.fetchAll();
 });
+
+watch(locale, () => setMenuTitle());
 
 const createButtonClick = () => {
   const newId = getNewUuid();
@@ -122,31 +146,31 @@ const createButtonClick = () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/phasetemplate/${row.data.id}` });
-  }
+  router.push({ path: `/phasetemplate/${row.data.id}` });
 };
 
-const onCreateSubmit = async () => {
-  if (!phaseTemplateStore.phaseTemplate) return;
+const onCreateSubmit = async (values: FormValues) => {
+  const source = phaseTemplateStore.phaseTemplate;
+  if (!source) return;
 
-  const created = await phaseTemplateStore.create(
-    phaseTemplateStore.phaseTemplate,
-  );
+  const model: PhaseTemplate = {
+    ...source,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+  };
+
+  const created = await phaseTemplateStore.create(model);
   if (created)
     router.push({
-      path: `/phasetemplate/${phaseTemplateStore.phaseTemplate.id}`,
+      path: `/phasetemplate/${model.id}`,
     });
 };
 
-const deleteButton = (event: any, phaseTemplate: PhaseTemplate) => {
+const deleteButton = (phaseTemplate: PhaseTemplate) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Està segur que vol eliminar la plantilla ${phaseTemplate.name}?`,
+    message: t("phaseTemplates.messages.confirmDelete", {
+      name: phaseTemplate.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -156,7 +180,7 @@ const deleteButton = (event: any, phaseTemplate: PhaseTemplate) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("phaseTemplates.messages.deleted"),
           life: 3000,
         });
         await phaseTemplateStore.fetchAll();

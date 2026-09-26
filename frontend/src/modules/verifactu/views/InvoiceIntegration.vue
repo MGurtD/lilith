@@ -1,116 +1,56 @@
 <template>
   <div class="verifactu-invoice-integration">
-    <DataTable
-      :value="invoices"
+    <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
+      :items="invoices"
+      :columns="columns"
+      :filter-config="filterConfig"
+      v-model:filter-values="filters"
+      :filter-body-width="filterBodyWidth"
+      :show-filter-action="false"
+      :show-create="false"
       :loading="loading"
       dataKey="id"
       responsiveLayout="scroll"
+      @clear="clearFilters"
     >
-      <template #header>
-        <TableFilter
-          :config="[]"
-          :body-width="filterBodyWidth"
-          v-model="filters"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-filter-action="false"
-          :show-create="false"
-          embedded
-          @clear="clearFilters"
-        >
-          <template #prepend>
-            <div
-              class="table-filter-prepend-field table-filter-prepend-field--md"
-            >
-              <label class="filter-label table-filter-prepend-label">{{
-                $t("verifactu.invoiceIntegration.filters.toDate")
-              }}</label>
-              <DatePicker
-                v-model="filters.limitDate"
-                dateFormat="dd/mm/yy"
-                :placeholder="
-                  $t('verifactu.invoiceIntegration.filters.selectToDate')
-                "
-                showIcon
-                class="w-full"
-                size="small"
-              />
-            </div>
-          </template>
-          <template #append>
-            <Button
-              :label="
-                $t('verifactu.invoiceIntegration.actions.integrateSelected')
-              "
-              :size="'small'"
-              icon="pi pi-upload"
-              @click="integrateVisibleInvoices"
-              :disabled="!invoices.length || integrating"
-              :loading="integrating"
-            />
-          </template>
-        </TableFilter>
+      <template #append>
+        <!-- Sends every listed invoice, so the badge shows how many. -->
+        <Button
+          :label="$t('verifactu.invoiceIntegration.actions.sendToVerifactu')"
+          :badge="invoices.length ? String(invoices.length) : undefined"
+          :size="'small'"
+          icon="pi pi-upload"
+          @click="integrateVisibleInvoices"
+          :disabled="!invoices.length || integrating"
+          :loading="integrating"
+        />
       </template>
-      <Column
-        field="invoiceNumber"
-        :header="$t('verifactu.invoiceIntegration.table.columns.number')"
-      >
-        <template #body="slotProps">
-          <LinkSalesInvoice
-            :id="slotProps.data.id"
-            :invoiceNumber="slotProps.data.invoiceNumber"
-          />
-        </template>
-      </Column>
-
-      <Column
-        field="invoiceDate"
-        :header="$t('verifactu.invoiceIntegration.table.columns.date')"
-      >
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.invoiceDate) }}
-        </template>
-      </Column>
-
-      <Column
-        field="dueDate"
-        :header="$t('verifactu.invoiceIntegration.table.columns.dueDate')"
-      >
-        <template #body="slotProps">
-          {{ getLastDueDateFormatted(slotProps.data) }}
-        </template>
-      </Column>
-
-      <Column
-        field="customer.fiscalName"
-        :header="$t('verifactu.invoiceIntegration.table.columns.customer')"
-      >
-        <template #body="slotProps">
-          <div>
-            <div class="font-semibold">
-              {{
-                slotProps.data.customerComercialName ||
-                slotProps.data.customerTaxName
-              }}
-            </div>
-            <div class="text-sm text-gray-500">
-              {{ slotProps.data.customerVatNumber }}
-            </div>
+      <template #body-invoiceNumber="{ data }">
+        <LinkSalesInvoice :id="data.id" :invoiceNumber="data.invoiceNumber" />
+      </template>
+      <template #body-dueDate="{ data }">
+        {{ getLastDueDateFormatted(data) }}
+      </template>
+      <template #body-customer="{ data }">
+        <div>
+          <div class="font-semibold">
+            {{ data.customerComercialName || data.customerTaxName }}
           </div>
-        </template>
-      </Column>
-
-      <Column
-        field="totalAmount"
-        :header="$t('verifactu.invoiceIntegration.table.columns.amount')"
-      >
-        <template #body="slotProps">
-          <span class="font-semibold">{{
-            formatCurrency(slotProps.data.baseAmount + slotProps.data.taxAmount)
-          }}</span>
-        </template>
-      </Column>
-
+          <div class="text-sm text-gray-500">
+            {{ data.customerVatNumber }}
+          </div>
+        </div>
+      </template>
+      <template #card-customer="{ data }">
+        {{ data.customerComercialName || data.customerTaxName }}
+      </template>
+      <template #body-totalAmount="{ data }">
+        <span class="font-semibold">{{
+          formatCurrency(data.baseAmount + data.taxAmount)
+        }}</span>
+      </template>
       <template #empty>
         <div class="text-center p-4">
           <i class="pi pi-inbox text-4xl text-gray-400 mb-3"></i>
@@ -119,7 +59,7 @@
           </p>
         </div>
       </template>
-    </DataTable>
+    </Table>
 
     <!-- Batch progress & results dialog -->
     <Dialog
@@ -148,11 +88,15 @@
         <div class="flex align-items-center justify-content-between">
           <div>
             <span class="font-semibold">{{ successCount }}</span>
-            <span class="ml-1">ok</span>
+            <span class="ml-1">{{
+              t("verifactu.invoiceIntegration.status.success")
+            }}</span>
           </div>
           <div>
             <span class="font-semibold">{{ errorCount }}</span>
-            <span class="ml-1">error</span>
+            <span class="ml-1">{{
+              t("verifactu.invoiceIntegration.status.error")
+            }}</span>
           </div>
         </div>
         <div class="results-list">
@@ -160,7 +104,9 @@
             v-for="r in batchResults"
             :key="r.id"
             class="result-row py-2 px-3 border-round border-1 mb-2"
-            :class="r.status === 'success' ? 'result-row--ok' : 'result-row--error'"
+            :class="
+              r.status === 'success' ? 'result-row--ok' : 'result-row--error'
+            "
           >
             <div class="flex align-items-center justify-content-between gap-2">
               <div class="flex align-items-center gap-2 min-w-0">
@@ -190,10 +136,7 @@
                 {{ r.message }}
               </small>
             </div>
-            <div
-              v-if="r.status === 'error' && r.responseXml"
-              class="mt-2"
-            >
+            <div v-if="r.status === 'error' && r.responseXml" class="mt-2">
               <Button
                 :label="
                   expandedResponses.has(r.id)
@@ -213,14 +156,14 @@
               <pre
                 v-if="expandedResponses.has(r.id)"
                 class="response-xml mt-2 p-2 border-round border-1 surface-border text-xs"
-              >{{ r.responseXml }}</pre>
+                >{{ r.responseXml }}</pre>
             </div>
           </div>
         </div>
 
         <div class="flex justify-content-end">
           <Button
-            :label="t('common.close') || 'Close'"
+            :label="t('common.close')"
             @click="batchDialogVisible = false"
           />
         </div>
@@ -234,13 +177,19 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import { storeToRefs } from "pinia";
-import DatePicker from "primevue/datepicker";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
 import Tag from "primevue/tag";
-import TableFilter, {
-  type FilterBodyWidth,
+import type {
+  FilterBodyWidth,
+  FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { formatDate, formatCurrency } from "../../../utils/functions";
@@ -312,6 +261,14 @@ const errorCount = computed(
 const filters = ref({
   limitDate: new Date(), // Date limit
 });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "limitDate",
+    label: t("verifactu.invoiceIntegration.filters.toDate"),
+    type: "date",
+    placeholder: t("verifactu.invoiceIntegration.filters.selectToDate"),
+  },
+]);
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "25%",
   tablet: "33%",
@@ -322,6 +279,37 @@ const filterBodyWidth: FilterBodyWidth = {
 
 // Computed
 const invoices = computed(() => pendingInvoices.value || []);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "invoiceNumber",
+    header: t("verifactu.invoiceIntegration.table.columns.number"),
+  },
+  {
+    field: "invoiceDate",
+    header: t("verifactu.invoiceIntegration.table.columns.date"),
+    columnType: ColumnType.Date,
+  },
+  {
+    field: "dueDate",
+    header: t("verifactu.invoiceIntegration.table.columns.dueDate"),
+  },
+  {
+    field: "customer",
+    header: t("verifactu.invoiceIntegration.table.columns.customer"),
+  },
+  {
+    field: "totalAmount",
+    header: t("verifactu.invoiceIntegration.table.columns.amount"),
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  trailing: "totalAmount",
+  subtitle: "customer",
+  meta: ["invoiceDate", "dueDate"],
+};
 
 // Helpers
 const naturalCompare = (a: string, b: string) =>
@@ -399,7 +387,7 @@ const integrateVisibleInvoices = async () => {
           const errMsg =
             response?.errors?.[0] ??
             content?.errorMessage ??
-            "Integration failed";
+            t("verifactu.invoiceIntegration.messages.integrationFailed");
           batchResults.value.push({
             id: inv.id,
             invoiceNumber: String(inv.invoiceNumber ?? ""),
@@ -412,7 +400,9 @@ const integrateVisibleInvoices = async () => {
           break;
         }
       } catch (e: any) {
-        const message = e?.message || "Unexpected error";
+        const message =
+          e?.message ||
+          t("verifactu.invoiceIntegration.messages.unexpectedError");
         batchResults.value.push({
           id: inv.id,
           invoiceNumber: String(inv.invoiceNumber ?? ""),

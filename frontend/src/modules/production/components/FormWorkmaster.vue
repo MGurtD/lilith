@@ -1,56 +1,38 @@
 <template>
-  <form v-if="workmaster">
-    <div class="grid_add_row_button">
-      <Button label="Calcular Cost" size="small" @click="calculateCost" />
-      &nbsp;
-      <Button label="Guardar" size="small" @click="submitForm" />
-      <br />
-    </div>
-    <section class="six-columns">
-      <div>
+  <div>
+    <Form
+      ref="form"
+      page-actions
+      :rows="rows"
+      :initial-values="initialValues"
+      @submit="submit"
+    >
+      <template #field-referenceId="{ value, setValue, disabled, inputId }">
         <DropdownReference
-          label="Referència"
-          v-model="workmaster.referenceId"
-          :fullName="true"
-        ></DropdownReference>
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Quantitat Base"
-          :decimals="2"
-          v-model="workmaster.baseQuantity"
+          :input-id="inputId"
+          label=""
+          :model-value="typeof value === 'string' ? value : null"
+          :full-name="true"
+          :disabled="disabled"
+          @update:model-value="setValue"
         />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Volum mm3"
-          :decimals="2"
-          v-model="workmaster.volume"
+      </template>
+
+      <template #actions="{ submit: submitForm, disabled }">
+        <SplitButton
+          icon="pi pi-save"
+          :label="t('production.components.guardar')"
+          :model="workmasterActions"
+          :disabled="disabled"
+          @click="save(submitForm)"
         />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Mode</label>
-        <Select
-          v-model="workmaster.mode"
-          :options="workmasterStore.workmasterModes"
-          optionLabel="value"
-          optionValue="id"
-          placeholder="Seleccione el modo"
-          class="w-full"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Desactivat</label>
-        <Checkbox v-model="workmaster.disabled" class="w-full" :binary="true" />
-      </div>
-    </section>
+      </template>
+    </Form>
     <section class="costs-container">
       <div class="costs-section">
         <h4 class="costs-section-title">
           <i class="pi pi-euro" />
-          Costos
+          {{ t("production.components.costos") }}
         </h4>
         <div class="costs-grid">
           <div class="cost-card">
@@ -58,7 +40,9 @@
               <i class="pi pi-user" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Operari</span>
+              <span class="cost-card-label">{{
+                t("production.components.costOperari")
+              }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.operatorCost)
               }}</span>
@@ -69,7 +53,9 @@
               <i class="pi pi-cog" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Màquina</span>
+              <span class="cost-card-label">{{
+                t("production.components.costMaquina")
+              }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.machineCost)
               }}</span>
@@ -80,7 +66,9 @@
               <i class="pi pi-box" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Material</span>
+              <span class="cost-card-label">{{
+                t("production.components.costMaterial")
+              }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.materialCost)
               }}</span>
@@ -91,7 +79,9 @@
               <i class="pi pi-truck" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Extern</span>
+              <span class="cost-card-label">{{
+                t("production.components.costExtern")
+              }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(workmaster.externalCost)
               }}</span>
@@ -102,7 +92,9 @@
               <i class="pi pi-calculator" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Cost Total</span>
+              <span class="cost-card-label">{{
+                t("production.components.costTotal")
+              }}</span>
               <span class="cost-card-value">{{
                 formatCurrency(totalCost)
               }}</span>
@@ -113,7 +105,9 @@
               <i class="pi pi-objects-column" />
             </div>
             <div class="cost-card-content">
-              <span class="cost-card-label">Pes Total</span>
+              <span class="cost-card-label">{{
+                t("production.components.pesTotal")
+              }}</span>
               <span class="cost-card-value"
                 >{{ workmaster.totalWeight }} KG</span
               >
@@ -122,23 +116,29 @@
         </div>
       </div>
     </section>
-  </form>
+  </div>
 </template>
 
 <script setup lang="ts">
-import DropdownReference from "../../shared/components/DropdownReference.vue";
-import { ref, computed } from "vue";
-import { WorkMaster } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  integerValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { formatCurrency } from "../../../utils/functions";
-import { useToast } from "primevue/usetoast";
 import { useWorkMasterStore } from "../store/workmaster";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
+import type { WorkMaster } from "../types";
 
 const props = defineProps<{
   workmaster: WorkMaster;
@@ -147,11 +147,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "submit", workmaster: WorkMaster): void;
   (e: "calculateCost", workmaster: WorkMaster): void;
-  (e: "cancel"): void;
 }>();
 
+const { t } = useI18n();
 const workmasterStore = useWorkMasterStore();
-const toast = useToast();
+const form = ref<{ submit: () => void } | null>(null);
+
+// Secondary action waiting for the next valid submit, so it receives the
+// validated workmaster instead of the unsaved source prop.
+const pendingAction = ref<"calculateCost" | null>(null);
 
 const totalCost = computed(() => {
   return (
@@ -162,56 +166,102 @@ const totalCost = computed(() => {
   );
 });
 
-const schema = Yup.object().shape({
-  baseQuantity: Yup.number()
-    .min(1, "La quantitat base ha de ser superior a 0")
-    .required("La quanitat base és obligatoria"),
-  referenceId: Yup.string().required("La referència és obligatoria"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+// Scalar snapshot: phases and costs stay with the parent-owned workmaster and
+// are merged back at submit.
+const initialValues = computed(() => ({
+  referenceId: props.workmaster.referenceId,
+  baseQuantity: props.workmaster.baseQuantity,
+  volume: props.workmaster.volume,
+  mode: props.workmaster.mode,
+  disabled: props.workmaster.disabled,
+}));
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.workmaster);
+const decimalProps = { locale: "en-US", minFractionDigits: 2 } as const;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 6 },
+    fields: [
+      {
+        name: "referenceId",
+        label: t("production.components.referencia"),
+        type: FormFieldType.Custom,
+        span: { mobile: 1, tablet: 2, desktop: 2 },
+        validation: Yup.string()
+          .nullable()
+          .required(t("production.validation.laReferenciaEsObligatoria")),
+      },
+      {
+        name: "baseQuantity",
+        label: t("production.components.quantitatBase"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+        validation: Yup.number()
+          .nullable()
+          .typeError(t("production.validation.laQuanitatBaseEsObligatoria"))
+          .required(t("production.validation.laQuanitatBaseEsObligatoria"))
+          .min(1, t("production.validation.laQuantitatBaseHaDeSerSuperiorA0")),
+      },
+      {
+        name: "volume",
+        label: t("production.components.volumMm3"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+      },
+      {
+        name: "mode",
+        label: t("production.components.mode"),
+        type: FormFieldType.Select,
+        props: {
+          options: workmasterStore.workmasterModes,
+          optionLabel: "value",
+          optionValue: "id",
+          placeholder: t("production.components.seleccioneElModo"),
+        },
+      },
+      {
+        name: "disabled",
+        label: t("production.components.desactivat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
+
+const workmasterActions = computed(() => [
+  {
+    label: t("production.components.calcularCost"),
+    icon: "pi pi-calculator",
+    command: () => {
+      pendingAction.value = "calculateCost";
+      form.value?.submit();
+    },
+  },
+]);
+
+const save = (submitForm: () => void): void => {
+  pendingAction.value = null;
+  submitForm();
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.workmaster);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
+const submit = (values: FormValues): void => {
+  const workmaster: WorkMaster = {
+    ...props.workmaster,
+    referenceId: stringValue(values.referenceId, props.workmaster.referenceId),
+    baseQuantity: finiteNumberValue(
+      values.baseQuantity,
+      props.workmaster.baseQuantity,
+    ),
+    volume: finiteNumberValue(values.volume, 0),
+    mode: integerValue(values.mode, props.workmaster.mode),
+    disabled: booleanValue(values.disabled, false),
+  };
 
-const calculateCost = () => {
-  validate();
-  if (validation.value.result) {
-    emit("calculateCost", props.workmaster);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+  const action = pendingAction.value;
+  pendingAction.value = null;
+  if (action === "calculateCost") emit("calculateCost", workmaster);
+  else emit("submit", workmaster);
 };
 </script>
 

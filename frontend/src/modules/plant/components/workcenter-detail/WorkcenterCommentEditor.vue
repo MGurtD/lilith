@@ -10,14 +10,14 @@
   >
     <div class="comment-editor">
       <div class="field">
-        <label for="comment" class="block text-900 mb-2">Comentari</label>
+        <label for="comment" class="block text-900 mb-2">{{ $t("plant.comentari") }}</label>
         <Textarea
           id="comment"
           v-model="localComment"
           rows="5"
           class="w-full"
           :maxlength="maxLength"
-          placeholder="Escriu un comentari sobre aquesta fase..."
+          :placeholder='$t("plant.escriu-un-comentari-sobre-aquesta-fase")'
         />
         <small class="character-count">
           {{ characterCount }} / {{ maxLength }} caràcters
@@ -28,14 +28,14 @@
     <template #footer>
       <div class="dialog-footer">
         <Button
-          label="Cancel·lar"
+          :label='$t("plant.cancel-lar")'
           severity="secondary"
           :icon="PrimeIcons.TIMES"
           @click="handleCancel"
           :disabled="isSaving"
         />
         <Button
-          label="Guardar"
+          :label='$t("plant.guardar")'
           severity="success"
           :icon="PrimeIcons.CHECK"
           @click="handleSave"
@@ -48,10 +48,13 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, computed, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantActivePhaseStore } from "../../store";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
@@ -81,9 +84,9 @@ const dialogVisible = computed({
 // Dialog title
 const dialogTitle = computed(() => {
   if (props.phaseCode) {
-    return `Editar Comentari - Fase ${props.phaseCode}`;
+    return t("plant.dialogs.editPhaseComment", { phaseCode: props.phaseCode });
   }
-  return "Editar Comentari";
+  return t("plant.dialogs.editComment");
 });
 
 // Character count
@@ -122,8 +125,8 @@ const handleSave = async () => {
   if (!props.phaseId) {
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "No s'ha pogut identificar la fase",
+      summary: t("plant.error"),
+      detail: t("plant.messages.phaseIdentificationError"),
       life: 3000,
     });
     return;
@@ -145,8 +148,8 @@ const handleSave = async () => {
     if (success) {
       toast.add({
         severity: "success",
-        summary: "Comentari actualitzat",
-        detail: "El comentari s'ha guardat correctament",
+        summary: t("plant.comentari-actualitzat"),
+        detail: t("plant.messages.commentSaved"),
         life: 3000,
       });
 
@@ -155,8 +158,8 @@ const handleSave = async () => {
     } else {
       toast.add({
         severity: "error",
-        summary: "Error",
-        detail: "No s'ha pogut guardar el comentari",
+        summary: t("plant.error"),
+        detail: t("plant.messages.commentSaveError"),
         life: 5000,
       });
     }
@@ -164,11 +167,11 @@ const handleSave = async () => {
     console.error("Error saving comment:", error);
     toast.add({
       severity: "error",
-      summary: "Error",
+      summary: t("plant.error"),
       detail:
         error instanceof Error
-          ? `Error al guardar el comentari: ${error.message}`
-          : "Error al guardar el comentari",
+          ? t("plant.messages.commentSaveErrorWithReason", { reason: error.message })
+          : t("plant.messages.commentSaveError"),
       life: 5000,
     });
   } finally {

@@ -14,12 +14,12 @@
       <slot name="header"></slot>
     </template>
     <Column expander style="width: 2%" />
-    <Column field="quantity" header="Quantitat" style="width: 5%" />
-    <Column field="receivedQuantity" header="Q. Rebuda" style="width: 6%" />
+    <Column field="quantity" :header="t('purchase.orderDetail.columns.quantity')" style="width: 5%" />
+    <Column field="receivedQuantity" :header="t('purchase.orderDetail.columns.receivedQuantity')" style="width: 6%" />
     <Column
       field="reference.code"
       sortable
-      header="Referència"
+      :header="t('purchase.orderDetail.columns.reference')"
       style="width: 20%"
     >
       <template #body="{ data }">
@@ -30,28 +30,28 @@
         />
       </template>
     </Column>
-    <Column field="description" header="Descripció" style="width: 25%">
+    <Column field="description" :header="t('purchase.orderDetail.columns.description')" style="width: 25%">
     </Column>
-    <Column field="statusId" header="Estat" style="width: 7.5%">
+    <Column field="statusId" :header="t('purchase.orderDetail.columns.status')" style="width: 7.5%">
       <template #body="{ data }">
         {{ getStatusName(data.statusId) }}
       </template>
     </Column>
     <Column
       field="expectedReceiptDate"
-      header="Data Recepció"
+      :header="t('purchase.orderDetail.columns.receiptDate')"
       style="width: 7.5%"
     >
       <template #body="{ data }">
         {{ formatDate(data.expectedReceiptDate) }}
       </template>
     </Column>
-    <Column field="unitPrice" header="Preu Un." style="width: 5%">
+    <Column field="unitPrice" :header="t('purchase.orderDetail.columns.unitPrice')" style="width: 5%">
       <template #body="{ data }">
         {{ formatCurrency(data.unitPrice) }}
       </template>
     </Column>
-    <Column field="amount" header="Preu" style="width: 5%">
+    <Column field="amount" :header="t('purchase.orderDetail.columns.price')" style="width: 5%">
       <template #body="{ data }">
         {{ formatCurrency(data.amount) }}
       </template>
@@ -69,7 +69,7 @@
     <template #expansion="{ data }">
       <div class="expanded-details">
         <DataTable :value="data.receptions">
-          <Column field="receiptDetail.receipt.number" header="Albarà">
+          <Column field="receiptDetail.receipt.number" :header="t('purchase.orderDetail.columns.deliveryNote')">
             <template #body="{ data }">
               <span
                 class="link"
@@ -79,13 +79,13 @@
               </span>
             </template>
           </Column>
-          <Column field="quantity" header="Quantitat" />
-          <Column field="createdOn" header="Data">
+          <Column field="quantity" :header="t('purchase.orderDetail.columns.quantity')" />
+          <Column field="createdOn" :header="t('purchase.order.fields.date')">
             <template #body="{ data }">
               {{ formatDate(data.createdOn) }}
             </template>
           </Column>
-          <Column field="user" header="Usuari" />
+          <Column field="user" :header="t('purchase.orderDetail.columns.user')" />
         </DataTable>
       </div>
     </template>
@@ -103,6 +103,7 @@ import { Lifecycle } from "../../shared/types";
 import { useOrderStore } from "../store/order";
 import sharedServices from "../../shared/services";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   details: Array<PurchaseOrderDetail> | undefined;
@@ -119,6 +120,7 @@ const lifecycle = ref(undefined as undefined | Lifecycle);
 const expandedRows = ref({});
 const detailsWithReceptions = ref([] as Array<any>);
 const referenceStore = useReferenceStore();
+const { t } = useI18n();
 
 watch(
   () => props.details?.length,

@@ -1,174 +1,96 @@
 <template>
-  <DataTable
-    :value="filteredData"
+  <Table
+    :card-layout="cardLayout"
+    :items="filteredData"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    page="Workmasters"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
     sort-field="reference.code"
     :sort-order="1"
+    show-delete-column
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-    paginator
-    :rows="20"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Client</label
-            >
-            <DropdownCustomers label="" v-model="filter.customerId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Referència</label
-            >
-            <DropdownReference
-              label=""
-              v-model="filter.referenceId"
-              :customer-id="filter.customerId"
-              :fullName="true"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Última actual.</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :showIcon="true"
-              class="w-full"
-              placeholder="Selecciona periode"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
-    <Column
-      field="reference.code"
-      sortable
-      header="Referencia"
-      style="width: 40%"
-    >
-      <template #body="slotProps">
-        {{ referenceStore.getFullName(slotProps.data.reference) }}
-      </template>
-    </Column>
-    <Column sortable header="Client" style="width: 20%">
-      <template #body="slotProps">
-        {{
-          customersStore.getCustomerNameById(
-            slotProps.data.reference.customerId,
-          )
-        }}
-      </template>
-    </Column>
-    <Column field="updatedOn" header="Actualitzada" sortable style="width: 10%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.updatedOn) }}
-      </template>
-    </Column>
-    <Column header="Mode" style="width: 12.5%">
-      <template #body="slotProps">
-        {{ returnMode(slotProps.data.mode) }}
-      </template>
-    </Column>
-    <Column
-      field="baseQuantity"
-      header="Quantitat Base"
-      style="width: 10%"
-    ></Column>
-    <Column header="Cost" style="width: 10%">
-      <template #body="slotProps">
-        {{
-          formatCurrency(
-            slotProps.data.machineCost +
-              slotProps.data.operatorCost +
-              slotProps.data.materialCost +
-              slotProps.data.externalCost,
-          )
-        }}
-      </template>
-    </Column>
-    <Column header="Desactivada" style="width: 5%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.COPY"
-          class="grid_copy_column_button"
-          @click="copyButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+    <template #filter-referenceId="{ value, update }">
+      <DropdownReference size="small"
+        label=""
+        :model-value="value"
+        :customer-id="filter.customerId"
+        :fullName="true"
+        @update:model-value="update"
+      />
+    </template>
+    <template #body-copyAction="{ data }">
+      <i
+        :class="PrimeIcons.COPY"
+        class="grid_copy_column_button"
+        @click.stop="copyButton(data)"
+      />
+    </template>
+    <template #card-actions="{ data }">
+      <Button
+        :icon="PrimeIcons.COPY"
+        text
+        rounded
+        :aria-label="t('production.actions.copy')"
+        @click="copyButton(data)"
+      />
+    </template>
+  </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
     :header="dialogOptions.title"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
+    :style="{ width: '450px' }"
   >
-    <div>
-      <DropdownReference
-        label="Referència"
-        v-model="workmasterStore.workmaster!.referenceId"
-        class="w-full"
-        :fullName="true"
-      ></DropdownReference>
-    </div>
-    <br />
-    <div>
-      <Button
-        label="Crear"
-        style="float: right"
-        @click="onCreateSubmit"
-      ></Button>
-    </div>
+    <Form
+      v-if="workmasterStore.workmaster"
+      :rows="createRows"
+      :initial-values="workmasterStore.workmaster"
+      :loading="createLoading"
+      @submit="onCreateSubmit"
+      @cancel="dialogOptions.visible = false"
+    >
+      <template #field-referenceId="{ value, setValue, disabled, inputId }">
+        <DropdownReference
+          :input-id="inputId"
+          label=""
+          :model-value="typeof value === 'string' ? value : null"
+          :full-name="true"
+          :disabled="disabled"
+          @update:model-value="setValue"
+        />
+      </template>
+    </Form>
   </Dialog>
   <Dialog
     v-model:visible="copyDialogVisible"
-    header="Copiar ruta de fabricació"
+    :header="pt('Copiar ruta de fabricació')"
     :closable="!copyLoading"
     :modal="true"
     :style="{ width: '50vw', maxWidth: '700px' }"
   >
-    <div v-if="copyModel" class="flex flex-column gap-3">
+    <div v-if="copyInitialValues" class="flex flex-column gap-3">
       <div class="flex flex-column gap-1">
-        <label class="font-semibold text-sm text-color-secondary"
-          >Ruta d'origen</label
-        >
+        <label class="font-semibold text-sm text-color-secondary">{{
+          t("production.detail.sourceWorkmaster")
+        }}</label>
         <span class="text-lg">{{ copySourceName }}</span>
       </div>
 
@@ -177,94 +99,155 @@
         style="border: none; border-top: 1px solid var(--p-surface-200)"
       />
 
-      <div class="flex flex-column gap-2">
-        <label class="font-semibold text-sm text-color-secondary"
-          >Destí de la còpia</label
+      <Form
+        :rows="copyRows"
+        :initial-values="copyInitialValues"
+        :loading="copyLoading"
+        @submit="onCopySubmit"
+        @cancel="copyDialogVisible = false"
+      >
+        <template
+          #field-copyDestinyMode="{ value, setValue, disabled, inputId }"
         >
+          <div class="flex flex-column gap-2">
+            <div
+              v-for="(option, index) in copyDestinyOptions"
+              :key="option.value"
+              class="flex align-items-center gap-2"
+            >
+              <RadioButton
+                :input-id="index === 0 ? inputId : `${inputId}-${option.value}`"
+                :name="inputId"
+                :value="option.value"
+                :model-value="value"
+                :disabled="disabled"
+                @update:model-value="setValue"
+              />
+              <label
+                :for="index === 0 ? inputId : `${inputId}-${option.value}`"
+                >{{ option.label }}</label
+              >
+            </div>
+          </div>
+        </template>
 
-        <div class="flex align-items-center gap-2">
-          <RadioButton
-            v-model="copyDestinyMode"
-            inputId="destExisting"
-            value="existing"
-          />
-          <label for="destExisting">Referència existent</label>
-        </div>
-        <div v-if="copyDestinyMode === 'existing'" class="ml-4">
-          <DropdownReference
-            label=""
-            v-model="copyModel.referenceId"
-            :fullName="true"
-          />
-        </div>
-
-        <div class="flex align-items-center gap-2 mt-2">
-          <RadioButton
-            v-model="copyDestinyMode"
-            inputId="destNew"
-            value="new"
-          />
-          <label for="destNew">Crear nova referència</label>
-        </div>
-        <div
-          v-if="copyDestinyMode === 'new'"
-          class="ml-4 flex flex-column gap-2"
+        <template
+          #section-existingReference="{
+            values,
+            errors,
+            setFieldValue,
+            disabled,
+          }"
         >
-          <BaseInput
-            id="referenceCode"
-            label="Codi"
-            v-model="copyModel.referenceCode"
-          />
-          <BaseInput
-            id="referenceDescription"
-            label="Descripció"
-            v-model="copyModel.referenceDescription"
-          />
-        </div>
-      </div>
+          <div v-if="values.copyDestinyMode === 'existing'" class="ml-4">
+            <label
+              class="block text-900 mb-2"
+              :for="copyFieldId('referenceId')"
+              >{{ pt("Referència") }}</label
+            >
+            <DropdownReference
+              :input-id="copyFieldId('referenceId')"
+              label=""
+              :model-value="
+                typeof values.referenceId === 'string'
+                  ? values.referenceId
+                  : null
+              "
+              :full-name="true"
+              :disabled="disabled"
+              :class="{ 'p-invalid': errors.referenceId }"
+              @update:model-value="setFieldValue('referenceId', $event)"
+            />
+            <small v-if="errors.referenceId" class="p-error" role="alert">
+              {{ errors.referenceId }}
+            </small>
+          </div>
+        </template>
 
-      <div class="flex flex-column gap-1">
-        <label class="font-semibold text-sm text-color-secondary mb-1"
-          >Mode de fabricació</label
+        <template
+          #section-newReference="{ values, errors, setFieldValue, disabled }"
         >
-        <Select
-          v-model="copyModel.mode"
-          :options="workmasterStore.workmasterModes"
-          optionLabel="value"
-          optionValue="id"
-          placeholder="Selecciona el mode"
-          class="w-full"
-        />
-      </div>
+          <div
+            v-if="values.copyDestinyMode === 'new'"
+            class="ml-4 flex flex-column gap-2"
+          >
+            <div>
+              <label
+                class="block text-900 mb-2"
+                :for="copyFieldId('referenceCode')"
+                >{{ pt("Codi") }}</label
+              >
+              <InputText
+                :id="copyFieldId('referenceCode')"
+                class="w-full"
+                :class="{ 'p-invalid': errors.referenceCode }"
+                :model-value="
+                  typeof values.referenceCode === 'string'
+                    ? values.referenceCode
+                    : ''
+                "
+                :disabled="disabled"
+                @update:model-value="setFieldValue('referenceCode', $event)"
+              />
+              <small v-if="errors.referenceCode" class="p-error" role="alert">
+                {{ errors.referenceCode }}
+              </small>
+            </div>
+            <div>
+              <label
+                class="block text-900 mb-2"
+                :for="copyFieldId('referenceDescription')"
+                >{{ pt("Descripció") }}</label
+              >
+              <InputText
+                :id="copyFieldId('referenceDescription')"
+                class="w-full"
+                :model-value="
+                  typeof values.referenceDescription === 'string'
+                    ? values.referenceDescription
+                    : ''
+                "
+                :disabled="disabled"
+                @update:model-value="
+                  setFieldValue('referenceDescription', $event)
+                "
+              />
+            </div>
+          </div>
+        </template>
+      </Form>
     </div>
-
-    <template #footer>
-      <div class="flex justify-content-end gap-2">
-        <Button
-          label="Cancel·lar"
-          severity="secondary"
-          text
-          :disabled="copyLoading"
-          @click="copyDialogVisible = false"
-        />
-        <Button
-          label="Copiar"
-          icon="pi pi-copy"
-          :loading="copyLoading"
-          @click="onCopySubmit"
-        />
-      </div>
-    </template>
   </Dialog>
 </template>
 <script setup lang="ts">
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  integerValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
-import { useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, useId } from "vue";
+import * as Yup from "yup";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
@@ -273,14 +256,12 @@ import { useWorkMasterStore } from "../store/workmaster";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../../sales/store/customers";
 import { WorkMaster, WorkMasterToCopy } from "../types";
-import {
-  getNewUuid,
-  formatCurrency,
-  formatDate,
-} from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
@@ -291,6 +272,112 @@ const referenceStore = useReferenceStore();
 const customersStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "customerId",
+    label: pt("Client"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (customersStore.getCustomerNameById(value) ?? "")
+        : "",
+  },
+  {
+    key: "referenceId",
+    label: pt("Referència"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (referenceStore.getFullNameById(value) ?? "")
+        : "",
+  },
+  {
+    key: "dates",
+    label: pt("lastUpdated"),
+    type: "date-range",
+    placeholder: pt("Selecciona periode"),
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "reference.code",
+    header: pt("Referencia"),
+    sortable: true,
+    resolver: (_value, data) => {
+      const workmaster = data as WorkMaster;
+      return workmaster.reference
+        ? referenceStore.getFullName(workmaster.reference)
+        : "";
+    },
+    style: "width: 40%",
+  },
+  {
+    field: "reference.customerId",
+    header: pt("Client"),
+    sortable: true,
+    resolver: (value) =>
+      typeof value === "string"
+        ? customersStore.getCustomerNameById(value)
+        : "",
+    style: "width: 20%",
+  },
+  {
+    field: "updatedOn",
+    header: pt("Actualitzada"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 10%",
+  },
+  {
+    field: "mode",
+    header: pt("Mode"),
+    resolver: (value) =>
+      typeof value === "number" ? (returnMode(value) ?? "") : "",
+    style: "width: 12.5%",
+  },
+  {
+    field: "baseQuantity",
+    header: pt("Quantitat Base"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "totalCost",
+    header: pt("Cost"),
+    columnType: ColumnType.Currency,
+    resolver: (_value, data) => {
+      const workmaster = data as WorkMaster;
+      return (
+        workmaster.machineCost +
+        workmaster.operatorCost +
+        workmaster.materialCost +
+        workmaster.externalCost
+      );
+    },
+    style: "width: 10%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivada"),
+    columnType: ColumnType.Boolean,
+    style: "width: 5%",
+  },
+  {
+    field: "copyAction",
+    header: "",
+    style: "width: 3%",
+    truncate: false,
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "reference.code",
+  subtitle: "reference.customerId",
+  trailing: "totalCost",
+  meta: ["mode", "baseQuantity", "disabled"],
+};
 
 const filter = ref({
   referenceId: undefined,
@@ -320,7 +407,7 @@ const filteredData = computed(() => {
     filteredWorkmasters = filteredWorkmasters.filter(
       (w) =>
         w.reference?.customerId === filter.value.customerId ||
-        w.reference.customerId === null,
+        w.reference?.customerId === null,
     );
 
   if (filter.value.dates && filter.value.dates.length > 0) {
@@ -344,7 +431,7 @@ const filteredData = computed(() => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear ruta",
+  title: pt("Crear ruta"),
   closable: true,
   position: "center",
   modal: true,
@@ -354,25 +441,140 @@ const returnMode = (mode: number) => {
   return workmasterStore.workmasterModes.find((m) => m.id === mode)?.value;
 };
 
-const copyDialogVisible = ref(false);
-const copyLoading = ref(false);
-const copyDestinyMode = ref<"existing" | "new">("existing");
-const copyModel = ref<{
+const createLoading = ref(false);
+
+const createRows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "referenceId",
+        label: pt("Referència"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(t("production.validation.laReferenciaEsObligatoria")),
+      },
+    ],
+  },
+]);
+
+type CopyDestinyMode = "existing" | "new";
+
+interface CopyFormValues {
+  copyDestinyMode: CopyDestinyMode;
   referenceId: string | null;
   referenceCode: string;
   referenceDescription: string;
   mode: number;
-} | null>(null);
+}
+
+const copyDialogVisible = ref(false);
+const copyLoading = ref(false);
+// Assigned once per opening: a stable snapshot for the copy form.
+const copyInitialValues = ref<CopyFormValues | null>(null);
 const copySourceWorkmasterId = ref("");
 const copySourceName = ref("");
+
+// Section fields render their own controls, so their IDs are generated here.
+const copyFormId = useId();
+const copyFieldId = (name: string): string => `copy-${copyFormId}-${name}`;
+
+const copyDestinyOptions = computed<
+  Array<{ value: CopyDestinyMode; label: string }>
+>(() => [
+  { value: "existing", label: pt("Referència existent") },
+  { value: "new", label: pt("Crear nova referència") },
+]);
+
+const copyDestinyModeValue = (value: unknown): CopyDestinyMode =>
+  value === "new" ? "new" : "existing";
+
+const copyRows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "copyDestinyMode",
+        label: pt("Destí de la còpia"),
+        type: FormFieldType.Custom,
+        defaultValue: "existing",
+      },
+    ],
+  },
+  {
+    section: "existingReference",
+    fields: [
+      {
+        name: "referenceId",
+        label: pt("Referència"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .test(
+            "existing-reference-required",
+            pt("Selecciona una referència de destí"),
+            function (value) {
+              return (
+                copyDestinyModeValue(this.parent.copyDestinyMode) !==
+                  "existing" || Boolean(value)
+              );
+            },
+          ),
+      },
+    ],
+  },
+  {
+    section: "newReference",
+    fields: [
+      {
+        name: "referenceCode",
+        label: pt("Codi"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .test(
+            "new-reference-code-required",
+            pt("Introdueix el codi de la nova referència"),
+            function (value) {
+              return (
+                copyDestinyModeValue(this.parent.copyDestinyMode) !== "new" ||
+                Boolean(value?.trim())
+              );
+            },
+          ),
+      },
+      {
+        name: "referenceDescription",
+        label: pt("Descripció"),
+        type: FormFieldType.Custom,
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "mode",
+        label: pt("Mode de fabricació"),
+        type: FormFieldType.Select,
+        props: {
+          options: workmasterStore.workmasterModes,
+          optionLabel: "value",
+          optionValue: "id",
+          placeholder: pt("Selecciona el mode"),
+        },
+      },
+    ],
+  },
+]);
 
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de rutes de fabricació",
+    title: pt("Gestió de rutes de fabricació"),
   });
 
   referenceStore.fetchReferencesByModule("sales");
+  // The customer column (and the card's subtitle) resolves names from here.
+  if (!customersStore.customers) customersStore.fetchCustomers();
   await workmasterStore.fetchAll();
 
   const userFilter = userFilterStore.getFilter("Workmasters", "");
@@ -383,8 +585,8 @@ onMounted(async () => {
     if (userFilter.dates) filter.value.dates = userFilter.dates;
   }
 });
-onUnmounted(() => {
-  userFilterStore.addFilter("Workmasters", "", filter.value);
+onBeforeRouteLeave(async () => {
+  await userFilterStore.addFilter("Workmasters", "", filter.value);
 });
 
 const createButtonClick = () => {
@@ -394,11 +596,11 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const copyButton = (event: any, workmaster: WorkMaster) => {
+const copyButton = (workmaster: WorkMaster) => {
   copySourceWorkmasterId.value = workmaster.id;
   copySourceName.value = referenceStore.getFullNameById(workmaster.referenceId);
-  copyDestinyMode.value = "existing";
-  copyModel.value = {
+  copyInitialValues.value = {
+    copyDestinyMode: "existing",
     referenceId: null,
     referenceCode: "",
     referenceDescription: "",
@@ -407,43 +609,22 @@ const copyButton = (event: any, workmaster: WorkMaster) => {
   copyDialogVisible.value = true;
 };
 
-const onCopySubmit = async () => {
-  if (!copyModel.value) return;
-
-  if (copyDestinyMode.value === "existing" && !copyModel.value.referenceId) {
-    toast.add({
-      severity: "warn",
-      summary: "Selecciona una referència de destí",
-      life: 5000,
-    });
-    return;
-  }
-
-  if (
-    copyDestinyMode.value === "new" &&
-    !copyModel.value.referenceCode.trim()
-  ) {
-    toast.add({
-      severity: "warn",
-      summary: "Introdueix el codi de la nova referència",
-      life: 5000,
-    });
-    return;
-  }
+const onCopySubmit = async (values: FormValues) => {
+  const destinyMode = copyDestinyModeValue(values.copyDestinyMode);
 
   const payload: WorkMasterToCopy = {
     workmasterId: copySourceWorkmasterId.value,
     referenceId:
-      copyDestinyMode.value === "existing" ? copyModel.value.referenceId : null,
+      destinyMode === "existing"
+        ? nullableStringValue(values.referenceId, null)
+        : null,
     referenceCode:
-      copyDestinyMode.value === "new"
-        ? copyModel.value.referenceCode.trim()
-        : "",
+      destinyMode === "new" ? stringValue(values.referenceCode, "").trim() : "",
     referenceDescription:
-      copyDestinyMode.value === "new"
-        ? copyModel.value.referenceDescription.trim()
+      destinyMode === "new"
+        ? stringValue(values.referenceDescription, "").trim()
         : "",
-    mode: copyModel.value.mode,
+    mode: integerValue(values.mode, 1),
   };
 
   copyLoading.value = true;
@@ -452,12 +633,12 @@ const onCopySubmit = async () => {
     if (copied.result) {
       toast.add({
         severity: "success",
-        summary: "Ruta copiada correctament",
+        summary: pt("Ruta copiada correctament"),
         life: 3000,
       });
       copyDialogVisible.value = false;
       await workmasterStore.fetchAll();
-      if (copyDestinyMode.value === "new") {
+      if (destinyMode === "new") {
         referenceStore.fetchReferencesByModule("sales");
       }
     } else {
@@ -476,32 +657,34 @@ const onCopySubmit = async () => {
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    ) &&
-    !(row.originalEvent.target as any).className.includes(
-      "grid_copy_column_button",
-    )
-  ) {
-    router.push({ path: `/workmaster/${row.data.id}` });
+  router.push({ path: `/workmaster/${row.data.id}` });
+};
+
+const onCreateSubmit = async (values: FormValues) => {
+  if (!workmasterStore.workmaster) return;
+
+  const workmaster: WorkMaster = {
+    ...workmasterStore.workmaster,
+    referenceId: stringValue(
+      values.referenceId,
+      workmasterStore.workmaster.referenceId,
+    ),
+  };
+
+  createLoading.value = true;
+  try {
+    const created = await workmasterStore.create(workmaster);
+    if (created) router.push({ path: `/workmaster/${workmaster.id}` });
+  } finally {
+    createLoading.value = false;
   }
 };
 
-const onCreateSubmit = async () => {
-  if (!workmasterStore.workmaster) return;
-
-  const created = await workmasterStore.create(workmasterStore.workmaster);
-  if (created)
-    router.push({ path: `/workmaster/${workmasterStore.workmaster.id}` });
-};
-
-const deleteButton = (event: any, workmaster: WorkMaster) => {
+const deleteButton = (workmaster: WorkMaster) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar la ruta ${
-      workmaster.reference!.description
-    }?`,
+    message: t("production.messages.confirmDeleteWorkmaster", {
+      name: workmaster.reference!.description,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -511,7 +694,7 @@ const deleteButton = (event: any, workmaster: WorkMaster) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: pt("Eliminada"),
           life: 3000,
         });
         await workmasterStore.fetchAll();

@@ -1,54 +1,36 @@
 <template>
-  <DataTable
-    :value="taxStore.taxes"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="taxStore.taxes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteTax"
     @row-click="edit"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Impostos</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("shared.taxes.title") }}</span>
     </template>
-    <Column field="name" header="Nom" style="width: 30%"></Column>
-    <Column
-      field="percentatge"
-      header="% Percentatge"
-      style="width: 25%"
-    ></Column>
-    <Column header="Inversió subjecte passiu" style="width: 25%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.isReverseCharge" :showColor="false" />
-      </template>
-    </Column>
-    <Column header="Desactivada" style="width: 15%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteTax($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+    <template #card-percentatge="{ data }">{{ data.percentatge }} %</template>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -57,38 +39,87 @@ import { useTaxesStore } from "../store/tax";
 import { Tax } from "../types";
 
 const router = useRouter();
+const route = useRoute();
 const store = useStore();
 const taxStore = useTaxesStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.taxes.columns.name"),
+    style: "width: 30%",
+  },
+  {
+    field: "percentatge",
+    header: t("shared.taxes.columns.percentage"),
+    columnType: ColumnType.Number,
+    style: "width: 25%",
+  },
+  {
+    field: "isReverseCharge",
+    header: t("shared.taxes.columns.reverseCharge"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 25%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.taxes.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 15%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  trailing: "percentatge",
+  meta: ["isReverseCharge", "disabled"],
+};
+
+const refreshMenu = () => {
+  store.setMenuItem({
+    icon: PrimeIcons.HASHTAG,
+    title: t("shared.taxes.menuTitle"),
+  });
+};
 
 onMounted(async () => {
   await taxStore.fetchAll();
-
-  store.setMenuItem({
-    icon: PrimeIcons.HASHTAG,
-    title: "Gestió d'impostos",
-  });
+  refreshMenu();
 });
 
+// Re-fetch quan es torna a la ruta /taxes des d'una sub-ruta (ex: /tax/:id).
+// El RouterView no manté la vista muntada (no hi ha KeepAlive), però Vue
+// reutilitza la instància del component quan només canvien els params, de
+// manera que onMounted no es torna a executar. Sense aquest watch, els canvis
+// fets al formulari (ex: marcar inversió subjecte passiu) no es reflecteixen
+// al llistat fins a recarregar la pàgina.
+watch(
+  () => route.fullPath,
+  async (newPath, oldPath) => {
+    const cameBackToList =
+      newPath === "/taxes" && oldPath?.startsWith("/tax/") === true;
+    if (cameBackToList) {
+      await taxStore.fetchAll();
+    }
+  },
+);
+
 const createButtonClick = () => {
-  router.push({ path: `/tax/${uuidv4()}` });
+  router.push({ path: `/tax/${getNewUuid()}` });
 };
 
 const edit = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/tax/${row.data.id}` });
-  }
+  router.push({ path: `/tax/${row.data.id}` });
 };
 
-const deleteTax = (event: any, tax: Tax) => {
+const deleteTax = (tax: Tax) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Està segur que vol eliminar l'impost?`,
+    message: t("shared.taxes.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -97,13 +128,13 @@ const deleteTax = (event: any, tax: Tax) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("shared.taxes.messages.deleted"),
           life: 3000,
         });
       } else {
         toast.add({
           severity: "error",
-          summary: "No s'ha pogut eliminar l'impost",
+          summary: t("shared.taxes.messages.deleteError"),
           life: 4000,
         });
       }

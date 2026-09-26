@@ -7,7 +7,7 @@ namespace Api.Controllers.Purchase
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DeliveryNoteController(IDeliveryNoteService service, IDeliveryNoteReportService reportService, ILifecycleService lifecycleService) : ControllerBase
+    public class DeliveryNoteController(IDeliveryNoteService service, IDeliveryNoteReportService reportService, ILifecycleService lifecycleService, IDeliveryNotePdfService pdfService) : ControllerBase
     {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -15,6 +15,14 @@ namespace Api.Controllers.Purchase
             var receipt = await service.GetById(id);
             if (receipt == null) return BadRequest();
             else return Ok(receipt);
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        public async Task<IActionResult> GetPdf(Guid id, bool showPrices = true)
+        {
+            var report = await reportService.GetReportById(id, showPrices);
+            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"albara-{report.DeliveryNote!.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]
@@ -54,9 +62,9 @@ namespace Api.Controllers.Purchase
         }
 
         [HttpGet("ToInvoice")]
-        public IActionResult GetDeliveryNotesToInvoice(Guid customerId)
+        public async Task<IActionResult> GetDeliveryNotesToInvoice(Guid customerId)
         {
-            var salesOrderHeaders = service.GetDeliveryNotesToInvoice(customerId);
+            var salesOrderHeaders = await service.GetDeliveryNotesToInvoice(customerId);
             return Ok(salesOrderHeaders.OrderBy(e => e.Number));
         }
 
@@ -92,27 +100,24 @@ namespace Api.Controllers.Purchase
         public async Task<IActionResult> Update(Guid id, [FromBody] DeliveryNote request)
         {
             if (id != request.Id) return BadRequest();
-            
+
             var deliveryNote = await service.GetById(request.Id);
-            if (deliveryNote == null) 
+            if (deliveryNote == null)
                 return NotFound(new GenericResponse(false, $"Albará amb ID {request.Id} inexistent"));
 
             var deliveredStatus = await lifecycleService.GetStatusByName(StatusConstants.Lifecycles.DeliveryNote, StatusConstants.Statuses.Entregat);
-            if (deliveredStatus == null) 
+            if (deliveredStatus == null)
                 return NotFound(new GenericResponse(false, $"Estat '{StatusConstants.Statuses.Entregat}' inexistent" ));
 
-            var warehouseResponse = new GenericResponse(true);
+            GenericResponse response;
             if (deliveryNote.StatusId != deliveredStatus.Id && request.StatusId == deliveredStatus.Id)
-                warehouseResponse = await service.Deliver(request);
-            if (deliveryNote.StatusId == deliveredStatus.Id && request.StatusId != deliveredStatus.Id)
-                warehouseResponse = await service.UnDeliver(request);
+                response = await service.Deliver(request);
+            else if (deliveryNote.StatusId == deliveredStatus.Id && request.StatusId != deliveredStatus.Id)
+                response = await service.UnDeliver(request);
+            else
+                response = await service.Update(request);
 
-            var globalResponse = new GenericResponse(true);
-            if (warehouseResponse.Result)
-                globalResponse = await service.Update(request);
-
-            if (globalResponse.Result && warehouseResponse.Result) return Ok(globalResponse);
-            else return BadRequest(globalResponse);
+            return response.Result ? Ok(response) : BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

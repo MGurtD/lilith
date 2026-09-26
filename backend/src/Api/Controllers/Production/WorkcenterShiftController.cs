@@ -150,6 +150,22 @@ public class WorkcenterShiftController(IWorkcenterShiftService workcenterShiftSe
         }
     }
 
+    [HttpPost("WorkOrderPhase/Rejections")]
+    public async Task<IActionResult> RegisterWorkOrderPhaseRejections(RegisterWorkOrderPhaseRejectionsDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState.ValidationState);
+
+        var response = await workcenterShiftService.DetailsService.RegisterWorkOrderPhaseRejections(dto);
+        if (response.Result)
+        {
+            return Ok(response);
+        }
+        else
+        {
+            return BadRequest(response);
+        }
+    }
+
     [HttpPut("DisableWorkcenterShift/{workcenterShiftId:guid}")]
     public async Task<IActionResult> DisableWorkcenterShift(Guid workcenterShiftId)
     {

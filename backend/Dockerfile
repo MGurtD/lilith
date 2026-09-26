@@ -24,7 +24,7 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
 WORKDIR /app
 RUN mkdir -p /files
 
-RUN apk add --no-cache tzdata icu-libs
+RUN apk add --no-cache tzdata icu-libs fontconfig freetype
 
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Api.dll"]

@@ -1,61 +1,16 @@
-<template>
-  <form v-if="reason">
-    <section class="two-columns">
-      <BaseInput
-        class="mb-2"
-        label="Codi"
-        id="code"
-        v-model="reason.code"
-        :class="{ 'p-invalid': validation.errors.code }"
-      />
-      <BaseInput
-        class="mb-2"
-        label="Nom"
-        id="name"
-        v-model="reason.name"
-        :class="{ 'p-invalid': validation.errors.name }"
-      />
-    </section>
-    <section class="one-column">
-      <BaseInput
-        class="mb-2"
-        label="Descripció"
-        id="description"
-        v-model="reason.description"
-        :class="{ 'p-invalid': validation.errors.description }"
-      />
-    </section>
-    <section class="two-columns">
-      <div>
-        <label class="block text-900 mb-2">Color</label>
-        <ColorPicker
-          v-model="reason.color"
-          class="mb-2"
-          :class="{ 'p-invalid': validation.errors.color }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Icona</label>
-        <IconPicker v-model="reason.icon" placeholder="Selecciona una icona" />
-      </div>
-    </section>
-    <section class="mt-2 flex justify-content-end">
-      <Button label="Guardar" @click="submitForm" />
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import IconPicker from "../../../components/IconPicker.vue";
-import { MachineStatusReason } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import IconPicker from "@/components/IconPicker.vue";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { MachineStatusReason } from "../types";
 
 const props = defineProps<{
   reason: MachineStatusReason;
@@ -63,65 +18,109 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", reason: MachineStatusReason): void;
-  (e: "cancel"): void;
+  (event: "submit", reason: MachineStatusReason): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  code: Yup.string()
-    .required("El codi és obligatori")
-    .max(20, "El codi no pot superar els 20 caràcters")
-    .test(
-      "unique-code",
-      "Ja existeix un motiu amb aquest codi per aquest estat de màquina",
-      function (value) {
-        if (!value) return true;
-        const isDuplicate = props.existingReasons.some(
-          (r) =>
-            r.code.toLowerCase() === value.toLowerCase() &&
-            r.id !== props.reason.id
-        );
-        return !isDuplicate;
-      }
-    ),
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(100, "El nom no pot superar els 100 caràcters"),
-  description: Yup.string(),
-  color: Yup.string().required("El color és obligatori"),
-});
+const isDuplicateCode = (code: string): boolean =>
+  props.existingReasons.some(
+    (r) =>
+      r.code.toLowerCase() === code.toLowerCase() && r.id !== props.reason.id,
+  );
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "code",
+        label: t("production.components.codi"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elCodiEsObligatori"))
+          .max(20, t("production.validation.elCodiNoPotSuperarEls20Caracters"))
+          .test(
+            "unique-code",
+            t("production.validation.machineStatusReasonCodeAlreadyExists"),
+            (value) => !value || !isDuplicateCode(value),
+          ),
+      },
+      {
+        name: "name",
+        label: t("production.components.nom"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elNomEsObligatori"))
+          .max(100, t("production.validation.elNomNoPotSuperarEls100Caracters")),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 1 },
+    fields: [
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "color",
+        label: t("production.components.color"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("production.validation.elColorEsObligatori"),
+        ),
+      },
+      {
+        name: "icon",
+        label: t("production.components.icona"),
+        type: FormFieldType.Custom,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.reason);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.reason);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-const onCancel = () => {
-  emit("cancel");
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.reason,
+    code: stringValue(values.code, ""),
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    color: stringValue(values.color, ""),
+    icon: stringValue(values.icon, ""),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="reason"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-color="{ value, setValue, disabled, inputId }">
+      <ColorPicker
+        :input-id="inputId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+    <template #field-icon="{ value, setValue, disabled }">
+      <IconPicker
+        :model-value="typeof value === 'string' ? value : null"
+        :placeholder="t('production.components.seleccionaUnaIcona')"
+        :class="{ 'pointer-events-none opacity-60': disabled }"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>

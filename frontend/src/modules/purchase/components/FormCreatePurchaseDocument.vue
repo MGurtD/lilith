@@ -1,104 +1,129 @@
-<template>
-  <form>
-    <div class="mt-2">
-      <label class="block text-900 mb-2">Proveïdor</label>
-      <Select
-        class="w-full"
-        v-model="createRequest.supplierId"
-        :options="suppliersStore.suppliers"
-        optionValue="id"
-        optionLabel="comercialName"
-      />
-    </div>
-    <div class="mt-2">
-      <label class="block text-900 mb-2">Exercici</label>
-      <Select
-        class="w-full"
-        v-model="createRequest.exerciseId"
-        :options="exerciseStore.exercises"
-        optionValue="id"
-        optionLabel="name"
-      />
-    </div>
-    <div class="mt-2">
-      <label class="block text-900 mb-2">Data</label>
-      <DatePicker v-model="createRequest.date" />
-    </div>
-
-    <footer class="mt-2">
-      <Button label="Crear" @click="onSubmit" style="float: right" />
-    </footer>
-  </form>
-</template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useSuppliersStore } from "../store/suppliers";
-import { useToast } from "primevue/usetoast";
-import { CreatePurchaseDocumentRequest } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { convertDateTimeToJSON } from "../../../utils/functions";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { useExerciseStore } from "../../shared/store/exercise";
+import { useSuppliersStore } from "../store/suppliers";
+import type { CreatePurchaseDocumentRequest } from "../types";
 
-const toast = useToast();
+const props = withDefaults(
+  defineProps<{
+    createRequest: CreatePurchaseDocumentRequest;
+    loading?: boolean;
+  }>(),
+  { loading: false },
+);
+
+const emit = defineEmits<{
+  (event: "submit", request: CreatePurchaseDocumentRequest): void;
+}>();
+
+const { t } = useI18n();
 const exerciseStore = useExerciseStore();
 const suppliersStore = useSuppliersStore();
+const currentExerciseId = ref("");
 
-const props = defineProps<{
-  createRequest: CreatePurchaseDocumentRequest;
-}>();
-const emit = defineEmits<{
-  (e: "submit", createRequest: CreatePurchaseDocumentRequest): void;
-}>();
+const initialValues = computed(() => ({
+  ...props.createRequest,
+  exerciseId: props.createRequest.exerciseId || currentExerciseId.value,
+}));
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "supplierId",
+        label: t("purchase.order.fields.supplier"),
+        type: FormFieldType.Select,
+        props: {
+          options: suppliersStore.suppliers ?? [],
+          optionValue: "id",
+          optionLabel: "comercialName",
+        },
+        validation: Yup.string().required(
+          t("purchase.order.validation.supplierRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "exerciseId",
+        label: t("purchase.order.fields.exercise"),
+        type: FormFieldType.Select,
+        props: {
+          options: exerciseStore.exercises,
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("purchase.order.validation.exerciseRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "date",
+        label: t("purchase.order.fields.date"),
+        type: FormFieldType.Date,
+        validation: Yup.date()
+          .typeError(t("purchase.order.validation.dateRequired"))
+          .required(t("purchase.order.validation.dateRequired")),
+      },
+    ],
+  },
+]);
 
 onMounted(async () => {
-  if (!exerciseStore.exercises?.length) {
+  if (!exerciseStore.exercises.length) {
     await exerciseStore.fetchActive();
   }
 
-  var currentExercise = exerciseStore.exercises?.find(
-    (e) => e.name === new Date().getFullYear().toString(),
-  );
-
-  if (currentExercise) {
-    props.createRequest.exerciseId = currentExercise.id;
-  }
+  currentExerciseId.value =
+    exerciseStore.exercises.find(
+      (exercise) => exercise.name === String(new Date().getFullYear()),
+    )?.id ?? "";
 });
 
-const schema = Yup.object().shape({
-  exerciseId: Yup.string().required("L'exercici és obligatori"),
-  supplierId: Yup.string().required("El client és obligatori"),
-  date: Yup.date().required("La data és obligatoria"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.createRequest);
-};
-
-const onSubmit = () => {
-  validate();
-  if (validation.value.result) {
-    props.createRequest.date = convertDateTimeToJSON(props.createRequest.date);
-    emit("submit", props.createRequest);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.createRequest,
+    supplierId: stringValue(values.supplierId, ""),
+    exerciseId: stringValue(values.exerciseId, ""),
+    date: dateValue(values.date, props.createRequest.date),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="initialValues"
+    :loading="loading"
+    :disabled="loading"
+    @submit="submit"
+  >
+    <template #actions="{ submit: submitForm, loading: formLoading, disabled }">
+      <Button
+        type="button"
+        :label="t('purchase.order.actions.create')"
+        :loading="formLoading"
+        :disabled="disabled"
+        @click="submitForm"
+      />
+    </template>
+  </Form>
+</template>

@@ -1,8 +1,9 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="deliveryNoteStore.deliveryNotes ?? []"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -10,47 +11,33 @@
     class="small-datatable"
     tableStyle="min-width: 100%"
     sort-field="number"
-    sort-mode="single"
     :sort-order="1"
     showDeleteColumn
-    :canDelete="(item) => item.statusId === lifecycleStore.lifecycle?.initialStatusId"
+    :canDelete="(item) => !item.salesInvoiceId && item.statusId === lifecycleStore.lifecycle?.initialStatusId"
     @filter="filterData"
     @clear="cleanFilter"
     @create="createButtonClick"
     @delete="deleteDeliveryNote"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Període</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
   </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.deliveryNotes.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createDeliveryNote"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -58,9 +45,17 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "../../../store";
@@ -84,26 +79,51 @@ const store = useStore();
 const deliveryNoteStore = useDeliveryNoteStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
-const columns = ref<Column[]>([
-  { field: "number", header: "Número", sortable: true, style: "width: 15%" },
-  { field: "createdOn", header: "Data Creació", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
-  { field: "deliveryDate", header: "Data Entrega", columnType: ColumnType.Date, style: "width: 15%" },
+const columns = computed<Column[]>(() => [
+  { field: "number", header: t("common.number"), sortable: true, style: "width: 15%" },
+  { field: "createdOn", header: t("sales.list.columns.createdOn"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+  { field: "deliveryDate", header: t("sales.list.columns.deliveryDate"), columnType: ColumnType.Date, sortable: true, style: "width: 15%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
     style: "width: 30%",
   },
   {
     field: "statusId",
-    header: "Estat",
-    columnType: ColumnType.Lookup,
+    header: t("common.status"),
+    columnType: ColumnType.Status,
     resolver: lifecycleStore.getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
     style: "width: 30%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "deliveryDate",
+  meta: ["createdOn"],
+};
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
   },
 ]);
 
@@ -113,7 +133,6 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear albarà",
   closable: true,
   position: "center",
   modal: true,
@@ -134,11 +153,14 @@ onMounted(async () => {
   setCurrentYear();
   await filterData();
 
-  store.setMenuItem({
-    icon: PrimeIcons.APPLE,
-    title: "Albarans d'entrega",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.APPLE, title: t("sales.deliveryNotes.title") });
+};
+
+watch(locale, setMenuItem);
 
 onUnmounted(() => {
   deliveryNoteStore.deliveryNotes = undefined;
@@ -150,6 +172,7 @@ const cleanFilter = () => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -181,28 +204,35 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
 };
 
-const createDeliveryNote = async () => {
-  const response = await deliveryNoteStore.Create(createRequest.value);
-  if (!response?.result) {
-    toast.add({
-      severity: "warn",
-      summary: "Error al crear l'albarà",
-      detail:
-        response?.errors?.[0] ??
-        "Error desconegut, contacte amb l'administrador.",
-      life: 10000,
-    });
-    return;
+const createDeliveryNote = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const response = await deliveryNoteStore.Create(request);
+    if (!response?.result) {
+      toast.add({
+        severity: "warn",
+        summary: t("sales.deliveryNotes.messages.createError"),
+        detail:
+          response?.errors?.[0] ??
+          t("sales.list.messages.unknownError"),
+        life: 10000,
+      });
+      return;
+    }
+    dialogOptions.visible = false;
+    router.push({ path: `/deliverynote/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-  dialogOptions.visible = false;
-  router.push({ path: `/deliverynote/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
@@ -211,7 +241,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteDeliveryNote = async (order: SalesOrderHeader) => {
   confirm.require({
-    message: `Està segur que vol eliminar l'albarà?`,
+    message: t("sales.deliveryNotes.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -220,7 +250,7 @@ const deleteDeliveryNote = async (order: SalesOrderHeader) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
 

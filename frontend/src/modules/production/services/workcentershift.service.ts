@@ -1,5 +1,6 @@
 import BaseService from "../../../api/base.service";
 import {
+  RegisterPhaseRejectionsRequest,
   UpdatePhaseQuantitiesRequest,
   WorkcenterShiftGroup,
   WorkcenterShiftHistorical,
@@ -28,6 +29,21 @@ export class WorkcenterShiftService extends BaseService<WorkcenterShiftGroup> {
       return response.status === 200;
     } catch (err) {
       console.error("Error updating phase quantities:", err);
+      return false;
+    }
+  }
+
+  async RegisterPhaseRejections(
+    dto: RegisterPhaseRejectionsRequest,
+  ): Promise<boolean> {
+    try {
+      const response = await this.apiClient.post(
+        `${this.resource}/WorkOrderPhase/Rejections`,
+        dto,
+      );
+      return response.status === 200;
+    } catch (err) {
+      console.error("Error registering phase rejections:", err);
       return false;
     }
   }

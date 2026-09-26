@@ -42,6 +42,11 @@ export const useLifecyclesStore = defineStore({
         return statusName;
       };
     },
+    // PrimeVue Tag severity set for the status in the lifecycle administration.
+    getStatusColorById: (state) => {
+      return (statusId: unknown): string | undefined =>
+        state.lifecycle?.statuses?.find((s) => s.id === statusId)?.color || undefined;
+    },
   },
   actions: {
     setNew(id: string) {
@@ -52,16 +57,6 @@ export const useLifecyclesStore = defineStore({
         disabled: false,
         statuses: [],
       } as Lifecycle;
-    },
-
-    async getStatusNameById(lifecycleName: string, statusId: string) {
-      const lifecycle = await Services.Lifecycle.getByName(lifecycleName);
-
-      if (lifecycle && lifecycle.statuses.length > 0) {
-        const status = lifecycle.statuses.find((s) => s.id === statusId);
-        return status ? status.name : "";
-      }
-      return "";
     },
 
     async fetchAll() {
@@ -129,12 +124,12 @@ export const useLifecyclesStore = defineStore({
     // Tags
     async createTag(lifecycleId: string, model: LifecycleTag) {
       const result = await Services.Lifecycle.createTag(lifecycleId, model);
-      if (result) await this.fetchOne(this.lifecycle!.id);
+      if (result.result) await this.fetchOne(this.lifecycle!.id);
       return result;
     },
     async updateTag(model: LifecycleTag) {
       const result = await Services.Lifecycle.updateTag(model);
-      if (result) await this.fetchOne(this.lifecycle!.id);
+      if (result.result) await this.fetchOne(this.lifecycle!.id);
       return result;
     },
     async deleteTag(id: string) {

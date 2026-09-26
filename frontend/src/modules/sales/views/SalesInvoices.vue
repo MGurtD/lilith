@@ -1,8 +1,9 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="invoiceStore.invoices ?? []"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -16,23 +17,8 @@
     @delete="deleteSalesInvoice"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Període</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
     <template #body-dueDate="{ data }">
@@ -42,14 +28,16 @@
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.invoices.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createInvoice"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
@@ -57,8 +45,15 @@
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -66,7 +61,8 @@ import { useStore } from "../../../store";
 import { useSalesInvoiceStore } from "../store/invoice";
 import { useCustomersStore } from "../store/customers";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import {
@@ -86,28 +82,53 @@ const userFilterStore = useUserFilterStore();
 const customersStore = useCustomersStore();
 const invoiceStore = useSalesInvoiceStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
-const columns = ref<Column[]>([
-  { field: "invoiceNumber", header: "Número", sortable: true, style: "width: 10%" },
-  { field: "invoiceDate", header: "Data", sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
+const columns = computed<Column[]>(() => [
+  { field: "invoiceNumber", header: t("common.number"), sortable: true, style: "width: 10%" },
+  { field: "invoiceDate", header: t("common.date"), sortable: true, columnType: ColumnType.Date, style: "width: 15%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customersStore.getCustomerNameById,
     style: "width: 25%",
   },
   {
     field: "statusId",
-    header: "Estat",
-    columnType: ColumnType.Lookup,
+    header: t("common.status"),
+    columnType: ColumnType.Status,
     resolver: lifecycleStore.getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
     style: "width: 15%",
   },
-  { field: "dueDate", header: "Venciment", style: "width: 15%" },
-  { field: "netAmount", header: "Import", columnType: ColumnType.Currency, style: "width: 20%" },
+  { field: "dueDate", header: t("sales.list.columns.dueDate"), style: "width: 15%", sortable: true },
+  { field: "netAmount", header: t("common.amount"), columnType: ColumnType.Currency, style: "width: 20%" },
+]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "netAmount",
+  meta: ["invoiceDate", "dueDate"],
+};
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customersStore.getCustomerNameById(String(value)),
+  },
 ]);
 
 const filter = ref({
@@ -116,7 +137,6 @@ const filter = ref({
 });
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear factura",
   closable: true,
   position: "center",
   modal: true,
@@ -138,11 +158,14 @@ onMounted(async () => {
   getUserFilter();
   await filterInvoices();
 
-  store.setMenuItem({
-    icon: PrimeIcons.MONEY_BILL,
-    title: "Factures de venta",
-  });
+  setMenuItem();
 });
+
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.MONEY_BILL, title: t("sales.invoices.title") });
+};
+
+watch(locale, setMenuItem);
 
 onUnmounted(() => {
   userFilterStore.addFilter("SalesInvoices", "", filter.value);
@@ -198,6 +221,7 @@ const getLastDueDate = (invoice: SalesInvoice): string => {
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -212,25 +236,32 @@ const createButtonClick = () => {
   dialogOptions.visible = true;
 };
 
-const createInvoice = async () => {
-  const response = await invoiceStore.Create(createRequest.value);
-  if (response && !response?.result) {
-    const errorMessage =
-      response.errors.length > 0
-        ? response.errors[0]
-        : "Error desconegut, contacte amb l'administrador.";
+const createInvoice = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
 
-    toast.add({
-      severity: "warn",
-      summary: "Error al crear la factura",
-      detail: errorMessage,
-      life: 10000,
-    });
-    return;
+  creating.value = true;
+  try {
+    const response = await invoiceStore.Create(request);
+    if (response && !response?.result) {
+      const errorMessage =
+        response.errors.length > 0
+          ? response.errors[0]
+          : t("sales.list.messages.unknownError");
+
+      toast.add({
+        severity: "warn",
+        summary: t("sales.invoices.messages.createError"),
+        detail: errorMessage,
+        life: 10000,
+      });
+      return;
+    }
+
+    if (response)
+      router.push({ path: `/sales-invoice/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-
-  if (response)
-    router.push({ path: `/sales-invoice/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
@@ -239,7 +270,7 @@ const editRow = (row: DataTableRowClickEvent) => {
 
 const deleteSalesInvoice = (invoice: SalesInvoice) => {
   confirm.require({
-    message: `Està segur que vol eliminar la factura?`,
+    message: t("sales.invoices.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -248,7 +279,7 @@ const deleteSalesInvoice = (invoice: SalesInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
         await filterInvoices();

@@ -1,124 +1,157 @@
-<template>
-  <form v-if="invoiceImport">
-    <section class="two-columns">
-      <BaseInput
-        class="mb-2"
-        label="Import Base"
-        v-model="invoiceImport.baseAmount"
-        :type="BaseInputType.CURRENCY"
-        :class="{
-          'p-invalid': validation.errors.baseAmount,
-        }"
-        @update:modelValue="calcAmounts()"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">IVA</label>
-        <Select
-          v-model="invoiceImport.taxId"
-          :options="purchaseMasterData.masterData.taxes"
-          optionValue="id"
-          optionLabel="name"
-          @update:modelValue="calcAmounts()"
-        />
-      </div>
-    </section>
-    <section class="two-columns">
-      <BaseInput
-        class="mb-2"
-        label="Import Impost"
-        v-model="invoiceImport.taxAmount"
-        :type="BaseInputType.CURRENCY"
-        disabled
-      ></BaseInput>
-      <BaseInput
-        class="mb-2"
-        label="Total"
-        v-model="invoiceImport.netAmount"
-        :type="BaseInputType.CURRENCY"
-        disabled
-      ></BaseInput>
-    </section>
-
-    <Button
-      :label="textActionButton"
-      @click="submitForm"
-      style="float: right"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { PurchaseInvoiceImport } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { round } from "lodash";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { FormActionMode } from "../../../types/component";
 import { usePurchaseMasterDataStore } from "../store/purchase";
-import { BaseInputType, FormActionMode } from "../../../types/component";
-import { isNumber, round } from "lodash";
-
-const purchaseMasterData = usePurchaseMasterDataStore();
-const toast = useToast();
+import type { PurchaseInvoiceImport } from "../types";
 
 const props = defineProps<{
   formAction: FormActionMode;
   invoiceImport: PurchaseInvoiceImport;
 }>();
+
 const emit = defineEmits<{
-  (e: "submit", invoiceImport: PurchaseInvoiceImport): void;
+  (event: "submit", invoiceImport: PurchaseInvoiceImport): void;
 }>();
 
-const textActionButton = computed(() => {
-  return props.formAction === FormActionMode.CREATE ? "Afegir" : "Modificar";
-});
+const purchaseMasterData = usePurchaseMasterDataStore();
+const { t } = useI18n();
+const form = ref<{
+  setFieldValue: (name: string, value: unknown) => void;
+} | null>(null);
 
-const calcAmounts = () => {
-  const tax = purchaseMasterData.masterData.taxes!.find(
-    (t) => t.id === props.invoiceImport.taxId,
+const textActionButton = computed(() =>
+  props.formAction === FormActionMode.CREATE
+    ? t("purchase.purchaseInvoiceImport.actions.add")
+    : t("purchase.purchaseInvoiceImport.actions.update"),
+);
+
+const amountProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+};
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "baseAmount",
+        label: t("purchase.purchaseInvoiceImport.fields.baseAmount"),
+        type: FormFieldType.Number,
+        props: amountProps,
+        validation: Yup.number()
+          .typeError(
+            t(
+              "purchase.purchaseInvoiceImport.validation.baseAmountRequired",
+            ),
+          )
+          .required(
+            t(
+              "purchase.purchaseInvoiceImport.validation.baseAmountRequired",
+            ),
+          ),
+        onChange: (_value, values) => calculateAmounts(values),
+      },
+      {
+        name: "taxId",
+        label: t("purchase.purchaseInvoiceImport.fields.tax"),
+        type: FormFieldType.Select,
+        props: {
+          options: purchaseMasterData.masterData.taxes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        onChange: (_value, values) => calculateAmounts(values),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "taxAmount",
+        label: t("purchase.purchaseInvoiceImport.fields.taxAmount"),
+        type: FormFieldType.Number,
+        props: amountProps,
+        disabled: true,
+      },
+      {
+        name: "netAmount",
+        label: t("common.total"),
+        type: FormFieldType.Number,
+        props: amountProps,
+        disabled: true,
+      },
+    ],
+  },
+]);
+
+const calculateAmounts = (values: Readonly<FormValues>): void => {
+  const tax = purchaseMasterData.masterData.taxes?.find(
+    (item) => item.id === values.taxId,
   );
+  if (!tax || typeof values.baseAmount !== "number") return;
 
-  if (tax && isNumber(props.invoiceImport.baseAmount)) {
-    const baseAmount = props.invoiceImport.baseAmount;
-    const taxAmount = tax.isReverseCharge ? 0 : (baseAmount / 100) * tax.percentatge;
-    const netAmount = baseAmount + taxAmount;
+  const taxAmount = tax.isReverseCharge
+    ? 0
+    : (values.baseAmount / 100) * tax.percentatge;
 
-    props.invoiceImport.baseAmount = baseAmount;
-    props.invoiceImport.taxAmount = round(taxAmount, 2);
-    props.invoiceImport.netAmount = round(netAmount, 2);
-  }
+  form.value?.setFieldValue("taxAmount", round(taxAmount, 2));
+  form.value?.setFieldValue(
+    "netAmount",
+    round(values.baseAmount + taxAmount, 2),
+  );
 };
 
-const schema = Yup.object().shape({
-  baseAmount: Yup.number().required("L'import base és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.invoiceImport);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.invoiceImport);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.invoiceImport,
+    taxId: stringValue(values.taxId, ""),
+    baseAmount: finiteNumberValue(
+      values.baseAmount,
+      props.invoiceImport.baseAmount,
+    ),
+    taxAmount: finiteNumberValue(
+      values.taxAmount,
+      props.invoiceImport.taxAmount,
+    ),
+    netAmount: finiteNumberValue(
+      values.netAmount,
+      props.invoiceImport.netAmount,
+    ),
+  });
 };
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="invoiceImport"
+    @submit="submit"
+  >
+    <template #actions="{ submit: submitForm, loading, disabled }">
+      <Button
+        type="button"
+        :label="textActionButton"
+        :loading="loading"
+        :disabled="disabled"
+        @click="submitForm"
+      />
+    </template>
+  </Form>
+</template>

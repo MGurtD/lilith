@@ -1,85 +1,102 @@
 <template>
-  <DataTable
-    :value="expenseStore.expenseTypes"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    preset="crud-list"
+    :columns="columns"
+    :items="expenseStore.expenseTypes ?? []"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    delete-column-width="5%"
+    show-delete-column
     tableStyle="min-width: 100%"
     @row-click="editExpenseType"
+    @create="createButtonClick"
+    @delete="deleteExpenseType"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Tipus de despesa</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("purchase.expenseTypes.title") }}</span>
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Desactivada" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteExpenseType($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
-import { onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { ExpenseType } from "../types";
 
 const router = useRouter();
 const store = useStore();
 const expenseStore = useExpenseStore();
+const { t, locale } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.fields.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("purchase.fields.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("purchase.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 20%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
+
+const setMenuTitle = () => {
+  store.setMenuItem({
+    icon: PrimeIcons.FLAG,
+    title: t("purchase.expenseTypes.managementTitle"),
+  });
+};
 
 onMounted(async () => {
   await expenseStore.fetchExpenseTypes();
 
-  store.setMenuItem({
-    icon: PrimeIcons.FLAG,
-    title: "Gestió de tipus de despesa",
-  });
+  setMenuTitle();
 });
 
+watch(locale, setMenuTitle);
+
 const createButtonClick = () => {
-  router.push({ path: `/expensetype/${uuidv4()}` });
+  router.push({ path: `/expensetype/${getNewUuid()}` });
 };
 
 const editExpenseType = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/expensetype/${row.data.id}` });
-  }
+  router.push({ path: `/expensetype/${row.data.id}` });
 };
 
 const confirm = useConfirm();
 const toast = useToast();
-const deleteExpenseType = (event: any, expenseType: ExpenseType) => {
+const deleteExpenseType = (expenseType: ExpenseType) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Està segur que vol eliminar el tipus de despesa?`,
+    message: t("purchase.messages.confirmDeleteExpenseType"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -88,7 +105,7 @@ const deleteExpenseType = (event: any, expenseType: ExpenseType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await expenseStore.fetchExpenseTypes();

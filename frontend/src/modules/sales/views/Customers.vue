@@ -3,80 +3,78 @@
     <TabList>
       <Tab value="0">
         <i :class="PrimeIcons.LINK" class="mr-2"></i>
-        <span>Clients</span>
+        <span>{{ t("sales.customers.title") }}</span>
       </Tab>
       <Tab value="1">
         <i :class="PrimeIcons.HASHTAG" class="mr-2"></i>
-        <span>Tipus de client</span>
+        <span>{{ t("sales.customers.customerTypes") }}</span>
       </Tab>
     </TabList>
-    <TabPanels>
-      <TabPanel value="0">
-        <Table
-          :columns="customerColumns"
-          :items="filteredData"
-          :filter-config="customerFilterConfig"
-          v-model:filter-values="customerFilter"
-          :filter-body-width="customerFilterBodyWidth"
-          preset="crud-list"
-          page="Customers"
-          tableStyle="min-width: 100%"
-          sort-field="comercialName"
-          :sort-order="1"
-          :scroll-height="customersScrollHeight"
-          showDeleteColumn
-          :canDelete="() => true"
-          @clear="cleanCustomerFilter"
-          @create="createCustomer"
-          @delete="deleteCustomer"
-          @row-click="editCustomer"
-        />
-      </TabPanel>
-      <TabPanel value="1">
-        <Table
-          :columns="customerTypeColumns"
-          :items="customerStore.customerTypes ?? []"
-          :filter-config="[]"
-          v-model:filter-values="emptyFilter"
-          :filter-body-width="typesFilterBodyWidth"
-          preset="crud-list"
-          page="CustomerTypes"
-          tableStyle="min-width: 100%"
-          :scroll-height="typesScrollHeight"
-          showDeleteColumn
-          :canDelete="() => true"
-          @create="createCustomerType"
-          @delete="deleteCustomerType"
-          @row-click="editCustomerType"
-        />
-      </TabPanel>
-    </TabPanels>
   </Tabs>
+  <Table
+    v-if="activeTable === 'customers'"
+    :columns="customerColumns"
+    :items="filteredData"
+    :filter-config="customerFilterConfig"
+    v-model:filter-values="customerFilter"
+    :filter-body-width="customerFilterBodyWidth"
+    preset="crud-list"
+    page="Customers"
+    :card-layout="customerCardLayout"
+    tableStyle="min-width: 100%"
+    sort-field="comercialName"
+    :sort-order="1"
+    showDeleteColumn
+    :canDelete="() => true"
+    @clear="cleanCustomerFilter"
+    @create="createCustomer"
+    @delete="deleteCustomer"
+    @row-click="editCustomer"
+  />
+  <Table
+    v-else
+    :card-layout="customerTypeCardLayout"
+    :columns="customerTypeColumns"
+    :items="customerStore.customerTypes ?? []"
+    :filter-config="[]"
+    v-model:filter-values="emptyFilter"
+    :filter-body-width="typesFilterBodyWidth"
+    preset="crud-list"
+    page="CustomerTypes"
+    tableStyle="min-width: 100%"
+    showDeleteColumn
+    :canDelete="() => true"
+    @create="createCustomerType"
+    @delete="deleteCustomerType"
+    @row-click="editCustomerType"
+  />
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useCustomersStore } from "../store/customers";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/types";
+import type { CardLayout, Column } from "../../../components/tables/types";
 import { ColumnType } from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 const selectedTabIndex = ref("0");
+const activeTable = computed(() =>
+  selectedTabIndex.value === "0" ? "customers" : "customerTypes",
+);
 const toast = useToast();
 const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const customerStore = useCustomersStore();
-
-const customersScrollHeight = "flex";
-const typesScrollHeight = "flex";
+const { locale, t } = useI18n();
 
 const customerFilterBodyWidth: FilterBodyWidth = {
   desktop: "33%",
@@ -88,35 +86,48 @@ const typesFilterBodyWidth: FilterBodyWidth = {
   tablet: "50%",
 };
 
-const customerFilterConfig: FilterConfig[] = [
+const customerFilterConfig = computed<FilterConfig[]>(() => [
   {
     key: "code",
-    label: "Nom comercial",
+    label: t("sales.customers.commercialName"),
     type: "text",
-    placeholder: "Nom comercial",
+    placeholder: t("sales.customers.commercialName"),
     size: "md",
   },
-];
+]);
 
-const customerColumns = ref<Column[]>([
-  { field: "comercialName", header: "Nom comercial", sortable: true, style: "width: 20%" },
-  { field: "taxName", header: "Nom Fiscal", style: "width: 20%" },
+const customerColumns = computed<Column[]>(() => [
+  { field: "comercialName", header: t("sales.customers.commercialName"), sortable: true, style: "width: 20%" },
+  { field: "taxName", header: t("sales.customers.taxName"), style: "width: 20%" },
   { field: "vatNumber", header: "CIF", style: "width: 20%" },
   {
     field: "customerTypeId",
-    header: "Tipus",
+    header: t("sales.customers.type"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerTypeNameById,
     style: "width: 20%",
   },
-  { field: "disabled", header: "Desactivat", sortable: true, columnType: ColumnType.Boolean, style: "width: 20%" },
+  { field: "disabled", header: t("sales.customers.disabled"), sortable: true, columnType: ColumnType.Boolean, style: "width: 20%" },
 ]);
 
-const customerTypeColumns = ref<Column[]>([
-  { field: "name", header: "Nom", style: "width: 33%" },
-  { field: "description", header: "Descripció", style: "width: 33%" },
-  { field: "disabled", header: "Desactivat", columnType: ColumnType.Boolean, style: "width: 33%" },
+// Phone card: the default for this screen; a saved view may override it.
+const customerCardLayout: CardLayout = {
+  title: "comercialName",
+  subtitle: "taxName",
+  meta: ["vatNumber", "customerTypeId", "disabled"],
+};
+
+const customerTypeColumns = computed<Column[]>(() => [
+  { field: "name", header: t("sales.customers.name"), style: "width: 33%" },
+  { field: "description", header: t("sales.customers.description"), style: "width: 33%" },
+  { field: "disabled", header: t("sales.customers.disabled"), columnType: ColumnType.Boolean, style: "width: 33%" },
 ]);
+
+const customerTypeCardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 const customerFilter = ref({
   code: "",
@@ -141,26 +152,29 @@ const cleanCustomerFilter = () => {
 };
 
 const createCustomer = () => {
-  router.push({ path: `/customers/${uuidv4()}` });
+  router.push({ path: `/customers/${getNewUuid()}` });
 };
 
 const createCustomerType = () => {
-  router.push({ path: `/customer-types/${uuidv4()}` });
+  router.push({ path: `/customer-types/${getNewUuid()}` });
+};
+
+const setMenuItem = () => {
+  store.setMenuItem({ title: t("sales.customers.title"), icon: PrimeIcons.HASHTAG });
 };
 
 onMounted(async () => {
   await customerStore.fetchCustomers();
   await customerStore.fetchCustomerTypes();
 
-  store.setMenuItem({
-    title: "Clients",
-    icon: PrimeIcons.HASHTAG,
-  });
+  setMenuItem();
 });
+
+watch(locale, setMenuItem);
 
 const deleteCustomer = (customer: Customer) => {
   confirm.require({
-    message: `Está segur que vol eliminar el client ${customer.comercialName}?`,
+    message: t("sales.customers.confirmDeleteCustomer", { name: customer.comercialName }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -170,7 +184,7 @@ const deleteCustomer = (customer: Customer) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("sales.customers.deleted"),
           life: 3000,
         });
         await customerStore.fetchCustomers();
@@ -181,7 +195,7 @@ const deleteCustomer = (customer: Customer) => {
 
 const deleteCustomerType = (customerType: CustomerType) => {
   confirm.require({
-    message: `Está segur que vol eliminar el tipus de client ${customerType.name}?`,
+    message: t("sales.customers.confirmDeleteCustomerType", { name: customerType.name }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -191,7 +205,7 @@ const deleteCustomerType = (customerType: CustomerType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("sales.customers.deleted"),
           life: 3000,
         });
         await customerStore.fetchCustomerTypes();

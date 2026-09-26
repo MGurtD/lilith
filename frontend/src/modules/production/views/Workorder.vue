@@ -4,18 +4,20 @@
       v-if="workorder"
       ref="workorderForm"
       :workorder="workorder"
+      :report-downloading="reportDownloading"
       @submit="onWorkorderSubmit"
       @download="printReport"
+      @download-pdf="printPdf"
     ></FormWorkorder>
   </header>
   <main class="main">
     <div v-if="workorder !== undefined">
       <Tabs v-model:value="activeTab" :key="workorder.id">
         <TabList>
-          <Tab value="0">Fases</Tab>
-          <Tab value="1">Hores</Tab>
-          <Tab value="2">Costs</Tab>
-          <Tab value="3">Moviments</Tab>
+          <Tab value="0">{{ pt("Fases") }}</Tab>
+          <Tab value="1">{{ pt("Hores") }}</Tab>
+          <Tab value="2">{{ pt("Costs") }}</Tab>
+          <Tab value="3">{{ pt("Moviments") }}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="0">
@@ -38,7 +40,7 @@
                 <div
                   class="flex flex-wrap align-items-center justify-content-between gap-2"
                 >
-                  <span class="text-900 font-bold">Hores</span>
+                  <span class="text-900 font-bold">{{ pt("Hores") }}</span>
                   <Button
                     :icon="PrimeIcons.PLUS"
                     rounded
@@ -54,7 +56,7 @@
               <div class="costs-section">
                 <h4 class="costs-section-title">
                   <i class="pi pi-euro" />
-                  Costos
+                  {{ pt("Costos") }}
                 </h4>
                 <div class="costs-grid">
                   <div class="cost-card">
@@ -62,7 +64,7 @@
                       <i class="pi pi-user" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Operari</span>
+                      <span class="cost-card-label">{{ pt("Cost Operari") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.operatorCost)
                       }}</span>
@@ -73,7 +75,7 @@
                       <i class="pi pi-cog" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Màquina</span>
+                      <span class="cost-card-label">{{ pt("Cost Màquina") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.machineCost)
                       }}</span>
@@ -84,7 +86,7 @@
                       <i class="pi pi-box" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Material</span>
+                      <span class="cost-card-label">{{ pt("Cost Material") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(workorder.materialCost)
                       }}</span>
@@ -95,7 +97,7 @@
                       <i class="pi pi-calculator" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Cost Total</span>
+                      <span class="cost-card-label">{{ pt("Cost Total") }}</span>
                       <span class="cost-card-value">{{
                         formatCurrency(
                           workorder.machineCost +
@@ -111,7 +113,7 @@
               <div class="costs-section">
                 <h4 class="costs-section-title">
                   <i class="pi pi-clock" />
-                  Temps
+                  {{ pt("Temps") }}
                 </h4>
                 <div class="time-grid">
                   <div class="cost-card">
@@ -119,7 +121,7 @@
                       <i class="pi pi-user" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Temps Operari</span>
+                      <span class="cost-card-label">{{ pt("Temps Operari") }}</span>
                       <span class="cost-card-value"
                         >{{ workorder.operatorTime }} min</span
                       >
@@ -130,7 +132,7 @@
                       <i class="pi pi-cog" />
                     </div>
                     <div class="cost-card-content">
-                      <span class="cost-card-label">Temps Màquina</span>
+                      <span class="cost-card-label">{{ pt("Temps Màquina") }}</span>
                       <span class="cost-card-value"
                         >{{ workorder.machineTime }} min</span
                       >
@@ -157,13 +159,17 @@
     :modal="dialogOptions.modal"
   >
     <FormWorkOrderProductionPart
-      :productionPart="productionPartRequest"
+      :production-part="productionPartRequest"
       :avoid-work-order-refresh="true"
       @submit="createProductionPart"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkOrderProductionPart from "../components/FormWorkOrderProductionPart.vue";
 import FormWorkorder from "../components/FormWorkorder.vue";
 import TableWorkorderPhases from "../components/TableWorkorderPhases.vue";
@@ -208,6 +214,7 @@ const id = ref("");
 const activeTab = ref("0");
 const stockMovementsLoaded = ref(false);
 const workorderForm = ref<InstanceType<typeof FormWorkorder> | null>(null);
+const reportDownloading = ref(false);
 
 watch(activeTab, async (newTab) => {
   if (newTab === "3" && !stockMovementsLoaded.value && id.value) {
@@ -218,7 +225,7 @@ watch(activeTab, async (newTab) => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear tíquet de producció",
+  title: pt("Crear tíquet de producció"),
   closable: true,
   position: "center",
   modal: true,
@@ -230,7 +237,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ordre de fabricació`;
+  pageTitle = t("production.detail.workorderTitle");
   if (workorder.value) {
     pageTitle = `${pageTitle} ${workorder.value.code}`;
   }
@@ -274,7 +281,7 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Ordre de fabricació actualitzada",
+      summary: pt("Ordre de fabricació actualitzada"),
       life: 3000,
     });
 
@@ -283,8 +290,8 @@ const onWorkorderSubmit = async (workorder: WorkOrder) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al actualitzar l'ordre de fabricació",
-      detail: "Revisi el log per a més informació",
+      summary: t("production.messages.updateWorkorderError"),
+      detail: pt("Revisi el log per a més informació"),
       life: 10000,
     });
   }
@@ -298,8 +305,8 @@ const addWorkOrderPhase = async (phase: WorkOrderPhase) => {
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al crear la fase",
-      detail: "Revisi el log per a més informació",
+      summary: pt("Error al crear la fase"),
+      detail: pt("Revisi el log per a més informació"),
       life: 10000,
     });
   }
@@ -308,7 +315,18 @@ const editWorkOrderPhase = (phase: WorkOrderPhase) => {
   router.push({ path: `/workorder/${id.value}/phase/${phase.id}` });
 };
 const deleteWorkOrderPhase = async (phase: WorkOrderPhase) => {
-  await workorderStore.deletePhase(phase.id);
+  const result = await workorderStore.deletePhase(phase.id);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: pt("Fase eliminada"),
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
+      life: 5000,
+    });
+  }
 };
 
 const productionPartRequest = ref({} as ProductionPart);
@@ -332,9 +350,9 @@ const onProductionPartAddClick = () => {
   dialogOptions.visible = true;
 };
 
-const createProductionPart = async () => {
+const createProductionPart = async (productionPart: ProductionPart) => {
   dialogOptions.visible = false;
-  const created = await productionPartStore.create(productionPartRequest.value);
+  const created = await productionPartStore.create(productionPart);
   if (created) {
     productionPartStore.fetchByWorkOrderId(id.value);
     fetchWorkOrder();
@@ -348,31 +366,58 @@ const deleteProductionPart = async (productionPart: ProductionPart) => {
 };
 
 const printReport = async () => {
-  const workOrderReport = await Services.WorkOrder.GetReportDataById(
-    workorder.value!.id,
-  );
+  if (reportDownloading.value) return;
 
-  if (workOrderReport) {
+  reportDownloading.value = true;
+  try {
+    const workOrderReport = await Services.WorkOrder.GetReportDataById(
+      workorder.value!.id,
+    );
+    if (!workOrderReport) throw new Error("Work order report data is empty");
+
     const fileName = `OrdreFabricacio_${workorder.value?.code}.xlsx`;
-
-    const reportService = new ReportService();
-    const report = await reportService.Download(
+    const report = await new ReportService().Download(
       workOrderReport,
       REPORTS.WorkOrder,
       fileName,
     );
+    if (!report) throw new Error("Excel report download is empty");
 
-    if (report) {
-      createBlobAndDownloadFile(fileName, report);
-    } else {
-      toast.add({
-        severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar l'informe de l'ordre de fabricació",
-      });
-    }
+    createBlobAndDownloadFile(fileName, report);
+  } catch {
+    toast.add({
+      severity: "warn",
+      summary: pt("Error"),
+      detail: t("production.messages.workorderReportError"),
+    });
+  } finally {
+    reportDownloading.value = false;
   }
 };
+const printPdf = async () => {
+  if (reportDownloading.value) return;
+
+  reportDownloading.value = true;
+  try {
+    const report = await Services.WorkOrder.DownloadPdf(workorder.value!.id);
+    if (!report) throw new Error("PDF report download is empty");
+
+    createBlobAndDownloadFile(
+      `OrdreFabricacio_${workorder.value?.code}.pdf`,
+      report,
+      "application/pdf",
+    );
+  } catch {
+    toast.add({
+      severity: "warn",
+      summary: pt("Error"),
+      detail: t("production.messages.workorderReportError"),
+    });
+  } finally {
+    reportDownloading.value = false;
+  }
+};
+
 </script>
 <style scoped>
 .main {

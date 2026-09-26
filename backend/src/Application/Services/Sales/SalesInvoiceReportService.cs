@@ -24,6 +24,11 @@ namespace Application.Services.Sales
             var site = await unitOfWork.Sites.Get(invoice.SiteId.Value);
             if (site is null) return null;
 
+            // Recuperar enterprise
+            var enterprise = await unitOfWork.Enterprises.Get(site.EnterpriseId);
+            if (enterprise is null) return null;
+
+            // Recuperar mètode de pagament
             var paymentMethod = await unitOfWork.PaymentMethods.Get(invoice.PaymentMethodId);
             if (paymentMethod is null) return null;
 
@@ -41,18 +46,22 @@ namespace Application.Services.Sales
                 DueDate = invoice.SalesInvoiceDueDates.OrderByDescending(d => d.DueDate).FirstOrDefault()!.DueDate,
                 Total = invoice.SalesInvoiceImports.Sum(i => i.NetAmount),
                 Customer = customer,
+                EnterpriseName = enterprise.Name,
                 Site = site,
                 PaymentMethod = paymentMethod,
+                Iban = invoice.CustomerAccountNumber,
                 QrCodeUrl = verifactuRequest?.QrCodeUrl ?? string.Empty,
                 QrCodeReportTag = !string.IsNullOrWhiteSpace(verifactuRequest?.QrCodeUrl) ? "+++IMAGE qrCodeData+++" : string.Empty,
-                Imports = [.. invoice.SalesInvoiceImports.Select(import => new InvoiceReportDtoTaxImport()
-                {
-                    Name = import.Tax!.Name,
-                    BaseAmount = import.BaseAmount,
-                    NetAmount = import.NetAmount,
-                    TaxAmount = import.TaxAmount,
-                    Percentatge = import.Tax!.Percentatge
-                })]
+                Imports = [.. invoice.SalesInvoiceImports
+                    .GroupBy(import => new { import.Tax!.Name, import.Tax.Percentatge })
+                    .Select(group => new InvoiceReportDtoTaxImport()
+                    {
+                        Name = group.Key.Name,
+                        BaseAmount = group.Sum(import => import.BaseAmount),
+                        NetAmount = group.Sum(import => import.NetAmount),
+                        TaxAmount = group.Sum(import => import.TaxAmount),
+                        Percentatge = group.Key.Percentatge
+                    })]
             };
 
             // Obtenir albarans de la factura

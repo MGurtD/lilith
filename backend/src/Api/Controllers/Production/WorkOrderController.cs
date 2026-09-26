@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ namespace Api.Controllers.Production
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService) : ControllerBase
+    public class WorkOrderController(IWorkOrderService workOrderService, IWorkOrderPhaseService phaseService, IDetailedWorkOrderService detailedWorkOrderService, IWorkOrderReportService reportService, IWorkOrderPdfService pdfService) : ControllerBase
     {
         [HttpPost("CreateFromWorkMaster")]
         public async Task<IActionResult> CreateFromWorkMaster([FromBody] CreateWorkOrderDto request)
@@ -126,12 +126,12 @@ namespace Api.Controllers.Production
             var workorders = await workOrderService.GetPlannableWorkOrders();
             return Ok(workorders);
         }
-        
+
         [HttpPost("Priorize")]
         public async Task<IActionResult> Priorize(List<UpdateWorkOrderOrderDTO> orders)
         {
             var response = await workOrderService.Priorize(orders);
-            
+
             if (response.Result)
                 return Ok(response);
             else
@@ -150,6 +150,18 @@ namespace Api.Controllers.Production
         {
             var reportData = await reportService.GetReportById(id);
             return Ok(reportData);
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPdf(Guid id)
+        {
+            var reportData = await reportService.GetReportById(id);
+            return reportData is null
+                ? NotFound()
+                : File(pdfService.Generate(reportData), "application/pdf", $"OrdreFabricacio_{reportData.Order.Code}.pdf");
         }
 
         [HttpGet("{id:guid}")]
@@ -200,6 +212,15 @@ namespace Api.Controllers.Production
             else
                 return NotFound();
         }        
+
+        [HttpGet("Phase/{id:guid}/Rejections")]
+        [SwaggerOperation("GetWorkOrderPhaseRejections")]
+        [ProducesResponseType(typeof(IEnumerable<WorkOrderPhaseRejectionDisplayDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWorkOrderPhaseRejections(Guid id)
+        {
+            var rejections = await phaseService.GetPhaseRejections(id);
+            return Ok(rejections);
+        }
 
         [HttpGet("Phase/External")]
         [SwaggerOperation("GetExternalWorkOrderPhase")]

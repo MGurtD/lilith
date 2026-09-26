@@ -46,7 +46,7 @@ onMounted(async () => {
           langStore.byCode(slotProps.value)?.name || slotProps.value
         }}</span>
       </div>
-      <span v-else>{{ $t("general.select") || "Select" }}</span>
+      <span v-else>{{ $t("ui.select") }}</span>
     </template>
     <template #option="slotProps">
       <div class="flex p-ai-center">

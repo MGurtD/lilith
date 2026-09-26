@@ -1,9 +1,9 @@
-import { ApiKeyService } from "./apikey.service";
+import { ApiKeyService } from "@/modules/system/services/apikey.service";
 import { AuthenticationService } from "./authentications.service";
 import { FileService } from "./file.service";
 import { ReportService } from "./report.service";
 import { RoleService } from "./role.service";
-import { UserService } from "./user.service";
+import { UserService } from "@/modules/system/services/user.service";
 import { UserFilterService } from "./userfilter.service";
 import { UserTableViewService } from "./usertableview.service";
 

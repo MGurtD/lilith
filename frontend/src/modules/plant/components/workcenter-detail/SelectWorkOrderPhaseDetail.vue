@@ -4,7 +4,7 @@
     :options="sortedDetails"
     optionLabel="machineStatusName"
     optionValue="machineStatusId"
-    placeholder="Selecciona un estat..."
+    :placeholder='$t("plant.selecciona-un-estat")'
     class="w-full"
   >
     <template #value="slotProps">

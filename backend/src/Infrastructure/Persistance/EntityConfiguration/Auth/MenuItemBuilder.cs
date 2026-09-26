@@ -15,11 +15,6 @@ namespace Infrastructure.Persistance.EntityConfiguration.Auth
                 .HasColumnType("varchar")
                 .HasMaxLength(250);
 
-            builder.Property(b => b.Title)
-                .IsRequired()
-                .HasColumnType("varchar")
-                .HasMaxLength(250);
-
             builder.Property(b => b.Icon)
                 .HasColumnType("varchar")
                 .HasMaxLength(100);

@@ -1,11 +1,11 @@
 <template>
   <main v-if="receipt">
-    <FormReceipt @submit="submitForm" />
+    <FormReceipt :receipt="receipt" @submit="submitForm" />
     <br />
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Detall</Tab>
-        <Tab value="1">Fitxers</Tab>
+          <Tab value="0">{{ t("purchase.receipt.tabs.details") }}</Tab>
+          <Tab value="1">{{ t("purchase.receipt.tabs.files") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -18,14 +18,14 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Detall de l'albarà</span>
+          <span class="text-900 font-bold">{{ t("purchase.receipt.detail.title") }}</span>
           <div
             class="flex flex-wrap align-items-center justify-content-between gap-2"
           >
             <div>
               <Button
                 :size="'small'"
-                label="Afegir de comanda"
+                :label="t('purchase.receipt.actions.addFromOrder')"
                 :disabled="hasToBlockDetailCreation"
                 @click="openOrderDetailsToReceiptSelector"
               />
@@ -33,7 +33,7 @@
             <div>
               <Button
                 :size="'small'"
-                label="Afegir línia"
+                :label="t('purchase.receipt.actions.addLine')"
                 :disabled="hasToBlockDetailCreation"
                 @click="openCreateDetailForm"
               />
@@ -45,7 +45,7 @@
         </TabPanel>
         <TabPanel value="1">
           <FileEntityPicker
-            title="Documentació adjunta"
+            :title="t('purchase.receipt.files.title')"
             entity="Receipt"
             :id="route.params.id as string"
           />
@@ -75,8 +75,8 @@
     >
       <Tabs v-model:value="formsActiveIndex">
         <TabList>
-          <Tab value="0">Línea</Tab>
-          <Tab value="1">Referencia</Tab>
+          <Tab value="0">{{ t("purchase.receipt.tabs.line") }}</Tab>
+          <Tab value="1">{{ t("purchase.receipt.tabs.reference") }}</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="0">
@@ -89,6 +89,7 @@
           <TabPanel value="1">
             <FormMaterial
               v-if="referenceStore.reference"
+              in-dialog
               :reference="referenceStore.reference"
               @submit="onFormReferenceSubmit"
             />
@@ -97,7 +98,7 @@
       </Tabs>
     </Dialog>
   </main>
-  <main v-else>Carregant albarà ...</main>
+  <main v-else>{{ t("purchase.receipt.messages.loading") }}</main>
 </template>
 <script setup lang="ts">
 import FormReceipt from "../components/FormReceipt.vue";
@@ -106,15 +107,16 @@ import FormReceiptDetail from "../components/FormReceiptDetail.vue";
 import FormMaterial from "../components/FormMaterial.vue";
 import SelectorOrdersDetailsToReceipt from "../components/SelectorOrdersDetailsToReceipt.vue";
 import FileEntityPicker from "../../../components/FileEntityPicker.vue";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useRoute } from "vue-router";
 import { useStore } from "../../../store";
-import { AddReceptionsRequest, ReceiptDetail } from "../types";
+import type { AddReceptionsRequest, Receipt, ReceiptDetail } from "../types";
 import { GenericResponse } from "../../../types";
-import { formatDate, getNewUuid } from "../../../utils/functions";
+import { getNewUuid } from "../../../utils/functions";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import { Reference, ReferenceCategoryEnum } from "../../shared/types";
 import router from "../../../router";
@@ -126,6 +128,7 @@ import { useReferenceTypeStore } from "../../shared/store/referenceType";
 import { useConfirm } from "primevue/useconfirm";
 
 const confirm = useConfirm();
+const { locale, t } = useI18n();
 const route = useRoute();
 const store = useStore();
 const referenceStore = useReferenceStore();
@@ -136,25 +139,27 @@ const lifecycleStore = useLifecyclesStore();
 const { receipt } = storeToRefs(receiptStore);
 const formsActiveIndex = ref("0");
 
+const setMenuItem = () => {
+  store.setMenuItem({
+    icon: PrimeIcons.BUILDING,
+    title: t("purchase.receipt.title", { number: receipt.value?.number ?? "" }),
+    backButtonVisible: true,
+  });
+};
+
 const loadView = async () => {
   await receiptStore.fetchReceipt(route.params.id as string);
   lifecycleStore.fetchOneByName("Receipts");
   referenceStore.fetchReferencesByModule("purchase");
   referenceTypeStore.fetchActive();
-  if (receipt.value) {
-    receipt.value.date = formatDate(receipt.value.date);
-  }
-
-  store.setMenuItem({
-    icon: PrimeIcons.BUILDING,
-    title: `Albarà de recepció ${receipt.value?.number}`,
-    backButtonVisible: true,
-  });
+  setMenuItem();
 };
 
 onMounted(async () => {
   await loadView();
 });
+
+watch(locale, setMenuItem);
 
 const toast = useToast();
 
@@ -168,12 +173,15 @@ const hasToBlockDetailCreation = computed(() => {
   return receipt.value?.statusId === warehouseStatus.id;
 });
 
-const submitForm = async () => {
+const submitForm = async (submittedReceipt: Receipt) => {
   let result = false;
   let message = "";
   if (receipt.value) {
-    result = await receiptStore.updateReceipt(receipt.value.id, receipt.value);
-    message = "Albarà actualizat correctament";
+    result = await receiptStore.updateReceipt(
+      submittedReceipt.id,
+      submittedReceipt,
+    );
+    message = t("purchase.receipt.messages.updated");
 
     if (result) {
       toast.add({
@@ -188,14 +196,14 @@ const submitForm = async () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Linea",
+  title: t("purchase.receipt.dialogs.line"),
   closable: true,
   position: "center",
   modal: true,
 } as DialogOptions);
 const dialogOptionsSelector = reactive({
   visible: false,
-  title: "Selecció de comandes",
+  title: t("purchase.receipt.dialogs.orderSelection"),
   closable: true,
   position: "center",
   modal: true,
@@ -224,7 +232,7 @@ const openCreateDetailForm = () => {
   } as ReceiptDetail;
   referenceStore.setNewReference(getNewUuid(), ReferenceCategoryEnum.MATERIAL);
 
-  dialogOptions.title = "Crear línia";
+  dialogOptions.title = t("purchase.receipt.dialogs.createLine");
   dialogOptions.visible = true;
 };
 
@@ -233,7 +241,7 @@ const openEditDetailForm = (detail: ReceiptDetail) => {
   selectedDetail.value = detail;
   referenceStore.setNewReference(getNewUuid(), ReferenceCategoryEnum.MATERIAL);
 
-  dialogOptions.title = "Modificar línia";
+  dialogOptions.title = t("purchase.receipt.dialogs.editLine");
   dialogOptions.visible = true;
 };
 
@@ -250,25 +258,22 @@ const submitDetailForm = (detail: ReceiptDetail) => {
 
 const addDetail = async (detail: ReceiptDetail) => {
   const response = await receiptStore.createReceiptDetail(detail);
-  receipt.value!.date = formatDate(receipt.value!.date);
   if (!response.result) showResponseErrorToast(response);
 };
 
 const editDetail = async (detail: ReceiptDetail) => {
   const response = await receiptStore.updateReceiptDetail(detail.id, detail);
-  receipt.value!.date = formatDate(receipt.value!.date);
   if (!response.result) showResponseErrorToast(response);
 };
 
 const removeDetail = async (detail: ReceiptDetail) => {
   confirm.require({
-    message: `Está segur que vols la línia?`,
+    message: t("purchase.receipt.messages.confirmDeleteLine"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
     accept: async () => {
       const response = await receiptStore.deleteReceiptDetail(detail.id);
-      receipt.value!.date = formatDate(receipt.value!.date);
       if (!response.result) showResponseErrorToast(response);
     },
   });
@@ -289,8 +294,8 @@ const onFormReferenceSubmit = async (reference: Reference) => {
   let message = "";
 
   result = await referenceStore.createReference(reference);
-  if (result) message = "Referència creada correctament";
-  else message = "La referència + versió introduïda ja existeix";
+  if (result) message = t("purchase.receipt.messages.referenceCreated");
+  else message = t("purchase.receipt.messages.referenceAlreadyExists");
 
   toast.add({
     severity: result ? "success" : "warn",
@@ -334,7 +339,7 @@ const onOrderDetailsSelected = async (
   } else {
     toast.add({
       severity: "success",
-      summary: "Recepcions afegides correctament",
+      summary: t("purchase.receipt.messages.receiptsAdded"),
       life: 5000,
     });
 

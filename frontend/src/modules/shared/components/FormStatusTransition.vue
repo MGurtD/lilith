@@ -1,99 +1,90 @@
-<template>
-  <form>
-    <BaseInput
-      class="mb-2"
-      label="Nom"
-      v-model="transition.name"
-      :class="{
-        'p-invalid': validation.errors.name,
-      }"
-    ></BaseInput>
-    <section class="two-columns">
-      <div>
-        <label class="block text-900 mb-2">Origen</label>
-        <Select
-          v-model="transition.statusId"
-          :options="statuses"
-          optionValue="id"
-          optionLabel="name"
-        />
-      </div>
-      <div class="mb-4">
-        <label class="block text-900 mb-2">Destí</label>
-        <Select
-          v-model="transition.statusToId"
-          :options="statuses"
-          optionValue="id"
-          optionLabel="name"
-        />
-      </div>
-    </section>
-
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { Status, StatusTransition } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { FormActionMode } from "../../../types/component";
-
-const toast = useToast();
+import type { Status, StatusTransition } from "../types";
 
 const props = defineProps<{
   formAction: FormActionMode;
   transition: StatusTransition;
   statuses: Array<Status>;
 }>();
+
 const emit = defineEmits<{
-  (e: "submit", status: StatusTransition): void;
+  (event: "submit", transition: StatusTransition): void;
+  (event: "cancel"): void;
 }>();
 
-const schema = Yup.object().shape({
-  name: Yup.string().required("El nom és obligatori"),
-});
+const { t } = useI18n();
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const statusProps = computed(() => ({
+  options: props.statuses,
+  optionLabel: "name",
+  optionValue: "id",
+}));
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.transition);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "name",
+        label: t("shared.statusTransitions.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("shared.lifecycle.validation.nameRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "statusId",
+        label: t("shared.statusTransitions.form.origin"),
+        type: FormFieldType.Select,
+        props: statusProps.value,
+      },
+      {
+        name: "statusToId",
+        label: t("shared.statusTransitions.form.destination"),
+        type: FormFieldType.Select,
+        props: statusProps.value,
+        // Legacy rule: origin and destination must differ (two empty
+        // selections count as equal, as before).
+        validation: Yup.mixed().test(
+          "different-status",
+          t("shared.statusTransitions.form.sameStatusError"),
+          (value, context) => value !== context.parent.statusId,
+        ),
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  if (props.transition.statusId === props.transition.statusToId) {
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: "Els estats d'origen i destí han de ser diferents",
-      life: 5000,
-    });
-    return;
-  }
-
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.transition);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.transition,
+    name: stringValue(values.name, ""),
+    statusId: stringValue(values.statusId, props.transition.statusId),
+    statusToId: stringValue(values.statusToId, props.transition.statusToId),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="transition"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

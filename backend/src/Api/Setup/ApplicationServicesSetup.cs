@@ -1,7 +1,11 @@
 using Application.Services.System;
+using Application.Services.System.Migration;
+using Application.Contracts.Migration;
+using Infrastructure.DataMigration;
 using Application.Services.Production;
 using Application.Services.Purchase;
 using Application.Services.Sales;
+using Application.Services.Analytics;
 using Application.Services.Shared;
 using Application.Services.Verifactu;
 using Application.Services.Warehouse;
@@ -15,19 +19,37 @@ using Application.Contracts.Services.Geolocalization;
 using Application.Contracts.Services.GitHub;
 using Infrastructure.Persistance;
 using Microsoft.Extensions.Options;
+using Infrastructure.Reports;
+using QuestPDF.Infrastructure;
 
 namespace Api.Setup;
 
 public static class ApplicationServicesSetup
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, bool enableQuestPdfDebugging = false)
     {
+        QuestPDF.Settings.License = LicenseType.Community;
+        QuestPDF.Settings.EnableDebugging = enableQuestPdfDebugging;
+
         services.AddSingleton<IQrCodeService, QrCodeService>();
+        services.AddSingleton<ISalesInvoicePdfService, SalesInvoicePdfService>();
+        services.AddSingleton<IBudgetPdfService, BudgetPdfService>();
+        services.AddSingleton<ISalesOrderPdfService, SalesOrderPdfService>();
+        services.AddSingleton<IDeliveryNotePdfService, DeliveryNotePdfService>();
+        services.AddSingleton<IPurchaseOrderPdfService, PurchaseOrderPdfService>();
+        services.AddScoped<IWorkOrderPdfService, WorkOrderPdfService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IBrandingService, BrandingService>();
+
+        // Data migration (import/export)
+        services.AddScoped<ISpreadsheetReader, XlsxSpreadsheet>();
+        services.AddScoped<ISpreadsheetWriter, XlsxSpreadsheet>();
+        services.AddScoped<IMigrationHandler, CustomerMigrationHandler>();
+        services.AddScoped<IDataMigrationService, DataMigrationService>();
         services.AddScoped<IExerciseService, ExerciseService>();
         services.AddScoped<IDueDateService, DueDateService>();
         services.AddScoped<IReferenceService, ReferenceService>();
@@ -39,19 +61,25 @@ public static class ApplicationServicesSetup
         services.AddScoped<IDeliveryNoteService, DeliveryNoteService>();
         services.AddScoped<ISalesInvoiceService, SalesInvoiceService>();
         services.AddScoped<ICustomerRankingService, CustomerRankingService>();
+        services.AddScoped<IBudgetConversionService, BudgetConversionService>();
+        services.AddScoped<IAbcAnalysisService, AbcAnalysisService>();
+        services.AddScoped<IManagementDashboardService, ManagementDashboardService>();
         services.AddScoped<ISalesInvoiceReportService, SalesInvoiceReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
         services.AddScoped<IBudgetReportService, BudgetReportService>();
         services.AddScoped<IDeliveryNoteReportService, DeliveryNoteReportService>();
         services.AddScoped<IPurchaseOrderReportService, PurchaseOrderReportService>();
         services.AddScoped<ISalesOrderReportService, SalesOrderReportService>();
+        services.AddScoped<IBrandingService, BrandingService>();
         services.AddScoped<IEnterpriseService, EnterpriseService>();
         services.AddScoped<IWorkOrderService, WorkOrderService>();
         services.AddScoped<IWorkOrderReportService, WorkOrderReportService>();
         services.AddScoped<IMetricsService, MetricsService>();
         services.AddScoped<IWorkcenterShiftService, WorkcenterShiftService>();
         services.AddScoped<IStockService, StockService>();
+        services.AddScoped<ILotTraceabilityService, LotTraceabilityService>();
         services.AddScoped<IStockMovementService, StockMovementService>();
+        services.AddScoped<ILotService, LotService>();
         services.AddScoped<IVerifactuIntegrationService, VerifactuIntegrationService>();
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<IMenuItemService, MenuItemService>();
@@ -84,12 +112,14 @@ public static class ApplicationServicesSetup
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();
+        services.AddScoped<IParameterService, ParameterService>();
 
         // Production services - Group A Simple CRUD
         services.AddScoped<ISiteService, SiteService>();
         services.AddScoped<IAreaService, AreaService>();
         services.AddScoped<IWorkcenterTypeService, WorkcenterTypeService>();
         services.AddScoped<IOperatorTypeService, OperatorTypeService>();
+        services.AddScoped<IRejectionReasonService, RejectionReasonService>();
         services.AddScoped<IMachineStatusService, MachineStatusService>();
         services.AddScoped<IShiftService, ShiftService>();
         services.AddScoped<IShiftDetailService, ShiftDetailService>();
@@ -100,6 +130,7 @@ public static class ApplicationServicesSetup
         // Production services - Group B Extend existing
         services.AddScoped<IWorkMasterService, WorkMasterService>();
         services.AddScoped<IProductionPartService, ProductionPartService>();
+        services.AddScoped<IProductionTimeDeviationService, ProductionTimeDeviationService>();
 
         // Production services - Group C Specialized
         services.AddScoped<IWorkcenterService, WorkcenterService>();

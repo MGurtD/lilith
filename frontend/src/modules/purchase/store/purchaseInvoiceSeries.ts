@@ -16,8 +16,12 @@ export const usePurchaseInvoiceSeries = defineStore({
         id: id,
         name: "",
         description: "",
+        prefix: "",
+        suffix: "",
+        nextNumber: 1,
+        length: 1,
         disabled: false,
-      } as InvoiceSerie;
+      };
     },
 
     async fetchPurchaseInvoiceSeries() {

@@ -13,15 +13,15 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Percentatges de benefici</span>
+          <span class="text-900 font-bold">{{ t("production.components.percentatgesDeBenefici") }}</span>
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
         </div>
       </template>
-      <template #empty>No s'han trobat percentatges.</template>
-      <template #loading>Carregant percentatges. Si us plau espera.</template>
+      <template #empty>{{ t("production.components.noSHanTrobatPercentatges") }}</template>
+      <template #loading>{{ t("production.components.carregantPercentatgesSiUsPlauEspera") }}</template>
       <Column
         field="profitPercentage"
-        header="Percentatge de benefici (%)"
+        :header="t('production.components.percentatgeDeBenefici')"
         sortable
         style="width: 85%"
       >
@@ -47,53 +47,33 @@
       :modal="dialogOptions.modal"
       :style="{ width: '450px' }"
     >
-      <div class="flex flex-column gap-3 mt-3">
-        <div class="flex flex-column gap-2">
-          <label for="profitPercentage">Percentatge de profit (%)</label>
-          <InputNumber
-            id="profitPercentage"
-            v-model="newPercentage.profitPercentage"
-            :min="0"
-            :max="100"
-            :minFractionDigits="2"
-            :maxFractionDigits="2"
-            suffix="%"
-            :class="{
-              'p-invalid': submitted && !newPercentage.profitPercentage,
-            }"
-          />
-          <small
-            v-if="submitted && !newPercentage.profitPercentage"
-            class="p-error"
-          >
-            El percentatge és obligatori.
-          </small>
-        </div>
-      </div>
-
-      <template #footer>
-        <Button
-          label="Cancel·lar"
-          :icon="PrimeIcons.TIMES"
-          text
-          @click="dialogOptions.visible = false"
-        />
-        <Button
-          label="Guardar"
-          :icon="PrimeIcons.CHECK"
-          @click="onSaveHandler"
-        />
-      </template>
+      <Form
+        class="mt-3"
+        :rows="rows"
+        :initial-values="newPercentage"
+        @submit="onSubmit"
+        @cancel="dialogOptions.visible = false"
+      />
     </Dialog>
   </div>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { finiteNumberValue } from "@/components/forms/value-utils";
 import { WorkcenterProfitPercentage } from "../types";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { DialogOptions } from "../../../types/component";
 import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import * as Yup from "yup";
 import { getNewUuid } from "../../../utils/functions";
 
 const props = defineProps<{
@@ -108,62 +88,72 @@ const emits = defineEmits<{
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Nou percentatge de profit",
+  title: t("production.components.nouPercentatgeDeProfit"),
   closable: true,
   position: "center",
   modal: true,
 } as DialogOptions);
 
-const toast = useToast();
 const confirm = useConfirm();
-const submitted = ref(false);
 
 const newPercentage = ref({} as WorkcenterProfitPercentage);
 
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "profitPercentage",
+        label: t("production.components.percentatgeDeProfit"),
+        type: FormFieldType.Number,
+        props: {
+          locale: "en-US",
+          min: 0,
+          max: 100,
+          minFractionDigits: 2,
+          maxFractionDigits: 2,
+          suffix: "%",
+        },
+        validation: Yup.number()
+          .typeError(t("production.components.elPercentatgeEsObligatori"))
+          .required(t("production.components.elPercentatgeEsObligatori"))
+          .moreThan(0, t("production.components.elPercentatgeHaDeSerMajorQue0"))
+          .test("unique-percentage", function (value) {
+            const exists = props.workcenterProfitPercentages?.some(
+              (p) => p.profitPercentage === value,
+            );
+            return exists
+              ? this.createError({
+                  message: t("production.components.duplicatePercentage", {
+                    percentage: value,
+                  }),
+                })
+              : true;
+          }),
+      },
+    ],
+  },
+]);
+
 const onAddClick = () => {
-  submitted.value = false;
   newPercentage.value = {
     id: getNewUuid(),
     workcenterId: props.workcenterId,
     profitPercentage: 0,
     disabled: false,
-  } as WorkcenterProfitPercentage;
+  };
 
   dialogOptions.visible = true;
 };
 
-const onSaveHandler = () => {
-  submitted.value = true;
-
-  if (
-    !newPercentage.value.profitPercentage ||
-    newPercentage.value.profitPercentage <= 0
-  ) {
-    toast.add({
-      severity: "warn",
-      summary: "Percentatge invàlid",
-      detail: "El percentatge ha de ser major que 0",
-      life: 5000,
-    });
-    return;
-  }
-
-  // Comprovar si ja existeix aquest percentatge
-  const exists = props.workcenterProfitPercentages?.find(
-    (p) => p.profitPercentage === newPercentage.value.profitPercentage,
-  );
-  if (exists) {
-    toast.add({
-      severity: "warn",
-      summary: "Percentatge duplicat",
-      detail: `El percentatge ${newPercentage.value.profitPercentage}% ja existeix`,
-      life: 5000,
-    });
-    return;
-  }
-
+const onSubmit = (values: FormValues) => {
   dialogOptions.visible = false;
-  emits("add", newPercentage.value);
+  emits("add", {
+    ...newPercentage.value,
+    profitPercentage: finiteNumberValue(
+      values.profitPercentage,
+      newPercentage.value.profitPercentage,
+    ),
+  });
 };
 
 const onDeleteRow = (event: Event, percentage: WorkcenterProfitPercentage) => {
@@ -171,7 +161,7 @@ const onDeleteRow = (event: Event, percentage: WorkcenterProfitPercentage) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols eliminar el percentatge ${percentage.profitPercentage}%?`,
+    message: t("production.components.confirmDeletePercentage", { percentage: percentage.profitPercentage }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

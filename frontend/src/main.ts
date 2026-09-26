@@ -10,9 +10,15 @@ const app: VueApp<Element> = createApp(App).use(router).use(pinia).use(i18n);
 import "primeicons/primeicons.css";
 import "primeflex/primeflex.css";
 
+// Self-hosted so the installed PWA renders its type offline.
+import "@fontsource/ibm-plex-sans/400.css";
+import "@fontsource/ibm-plex-sans/500.css";
+import "@fontsource/ibm-plex-sans/600.css";
+import "@fontsource/ibm-plex-sans-condensed/500.css";
+import "@fontsource/ibm-plex-sans-condensed/600.css";
+
 // PrimeVue v4 theme configuration
-import { definePreset } from "@primeuix/themes";
-import Lara from "@primeuix/themes/lara";
+import { TallerPreset } from "./theme/preset";
 
 import PrimeVue from "primevue/config";
 import Tooltip from "primevue/tooltip";
@@ -63,30 +69,12 @@ import TabPanels from "primevue/tabpanels";
 import TabPanel from "primevue/tabpanel";
 import ProgressBar from "primevue/progressbar";
 import { globalToast } from "@/utils/global-toast";
-
-// Lara Blue preset (matches lara-light-blue from v3)
-const LaraBlue = definePreset(Lara, {
-  semantic: {
-    primary: {
-      50: "{blue.50}",
-      100: "{blue.100}",
-      200: "{blue.200}",
-      300: "{blue.300}",
-      400: "{blue.400}",
-      500: "{blue.500}",
-      600: "{blue.600}",
-      700: "{blue.700}",
-      800: "{blue.800}",
-      900: "{blue.900}",
-      950: "{blue.950}",
-    },
-  },
-});
+import { useBrandingStore } from "@/store/branding";
 
 app.use(PrimeVue, {
   locale: catalan,
   theme: {
-    preset: LaraBlue,
+    preset: TallerPreset,
     options: {
       darkModeSelector: false,
       cssLayer: false,
@@ -144,4 +132,9 @@ app
   .component("TabPanel", TabPanel)
   .component("ProgressBar", ProgressBar);
 
-app.mount("#app");
+const bootstrap = async () => {
+  await useBrandingStore(pinia).initialize();
+  app.mount("#app");
+};
+
+void bootstrap();

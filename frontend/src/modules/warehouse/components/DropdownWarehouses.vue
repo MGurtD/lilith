@@ -7,7 +7,7 @@
       showClear
       filter
       :options="warehousesStore.warehouses"
-      :placeholder="placeholder || 'Selecciona un magatzem'"
+      :placeholder="placeholder || t('warehouse.placeholders.selectWarehouse')"
       optionValue="id"
       optionLabel="name"
       class="w-full"
@@ -25,9 +25,11 @@
 </template>
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useWarehouseStore } from "../store/warehouse";
 
 const warehouseStore = useWarehouseStore();
+const { t } = useI18n();
 
 onMounted(() => {
   if (!warehouseStore.warehouses) warehouseStore.fetchWarehouses();

@@ -5,19 +5,16 @@
     :draggable="false"
     :closable="!submitting"
     :style="{ width: '95vw', maxWidth: '1200px' }"
-    header="Consum de materials"
+    :header='$t("plant.consum-de-materials")'
   >
     <div class="consumption-dialog">
       <div class="consumption-dialog-header">
-        <span class="consumption-dialog-caption">
-          Per defecte, tot el material aprovisionat serà consumit. Si queda
-          material sobrant, prem «Afegir peça» per declarar-lo.
-        </span>
+        <span class="consumption-dialog-caption">{{ $t("plant.per-defecte-tot-el-material-aprovisionat-sera-consumit-si-queda-material-sobrant-prem-afegir-peca-per-declarar-lo") }}</span>
       </div>
 
       <div v-if="loading" class="consumption-loading">
         <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem"></i>
-        <span>Carregant estoc aprovisionat...</span>
+        <span>{{ $t("plant.carregant-estoc-aprovisionat") }}</span>
       </div>
 
       <template v-else>
@@ -48,7 +45,7 @@
             <!-- Stock card header -->
             <div class="stock-card-header">
               <div class="stock-card-info">
-                <span class="stock-card-label">Estoc aprovisionat:</span>
+                <span class="stock-card-label">{{ $t("plant.estoc-aprovisionat-2") }}</span>
                 <span class="stock-card-qty"
                   >{{ line.availableQuantity }} ut.</span
                 >
@@ -88,9 +85,7 @@
                 <span
                   v-else-if="hasDimensionalChange(line)"
                   class="consumed-badge"
-                >
-                  Retall dimensional
-                </span>
+                >{{ $t("plant.retall-dimensional") }}</span>
                 <span v-else class="consumed-badge consumed-badge--full">
                   Consum total: {{ line.availableQuantity }} ut.
                 </span>
@@ -106,7 +101,7 @@
                   class="piece-row piece-row-simple"
                 >
                   <div class="piece-field">
-                    <label class="piece-field-label">Quantitat a retornar</label>
+                    <label class="piece-field-label">{{ $t("plant.quantitat-a-retornar") }}</label>
                     <InputNumber
                       v-model="line.pieces[0].quantity"
                       :min="0"
@@ -136,7 +131,7 @@
                 <div v-else class="remaining-pieces-empty">
                   <Button
                     icon="pi pi-plus"
-                    label="Declarar sobrant"
+                    :label='$t("plant.declarar-sobrant")'
                     severity="secondary"
                     size="small"
                     outlined
@@ -154,7 +149,7 @@
                   class="piece-row"
                 >
                   <div class="piece-field piece-field-qty">
-                    <label class="piece-field-label">Quantitat</label>
+                    <label class="piece-field-label">{{ $t("plant.quantitat") }}</label>
                     <InputNumber
                       v-model="piece.quantity"
                       :min="1"
@@ -173,7 +168,7 @@
                     v-if="showField(group.formatCode, 'width')"
                     class="piece-field"
                   >
-                    <label class="piece-field-label">Ample (mm)</label>
+                    <label class="piece-field-label">{{ $t("plant.ample-mm") }}</label>
                     <InputNumber
                       v-model="piece.width"
                       :min="0"
@@ -190,7 +185,7 @@
                     v-if="showField(group.formatCode, 'length')"
                     class="piece-field"
                   >
-                    <label class="piece-field-label">Llargada (mm)</label>
+                    <label class="piece-field-label">{{ $t("plant.llargada-mm") }}</label>
                     <InputNumber
                       v-model="piece.length"
                       :min="0"
@@ -207,7 +202,7 @@
                     v-if="showField(group.formatCode, 'height')"
                     class="piece-field"
                   >
-                    <label class="piece-field-label">Alçada (mm)</label>
+                    <label class="piece-field-label">{{ $t("plant.alcada-mm") }}</label>
                     <InputNumber
                       v-model="piece.height"
                       :min="0"
@@ -224,7 +219,7 @@
                     v-if="showField(group.formatCode, 'diameter')"
                     class="piece-field"
                   >
-                    <label class="piece-field-label">Diàmetre (mm)</label>
+                    <label class="piece-field-label">{{ $t("plant.diametre-mm") }}</label>
                     <InputNumber
                       v-model="piece.diameter"
                       :min="0"
@@ -241,7 +236,7 @@
                     v-if="showField(group.formatCode, 'thickness')"
                     class="piece-field"
                   >
-                    <label class="piece-field-label">Gruix (mm)</label>
+                    <label class="piece-field-label">{{ $t("plant.gruix-mm") }}</label>
                     <InputNumber
                       v-model="piece.thickness"
                       :min="0"
@@ -271,7 +266,7 @@
                 <div class="remaining-pieces-add">
                   <Button
                     icon="pi pi-plus"
-                    label="Afegir peça"
+                    :label='$t("plant.afegir-peca")'
                     severity="secondary"
                     size="small"
                     outlined
@@ -304,14 +299,14 @@
       <div class="consumption-actions">
         <Button
           icon="pi pi-times"
-          label="Cancel·lar"
+          :label='$t("plant.cancel-lar")'
           severity="secondary"
           :disabled="submitting"
           @click="onCancel"
         />
         <Button
           icon="pi pi-check"
-          label="Confirmar consum"
+          :label='$t("plant.confirmar-consum")'
           severity="success"
           :disabled="submitting || !isValid"
           :loading="submitting"
@@ -571,8 +566,8 @@ async function loadProvisionedStock() {
     console.error("Error loading provisioned stock:", error);
     toast.add({
       severity: "error",
-      summary: "Error",
-      detail: "No s'ha pogut carregar l'estoc aprovisionat",
+      summary: t("plant.error"),
+      detail: t("plant.messages.provisionedStockLoadError"),
       life: 5000,
     });
   } finally {

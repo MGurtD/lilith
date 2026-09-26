@@ -97,7 +97,7 @@
           :src="`${slotProps.data.qrCodeBase64}`"
           width="60"
           height="60"
-          alt="QR"
+          :alt="t('verifactu.invoiceIntegration.tableInvoiceRequests.qrCodeAlt')"
         />
       </template>
     </Column>
@@ -121,7 +121,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { formatDateTime } from "../../../utils/functions";
+
+const { t } = useI18n();
 
 function copyToClipboard(text?: string) {
   if (!text) return;

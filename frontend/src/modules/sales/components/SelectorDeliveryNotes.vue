@@ -12,7 +12,7 @@
     <template #header>
       <header class="selector-filter">
         <div class="selector-filter-field">
-          <label for="">Buscar</label> &nbsp;
+          <label>{{ t('sales.components.buscar') }}</label>
           <InputText
             style="width: 150px; height: 35px"
             v-model="codeToFilter"
@@ -38,13 +38,13 @@
       </div>
     </template>
 
-    <Column header="Número" field="number" style="width: 10%"></Column>
-    <Column header="Estat" field="status" style="width: 10%">
+    <Column :header="t('sales.components.numero')" field="number" style="width: 10%"></Column>
+    <Column :header="t('sales.components.estat')" field="status" style="width: 10%">
       <template #body="slotProps">
         {{ getStatusNameById(slotProps.data.statusId) }}
       </template>
     </Column>
-    <Column header="Data Entrega" field="deliveryDate" style="width: 10%">
+    <Column :header="t('sales.components.dataEntrega')" field="deliveryDate" style="width: 10%">
       <template #body="slotProps">
         {{
           slotProps.data.deliveryDate
@@ -56,12 +56,14 @@
   </DataTable>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { computed, onMounted, ref } from "vue";
 import { DeliveryNote } from "../types";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDate } from "../../../utils/functions";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 
+const { t } = useI18n();
 const props = defineProps<{
   deliveryNotes: Array<DeliveryNote> | undefined;
   headerVisible?: boolean;

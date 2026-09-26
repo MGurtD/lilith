@@ -1,11 +1,15 @@
 using Application.Contracts;
 using Application.Services;
 using Domain.Entities.Auth;
+using System.Globalization;
 
 namespace Application.Services.System
 {
 
-    public class ProfileService(IUnitOfWork unitOfWork, ILocalizationService localizationService) : IProfileService
+    public class ProfileService(
+        IUnitOfWork unitOfWork,
+        ILocalizationService localizationService,
+        ILanguageCatalog languageCatalog) : IProfileService
     {
         public async Task<GenericResponse> Create(Profile profile)
         {
@@ -112,9 +116,15 @@ namespace Application.Services.System
             var assignments = unitOfWork.ProfileMenuItems.Find(p => p.ProfileId == user.ProfileId).ToList();
             var menuIds = assignments.Select(a => a.MenuItemId).ToHashSet();
             var menuItems = unitOfWork.MenuItems.Find(m => menuIds.Contains(m.Id)).OrderBy(m => m.SortOrder).ToList();
+            var cultureCode = CurrentCultureCode();
+            var defaultLanguageCode = (await languageCatalog.GetDefaultAsync())?.Code;
+            var translations = await unitOfWork.MenuItemTranslations.FindAsync(t => menuIds.Contains(t.MenuItemId) && !t.Disabled);
+            var translationsByMenu = translations.ToLookup(t => t.MenuItemId);
 
             // Build hierarchy
-            var dict = menuItems.ToDictionary(m => m.Id, m => new MenuDto(m));
+            var dict = menuItems.ToDictionary(
+                m => m.Id,
+                m => new MenuDto(m, ResolveTitle(m, translationsByMenu[m.Id], cultureCode, defaultLanguageCode)));
             List<MenuDto> roots = new();
             foreach (var dto in dict.Values)
             {
@@ -156,10 +166,29 @@ namespace Application.Services.System
             public int SortOrder { get; init; }
             public Guid? ParentId { get; init; }
             public List<MenuDto> Children { get; init; } = new();
-            public MenuDto(MenuItem item)
+            public MenuDto(MenuItem item, string title)
             {
-                Id = item.Id; Key = item.Key; Title = item.Title; Icon = item.Icon; Route = item.Route; SortOrder = item.SortOrder; ParentId = item.ParentId;
+                Id = item.Id; Key = item.Key; Title = title; Icon = item.Icon; Route = item.Route; SortOrder = item.SortOrder; ParentId = item.ParentId;
             }
+        }
+
+        private static string ResolveTitle(
+            MenuItem item,
+            IEnumerable<MenuItemTranslation> translations,
+            string cultureCode,
+            string? defaultLanguageCode)
+        {
+            var list = translations.ToList();
+            return list.FirstOrDefault(t => t.LanguageCode.Equals(cultureCode, StringComparison.OrdinalIgnoreCase))?.Title
+                ?? list.FirstOrDefault(t => t.LanguageCode.Equals(defaultLanguageCode, StringComparison.OrdinalIgnoreCase))?.Title
+                ?? list.FirstOrDefault()?.Title
+                ?? item.Key;
+        }
+
+        private static string CurrentCultureCode()
+        {
+            var name = CultureInfo.CurrentUICulture.Name;
+            return (string.IsNullOrWhiteSpace(name) ? "ca" : name.Split('-')[0]).ToLowerInvariant();
         }
     }
 }

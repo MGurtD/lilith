@@ -1,201 +1,400 @@
-<template>
-  <form @submit.prevent="submitForm">
-    <div class="flex flex-column gap-3">
-      <div>
-        <BaseInput
-          label="Resum"
-          id="resum"
-          v-model="model.resum"
-          :class="{ 'p-invalid': validation.errors.resum }"
-        />
-        <small v-if="validation.errors.resum" class="p-error">
-          {{ validation.errors.resum?.[0] }}
-        </small>
-      </div>
-
-      <div>
-        <label class="block text-900 mb-2">
-          Descripció (Markdown)
-          <i
-            class="pi pi-question-circle md-help-icon"
-            role="button"
-            tabindex="0"
-            aria-label="Ajuda de sintaxi Markdown"
-            @click="markdownHelp?.toggle($event)"
-            @keydown.enter="markdownHelp?.toggle($event)"
-          ></i>
-        </label>
-        <Textarea
-          id="descripcio"
-          v-model="model.descripcio"
-          rows="6"
-          class="w-full"
-          :class="{ 'p-invalid': validation.errors.descripcio }"
-          autoResize
-        />
-
-        <Popover ref="markdownHelp">
-          <div class="md-help">
-            <p class="md-help__title">Sintaxi Markdown bàsica</p>
-            <table class="md-help__table">
-              <tbody>
-                <tr>
-                  <td><code># Títol</code></td>
-                  <td>Encapçalament (## , ###...)</td>
-                </tr>
-                <tr>
-                  <td><code>**negreta**</code></td>
-                  <td>Text en <strong>negreta</strong></td>
-                </tr>
-                <tr>
-                  <td><code>*cursiva*</code></td>
-                  <td>Text en <em>cursiva</em></td>
-                </tr>
-                <tr>
-                  <td><code>~~ratllat~~</code></td>
-                  <td>Text ratllat</td>
-                </tr>
-                <tr>
-                  <td><code>- element</code></td>
-                  <td>Llista de punts</td>
-                </tr>
-                <tr>
-                  <td><code>1. element</code></td>
-                  <td>Llista numerada</td>
-                </tr>
-                <tr>
-                  <td><code>[text](url)</code></td>
-                  <td>Enllaç</td>
-                </tr>
-                <tr>
-                  <td><code>`codi`</code></td>
-                  <td>Codi en línia</td>
-                </tr>
-                <tr>
-                  <td><code>```codi```</code></td>
-                  <td>Bloc de codi</td>
-                </tr>
-                <tr>
-                  <td><code>&gt; cita</code></td>
-                  <td>Cita</td>
-                </tr>
-                <tr>
-                  <td><code>- [ ] tasca</code></td>
-                  <td>Casella de verificació</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Popover>
-
-        <small v-if="validation.errors.descripcio" class="p-error">
-          {{ validation.errors.descripcio?.[0] }}
-        </small>
-
-        <div class="mt-3">
-          <label class="block text-600 text-sm mb-2">Vista prèvia</label>
-          <MarkdownRenderer
-            v-if="model.descripcio.trim()"
-            :markdown="model.descripcio"
-            class="support-preview"
-          />
-          <p v-else class="text-500 m-0 support-preview-empty">
-            No hi ha res a previsualitzar.
-          </p>
-        </div>
-      </div>
-
-      <div class="flex justify-content-end gap-2 mt-2">
-        <Button
-          label="Cancel·lar"
-          severity="secondary"
-          type="button"
-          @click="emit('close')"
-          :disabled="store.isSubmitting"
-        />
-        <Button
-          label="Enviar"
-          type="submit"
-          :loading="store.isSubmitting"
-        />
-      </div>
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { reactive, ref } from "vue";
-import { useToast } from "primevue/usetoast";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import MarkdownRenderer from "@/components/help/MarkdownRenderer.vue";
 import type Popover from "primevue/popover";
+import { computed, nextTick, ref, type ComponentPublicInstance } from "vue";
+import { useI18n } from "vue-i18n";
 import * as Yup from "yup";
-import BaseInput from "../../../components/BaseInput.vue";
-import MarkdownRenderer from "../../../components/help/MarkdownRenderer.vue";
-import { FormValidation, FormValidationResult } from "../../../utils/form-validator";
-import { useSupportStore } from "../store/support";
 
-const emit = defineEmits<{
-  (e: "close"): void;
+defineProps<{
+  loading?: boolean;
 }>();
 
-const store = useSupportStore();
-const toast = useToast();
+const emit = defineEmits<{
+  (event: "submit", request: { resum: string; descripcio: string }): void;
+  (event: "cancel"): void;
+}>();
+
+const { t } = useI18n();
 
 const markdownHelp = ref<InstanceType<typeof Popover> | null>(null);
+const descriptionInput = ref<ComponentPublicInstance | null>(null);
 
-const model = reactive({
-  resum: "",
-  descripcio: "",
-});
+// The validation messages are the legacy ones; they have no i18n keys yet.
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "resum",
+        label: t("shared.supportRequest.form.summary"),
+        type: FormFieldType.Text,
+        defaultValue: "",
+        validation: Yup.string()
+          .required(t("shared.supportRequest.validation.summaryRequired"))
+          .max(255, t("shared.supportRequest.validation.summaryMax")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        // The slot renders its own label, with the Markdown help next to it.
+        name: "descripcio",
+        label: "",
+        type: FormFieldType.Custom,
+        defaultValue: "",
+        validation: Yup.string().required(
+          t("shared.supportRequest.validation.descriptionRequired"),
+        ),
+      },
+    ],
+  },
+]);
 
-const schema = Yup.object().shape({
-  resum: Yup.string()
-    .required("El resum és obligatori")
-    .max(255, "El resum no pot superar els 255 caràcters"),
-  descripcio: Yup.string().required("La descripció és obligatòria"),
-});
+type MarkdownAction =
+  | "bold"
+  | "italic"
+  | "strike"
+  | "heading"
+  | "quote"
+  | "ulist"
+  | "olist"
+  | "link"
+  | "code"
+  | "codeblock";
 
-const validation = ref<FormValidationResult>({ result: false, errors: {} });
+interface ToolbarButton {
+  action: MarkdownAction;
+  label: string;
+  text?: string;
+  icon?: string;
+  modifier?: string;
+  separatorBefore?: boolean;
+}
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(model);
+const toolbarButtons = computed<ToolbarButton[]>(() => [
+  {
+    action: "bold",
+    label: t("shared.supportRequest.form.bold"),
+    text: "B",
+    modifier: "md-tool--bold",
+  },
+  {
+    action: "italic",
+    label: t("shared.supportRequest.form.italic"),
+    text: "I",
+    modifier: "md-tool--italic",
+  },
+  {
+    action: "strike",
+    label: t("shared.supportRequest.form.strikethrough"),
+    text: "S",
+    modifier: "md-tool--strike",
+  },
+  {
+    action: "heading",
+    label: t("shared.supportRequest.form.heading"),
+    text: "H",
+    separatorBefore: true,
+  },
+  {
+    action: "quote",
+    label: t("shared.supportRequest.form.quote"),
+    text: "❞",
+  },
+  {
+    action: "ulist",
+    label: t("shared.supportRequest.form.bulletList"),
+    icon: "pi pi-list",
+    separatorBefore: true,
+  },
+  {
+    action: "olist",
+    label: t("shared.supportRequest.form.numberedList"),
+    text: "1.",
+  },
+  {
+    action: "link",
+    label: t("shared.supportRequest.form.link"),
+    icon: "pi pi-link",
+    separatorBefore: true,
+  },
+  {
+    action: "code",
+    label: t("shared.supportRequest.form.inlineCode"),
+    icon: "pi pi-code",
+  },
+  {
+    action: "codeblock",
+    label: t("shared.supportRequest.form.codeBlock"),
+    text: "```",
+    modifier: "md-tool--codeblock",
+  },
+]);
+
+// Rewrites the field value around the textarea selection; the textarea is
+// only read for the selection and refocused afterwards.
+const applyMarkdown = (
+  action: MarkdownAction,
+  current: unknown,
+  setValue: (value: unknown) => void,
+): void => {
+  const textarea = descriptionInput.value?.$el as
+    | HTMLTextAreaElement
+    | undefined;
+  if (!textarea) return;
+
+  const value = stringValue(current, "");
+  const start = textarea.selectionStart ?? value.length;
+  const end = textarea.selectionEnd ?? value.length;
+  const selected = value.slice(start, end);
+
+  let replacement = selected;
+  let cursorStart = start;
+  let cursorEnd = end;
+
+  const wrap = (marker: string) => {
+    replacement = `${marker}${selected}${marker}`;
+    cursorStart = start + marker.length;
+    cursorEnd = cursorStart + selected.length;
+  };
+
+  const prefixLines = (prefix: string) => {
+    replacement = selected
+      .split("\n")
+      .map((line) => `${prefix}${line}`)
+      .join("\n");
+    cursorStart = start;
+    cursorEnd = start + replacement.length;
+  };
+
+  switch (action) {
+    case "bold":
+      wrap("**");
+      break;
+    case "italic":
+      wrap("*");
+      break;
+    case "strike":
+      wrap("~~");
+      break;
+    case "code":
+      wrap("`");
+      break;
+    case "heading":
+      prefixLines("# ");
+      break;
+    case "quote":
+      prefixLines("> ");
+      break;
+    case "ulist":
+      prefixLines("- ");
+      break;
+    case "olist":
+      replacement = selected
+        .split("\n")
+        .map((line, index) => `${index + 1}. ${line}`)
+        .join("\n");
+      cursorStart = start;
+      cursorEnd = start + replacement.length;
+      break;
+    case "link": {
+      const text = selected || "text";
+      replacement = `[${text}](url)`;
+      cursorStart = start + 1;
+      cursorEnd = start + 1 + text.length;
+      break;
+    }
+    case "codeblock":
+      replacement = "```\n" + selected + "\n```";
+      cursorStart = start + 4;
+      cursorEnd = cursorStart + selected.length;
+      break;
+  }
+
+  setValue(value.slice(0, start) + replacement + value.slice(end));
+
+  void nextTick(() => {
+    textarea.focus();
+    textarea.setSelectionRange(cursorStart, cursorEnd);
+  });
 };
 
-const submitForm = async () => {
-  validate();
-  if (!validation.value.result) {
-    const errors = Object.values(validation.value.errors)
-      .map((msgs) => msgs.join(". "))
-      .join("   ");
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-    return;
-  }
-
-  const result = await store.submit(model.resum, model.descripcio);
-
-  if (result.ok) {
-    toast.add({
-      severity: "success",
-      summary: "Sol·licitud enviada",
-      detail: "La teva petició de suport s'ha registrat correctament.",
-      life: 5000,
-    });
-    emit("close");
-  } else {
-    toast.add({
-      severity: "error",
-      summary: "Error en enviar la sol·licitud",
-      detail: result.error,
-      life: 8000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    resum: stringValue(values.resum, ""),
+    descripcio: stringValue(values.descripcio, ""),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :loading="loading"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-descripcio="{ value, setValue, disabled, inputId }">
+      <div class="md-label">
+        <label :for="inputId">
+          {{ t("shared.supportRequest.form.description") }}
+        </label>
+        <i
+          class="pi pi-question-circle md-help-icon"
+          role="button"
+          tabindex="0"
+          :aria-label="t('shared.supportRequest.form.markdownHelpAria')"
+          @click="markdownHelp?.toggle($event)"
+          @keydown.enter="markdownHelp?.toggle($event)"
+        ></i>
+      </div>
+
+      <div
+        class="md-toolbar"
+        role="toolbar"
+        :aria-label="t('shared.supportRequest.form.toolbarAria')"
+      >
+        <template v-for="button in toolbarButtons" :key="button.action">
+          <span
+            v-if="button.separatorBefore"
+            class="md-toolbar__sep"
+            aria-hidden="true"
+          ></span>
+          <Button
+            type="button"
+            text
+            severity="secondary"
+            size="small"
+            :class="['md-tool', button.modifier]"
+            :icon="button.icon"
+            :disabled="disabled"
+            :aria-label="button.label"
+            v-tooltip.bottom="button.label"
+            @click="applyMarkdown(button.action, value, setValue)"
+          >
+            <template v-if="button.text" #default>{{ button.text }}</template>
+          </Button>
+        </template>
+      </div>
+
+      <Textarea
+        ref="descriptionInput"
+        :id="inputId"
+        :model-value="stringValue(value, '')"
+        rows="6"
+        class="w-full"
+        :disabled="disabled"
+        autoResize
+        @update:model-value="setValue"
+      />
+
+      <Popover ref="markdownHelp">
+        <div class="md-help">
+          <p class="md-help__title">
+            {{ t("shared.supportRequest.markdownHelp.title") }}
+          </p>
+          <table class="md-help__table">
+            <tbody>
+              <tr>
+                <td><code># Títol</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.heading") }}</td>
+              </tr>
+              <tr>
+                <td><code>**negreta**</code></td>
+                <td>
+                  {{ t("shared.supportRequest.markdownHelp.boldExample") }}
+                  <strong>{{
+                    t("shared.supportRequest.markdownHelp.boldWord")
+                  }}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td><code>*cursiva*</code></td>
+                <td>
+                  {{ t("shared.supportRequest.markdownHelp.italicExample") }}
+                  <em>{{ t("shared.supportRequest.markdownHelp.italicWord") }}</em>
+                </td>
+              </tr>
+              <tr>
+                <td><code>~~ratllat~~</code></td>
+                <td>
+                  {{ t("shared.supportRequest.markdownHelp.strikeExample") }}
+                </td>
+              </tr>
+              <tr>
+                <td><code>- element</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.bulletList") }}</td>
+              </tr>
+              <tr>
+                <td><code>1. element</code></td>
+                <td>
+                  {{ t("shared.supportRequest.markdownHelp.numberedList") }}
+                </td>
+              </tr>
+              <tr>
+                <td><code>[text](url)</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.link") }}</td>
+              </tr>
+              <tr>
+                <td><code>`codi`</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.inlineCode") }}</td>
+              </tr>
+              <tr>
+                <td><code>```codi```</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.codeBlock") }}</td>
+              </tr>
+              <tr>
+                <td><code>&gt; cita</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.quote") }}</td>
+              </tr>
+              <tr>
+                <td><code>- [ ] tasca</code></td>
+                <td>{{ t("shared.supportRequest.markdownHelp.task") }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Popover>
+
+      <div class="mt-3">
+        <span class="block text-600 text-sm mb-2">
+          {{ t("shared.supportRequest.form.preview") }}
+        </span>
+        <MarkdownRenderer
+          v-if="stringValue(value, '').trim()"
+          :markdown="stringValue(value, '')"
+          class="support-preview"
+        />
+        <p v-else class="text-500 m-0 support-preview-empty">
+          {{ t("shared.supportRequest.form.noPreview") }}
+        </p>
+      </div>
+    </template>
+    <template #actions="{ loading: busy }">
+      <Button
+        type="button"
+        severity="secondary"
+        icon="pi pi-times"
+        :label="t('shared.supportRequest.form.cancel')"
+        :disabled="busy"
+        @click="emit('cancel')"
+      />
+      <Button
+        type="submit"
+        icon="pi pi-send"
+        :label="t('shared.supportRequest.form.send')"
+        :loading="busy"
+      />
+    </template>
+  </Form>
+</template>
 
 <style scoped>
 .support-preview,
@@ -205,6 +404,13 @@ const submitForm = async () => {
   border: 1px solid var(--p-surface-300);
   border-radius: var(--p-content-border-radius, 6px);
   background: var(--p-surface-50);
+}
+
+.md-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  color: var(--p-text-color);
 }
 
 .md-help-icon {

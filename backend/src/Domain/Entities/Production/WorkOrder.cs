@@ -28,6 +28,10 @@ public class WorkOrder : Entity
     public int Order { get; set; }
     public string Comment { get; set; } = string.Empty;
 
+    // Lot assignat a la producció final d'aquesta OF (buit o autogenerat segons Production.AutoBatch)
+    public Guid? DefaultProducedLotId { get; set; }
+    public Warehouse.Lot? DefaultProducedLot { get; set; }
+
     public ICollection<WorkOrderPhase> Phases { get; set; } = new List<WorkOrderPhase>();
 }
 public class UpdateWorkOrderOrderDTO

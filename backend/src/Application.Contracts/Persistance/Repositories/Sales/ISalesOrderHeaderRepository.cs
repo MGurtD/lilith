@@ -7,6 +7,7 @@ namespace Application.Contracts
         IRepository<SalesOrderTransport, Guid> Transports { get; }  
         IRepository<SalesOrderExternalServices, Guid> ExternalServices { get; }
         IRepository<SalesOrderExternalServiceDetail, Guid> ExternalServiceDetails { get; }
+        IRepository<SalesOrderDetailPhaseProfit, Guid> DetailPhaseProfits { get; }
 
         SalesOrderDetail? GetDetailById(Guid id);
         Task AddDetail(SalesOrderDetail detail);

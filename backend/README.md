@@ -1,195 +1,143 @@
-# Lilith Backend - Manufacturing ERP System
+# Lilith Backend
 
-> **Note**: This backend is part of the [Lilith monorepo](https://github.com/MGurtD/lilith). For full system documentation, see the root README.
+> Part of the [Lilith monorepo](../README.md). Backend-only docs — assume you already cloned and have prerequisites installed (see root README).
 
-A comprehensive manufacturing ERP solution built with .NET 10 and Clean Architecture principles, managing the complete lifecycle from sales and purchases to production planning, inventory control, and financial operations.
+.NET 10 Web API implementing Clean Architecture with **6 projects** following the Dependency Rule. All business logic lives in the Service layer (51 controllers, refactored as of Dec 2025).
 
-**Architecture Grade: A (9.5/10)** - Exceptional Clean Architecture implementation with complete service layer separation across all 51 controllers (completed December 2025). All business logic is now testable without HTTP context, with consistent error handling and full localization support. Key remaining areas for improvement: test coverage and authorization framework.
+**Architecture grade: A (9.5/10)** — complete service-layer separation, consistent error handling, full localization. Remaining work: test coverage and authorization framework.
 
-## Technology Stack
-
-- **.NET 10** - Web API framework
-- **Entity Framework Core** - ORM with PostgreSQL provider
-- **PostgreSQL** - Primary database
-- **JWT Bearer** - Authentication
-- **Serilog** - Structured logging
-- **Swashbuckle** - OpenAPI/Swagger documentation
-
-## Architecture Overview
+## Project layout
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         API LAYER                           │
-│   (Controllers - only inject service interfaces)           │
-│   (Middleware, Program.cs - wires implementations)         │
-│                         ↓                                   │
-│              (depends on service interfaces)                │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-           ┌──────────────▼─────────────────┐
-           │    APPLICATION.CONTRACTS       │
-           │  (Service & Repository IFs,    │
-           │   DTOs, Constants)             │
-           │         ↑            ↑         │
-           └─────────┼────────────┼─────────┘
-                     │            │
-        ┌────────────┘            └────────────┐
-        │                                      │
-        │ implements                  implements│
-        │                                      │
-┌───────▼───────────┐              ┌───────────▼────────┐
-│   APPLICATION     │              │  INFRASTRUCTURE    │
-│   (Services)      │─────────────→│  (Repositories,    │
-│   Business Logic  │  uses IUoW   │   UnitOfWork,      │
-└───────┬───────────┘              │   EF Core)         │
-        │                          └───────────┬────────┘
-        │                                      │
-        └──────────────┬───────────────────────┘
-                       ↓
-           ┌───────────────────────┐
-           │       DOMAIN          │
-           │  (Entities, Core)     │
-           │   NO Dependencies     │
-           └───────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                        VERIFACTU                            │
-│          (External Tax Integration Service)                 │
-│              Spanish AEAT Invoice Registry                  │
-└─────────────────────────────────────────────────────────────┘
+backend/
+├── src/
+│   ├── Domain/                  # Pure entities. Zero dependencies.
+│   ├── Application.Contracts/   # Service & Repository interfaces, DTOs, StatusConstants.
+│   ├── Application/             # Business logic. Implements contracts.
+│   ├── Infrastructure/          # EF Core + PostgreSQL, repositories, UnitOfWork.
+│   ├── Api/                     # Controllers, middleware, Program.cs (composition root).
+│   └── Verifactu/               # Spanish AEAT invoice registry integration.
+├── docs/                        # Architecture deep-dives (see index below).
+├── tests/                       # ⚠️ Not yet implemented.
+└── README.md
 ```
 
-## Quick Start
+### Dependency flow
+
+```
+              ┌─────────────────────────────────────────┐
+              │                  API                    │  composition root
+              │  (Controllers → service interfaces only)│
+              └─────────────┬───────────────────────────┘
+                            │ depends on
+              ┌─────────────▼───────────────────────────┐
+              │          Application.Contracts          │  interfaces, DTOs
+              └─────────────┬───────────────────────────┘
+                            │ implemented by
+        ┌───────────────────┴───────────────────┐
+        │                                       │
+┌───────▼──────────┐                  ┌─────────▼────────┐
+│   Application    │──── uses IUoW ──▶│  Infrastructure  │
+│   (Services)     │                  │  (Repos, EF Core)│
+└──────────────────┘                  └─────────┬────────┘
+                                               │
+                                    ┌──────────▼────────┐
+                                    │      Domain       │  pure core
+                                    └───────────────────┘
+```
+
+External integrations (`Verifactu`) are isolated in their own project and called from `Application` services.
+
+## Run locally
 
 ```bash
-# Prerequisites: .NET 10 SDK, PostgreSQL 16+
+cd backend
 
-# 1. Restore dependencies
+# 1. Restore
 dotnet restore
 
-# 2. Update connection string in src/Api/appsettings.Development.json
+# 2. Configure connection string
+#    Edit src/Api/appsettings.Development.json
+#    OR: dotnet user-secrets set "ConnectionStrings:Default" "Host=...;..."
 
-# 3. Apply database migrations
+# 3. Apply migrations
 dotnet ef database update --project src/Infrastructure/
 
-# 4. Run the API
-dotnet run --project src/Api/
-# or use VS Code task: "watch"
+# 4. Run with hot reload
+dotnet watch run --project src/Api/
 
-# 5. Access Swagger UI
-# Navigate to: https://localhost:5001/swagger
+# Swagger UI: https://localhost:5001/swagger
 ```
 
-## Documentation Index
+## Migrations
+
+```bash
+# Create
+dotnet ef migrations add <Name> --project src/Infrastructure/
+
+# Apply
+dotnet ef database update --project src/Infrastructure/
+
+# Rollback
+dotnet ef database update <PreviousMigrationName> --project src/Infrastructure/
+```
+
+## Critical conventions
+
+⚠️ Non-negotiable — break these and the architecture degrades.
+
+| Rule | Why |
+|------|-----|
+| Use `StatusConstants` for lifecycle/status names | Catalan DB values + type safety |
+| Inject `ILocalizationService` in every service | Multilingual error messages (ca/es/en) |
+| Return `GenericResponse` from all write operations | Standardized result + error contract |
+| Use primary constructors for DI (`public class X(IY y) : IX`) | Modern C# 12, testability |
+| `async/await` for all I/O | Scalability, no thread blocking |
+| No business logic in controllers | All 51 already follow this — keep the pattern |
+| Never inject `IUnitOfWork` in controllers | Use service interfaces; repos stay in Infrastructure |
+
+## Documentation index
 
 ### Architecture
+- [architecture-layers.md](docs/architecture-layers.md) — the 6 projects and their responsibilities
+- [architectural-patterns.md](docs/architectural-patterns.md) — Repository, Service, GenericResponse, FluentAPI
+- [request-flow.md](docs/request-flow.md) — HTTP request lifecycle with sequence diagrams
+- [domain-model.md](docs/domain-model.md) — entities across Sales, Purchase, Production, Warehouse
 
-- **[Architecture Layers](docs/architecture-layers.md)** - Deep dive into the 6 projects and their responsibilities
-- **[Architectural Patterns](docs/architectural-patterns.md)** - Repository, Service, GenericResponse, and Entity configuration patterns
-- **[Request Flow](docs/request-flow.md)** - How HTTP requests flow through layers with sequence diagrams
-- **[Domain Model](docs/domain-model.md)** - Business entities across Sales, Purchase, Production, and Warehouse
+### Development
+- [developer-guide.md](docs/developer-guide.md) — setup, common tasks, conventions
+- [localization.md](docs/localization.md) — ILocalizationService, JSON resources, culture detection
+- [external-integrations.md](docs/external-integrations.md) — Verifactu and other external systems
 
-### Development Guides
+### Health & debt
+- [architectural-debt-assessment.md](docs/architectural-debt-assessment.md) — tests, authz, known issues
 
-- **[Developer Guide](docs/developer-guide.md)** - Setup, common tasks, and critical conventions
-- **[How to Create Endpoints](docs/how-to-create-endpoints.md)** - Step-by-step guide for adding new API endpoints
-- **[How to Refactor Controllers to Services](docs/how-to-refactor-controllers-to-services.md)** - Moving business logic out of controllers
+## Verifactu (Spanish AEAT)
 
-### Features & Systems
+`src/Verifactu/` is the Spanish tax authority invoice registry integration. Isolated as its own project; called from `Application` services via interface. See [external-integrations.md](docs/external-integrations.md) for activation and usage.
 
-- **[Localization](docs/localization.md)** - Multilanguage support (Catalan, Spanish, English)
-- **[External Integrations](docs/external-integrations.md)** - Verifactu tax service and other external systems
-
-### Known Issues
-
-- **[Architectural Debt Assessment](docs/architectural-debt-assessment.md)** - Critical improvements needed (tests, authorization)
-
-## Project Structure
-
-```
-src/
-├── Domain/                      # Pure business entities (no dependencies)
-├── Application.Contracts/       # Interfaces, DTOs, constants (flat namespace)
-├── Application/                 # Business logic and services
-├── Infrastructure/              # Data access with EF Core + PostgreSQL
-├── Api/                         # Controllers, middleware, startup
-└── Verifactu/                   # Spanish tax authority integration
-```
-
-## Core Concepts
-
-### Clean Architecture Principles
-
-- **Domain** is the core with zero external dependencies
-- **Application.Contracts** defines all abstractions (interfaces, DTOs)
-- **Application** implements business logic using contracts
-- **Infrastructure** implements data access and external integrations
-- **Api** orchestrates everything as the composition root
-
-### Key Patterns
-
-- **Repository + Unit of Work** - Data access abstraction
-- **Service Layer** - Business logic completely separated from controllers (100% of controllers refactored)
-- **GenericResponse** - Standardized error handling and results
-- **Primary Constructors** - Modern C# 12 dependency injection
-- **Localization-First** - All user-facing strings support multiple languages
-
-### Domain Coverage
-
-**Sales:** Customer, Budget, SalesOrder, DeliveryNote, SalesInvoice  
-**Purchase:** Supplier, PurchaseOrder, Receipt, PurchaseInvoice  
-**Production:** WorkMaster, WorkOrder, ProductionPart, Workcenter  
-**Warehouse:** Stock, Location, StockMovement, Reference
-
-## Critical Conventions
-
-⚠️ **Always follow these rules:**
-
-1. **Use `StatusConstants`** - Never hardcode lifecycle/status names
-2. **Localize error messages** - Inject `ILocalizationService` in all services
-3. **Return `GenericResponse`** - For all write operations that can fail
-4. **Primary constructors** - Use modern C# 12 syntax for DI
-5. **Async/await** - All I/O operations must be asynchronous
-6. **No logic in controllers** - Business logic belongs in services (all 51 controllers now follow this pattern)
-7. **Never inject `IUnitOfWork` in controllers** - Use service layer interfaces only
-
-## Database Migrations
-
-dotnet user-secrets set "ConnectionStrings:Default" "Host=host;Port=port;Database=database;Username=username;Password=password;"
+## Docker
 
 ```bash
-# Create new migration
-dotnet ef migrations add MigrationName --project src/Infrastructure/
-
-# Apply migrations to database
-dotnet ef database update --project src/Infrastructure/
-
-# Rollback to previous migration
-dotnet ef database update PreviousMigrationName --project src/Infrastructure/
-```
-
-## Docker Support
-
-```bash
-# Build image
+# Build
 docker build -t lilith-backend .
 
-# Run with PostgreSQL connection
+# Run
 docker run -p 8080:80 \
-  -e ConnectionStrings__Default="Host=postgres;Database=lilith;..." \
+  -e ConnectionStrings__Default="Host=postgres;Database=lilith;Username=...;Password=..." \
   lilith-backend
 ```
 
+For full-stack orchestration see the root [docker-compose.yml](../docker-compose.yml).
+
 ## Contributing
 
-Before implementing new features:
-
-1. Read [Developer Guide](docs/developer-guide.md) for conventions
-2. Check [Architectural Debt Assessment](docs/architectural-debt-assessment.md) for known issues
-3. Follow established patterns in [Architectural Patterns](docs/architectural-patterns.md)
-4. Add localization keys for all user-facing messages
-5. Update relevant documentation
+1. Read [developer-guide.md](docs/developer-guide.md) for the full conventions list.
+2. Check [architectural-debt-assessment.md](docs/architectural-debt-assessment.md) before adding scope.
+3. Mirror existing patterns in [architectural-patterns.md](docs/architectural-patterns.md).
+4. Add localization keys for every new user-facing string.
+5. Update relevant `docs/` files when behavior or contracts change.
 
 ## License
 
-Internal project - All rights reserved.
+Internal project — all rights reserved.

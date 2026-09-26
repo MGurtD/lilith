@@ -21,10 +21,10 @@ export class ReportService {
   }
 
   public async Download(
-    data: any,
+    data: unknown,
     report: REPORTS,
     fileName: string
-  ): Promise<any> {
+  ): Promise<Blob | undefined> {
     const files = await Services.File.GetEntityFiles(
       REPORTS_ENTITY,
       REPORTS_ENTITY_ID
@@ -51,7 +51,7 @@ export class ReportService {
       { responseType: "blob" }
     );
     if (response.status === 200) {
-      return response.data;
+      return response.data as Blob;
     }
   }
 }

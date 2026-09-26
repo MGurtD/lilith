@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="filteredData"
     :filter-config="filterConfig"
@@ -7,6 +8,11 @@
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
     page="References"
+    :attachment-config="{
+      entity: 'referenceMaps',
+      title: t('sales.components.adjuntsDeLaReferencia'),
+      titleField: 'code',
+    }"
     showDeleteColumn
     :canDelete="() => true"
     @clear="cleanFilter"
@@ -14,23 +20,8 @@
     @delete="onDeleteRow"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Client</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">Data creació</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :showIcon="true"
-          class="w-full"
-          size="small"
-          placeholder="Selecciona periode"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
     <template #body-cost="{ data }">
       {{ formatCurrency(data.workMasterCost) }}
@@ -39,9 +30,14 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { computed, ref } from "vue";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -49,43 +45,63 @@ import { Reference } from "../../shared/types";
 import { useCustomersStore } from "../../sales/store/customers";
 import { formatCurrency } from "../../../utils/functions";
 
+const { t } = useI18n();
 const customerStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
 
-const filterConfig: FilterConfig[] = [
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "customerId",
+    label: t('sales.components.client'),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+  {
+    key: "dates",
+    label: t('sales.components.dataCreacio'),
+    type: "date-range",
+    placeholder: t('sales.components.seleccionaPeriode'),
+  },
   {
     key: "code",
-    label: "Codi",
+    label: t('sales.components.codi'),
     type: "text",
-    placeholder: "Codi",
+    placeholder: t('sales.components.codi'),
     size: "sm",
   },
   {
     key: "description",
-    label: "Descripció",
+    label: t('sales.components.descripcio'),
     type: "text",
-    placeholder: "Descripció",
+    placeholder: t('sales.components.descripcio'),
     size: "md",
   },
-];
+]);
 
 const columns = ref<Column[]>([
-  { field: "code", header: "Codi", style: "width: 10%" },
-  { field: "description", header: "Descripció", style: "width: 30%" },
-  { field: "version", header: "Versió", style: "width: 8%" },
+  { field: "code", header: t('sales.components.codi'), style: "width: 10%" },
+  { field: "description", header: t('sales.components.descripcio'), style: "width: 30%" },
+  { field: "version", header: t('sales.components.versio'), style: "width: 8%" },
   {
     field: "customerId",
-    header: "Client",
+    header: t('sales.components.client'),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
     style: "width: 18%",
   },
-  { field: "createdOn", header: "Data creació", sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
-  { field: "price", header: "Preu", columnType: ColumnType.Currency, style: "width: 8%" },
-  { field: "cost", header: "Cost", style: "width: 8%" },
-  { field: "isService", header: "Servei", columnType: ColumnType.Boolean, style: "width: 5%" },
+  { field: "createdOn", header: t('sales.components.dataCreacio'), sortable: true, columnType: ColumnType.Date, style: "width: 10%" },
+  { field: "price", header: t('sales.components.preu'), columnType: ColumnType.Currency, style: "width: 8%" },
+  { field: "cost", header: t('sales.components.cost'), style: "width: 8%" },
+  { field: "isService", header: t('sales.components.servei'), columnType: ColumnType.Boolean, style: "width: 5%" },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "code",
+  subtitle: "description",
+  trailing: "price",
+  meta: ["version", "customerId", "cost"],
+};
 
 const filter = ref({
   code: "",
@@ -95,10 +111,12 @@ const filter = ref({
 });
 
 const cleanFilter = () => {
-  filter.value.code = "";
-  filter.value.customerId = "";
-  filter.value.description = "";
-  filter.value.dates = undefined;
+  filter.value = {
+    code: "",
+    description: "",
+    customerId: "",
+    dates: undefined,
+  };
 };
 
 const props = defineProps<{
@@ -169,17 +187,3 @@ const onDeleteRow = (reference: Reference) => {
   emit("delete", reference);
 };
 </script>
-
-<style scoped>
-.filter-toolbar {
-  align-items: flex-start;
-}
-
-.filter-toolbar__actions {
-  align-self: flex-end;
-}
-
-.filter-toolbar__field--date {
-  min-width: 15rem;
-}
-</style>

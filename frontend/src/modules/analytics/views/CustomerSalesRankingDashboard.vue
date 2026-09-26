@@ -65,8 +65,12 @@
       </TabPanel>
 
       <TabPanel value="1">
-        <DataTable
-          :value="tableData"
+        <Table
+          phone-layout="cards"
+          :card-layout="cardLayout"
+          :items="tableData"
+          :columns="columns"
+          :show-filters="false"
           class="small-datatable"
           tableStyle="min-width: 100%"
           scrollable
@@ -74,41 +78,22 @@
           sortField="totalSales"
           :sortOrder="-1"
         >
-          <Column
-            field="customerName"
-            :header="t('analytics.customerRanking.table.customer')"
-            style="width: 25%"
-            sortable
-            frozen
-          />
-          <Column
+          <template
             v-for="period in dynamicPeriods"
             :key="period.key"
-            :field="period.key"
-            :header="period.label"
-            style="width: auto"
-            sortable
+            #[`body-${period.key}`]="{ data }"
           >
-            <template #body="slotProps">
-              <span v-if="slotProps.data[period.key]">
-                {{ formatCurrency(slotProps.data[period.key]) }}
-              </span>
-              <span v-else class="text-gray-400">-</span>
-            </template>
-          </Column>
-          <Column
-            field="totalSales"
-            :header="t('analytics.customerRanking.table.total')"
-            style="width: 15%"
-            sortable
-          >
-            <template #body="slotProps">
-              <span class="font-semibold text-green-600">
-                {{ formatCurrency(slotProps.data.totalSales) }}
-              </span>
-            </template>
-          </Column>
-        </DataTable>
+            <span v-if="data[period.key]">
+              {{ formatCurrency(data[period.key]) }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+          <template #body-totalSales="{ data }">
+            <span class="font-semibold text-green-600">
+              {{ formatCurrency(data.totalSales) }}
+            </span>
+          </template>
+        </Table>
       </TabPanel>
     </TabPanels>
   </Tabs>
@@ -125,13 +110,18 @@ import TableFilter, {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import type {
+  CardLayout,
+  Column,
+} from "../../../components/tables/types";
 
 import { CustomerSalesRanking } from "../types";
 import { CustomerRankingService } from "../services/customerRanking.service";
 
 const store = useStore();
 const toast = useToast();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const customerRankingService = new CustomerRankingService("/customerranking");
 
 const filter = ref({
@@ -184,11 +174,42 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "32rem",
 };
 
-onMounted(async () => {
+const columns = computed<Column[]>(() => [
+  {
+    field: "customerName",
+    header: t("analytics.customerRanking.table.customer"),
+    style: "width: 25%",
+    sortable: true,
+    frozen: true,
+  },
+  ...dynamicPeriods.value.map((period) => ({
+    field: period.key,
+    header: period.label,
+    style: "width: auto",
+    sortable: true,
+  })),
+  {
+    field: "totalSales",
+    header: t("analytics.customerRanking.table.total"),
+    style: "width: 15%",
+    sortable: true,
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "customerName",
+  trailing: "totalSales",
+};
+
+const setMenuTitle = () => {
   store.setMenuItem({
     icon: PrimeIcons.CHART_PIE,
     title: t("analytics.customerRanking.title"),
   });
+};
+
+onMounted(async () => {
+  setMenuTitle();
 
   await loadRankingData();
 });
@@ -304,7 +325,7 @@ const pieChartOptions = ref({
         label: function (context: any) {
           const label = context.label || "";
           const value = context.parsed || 0;
-          const formatted = new Intl.NumberFormat("de-DE", {
+          const formatted = new Intl.NumberFormat(locale.value, {
             style: "currency",
             currency: "EUR",
           }).format(value);
@@ -444,6 +465,11 @@ const prepareData = () => {
     ],
   };
 };
+
+watch(locale, () => {
+  setMenuTitle();
+  prepareData();
+});
 </script>
 
 <style scoped>

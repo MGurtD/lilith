@@ -1,16 +1,16 @@
 <template>
-  <div class="grid_add_row_button">
+  <PageActions>
     <SplitButton
-      label="Guardar"
+      icon="pi pi-save"
+      :label="t('common.save')"
       :model="splitButtonItems"
-      :size="'small'"
       @click="submitForm"
     />
-  </div>
+  </PageActions>
   <Tabs value="0">
     <TabList>
-      <Tab value="0">Factura</Tab>
-      <Tab value="1">Fitxers</Tab>
+      <Tab value="0">{{ t("purchase.purchaseInvoice.tabs.invoice") }}</Tab>
+      <Tab value="1">{{ t("purchase.purchaseInvoice.tabs.files") }}</Tab>
     </TabList>
     <TabPanels>
       <TabPanel value="0" v-if="purchaseInvoice">
@@ -18,12 +18,14 @@
           ref="purchaseInvoiceForm"
           :purchaseInvoice="purchaseInvoice"
           @submit="onInvoiceSubmit"
+          @calculated="applyCalculatedValues"
+          @due-dates-change="applyDueDates"
         />
         <Tabs value="0">
           <TabList>
-            <Tab value="0">Imports</Tab>
-            <Tab value="1">Venciments</Tab>
-            <Tab value="2">Albarans</Tab>
+            <Tab value="0">{{ t("purchase.purchaseInvoice.tabs.amounts") }}</Tab>
+            <Tab value="1">{{ t("purchase.purchaseInvoice.tabs.dueDates") }}</Tab>
+            <Tab value="2">{{ t("purchase.purchaseInvoice.tabs.receipts") }}</Tab>
           </TabList>
           <TabPanels>
             <TabPanel value="0">
@@ -58,7 +60,7 @@
               >
                 <Column
                   field="dueDate"
-                  header="Venciment"
+                  :header="t('purchase.purchaseInvoice.columns.dueDate')"
                   style="width: 50%"
                   sortable
                 >
@@ -66,7 +68,11 @@
                     {{ formatDate(slotProps.data.dueDate) }}
                   </template>
                 </Column>
-                <Column field="amount" header="Import" style="width: 50%">
+                <Column
+                  field="amount"
+                  :header="t('purchase.purchaseInvoice.columns.amount')"
+                  style="width: 50%"
+                >
                   <template #body="slotProps">
                     <template v-if="isDueDateEditing">
                       <InputNumber
@@ -85,7 +91,7 @@
                     >
                       <div class="flex flex-column gap-1 text-left">
                         <div class="font-semibold">
-                          Total venciments:
+                          {{ t("purchase.purchaseInvoice.dueDates.total") }}:
                           {{ formatCurrency(editedDueDatesTotal) }}
                         </div>
                         <div
@@ -97,12 +103,13 @@
                               : 'text-red-500',
                           ]"
                         >
-                          Diferència: {{ formatCurrency(dueDatesDifference) }}
+                          {{ t("purchase.purchaseInvoice.dueDates.difference") }}:
+                          {{ formatCurrency(dueDatesDifference) }}
                         </div>
                       </div>
                       <div class="flex gap-2">
                         <Button
-                          label="Cancel·lar"
+                          :label="t('common.cancel')"
                           icon="pi pi-times"
                           severity="danger"
                           size="small"
@@ -110,7 +117,7 @@
                           @click="cancelEditDueDates"
                         />
                         <Button
-                          label="Guardar"
+                          :label="t('common.save')"
                           icon="pi pi-check"
                           severity="success"
                           size="small"
@@ -136,7 +143,7 @@
       <TabPanel value="1">
         <FileEntityPicker
           v-if="purchaseInvoice"
-          title="Factures"
+          :title="t('purchase.purchaseInvoice.filePickerTitle')"
           entity="PurchaseInvoice"
           :id="route.params.id as string"
         />
@@ -167,6 +174,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -175,7 +183,13 @@ import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
 import SplitButton from "primevue/splitbutton";
 import type { MenuItem } from "primevue/menuitem";
-import { PurchaseInvoice, PurchaseInvoiceImport, Receipt } from "../types";
+import type {
+  PurchaseInvoice,
+  PurchaseInvoiceCalculatedValues,
+  PurchaseInvoiceDueDate,
+  PurchaseInvoiceImport,
+  Receipt,
+} from "../types";
 import { FormActionMode } from "../../../types/component";
 import {
   convertDateTimeToJSON,
@@ -194,8 +208,13 @@ import { useToast } from "primevue/usetoast";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReceiptsStore } from "../store/receipt";
 import { cloneDeep, round } from "lodash";
+import { useI18n } from "vue-i18n";
 
-const purchaseInvoiceForm = ref();
+const purchaseInvoiceForm = ref<{
+  submitForm: () => void;
+  calcAmounts: () => void;
+  getSupplierId: () => string;
+} | null>(null);
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -206,15 +225,17 @@ const lifecycleStore = useLifecyclesStore();
 const purchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
+const { t } = useI18n();
 const { purchaseInvoice } = storeToRefs(purchaseInvoiceStore);
+const calculatedValues = ref<Partial<PurchaseInvoiceCalculatedValues>>({});
 
 const dialogTitle = computed(() => {
   if (receiptsStore.selectorReceipts) {
-    return "Selecció albarans";
+    return t("purchase.purchaseInvoice.dialogs.receiptSelection");
   } else {
     return formInvoiceMode.value === FormActionMode.CREATE
-      ? "Introducció import"
-      : "Modificació import";
+      ? t("purchase.purchaseInvoice.dialogs.createAmount")
+      : t("purchase.purchaseInvoice.dialogs.editAmount");
   }
 });
 const isDialogVisible = ref(false);
@@ -235,7 +256,9 @@ const editedDueDatesTotal = computed(() =>
 );
 const dueDatesDifference = computed(() => {
   if (!purchaseInvoice.value) return 0;
-  return round(purchaseInvoice.value.netAmount, 2) - editedDueDatesTotal.value;
+  const netAmount =
+    calculatedValues.value.netAmount ?? purchaseInvoice.value.netAmount;
+  return round(netAmount, 2) - editedDueDatesTotal.value;
 });
 
 // SplitButton items (dynamic visibility for edit due dates)
@@ -247,7 +270,7 @@ const splitButtonItems = computed<MenuItem[]>(() => {
     !isDueDateEditing.value
   ) {
     items.push({
-      label: "Editar venciments",
+      label: t("purchase.purchaseInvoice.actions.editDueDates"),
       icon: "pi pi-pencil",
       command: () => startEditDueDates(),
     });
@@ -256,6 +279,7 @@ const splitButtonItems = computed<MenuItem[]>(() => {
 });
 
 const loadView = async () => {
+  calculatedValues.value = {};
   const invoiceId = route.params.id as string;
   let pageTitle = "";
 
@@ -264,16 +288,15 @@ const loadView = async () => {
   if (!purchaseInvoice.value) {
     formMode.value = FormActionMode.CREATE;
     purchaseInvoiceStore.setNewPurchaseInvoice(invoiceId);
-    pageTitle = "Alta de factures de compra";
+    pageTitle = t("purchase.purchaseInvoice.pageTitles.create");
 
     setDefaultValues();
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Factura de compra: ${purchaseInvoice.value.number}`;
+    pageTitle = t("purchase.purchaseInvoice.pageTitles.edit", {
+      number: purchaseInvoice.value.number,
+    });
 
-    purchaseInvoice.value.purchaseInvoiceDate = new Date(
-      purchaseInvoice.value.purchaseInvoiceDate,
-    );
   }
   // Get associated receipts
   receiptsStore.fetchByInvoice(invoiceId);
@@ -309,8 +332,19 @@ onMounted(async () => {
 });
 
 const submitForm = () => {
-  const form = purchaseInvoiceForm.value as any;
-  form.submitForm();
+  purchaseInvoiceForm.value?.submitForm();
+};
+
+const applyCalculatedValues = (
+  values: Partial<PurchaseInvoiceCalculatedValues>,
+) => {
+  calculatedValues.value = { ...calculatedValues.value, ...values };
+};
+
+const applyDueDates = (dueDates: PurchaseInvoiceDueDate[]) => {
+  if (purchaseInvoice.value) {
+    purchaseInvoice.value.purchaseInvoiceDueDates = dueDates;
+  }
 };
 
 // Invoice imports
@@ -318,12 +352,12 @@ const openInvoiceImportForm = (
   formMode: FormActionMode,
   invoiceImport: PurchaseInvoiceImport,
 ) => {
-  if (formMode === FormActionMode.CREATE) {
-    invoiceImport.id = getNewUuid();
-  }
-
-  invoiceImport.purchaseInvoiceId = purchaseInvoice.value!.id;
-  selectedInvoiceImport.value = invoiceImport;
+  selectedInvoiceImport.value = {
+    ...invoiceImport,
+    id:
+      formMode === FormActionMode.CREATE ? getNewUuid() : invoiceImport.id,
+    purchaseInvoiceId: purchaseInvoice.value!.id,
+  };
   formInvoiceMode.value = formMode;
   isDialogVisible.value = true;
 };
@@ -338,10 +372,14 @@ const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await purchaseInvoiceStore.Create(invoice);
-    message = result ? "Factura creada" : "Error al crear la factura";
+    message = result
+      ? t("purchase.purchaseInvoice.messages.created")
+      : t("purchase.purchaseInvoice.messages.createError");
   } else {
     result = await purchaseInvoiceStore.Update(invoice);
-    message = result ? "Factura actualizada" : "Error al actualizar la factura";
+    message = result
+      ? t("purchase.purchaseInvoice.messages.updated")
+      : t("purchase.purchaseInvoice.messages.updateError");
   }
 
   toast.add({
@@ -356,16 +394,32 @@ const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
 };
 
 const onInvoiceImportSubmit = async (invoiceImport: PurchaseInvoiceImport) => {
-  // When is a new record, work in memory to send a composed object to the backend
+  let saved = true;
+
   if (formInvoiceMode.value === FormActionMode.CREATE) {
     if (formMode.value === FormActionMode.EDIT) {
-      await purchaseInvoiceStore.CreateInvoiceImport(invoiceImport);
+      saved = await purchaseInvoiceStore.CreateInvoiceImport(invoiceImport);
     }
-
-    purchaseInvoice.value?.purchaseInvoiceImports.push(invoiceImport);
   } else if (formInvoiceMode.value === FormActionMode.EDIT) {
     if (formMode.value === FormActionMode.EDIT) {
-      await purchaseInvoiceStore.UpdateInvoiceImport(invoiceImport);
+      saved = await purchaseInvoiceStore.UpdateInvoiceImport(invoiceImport);
+    }
+  }
+
+  if (!saved || !purchaseInvoice.value) return;
+
+  if (formInvoiceMode.value === FormActionMode.CREATE) {
+    purchaseInvoice.value.purchaseInvoiceImports.push(invoiceImport);
+  } else {
+    const index = purchaseInvoice.value.purchaseInvoiceImports.findIndex(
+      (item) => item.id === invoiceImport.id,
+    );
+    if (index >= 0) {
+      purchaseInvoice.value.purchaseInvoiceImports.splice(
+        index,
+        1,
+        invoiceImport,
+      );
     }
   }
 
@@ -386,17 +440,17 @@ const deleteInvoiceImport = async (invoiceImport: PurchaseInvoiceImport) => {
 };
 
 const closeDialogAndCalcAmounts = () => {
-  const form = purchaseInvoiceForm.value as any;
-  form.calcAmounts();
+  purchaseInvoiceForm.value?.calcAmounts();
   isDialogVisible.value = false;
 };
 
 const onReceiptAdd = async () => {
   if (!purchaseInvoice.value) return;
 
-  await receiptsStore.fetchInvoiceableBySupplier(
-    purchaseInvoice.value.supplierId,
-  );
+  const supplierId =
+    purchaseInvoiceForm.value?.getSupplierId() ??
+    purchaseInvoice.value.supplierId;
+  await receiptsStore.fetchInvoiceableBySupplier(supplierId);
   isDialogVisible.value = true;
 };
 
@@ -438,7 +492,10 @@ const startEditDueDates = () => {
 
 const confirmEditDueDates = async () => {
   if (!purchaseInvoice.value) return;
-  const invoiceTotal = round(purchaseInvoice.value.netAmount, 2);
+  const invoiceTotal = round(
+    calculatedValues.value.netAmount ?? purchaseInvoice.value.netAmount,
+    2,
+  );
   const dueTotal = round(
     editingDueDates.value.reduce((acc, d) => acc + d.amount, 0),
     2,
@@ -447,8 +504,11 @@ const confirmEditDueDates = async () => {
   if (dueTotal !== 0 && dueTotal !== invoiceTotal) {
     toast.add({
       severity: "error",
-      summary: "Error de validació",
-      detail: `La suma (${dueTotal} €) no coincideix amb el total de la factura (${invoiceTotal} €)`,
+      summary: t("purchase.purchaseInvoice.messages.dueDatesValidationError"),
+      detail: t("purchase.purchaseInvoice.messages.dueDatesTotalMismatch", {
+        dueTotal,
+        invoiceTotal,
+      }),
       life: 5000,
     });
     return;
@@ -465,14 +525,14 @@ const confirmEditDueDates = async () => {
 
     toast.add({
       severity: "success",
-      summary: "Venciments actualitzats",
+      summary: t("purchase.purchaseInvoice.messages.dueDatesUpdated"),
       life: 4000,
     });
     isDueDateEditing.value = false;
   } catch (e: any) {
     toast.add({
       severity: "error",
-      summary: "Error guardant venciments",
+      summary: t("purchase.purchaseInvoice.messages.dueDatesSaveError"),
       detail: e?.message ?? "",
       life: 6000,
     });

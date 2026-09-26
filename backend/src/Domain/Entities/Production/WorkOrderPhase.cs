@@ -45,4 +45,5 @@ public class WorkOrderPhase : Entity
     public PurchaseOrder? PurchaseOrder { get; set; }
     public ICollection<WorkOrderPhaseDetail> Details { get; set; } = [];
     public ICollection<WorkOrderPhaseBillOfMaterials> BillOfMaterials { get; set; } = [];
+    public ICollection<WorkOrderPhaseRejection> Rejections { get; set; } = [];
 }

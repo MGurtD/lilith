@@ -5,6 +5,7 @@ const Warehouses = () => import("./views/Warehouses.vue");
 const Stocks = () => import("./views/Stocks.vue");
 const StockMovements = () => import("./views/StockMovements.vue");
 const Inventory = () => import("./views/Inventory.vue");
+const LotTraceability = () => import("./views/LotTraceability.vue");
 
 export default [
   {
@@ -36,5 +37,11 @@ export default [
     name: "inventory",
     component: Inventory,
     meta: { helpKey: "warehouse/inventory/list" },
+  },
+  {
+    path: "/lot-traceability",
+    name: "lotTraceability",
+    component: LotTraceability,
+    meta: { helpKey: "warehouse/lot-traceability/list" },
   },
 ] as Array<RouteRecordRaw>;

@@ -1,81 +1,100 @@
-<template>
-  <form v-if="phaseTemplate">
-    <div class="grid_add_row_button">
-      <Button label="Guardar" size="small" @click="submitForm" />
-      <br />
-    </div>
-    <section class="three-columns">
-      <div>
-        <BaseInput
-          label="Nom"
-          v-model="phaseTemplate.name"
-          :class="{ 'p-invalid': validation.errors.name }"
-        />
-      </div>
-      <div>
-        <BaseInput
-          label="Descripció"
-          v-model="phaseTemplate.description"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Desactivat</label>
-        <Checkbox v-model="phaseTemplate.disabled" class="w-full" :binary="true" />
-      </div>
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { PhaseTemplate } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { booleanValue, stringValue } from "@/components/forms/value-utils";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import type { PhaseTemplate } from "../types";
 
 const props = defineProps<{
   phaseTemplate: PhaseTemplate;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", phaseTemplate: PhaseTemplate): void;
-  (e: "cancel"): void;
+  (event: "submit", phaseTemplate: PhaseTemplate): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 
-const schema = Yup.object().shape({
-  name: Yup.string().required("El nom és obligatori"),
+// The parent refetches the template (and its details collection) whenever a
+// detail changes, so the form receives a stable scalar snapshot instead of
+// the whole entity; it only resets when a form-owned value really changes.
+type PhaseTemplateScalars = Pick<
+  PhaseTemplate,
+  "id" | "name" | "description" | "disabled"
+>;
+
+const scalarSnapshot = (model: PhaseTemplate): PhaseTemplateScalars => ({
+  id: model.id,
+  name: model.name,
+  description: model.description,
+  disabled: model.disabled,
 });
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.phaseTemplate);
-};
+const initialValues = ref(scalarSnapshot(props.phaseTemplate));
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.phaseTemplate);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+watch(
+  () => scalarSnapshot(props.phaseTemplate),
+  (next) => {
+    const current = initialValues.value;
+    if (
+      next.id !== current.id ||
+      next.name !== current.name ||
+      next.description !== current.description ||
+      next.disabled !== current.disabled
+    ) {
+      initialValues.value = next;
+    }
+  },
+);
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("phaseTemplates.fields.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("phaseTemplates.validation.nameRequired"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("common.description"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "disabled",
+        label: t("phaseTemplates.fields.disabled"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+]);
+
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.phaseTemplate,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    disabled: booleanValue(values.disabled, false),
+  });
 };
 </script>
+
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+  />
+</template>

@@ -10,11 +10,12 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-l text-900 font-bold">Albarans associats</span>
+          <span class="text-l text-900 font-bold">{{ t("purchase.receipts.associated") }}</span>
           <div>
             <Button
               :size="'small'"
               :icon="PrimeIcons.PLUS"
+              :aria-label="t('purchase.receipts.actions.add')"
               rounded
               @click="onAddRow"
             />
@@ -22,13 +23,13 @@
         </div>
       </slot>
     </template>
-    <Column field="number" header="Número Albarà" style="width: 15%" />
+    <Column field="number" :header="t('purchase.receipts.columns.supplierNumber')" style="width: 15%" />
     <Column
       field="supplierNumber"
-      header="Número Proveïdor"
+      :header="t('purchase.receipts.columns.providerNumber')"
       style="width: 15%"
     />
-    <Column field="date" header="Data" style="width: 15%">
+    <Column field="date" :header="t('purchase.receipts.columns.date')" style="width: 15%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
@@ -44,6 +45,7 @@
       <template #body="slotProps">
         <i
           :class="PrimeIcons.TIMES"
+          :aria-label="t('purchase.receipts.actions.delete')"
           class="grid_delete_column_button"
           @click="onDeleteRow($event, slotProps.data)"
         />
@@ -54,8 +56,11 @@
 <script setup lang="ts">
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
+import { useI18n } from "vue-i18n";
 import { Receipt } from "../types";
 import { formatDate } from "../../../utils/functions";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   receipts: Array<Receipt> | undefined;

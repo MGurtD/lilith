@@ -8,7 +8,7 @@
       filter
       :filter-fields="['name', 'description']"
       :options="referenceTypeStore.referenceTypes"
-      placeholder="Selecciona..."
+      :placeholder="$t('shared.dropdowns.selectPlaceholder')"
       optionValue="id"
       :optionLabel="(r) => r.name + ' - ' + r.description"
       class="w-full"

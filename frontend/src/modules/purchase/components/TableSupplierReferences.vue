@@ -19,7 +19,7 @@
       v-if="supplierReferences"
       :value="supplierReferences"
       tableStyle="min-width: 100%"
-      :scroll-height="'calc(100vh - 260px)'"
+      :scroll-height="'calc(100dvh - 260px)'"
       sortField="supplierCode"
       :sortOrder="1"
       @row-click="rowContactClick"
@@ -43,7 +43,7 @@
       </template>
       <Column
         v-if="supplierId"
-        header="Referència"
+        :header="t('purchase.supplierReference.columns.reference')"
         field="referenceId"
         style="width: 25%"
       >
@@ -53,7 +53,7 @@
       </Column>
       <Column
         v-if="referenceId"
-        header="Proveïdor"
+        :header="t('purchase.supplierReference.columns.supplier')"
         field="supplierId"
         style="width: 25%"
         sortable
@@ -63,25 +63,25 @@
         </template>
       </Column>
       <Column
-        header="Codi proveïdor"
+        :header="t('purchase.supplierReference.columns.supplierCode')"
         field="supplierCode"
         style="width: 20%"
         sortable
       >
       </Column>
       <Column
-        header="Descripció"
+        :header="t('purchase.supplierReference.columns.description')"
         field="supplierDescription"
         style="width: 25%"
         sortable
       ></Column>
-      <Column header="Preu" field="supplierPrice" style="width: 20%" sortable>
+      <Column :header="t('purchase.supplierReference.columns.price')" field="supplierPrice" style="width: 20%" sortable>
         <template #body="slotProps">
           {{ formatCurrency(slotProps.data.supplierPrice) }}
         </template>
       </Column>
       <Column
-        header="Dies submin."
+        :header="t('purchase.supplierReference.columns.supplyDays')"
         field="supplyDays"
         style="width: 20%"
         sortable
@@ -100,23 +100,24 @@
 </template>
 <script setup lang="ts">
 import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
 import { useSuppliersStore } from "../store/suppliers";
 import FormSupplierReference from "./FormSupplierReference.vue";
 import { SupplierReference } from "../types";
-import { formatCurrency } from "../../../utils/functions";
+import { formatCurrency, getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useToast } from "primevue/usetoast";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const confirm = useConfirm();
 const referenceStore = useReferenceStore();
 const supplierStore = useSuppliersStore();
 const formMode = ref(FormActionMode.CREATE);
+const { t } = useI18n();
 
 const props = defineProps<{
   title: string;
@@ -137,7 +138,7 @@ const dialogVisible = ref(false);
 
 const createButtonClick = () => {
   selectedReference.value = {
-    id: uuidv4(),
+    id: getNewUuid(),
     disabled: false,
     supplierId: props.supplierId ? props.supplierId : "",
     referenceId: props.referenceId ? props.referenceId : "",
@@ -156,23 +157,24 @@ const rowContactClick = (row: DataTableRowClickEvent) => {
       "grid_delete_column_button"
     )
   ) {
-    selectedReference.value = row.data;
+    selectedReference.value = { ...(row.data as SupplierReference) };
     formMode.value = FormActionMode.EDIT;
     dialogVisible.value = true;
   }
 };
 
-const submitForm = () => {
-  const reference = selectedReference.value as SupplierReference;
+const submitForm = (reference: SupplierReference) => {
   if (formMode.value === FormActionMode.CREATE) {
-    var exists = supplierStore.supplierReferences?.find(
-      (r) => r.referenceId === reference.referenceId
+    const exists = props.supplierReferences.some(
+      (item) =>
+        item.referenceId === reference.referenceId &&
+        item.supplierId === reference.supplierId,
     );
     if (exists) {
       toast.add({
         severity: "warn",
-        summary: "Creació de referència",
-        detail: "La referència ja existeix",
+        summary: t("purchase.supplierReference.messages.creation"),
+        detail: t("purchase.supplierReference.messages.alreadyExists"),
       });
       return;
     }
@@ -189,7 +191,7 @@ const submitForm = () => {
 const deleteReferences = (event: any, contact: SupplierReference) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar la referència?`,
+    message: t("purchase.supplierReference.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

@@ -11,9 +11,10 @@
   <main class="main" v-if="workorderPhase">
     <Tabs value="0">
       <TabList>
-        <Tab value="0">Pasos</Tab>
-        <Tab value="1">Materials</Tab>
-        <Tab value="2">Comentaris</Tab>
+        <Tab value="0">{{ pt("Pasos") }}</Tab>
+        <Tab value="1">{{ pt("Materials") }}</Tab>
+        <Tab value="2">{{ pt("Comentaris") }}</Tab>
+        <Tab value="3">{{ t("production.rejections.title") }}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel value="0">
@@ -40,7 +41,7 @@
               <template #title>
                 <div class="comment-header">
                   <i :class="PrimeIcons.COMMENT" class="comment-icon"></i>
-                  <span>Comentari de Fase</span>
+                  <span>{{ pt("Comentari de Fase") }}</span>
                 </div>
               </template>
               <template #content>
@@ -49,14 +50,17 @@
                 </div>
                 <div v-else class="empty-comment">
                   <i :class="PrimeIcons.INFO_CIRCLE" class="empty-icon"></i>
-                  <p class="empty-text">Aquesta fase no té cap comentari</p>
+                  <p class="empty-text">{{ pt("Aquesta fase no té cap comentari") }}</p>
                   <small class="empty-subtext">
-                    Els comentaris es poden afegir des del mòdul de planta durant la fabricació
+                    {{ pt("Els comentaris es poden afegir des del mòdul de planta durant la fabricació") }}
                   </small>
                 </div>
               </template>
             </Card>
           </div>
+        </TabPanel>
+        <TabPanel value="3">
+          <TableWorkorderPhaseRejections :rejections="phaseRejections" />
         </TabPanel>
       </TabPanels>
     </Tabs>
@@ -71,26 +75,33 @@
         v-if="selectedDetail"
         :detail="selectedDetail"
         @submit="onWorkOrderPhaseDetailSubmit"
-      ></FormWorkOrderPhaseDetail>
+        @cancel="dialogOptions.visible = false"
+      />
       <FormWorkOrderPhaseBomItem
         v-if="selectedBomItem"
         :bomItem="selectedBomItem"
         @submit="onWorkmasterPhasBomItemSubmit"
-      ></FormWorkOrderPhaseBomItem>
+        @cancel="dialogOptions.visible = false"
+      />
     </Dialog>
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkOrderPhase from "../components/FormWorkorderPhase.vue";
 import TableWorkOrderPhaseDetails from "../components/TableWorkorderPhaseDetails.vue";
 import FormWorkOrderPhaseDetail from "../components/FormWorkorderPhaseDetail.vue";
 import TableWorkOrderPhaseBillOfMaterials from "../components/TableWorkorderPhaseBillOfMaterials.vue";
 import FormWorkOrderPhaseBomItem from "../components/FormWorkorderPhaseBomItem.vue";
+import TableWorkorderPhaseRejections from "../components/TableWorkorderPhaseRejections.vue";
 
 import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
+import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { usePlantModelStore } from "../store/plantmodel";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
@@ -98,7 +109,9 @@ import {
   WorkOrderPhase,
   WorkOrderPhaseBillOfMaterials,
   WorkOrderPhaseDetail,
+  WorkOrderPhaseRejection,
 } from "../types";
+import ProductionServices from "../services";
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import { useWorkOrderStore } from "../store/workorder";
 import { useToast } from "primevue/usetoast";
@@ -109,15 +122,17 @@ const store = useStore();
 const referenceStore = useReferenceStore();
 const plantModelStore = usePlantModelStore();
 const workorderStore = useWorkOrderStore();
+const lifecycleStore = useLifecyclesStore();
 const { workorder, workorderPhase } = storeToRefs(workorderStore);
 const id = ref("");
 const phaseId = ref("");
+const phaseRejections = ref<Array<WorkOrderPhaseRejection>>([]);
 const workorderPhaseForm =
   ref<InstanceType<typeof FormWorkOrderPhase> | null>(null);
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Fase",
+  title: pt("Fase"),
   closable: true,
   position: "center",
   modal: true,
@@ -129,9 +144,12 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ordre de fabricació`;
+  pageTitle = t("production.detail.workorderTitle");
   if (workorder.value && workorderPhase.value) {
-    pageTitle = `${pageTitle} ${workorder.value.code} - Fase ${workorderPhase.value.code}`;
+    pageTitle = t("production.detail.workorderPhaseTitle", {
+      code: workorder.value.code,
+      phaseCode: workorderPhase.value.code,
+    });
   }
 
   store.setMenuItem({
@@ -146,7 +164,23 @@ onMounted(async () => {
 
 const loadViewData = async () => {
   await workorderStore.fetchPhaseById(phaseId.value);
+  // The header needs the work order; it is only in the store when the user
+  // came from the work order screen, not on a direct load of this URL.
+  if (workorder.value?.id !== id.value) {
+    await workorderStore.fetchOne(id.value);
+  }
+  // The status dropdown names the current status from the loaded lifecycle.
+  if (lifecycleStore.lifecycle?.name !== "WorkOrder") {
+    await lifecycleStore.fetchOneByName("WorkOrder");
+  }
+  phaseRejections.value =
+    (await ProductionServices.WorkOrderPhase.getRejections(phaseId.value)) ?? [];
 };
+
+// Step and material changes reload the phase; send the header as currently
+// edited so unsaved header changes are persisted instead of lost.
+const headerPhase = (): WorkOrderPhase =>
+  workorderPhaseForm.value?.currentPhase() ?? workorderStore.workorderPhase!;
 
 const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
   const updated = await workorderStore.updatePhase(phaseId.value, phase);
@@ -157,8 +191,8 @@ const onWorkOrderPhaseSubmit = async (phase: WorkOrderPhase) => {
 
     toast.add({
       severity: "success",
-      summary: "Fase actualitzada",
-      detail: `La fase ${phase.code} ha estat actualitzada correctament`,
+      summary: pt("Fase actualitzada"),
+      detail: pt("Fase actualitzada correctament"),
       life: 10000,
     });
   }
@@ -178,21 +212,18 @@ const onAddDetail = (detail: WorkOrderPhaseDetail) => {
   formAction.value = FormActionMode.CREATE;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Afegir pas de fabricació";
+  dialogOptions.title = t("production.detail.createPhaseStep");
   dialogOptions.visible = true;
 };
 const onEditDetail = (detail: WorkOrderPhaseDetail) => {
   formAction.value = FormActionMode.EDIT;
   selectedDetail.value = detail;
 
-  dialogOptions.title = "Modificar pas de fabricació";
+  dialogOptions.title = t("production.detail.editPhaseStep");
   dialogOptions.visible = true;
 };
 const onDeleteDetail = async (detail: WorkOrderPhaseDetail) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseDetail(detail.id);
 };
 
@@ -203,10 +234,7 @@ const onWorkOrderPhaseDetailSubmit = async (detail: WorkOrderPhaseDetail) => {
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseDetail(detail.id, detail);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {
@@ -219,21 +247,18 @@ const onAddBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.CREATE;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Afegir material";
+  dialogOptions.title = t("production.detail.createMaterial");
   dialogOptions.visible = true;
 };
 const onEditBomItem = (bomItem: WorkOrderPhaseBillOfMaterials) => {
   formAction.value = FormActionMode.EDIT;
   selectedBomItem.value = bomItem;
 
-  dialogOptions.title = "Modificar material";
+  dialogOptions.title = t("production.detail.editMaterial");
   dialogOptions.visible = true;
 };
 const onDeleteBomItem = async (bomItem: WorkOrderPhaseBillOfMaterials) => {
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   await workorderStore.deletePhaseBomItem(bomItem.id);
 };
 
@@ -246,10 +271,7 @@ const onWorkmasterPhasBomItemSubmit = async (
   } else if (formAction.value === FormActionMode.EDIT) {
     promise = workorderStore.updatePhaseBomItem(bomItem.id, bomItem);
   }
-  await workorderStore.updatePhase(
-    phaseId.value,
-    workorderStore.workorderPhase!,
-  );
+  await workorderStore.updatePhase(phaseId.value, headerPhase());
   const result = await promise;
 
   if (result) {

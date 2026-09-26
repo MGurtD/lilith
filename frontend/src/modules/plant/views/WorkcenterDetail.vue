@@ -1,166 +1,216 @@
 <template>
-  <div class="workcenter-detail">
-    <!-- Main content -->
-    <main class="workcenter-main" v-if="workcenter">
-      <div class="content-layout">
-        <!-- Left panel - Realtime data -->
-        <aside class="realtime-panel">
-          <WorkcenterRealtimePanel :workcenter="workcenter" />
-        </aside>
+  <div class="wc-detail">
+    <template v-if="workcenter">
+      <WorkcenterPlaca
+        :workcenter="workcenter"
+        :compact="isPhone"
+        @clock-in="handleOperatorClockIn"
+        @clock-out="handleOperatorClockOut"
+      />
 
-        <!-- Right panel - Tabs -->
-        <section class="tabs-panel">
-          <Tabs v-model:value="activeTab">
-            <TabList>
-              <Tab value="0">
-                <div class="flex align-items-center gap-2">
-                  <i :class="PrimeIcons.CALENDAR"></i>
-                  <span class="font-bold">Fases disponibles</span>
-                </div>
-              </Tab>
-              <Tab v-if="hasLoadedPhase" value="1">
-                <div class="flex align-items-center gap-2">
-                  <i :class="PrimeIcons.FILE"></i>
-                  <span class="font-bold">Documentació</span>
-                </div>
-              </Tab>
-              <Tab v-if="hasLoadedPhase" value="2">
-                <div class="flex align-items-center gap-2">
-                  <i :class="PrimeIcons.COMMENTS"></i>
-                  <span class="font-bold">Comentaris</span>
-                </div>
-              </Tab>
-              <Tab v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
-                <div class="flex align-items-center gap-2">
-                  <i :class="PrimeIcons.BOX"></i>
-                  <span class="font-bold">Materials</span>
-                </div>
-              </Tab>
-            </TabList>
-            <TabPanels>
-              <!-- Available Phases Tab -->
-              <TabPanel value="0">
-                <WorkcenterWorkOrderSelector
-                  :workcenterTypeId="workcenter.config.workcenterTypeId"
-                  @workorder-selected="handleWorkOrderSelected"
-                />
-              </TabPanel>
+      <section class="wc-detail__tabs">
+        <Tabs v-model:value="activeTab" scrollable>
+          <TabList>
+            <Tab v-if="hasLoadedPhase" value="current">{{
+              t("plant.detail.tabs.current")
+            }}</Tab>
+            <Tab value="queue">{{ t("plant.detail.tabs.queue") }}</Tab>
+            <Tab v-if="hasLoadedPhase" value="docs">{{
+              t("plant.detail.tabs.docs")
+            }}</Tab>
+            <Tab v-if="hasLoadedPhase" value="notes">{{
+              t("plant.detail.tabs.notes")
+            }}</Tab>
+            <Tab
+              v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials"
+              value="bom"
+              >{{ t("plant.detail.tabs.bom") }}</Tab
+            >
+          </TabList>
+          <TabPanels>
+            <TabPanel v-if="hasLoadedPhase" value="current">
+              <PhaseTimeSummary />
+            </TabPanel>
+            <TabPanel value="queue">
+              <WorkcenterWorkOrderSelector
+                :workcenterTypeId="workcenter.config.workcenterTypeId"
+                @workorder-selected="handleWorkOrderSelected"
+              />
+            </TabPanel>
+            <TabPanel v-if="hasLoadedPhase" value="docs">
+              <WorkcenterDocumentation :workcenter="workcenter" />
+            </TabPanel>
+            <TabPanel v-if="hasLoadedPhase" value="notes">
+              <WorkcenterComments
+                :loadedWorkOrders="workcenterStore.loadedWorkOrdersPhases"
+              />
+            </TabPanel>
+            <TabPanel
+              v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials"
+              value="bom"
+            >
+              <WorkcenterMaterials />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </section>
+    </template>
 
-              <!-- Documentation Tab -->
-              <TabPanel v-if="hasLoadedPhase" value="1">
-                <WorkcenterDocumentation :workcenter="workcenter" />
-              </TabPanel>
-
-              <!-- Comments Tab -->
-              <TabPanel v-if="hasLoadedPhase" value="2">
-                <WorkcenterComments
-                  :loadedWorkOrders="workcenterStore.loadedWorkOrdersPhases"
-                />
-              </TabPanel>
-
-              <!-- Materials Tab -->
-              <TabPanel v-if="hasLoadedPhase && activePhaseStore.hasBillOfMaterials" value="3">
-                <WorkcenterMaterials />
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </section>
-      </div>
-    </main>
-
-    <!-- Bottom panel - Touch device buttons -->
-    <footer class="touch-panel">
-      <!-- Operator Group -->
-      <div class="action-group operator-group">
-        <span class="group-label">Operari</span>
-        <div class="group-buttons">
-          <Button
-            v-if="!isOperatorClockedIn"
-            :icon="PrimeIcons.SIGN_IN"
-            label="Entrar"
-            severity="primary"
-            class="touch-button"
-            :disabled="!canManageOperators"
-            @click="handleOperatorClockIn"
-          />
-          <Button
-            v-else
-            :icon="PrimeIcons.SIGN_OUT"
-            label="Sortir"
-            severity="primary"
-            class="touch-button"
-            :disabled="!canManageOperators"
-            @click="handleOperatorClockOut"
-          />
-        </div>
-      </div>
-
-      <!-- Machine Status Group (always visible, dynamic buttons only when phase loaded) -->
-      <div class="action-group activity-group">
-        <span class="group-label">Estat màquina</span>
-        <div class="group-buttons">
-          <!-- Dynamic activity buttons from phase details (only when phase loaded) -->
-          <template v-if="hasLoadedPhase">
+    <!-- Action dock: where the thumb reaches. -->
+    <footer class="wc-dock" :class="{ 'wc-dock--phone': isPhone }">
+      <template v-if="!isPhone">
+        <div class="wc-dock__group" role="group" aria-labelledby="wc-dock-status">
+          <span id="wc-dock-status" class="wc-dock__label">{{
+            t("plant.detail.statusGroup")
+          }}</span>
+          <div class="wc-dock__buttons">
+            <button
+              v-for="key in statusKeys"
+              :key="key.id"
+              type="button"
+              class="wc-key"
+              :class="{ 'wc-key--current': key.current }"
+              :style="key.current ? key.style : undefined"
+              :aria-pressed="key.current"
+              :disabled="key.current"
+              @click="key.action()"
+            >
+              <span class="wc-key__swatch" :style="{ background: key.color }"></span>
+              {{ key.name }}
+            </button>
             <Button
-              v-for="detail in phaseActivityButtons"
-              :key="detail.machineStatusId"
-              :label="detail.machineStatusName"
-              :icon="detail.machineStatusIcon"
-              :style="{
-                '--btn-bg': normalizeColor(detail.machineStatusColor),
-                '--btn-color': getContrastColor(detail.machineStatusColor),
-              }"
-              class="touch-button activity-button"
-              @click="handleActivityChange(detail.machineStatusId!)"
+              icon="pi pi-ellipsis-h"
+              :label="t('plant.detail.otherStatuses')"
+              outlined
+              severity="secondary"
+              class="wc-dock__button"
+              @click="handleMachineStatusChange"
             />
-          </template>
-          <!-- Close machine button (Parada) - always visible, disabled when machine is closed -->
-          <Button
-            v-if="closedStatus"
-            :icon="closedStatus.icon"
-            :label="closedStatus.name"
-            :disabled="isMachineClosed"
-            :style="{
-              '--btn-bg': normalizeColor(closedStatus.color),
-              '--btn-color': getContrastColor(closedStatus.color),
-            }"
-            class="touch-button activity-button"
-            @click="handleCloseMachine"
-          />
-          <!-- Other statuses - always visible -->
-          <Button
-            :icon="PrimeIcons.PLUS"
-            label="Altres"
-            severity="primary"
-            class="touch-button"
-            @click="handleMachineStatusChange"
-          />
+          </div>
         </div>
-      </div>
+        <span class="wc-dock__spacer"></span>
+        <div
+          v-if="hasLoadedPhase"
+          class="wc-dock__group"
+          role="group"
+          aria-labelledby="wc-dock-phase"
+        >
+          <span id="wc-dock-phase" class="wc-dock__label">{{
+            t("plant.detail.phaseGroup")
+          }}</span>
+          <div class="wc-dock__buttons">
+            <Button
+              icon="pi pi-plus"
+              :label="t('plant.detail.declare')"
+              class="wc-dock__button wc-dock__button--primary"
+              @click="phaseQuantitiesVisible = true"
+            />
+            <Button
+              icon="pi pi-check"
+              :label="t('plant.detail.finish')"
+              outlined
+              class="wc-dock__button wc-dock__button--finish"
+              @click="handleWorkOrderPhaseClose"
+            />
+          </div>
+        </div>
+        <p v-else class="wc-dock__hint">{{ t("plant.detail.noPhaseActions") }}</p>
+      </template>
 
-      <!-- Phase Group (only if phase is loaded) -->
-      <div class="action-group phase-group">
-        <span class="group-label">Fase</span>
-        <div class="group-buttons">
-          <Button
-            :icon="PrimeIcons.PLUS"
-            label="Afegir qtt."
-            severity="primary"
-            class="touch-button"
-            @click="phaseQuantitiesVisible = true"
-            :disabled="!hasLoadedPhase"
-          />
-          <Button
-            :icon="PrimeIcons.CHECK_CIRCLE"
-            label="Finalitzar"
-            severity="primary"
-            class="touch-button"
-            @click="handleWorkOrderPhaseClose"
-            :disabled="!hasLoadedPhase"
-          />
-        </div>
-      </div>
+      <template v-else>
+        <Button
+          outlined
+          severity="secondary"
+          class="wc-dock__button wc-dock__button--stack"
+          aria-haspopup="dialog"
+          @click="sheet = 'status'"
+        >
+          <span class="wc-key__swatch" :style="{ background: currentStatusColor }"></span>
+          {{ t("plant.detail.status") }}
+        </Button>
+        <Button
+          v-if="hasLoadedPhase"
+          icon="pi pi-plus"
+          :label="t('plant.detail.declareShort')"
+          :aria-label="t('plant.detail.declare')"
+          class="wc-dock__button wc-dock__button--primary"
+          @click="phaseQuantitiesVisible = true"
+        />
+        <Button
+          icon="pi pi-ellipsis-h"
+          :label="t('plant.detail.more')"
+          outlined
+          severity="secondary"
+          class="wc-dock__button"
+          aria-haspopup="dialog"
+          @click="sheet = 'more'"
+        />
+      </template>
     </footer>
+
+    <!-- Phone sheets -->
+    <Drawer
+      :visible="sheet !== null"
+      position="bottom"
+      class="plant-sheet"
+      :header="sheetTitle"
+      @update:visible="onSheetVisible"
+    >
+      <div v-if="sheet === 'status'" class="plant-sheet__list">
+        <button
+          v-for="key in statusKeys"
+          :key="key.id"
+          type="button"
+          class="plant-sheet__row"
+          :aria-pressed="key.current"
+          :disabled="key.current"
+          @click="runFromSheet(key.action)"
+        >
+          <span
+            class="wc-key__swatch wc-key__swatch--large"
+            :style="{ background: key.color }"
+          ></span>
+          <span class="plant-sheet__name">{{ key.name }}</span>
+          <span v-if="key.current" class="plant-sheet__note">{{
+            t("plant.detail.current")
+          }}</span>
+        </button>
+        <button
+          type="button"
+          class="plant-sheet__row"
+          @click="runFromSheet(handleMachineStatusChange)"
+        >
+          <i class="pi pi-ellipsis-h plant-sheet__icon" aria-hidden="true"></i>
+          <span class="plant-sheet__name">{{ t("plant.detail.otherStatuses") }}</span>
+        </button>
+      </div>
+      <div v-else-if="sheet === 'more'" class="plant-sheet__list">
+        <button
+          v-if="hasLoadedPhase"
+          type="button"
+          class="plant-sheet__row"
+          @click="runFromSheet(handleWorkOrderPhaseClose)"
+        >
+          <i class="pi pi-check plant-sheet__icon" aria-hidden="true"></i>
+          <span class="plant-sheet__name">{{ t("plant.detail.finish") }}</span>
+        </button>
+        <button
+          type="button"
+          class="plant-sheet__row"
+          :disabled="!canManageOperators"
+          @click="runFromSheet(toggleClock)"
+        >
+          <i
+            class="pi plant-sheet__icon"
+            :class="isOperatorClockedIn ? 'pi-sign-out' : 'pi-sign-in'"
+            aria-hidden="true"
+          ></i>
+          <span class="plant-sheet__name">{{
+            isOperatorClockedIn ? t("plant.placa.leave") : t("plant.placa.enter")
+          }}</span>
+        </button>
+      </div>
+    </Drawer>
 
     <!-- Machine Status Selector Dialog -->
     <MachineStatusSelector
@@ -201,13 +251,12 @@
     />
 
     <!-- Phase Quantities Dialog -->
-    <WorkOrderPhaseQuantities
-      v-model:visible="phaseQuantitiesVisible"
-    />
+    <WorkOrderPhaseQuantities v-model:visible="phaseQuantitiesVisible" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
@@ -219,7 +268,10 @@ import {
   usePlantDataStore,
   usePlantActivePhaseStore,
 } from "../store";
-import WorkcenterRealtimePanel from "../components/workcenter-detail/WorkcenterRealtimePanel.vue";
+import Drawer from "primevue/drawer";
+import { useIsPhone } from "@/composables/useIsPhone";
+import WorkcenterPlaca from "../components/workcenter-detail/WorkcenterPlaca.vue";
+import PhaseTimeSummary from "../components/workcenter-detail/PhaseTimeSummary.vue";
 import WorkcenterDocumentation from "../components/workcenter-detail/WorkcenterDocumentation.vue";
 import WorkcenterComments from "../components/workcenter-detail/WorkcenterComments.vue";
 import WorkcenterMaterials from "../components/workcenter-detail/WorkcenterMaterials.vue";
@@ -238,8 +290,12 @@ import {
   LoadWorkOrderPhaseRequest,
   UnloadWorkOrderPhaseRequest,
 } from "../types";
+import { WorkOrderPhaseRejectionRequest } from "../../production/types";
 import actionsService from "../services/actions.service";
-import { normalizeColor, isColorLight } from "@/utils/functions";
+import { normalizeColor } from "@/utils/functions";
+import { statusSignal } from "../utils/statusSignal";
+
+const { t } = useI18n();
 
 const route = useRoute();
 const toast = useToast();
@@ -251,7 +307,9 @@ const activePhaseStore = usePlantActivePhaseStore();
 const { connect } = useWebSocketConnection();
 
 const id = route.params.id as string;
-const activeTab = ref("0");
+const isPhone = useIsPhone();
+const activeTab = ref("queue");
+const sheet = ref<"status" | "more" | null>(null);
 const statusSelectorVisible = ref(false);
 const workOrderLoaderVisible = ref(false);
 const workOrderUnloaderVisible = ref(false);
@@ -314,14 +372,72 @@ const currentLoadedPhase = computed(() => {
   return workcenterStore.loadedWorkOrdersPhases?.[0]?.phases?.[0];
 });
 
-// Computed para obtener los botones de actividad (excluyendo estado actual)
-const phaseActivityButtons = computed(() => {
-  const details = currentLoadedPhase.value?.details ?? [];
+// Status keys of the dock: the phase's activities (when a phase is loaded)
+// and the closed status; the current one is filled with its colour.
+const statusKeys = computed(() => {
   const currentStatusId = workcenter.value?.realtime?.statusId;
-  return details
-    .filter((d) => d.machineStatusId !== currentStatusId)
-    .sort((a, b) => a.order - b.order);
+  const keys: {
+    id: string;
+    name: string;
+    color: string;
+    current: boolean;
+    style: Record<string, string>;
+    action: () => void;
+  }[] = [];
+  const add = (id: string, name: string, color: string, action: () => void) => {
+    if (keys.some((key) => key.id === id)) return;
+    keys.push({
+      id,
+      name,
+      color: normalizeColor(color),
+      current: id === currentStatusId,
+      style: statusSignal(color).style,
+      action,
+    });
+  };
+  if (hasLoadedPhase.value) {
+    [...(currentLoadedPhase.value?.details ?? [])]
+      .sort((a, b) => a.order - b.order)
+      .forEach((detail) => {
+        if (detail.machineStatusId) {
+          const statusId = detail.machineStatusId;
+          add(statusId, detail.machineStatusName, detail.machineStatusColor, () =>
+            handleActivityChange(statusId),
+          );
+        }
+      });
+  }
+  if (closedStatus.value) {
+    add(closedStatus.value.id, closedStatus.value.name, closedStatus.value.color, () =>
+      handleCloseMachine(),
+    );
+  }
+  return keys;
 });
+
+const currentStatusColor = computed(() => {
+  const statusId = workcenter.value?.realtime?.statusId;
+  const color = statusId ? dataStore.getMachineStatusById(statusId)?.color : undefined;
+  return statusSignal(color).band;
+});
+
+const sheetTitle = computed(() =>
+  sheet.value === "status"
+    ? t("plant.detail.changeStatus")
+    : t("plant.detail.moreActions"),
+);
+
+const onSheetVisible = (visible: boolean) => {
+  if (!visible) sheet.value = null;
+};
+
+const runFromSheet = (action: () => unknown) => {
+  sheet.value = null;
+  void action();
+};
+
+const toggleClock = () =>
+  isOperatorClockedIn.value ? handleOperatorClockOut() : handleOperatorClockIn();
 
 // Computed para obtener los IDs de estados a excluir del selector "Altres"
 // Excluye: estado actual, estado "Parada" (closed), y estados dinámicos de la fase
@@ -349,15 +465,9 @@ const excludeStatusIds = computed(() => {
   return ids;
 });
 
-// Utilidad para calcular color de contraste (texto blanco o negro) - usa isColorLight de functions.ts
-const getContrastColor = (hexColor: string): string => {
-  const normalized = normalizeColor(hexColor);
-  return isColorLight(normalized) ? "#000000" : "#ffffff";
-};
-
 const loadMaterialsProvisioningIfNeeded = async () => {
   if (
-    activeTab.value !== "3" ||
+    activeTab.value !== "bom" ||
     !hasLoadedPhase.value ||
     !activePhaseStore.hasBillOfMaterials
   ) {
@@ -374,7 +484,7 @@ onMounted(async () => {
   if (!workcenter.value) {
     toast.add({
       severity: "error",
-      summary: "Centre de treball no trobat",
+      summary: t("plant.messages.workcenterNotFound"),
       life: 4000,
     });
     return;
@@ -393,21 +503,18 @@ onMounted(async () => {
   // 4. Carregar ubicacions associades al workcenter sense bloquejar la resta del flux
   void workcenterStore.fetchWorkcenterLocations(id);
 
-  // 5. Establir pestanya activa segons si hi ha fase carregada
-  // Si hi ha fase carregada -> Documentació (tab 1), si no -> Fases disponibles (tab 0)
-  activeTab.value = hasLoadedPhase.value ? "1" : "0";
+  // 5. With a phase loaded the screen opens on it, else on the phase list.
+  activeTab.value = hasLoadedPhase.value ? "current" : "queue";
 
   // 6. Connectar WebSocket específic del workcenter
   workcenterStore.connectToWorkcenter(id);
   connect(WS_ENDPOINTS.WORKCENTER(id), { debug: true });
 });
 
-// When phase is unloaded, reset to "Fases disponibles" tab so the user
-// doesn't see a blank panel (the previously-active tab no longer exists).
+// Loading a phase opens it; unloading returns to the phase list (the
+// phase tabs no longer exist).
 watch(hasLoadedPhase, (loaded) => {
-  if (!loaded) {
-    activeTab.value = "0";
-  }
+  activeTab.value = loaded ? "current" : "queue";
 });
 
 watch(
@@ -431,13 +538,13 @@ const handleOperatorClockIn = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Entrada registrada correctament",
+      summary: t("plant.messages.clockInDone"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al registrar l'entrada",
+      summary: t("plant.messages.operatorClockInError"),
       life: 4000,
     });
   }
@@ -448,13 +555,13 @@ const handleOperatorClockOut = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Sortida registrada correctament",
+      summary: t("plant.messages.clockOutDone"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al registrar la sortida",
+      summary: t("plant.messages.clockOutError"),
       life: 4000,
     });
   }
@@ -469,7 +576,7 @@ const handleCloseMachine = async () => {
   if (!closedStatus.value) {
     toast.add({
       severity: "error",
-      summary: "No s'ha trobat l'estat de màquina tancada",
+      summary: t("plant.messages.closedMachineStatusNotFound"),
       life: 4000,
     });
     return;
@@ -484,7 +591,7 @@ const handleCloseMachine = async () => {
     if (!loadedWorkOrder) {
       toast.add({
         severity: "error",
-        summary: "No s'han pogut carregar les dades de l'ordre",
+        summary: t("plant.messages.workOrderDataLoadError"),
         life: 4000,
       });
       return;
@@ -497,7 +604,7 @@ const handleCloseMachine = async () => {
     if (!currentPhase) {
       toast.add({
         severity: "error",
-        summary: "No s'ha pogut trobar la fase actual",
+        summary: t("plant.messages.currentPhaseNotFound"),
         life: 4000,
       });
       return;
@@ -527,13 +634,13 @@ const handleCloseMachine = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Màquina tancada correctament",
+      summary: t("plant.messages.machineClosed"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al tancar la màquina",
+      summary: t("plant.messages.machineCloseError"),
       life: 4000,
     });
   }
@@ -545,13 +652,13 @@ const handleActivityChange = async (statusId: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Activitat canviada correctament",
+      summary: t("plant.messages.activityChanged"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al canviar l'activitat",
+      summary: t("plant.messages.activityChangeError"),
       life: 4000,
     });
   }
@@ -566,13 +673,13 @@ const onStatusChanged = async (request: ChangeMachineStatusRequest) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: "Estat canviat correctament",
+      summary: t("plant.messages.statusChanged"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al canviar l'estat",
+      summary: t("plant.messages.statusChangeError"),
       life: 4000,
     });
   }
@@ -612,15 +719,15 @@ const handlePhaseDetailSelected = async (data: {
     }
     toast.add({
       severity: "success",
-      summary: "Fase de fabricació carregada",
-      detail: "L'activitat s'ha carregat correctament al centre de treball",
+      summary: t("plant.messages.phaseLoaded"),
+      detail: t("plant.messages.activityLoaded"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al carregar la fase",
-      detail: "No s'ha pogut carregar l'activitat",
+      summary: t("plant.messages.phaseLoadError"),
+      detail: t("plant.messages.activityLoadError"),
       life: 4000,
     });
   }
@@ -642,7 +749,7 @@ const handleWorkOrderPhaseClose = async () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "No hi ha cap fase carregada",
+      summary: t("plant.messages.noPhaseLoaded"),
       life: 4000,
     });
     return;
@@ -655,7 +762,7 @@ const handleWorkOrderPhaseClose = async () => {
   if (!loadedWorkOrder) {
     toast.add({
       severity: "error",
-      summary: "No s'han pogut carregar les dades de l'ordre",
+      summary: t("plant.messages.workOrderDataLoadError"),
       life: 4000,
     });
     return;
@@ -669,7 +776,7 @@ const handleWorkOrderPhaseClose = async () => {
   if (!currentPhase) {
     toast.add({
       severity: "error",
-      summary: "No s'ha pogut trobar la fase actual",
+      summary: t("plant.messages.currentPhaseNotFound"),
       life: 4000,
     });
     return;
@@ -694,11 +801,30 @@ const handleWorkOrderPhaseClose = async () => {
   workOrderUnloaderVisible.value = true;
 };
 
-const handlePhaseUnloaded = async (data: UnloadWorkOrderPhaseRequest) => {
+const handlePhaseUnloaded = async (
+  data: UnloadWorkOrderPhaseRequest,
+  rejections: WorkOrderPhaseRejectionRequest[],
+) => {
   const result = await actionsService.client.unloadWorkOrderPhase(data);
 
   if (result) {
     workOrderUnloaderVisible.value = false;
+
+    // The unload endpoint owns the quantities; the reasons behind the KO units
+    // are recorded separately once the unload has succeeded.
+    const rejectionsRegistered = await activePhaseStore.registerPhaseRejections(
+      data.workOrderPhaseId,
+      data.quantityKo,
+      rejections,
+    );
+    if (!rejectionsRegistered) {
+      toast.add({
+        severity: "warn",
+        summary: t("plant.rejections.registerError"),
+        life: 6000,
+      });
+    }
+
     // Refresh available work orders list
     if (workcenter.value?.config.workcenterTypeId) {
       await workcenterStore.fetchAvailableWorkOrders(
@@ -707,13 +833,13 @@ const handlePhaseUnloaded = async (data: UnloadWorkOrderPhaseRequest) => {
     }
     toast.add({
       severity: "success",
-      summary: "Fase finalitzada correctament",
+      summary: t("plant.messages.phaseFinished"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: "Error al finalitzar la fase",
+      summary: t("plant.messages.phaseFinishError"),
       life: 4000,
     });
   }
@@ -721,176 +847,239 @@ const handlePhaseUnloaded = async (data: UnloadWorkOrderPhaseRequest) => {
 </script>
 
 <style scoped>
-.workcenter-detail {
+.wc-detail {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--top-panel-height) - 1rem);
+  gap: 0.75rem;
+  height: calc(100dvh - var(--top-panel-height) - 2.5rem);
   overflow: hidden;
 }
 
-.workcenter-main {
+.wc-detail__tabs {
   flex: 1;
-  overflow: hidden;
-  padding-bottom: 1rem;
-}
-
-.content-layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 1rem;
-  height: 100%;
-}
-
-.realtime-panel {
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-  border-radius: var(--border-radius);
-  overflow-y: auto;
-  height: 100%;
-}
-
-.tabs-panel {
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-  border-radius: var(--border-radius);
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-steel-200);
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.tabs-panel :deep(.p-tabs) {
+.wc-detail__tabs :deep(.p-tabs) {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.tabs-panel :deep(.p-tabpanels) {
+.wc-detail__tabs :deep(.p-tab) {
+  min-height: 52px;
+}
+
+.wc-detail__tabs :deep(.p-tabpanels) {
   flex: 1;
   overflow-y: auto;
+  padding: 0;
 }
 
-.touch-panel {
-  background: var(--p-surface-50);
-  border-top: 1px solid var(--p-surface-border);
-  padding: 0.75rem 1.5rem;
+/* Dock */
+.wc-dock {
+  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.action-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.action-group.operator-group {
-  align-items: flex-start;
-}
-
-.action-group.phase-group {
   align-items: flex-end;
+  gap: 1.5rem;
+  padding: 0.625rem 0.875rem 0.75rem;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-steel-200);
+  border-radius: 4px;
 }
 
-.group-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--p-text-muted-color);
-}
-
-.group-buttons {
+.wc-dock__group {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.wc-dock__label {
+  font-family: var(--font-condensed);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p-steel-600);
+}
+
+.wc-dock__buttons {
+  display: flex;
   flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.wc-dock__spacer {
+  flex: 1;
+}
+
+.wc-dock__button {
+  min-height: 56px;
+  padding-inline: 1rem;
+  font-size: 1rem;
+}
+
+.wc-dock__button--primary {
+  padding-inline: 1.25rem;
+  font-size: 1.0625rem;
+}
+
+.wc-dock__button--finish {
+  color: var(--p-steel-900);
+  border: 2px solid var(--p-steel-900);
+  font-size: 1.0625rem;
+}
+
+.wc-dock__hint {
+  align-self: center;
+  max-width: 20rem;
+  margin: 1.125rem 0 0;
+  text-align: right;
+  font-size: 0.9375rem;
+  color: var(--p-steel-600);
+}
+
+.wc-key {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px var(--p-steel-300);
+  background: var(--p-surface-0);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--p-steel-900);
+  cursor: pointer;
+}
+
+.wc-key:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: 2px;
+}
+
+.wc-key:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px var(--p-steel-500);
+}
+
+.wc-key--current {
+  box-shadow: none;
+  font-weight: 600;
+  cursor: default;
+}
+
+.wc-key__swatch {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.wc-key--current .wc-key__swatch {
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.wc-key__swatch--large {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/* Phones: three buttons; status and more open sheets. */
+.wc-dock--phone {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.wc-dock--phone .wc-dock__button {
   justify-content: center;
+  padding-inline: 0.5rem;
 }
 
-.group-separator {
-  width: 1px;
-  align-self: stretch;
-  background: var(--p-surface-border);
-  margin: 0.5rem 0;
+.wc-dock__button--stack {
+  gap: 0.5rem;
 }
 
-.touch-button {
-  min-width: 150px;
-  font-size: 1.1rem;
-  padding: 0.75rem 1.5rem;
+.wc-dock :deep(.p-button-outlined.p-button-secondary) {
+  color: var(--p-steel-900);
+  border-color: var(--p-steel-300);
 }
 
-.touch-button :deep(.p-button-icon) {
-  font-size: 1.3rem;
-}
-
-.activity-button {
-  background-color: var(--btn-bg) !important;
-  color: var(--btn-color) !important;
-  border-color: var(--btn-bg) !important;
-}
-
-.activity-button:hover:not(:disabled) {
-  filter: brightness(0.9);
-}
-
-@media (max-width: 1200px) {
-  .content-layout {
-    grid-template-columns: 300px 1fr;
-  }
-
-  .touch-panel {
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-  }
-
-  .touch-button {
-    min-width: 130px;
-    font-size: 1rem;
-    padding: 0.6rem 1rem;
+@media (max-width: 767.98px) {
+  .wc-detail {
+    height: calc(100dvh - var(--top-panel-height) - 2rem);
+    gap: 0.625rem;
   }
 }
+</style>
 
-@media (max-width: 768px) {
-  .content-layout {
-    grid-template-columns: 1fr;
-  }
+<style>
+/* Phone sheets are teleported to <body>. Scoped under the position class so
+   they beat PrimeVue's default drawer height (see TableFilter sheets). */
+.p-drawer-bottom .p-drawer.plant-sheet,
+.p-drawer.p-drawer-bottom.plant-sheet {
+  height: auto;
+  max-height: 80dvh;
+  border-radius: 12px 12px 0 0;
+}
 
-  .realtime-panel {
-    display: none;
-  }
+.plant-sheet .p-drawer-content {
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+}
 
-  .touch-panel {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-    padding: 0.75rem;
-  }
+.plant-sheet__list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--p-steel-100);
+}
 
-  .group-separator {
-    width: 100%;
-    height: 1px;
-    margin: 0;
-  }
+.plant-sheet__row {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0 1.25rem;
+  border: none;
+  border-bottom: 1px solid var(--p-steel-100);
+  background: var(--p-surface-0);
+  font: inherit;
+  font-size: 1.0625rem;
+  color: var(--p-steel-900);
+  text-align: left;
+  cursor: pointer;
+}
 
-  .action-group {
-    width: 100%;
-  }
+.plant-sheet__row:disabled {
+  cursor: default;
+}
 
-  .group-buttons {
-    width: 100%;
-    flex-direction: column;
-  }
+.plant-sheet__row:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: -3px;
+}
 
-  .touch-button {
-    width: 100%;
-    min-width: unset;
-    justify-content: center;
-  }
+.plant-sheet__name {
+  flex: 1;
+}
+
+.plant-sheet__note {
+  font-size: 0.875rem;
+  color: var(--p-steel-600);
+}
+
+.plant-sheet__icon {
+  width: 20px;
+  text-align: center;
+  color: var(--p-steel-700);
 }
 </style>

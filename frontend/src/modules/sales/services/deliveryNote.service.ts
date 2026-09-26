@@ -99,4 +99,11 @@ export class DeliveryNoteService extends BaseService<DeliveryNote> {
     const response = await apiClient.post(endpoint, order);
     return response.data as GenericResponse<any>;
   }
+  async DownloadPdf(id: string, showPrices: boolean): Promise<Blob | undefined> {
+    const response = await this.apiClient.get(
+      `${this.resource}/Report/${id}/pdf?showPrices=${showPrices}`,
+      { responseType: "blob" },
+    );
+    return response.status === 200 ? (response.data as Blob) : undefined;
+  }
 }

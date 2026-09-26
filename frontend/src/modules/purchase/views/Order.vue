@@ -1,14 +1,20 @@
 <template>
   <main v-if="order">
-    <SplitButton
-      label="Guardar"
-      @click="submitForm"
-      :model="items"
-      :size="'small'"
-      class="grid_add_row_button"
-    />
+    <PageActions>
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('purchase.order.actions.save')"
+        @click="submitForm"
+        :model="items"
+      />
+    </PageActions>
 
-    <FormOrder class="pt-3" ref="orderForm" @submit="onOrderSubmit" />
+    <FormOrder
+      class="pt-3"
+      ref="orderForm"
+      :order="order"
+      @submit="onOrderSubmit"
+    />
     <br />
     <TableOrderDetails
       v-if="order.details"
@@ -20,7 +26,7 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Detall de la comanda</span>
+          <span class="text-900 font-bold">{{ t("purchase.orderDetail.title") }}</span>
           <div>
             <Button
               :size="'small'"
@@ -46,16 +52,17 @@
       />
     </Dialog>
   </main>
-  <main v-else>Carregant comanda ...</main>
+  <main v-else>{{ t("purchase.order.messages.loading") }}</main>
 </template>
 <script setup lang="ts">
+import PageActions from "@/components/PageActions.vue";
 import FormOrder from "../components/FormOrder.vue";
 import TableOrderDetails from "../components/TableOrderDetails.vue";
 import FormOrderDetail from "../components/FormOrderDetail.vue";
 import { onMounted, reactive, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
-import { PurchaseOrderDetail } from "../types";
+import type { PurchaseOrder, PurchaseOrderDetail } from "../types";
 import { GenericResponse } from "../../../types";
 import { ReferenceCategoryEnum } from "../../shared/types";
 import {
@@ -76,11 +83,12 @@ import { useSuppliersStore } from "../store/suppliers";
 import { useExerciseStore } from "../../shared/store/exercise";
 import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const route = useRoute();
 const store = useStore();
-const orderForm = ref();
+const orderForm = ref<{ submitForm: () => void } | null>(null);
 const confirm = useConfirm();
 const referenceStore = useReferenceStore();
 const referenceTypeStore = useReferenceTypeStore();
@@ -88,13 +96,19 @@ const orderStore = useOrderStore();
 const suppliersStore = useSuppliersStore();
 const exerciseStore = useExerciseStore();
 const lifecycleStore = useLifecyclesStore();
+const { t } = useI18n();
 const { order } = storeToRefs(orderStore);
 
 const items = [
   {
-    label: "Descarregar",
+    label: t("purchase.order.actions.download"),
     icon: PrimeIcons.FILE_WORD,
     command: () => printInvoice(),
+  },
+  {
+    label: t("purchase.order.actions.printPdf"),
+    icon: PrimeIcons.FILE_PDF,
+    command: () => printPdf(),
   },
 ];
 
@@ -110,7 +124,7 @@ const loadView = async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
-    title: `Comanda de compra ${order.value?.number}`,
+    title: t("purchase.order.title", { number: order.value?.number }),
     backButtonVisible: true,
   });
 };
@@ -121,27 +135,14 @@ onMounted(async () => {
 
 const toast = useToast();
 
-const submitForm = async () => {
-  if (!order.value?.date) {
-    toast.add({
-      severity: "error",
-      summary: "Error al crear la comanda ",
-      detail: "La data no pot estar buida",
-      life: 5000,
-    });
-    return false;
-  }
+const submitForm = () => orderForm.value?.submitForm();
 
-  const form = orderForm.value as any;
-  form.submitForm();
-};
-
-const onOrderSubmit = async () => {
+const onOrderSubmit = async (submittedOrder: PurchaseOrder) => {
   let result = false;
   let message = "";
   if (order.value) {
-    result = await orderStore.update(order.value.id, order.value);
-    message = "Comanda actualizada correctament";
+    result = await orderStore.update(submittedOrder.id, submittedOrder);
+    message = t("purchase.order.messages.updated");
 
     if (result) {
       toast.add({
@@ -156,7 +157,7 @@ const onOrderSubmit = async () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Linea",
+  title: t("purchase.orderDetail.title"),
   closable: true,
   position: "center",
   modal: true,
@@ -180,7 +181,7 @@ const openCreateDetailForm = () => {
     disabled: false,
   } as PurchaseOrderDetail;
 
-  dialogOptions.title = "Crear línia";
+  dialogOptions.title = t("purchase.orderDetail.dialogs.create");
   dialogOptions.visible = true;
 };
 
@@ -189,7 +190,7 @@ const openEditDetailForm = (detail: PurchaseOrderDetail) => {
   selectedDetail.value = detail;
   referenceStore.setNewReference(getNewUuid(), ReferenceCategoryEnum.MATERIAL);
 
-  dialogOptions.title = "Modificar línia";
+  dialogOptions.title = t("purchase.orderDetail.dialogs.edit");
   dialogOptions.visible = true;
 };
 
@@ -217,7 +218,7 @@ const editDetail = async (detail: PurchaseOrderDetail) => {
 
 const removeDetail = async (detail: PurchaseOrderDetail) => {
   confirm.require({
-    message: `Está segur que vols la línia?`,
+    message: t("purchase.orderDetail.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -257,10 +258,15 @@ const printInvoice = async () => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("purchase.order.messages.reportError"),
+        detail: t("purchase.order.messages.reportGenerationError"),
       });
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.Order.DownloadPdf(order.value!.id);
+  if (report) createBlobAndDownloadFile(`ComandaCompra_${order.value?.number}.pdf`, report);
+};
+
 </script>

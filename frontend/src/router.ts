@@ -7,17 +7,10 @@ import WarehouseRoutes from "./modules/warehouse/routes";
 import ShoopfloorRoutes from "./modules/plant/routes";
 import AnalyticsRoutes from "./modules/analytics/routes";
 import VerifactuRoutes from "./modules/verifactu/routes";
+import SystemRoutes from "./modules/system/routes";
 
 const Login = () => import("./views/Login.vue");
 const Home = () => import("./views/Home.vue");
-const Users = () => import("./views/Users.vue");
-const User = () => import("./views/User.vue");
-const Reports = () => import("./views/Reports.vue");
-const MenuItems = () => import("./views/MenuItems.vue");
-const MenuItem = () => import("./views/MenuItem.vue");
-const Profiles = () => import("./views/Profiles.vue");
-const Profile = () => import("./views/Profile.vue");
-const ApiKeys = () => import("./views/ApiKeys.vue");
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,14 +19,6 @@ const router = createRouter({
 
     { path: "/", name: "Home", component: Home },
 
-    { path: "/users", name: "Users", component: Users, meta: { roles: ["Admin"] } },
-    { path: "/user/:id", name: "User", component: User, meta: { roles: ["Admin"] } },
-    { path: "/reports", name: "Reports", component: Reports },
-    { path: "/menuitems", name: "MenuItems", component: MenuItems, meta: { roles: ["Admin"] } },
-    { path: "/menuitem/:id", name: "MenuItem", component: MenuItem, meta: { roles: ["Admin"] } },
-    { path: "/profiles", name: "Profiles", component: Profiles, meta: { roles: ["Admin"] } },
-    { path: "/profile/:id", name: "Profile", component: Profile, meta: { roles: ["Admin"] } },
-    { path: "/apikeys", name: "ApiKeys", component: ApiKeys },
     ...SharedRoutes,
     ...SalesRoutes,
     ...PurchaseRoutes,
@@ -42,6 +27,7 @@ const router = createRouter({
     ...ShoopfloorRoutes,
     ...AnalyticsRoutes,
     ...VerifactuRoutes,
+    ...SystemRoutes,
   ],
 });
 

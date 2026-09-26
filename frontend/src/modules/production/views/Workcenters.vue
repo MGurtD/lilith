@@ -1,92 +1,38 @@
 <template>
-  <DataTable
-    :value="filteredData"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="filteredData"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    sortMode="multiple"
+    show-delete-column
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
-  >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">Tipus</label>
-            <Select
-              v-model="filter.workcenterTypeId"
-              :options="plantmodelStore.workcenterTypes"
-              optionValue="id"
-              optionLabel="name"
-              placeholder="Tots"
-              :showClear="true"
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label">Àrea</label>
-            <Select
-              v-model="filter.areaId"
-              :options="plantmodelStore.areas"
-              optionValue="id"
-              optionLabel="name"
-              placeholder="Totes"
-              :showClear="true"
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 40%"></Column>
-    <Column header="Tipus" style="width: 15%">
-      <template #body="slotProps">
-        {{ getWorkcenterTypeNameById(slotProps.data.workcenterTypeId) }}
-      </template>
-    </Column>
-    <Column header="Area" style="width: 15%">
-      <template #body="slotProps">
-        {{ getAreaNameById(slotProps.data.areaId) }}
-      </template>
-    </Column>
-    <Column header="Desactivat" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  />
 </template>
 <script setup lang="ts">
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
-import { v4 as uuidv4 } from "uuid";
-import { useRouter } from "vue-router";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
+import { getNewUuid } from "../../../utils/functions";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
+import { useUserFilterStore } from "../../../store/userfilter";
 import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -96,14 +42,77 @@ import { useConfirm } from "primevue/useconfirm";
 import { Workcenter } from "../types";
 import { useShiftStore } from "../store/shift";
 
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
 const shiftStore = useShiftStore();
+const userFilterStore = useUserFilterStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "workcenterTypeId",
+    label: pt("Tipus"),
+    type: "select",
+    options: plantmodelStore.workcenterTypes ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: pt("Tots"),
+    size: "md",
+  },
+  {
+    key: "areaId",
+    label: pt("Àrea"),
+    type: "select",
+    options: plantmodelStore.areas ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: pt("Totes"),
+    size: "md",
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  { field: "name", header: pt("Nom"), style: "width: 20%" },
+  {
+    field: "description",
+    header: pt("Descripció"),
+    style: "width: 40%",
+  },
+  {
+    field: "workcenterTypeId",
+    header: pt("Tipus"),
+    columnType: ColumnType.Lookup,
+    resolver: (value) =>
+      typeof value === "string" ? getWorkcenterTypeNameById(value) : "",
+    style: "width: 15%",
+  },
+  {
+    field: "areaId",
+    header: pt("Area"),
+    columnType: ColumnType.Lookup,
+    resolver: (value) =>
+      typeof value === "string" ? getAreaNameById(value) : "",
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: pt("Desactivat"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["workcenterTypeId", "areaId", "disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchWorkcenters();
@@ -111,10 +120,17 @@ onMounted(async () => {
   await plantmodelStore.fetchActiveAreas();
   await shiftStore.fetchAllShifts();
 
+  const userFilter = userFilterStore.getFilter("Workcenters", "");
+  if (userFilter) filter.value = userFilter;
+
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de màquines",
+    title: pt("Gestió de màquines"),
   });
+});
+
+onBeforeRouteLeave(async () => {
+  await userFilterStore.addFilter("Workcenters", "", filter.value);
 });
 
 // Filter data
@@ -158,21 +174,14 @@ const getWorkcenterTypeNameById = (id: string) => {
 
 // Actions
 const createButtonClick = () => {
-  router.push({ path: `/workcenter/${uuidv4()}` });
+  router.push({ path: `/workcenter/${getNewUuid()}` });
 };
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/workcenter/${row.data.id}` });
-  }
+  router.push({ path: `/workcenter/${row.data.id}` });
 };
-const deleteButton = (event: any, entity: Workcenter) => {
+const deleteButton = (entity: Workcenter) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar la màquina ${entity.name}?`,
+    message: t("production.detail.confirmDeleteWorkcenter"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -182,7 +191,7 @@ const deleteButton = (event: any, entity: Workcenter) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: pt("Eliminat"),
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenters();

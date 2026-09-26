@@ -29,6 +29,8 @@ public class BudgetDetail : Entity
     public string UserNotes { get; set; }
     public decimal DetailWeight { get; set; }
 
+    public ICollection<BudgetDetailPhaseProfit> PhaseProfits { get; set; } = new List<BudgetDetailPhaseProfit>();
+
     public BudgetDetail()
     {
         Description = string.Empty;

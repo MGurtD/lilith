@@ -14,6 +14,8 @@ using Infrastructure.Persistance.Repositories.Purchase; // contains LifecycleRep
 using Infrastructure.Persistance.Repositories.Sales;
 using Infrastructure.Persistance.Repositories.Warehouse;
 using Infrastructure.Persistance.Repositories.Transport;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace Infrastructure.Persistance
 {
@@ -30,6 +32,7 @@ namespace Infrastructure.Persistance
         public IRepository<UserTableView, Guid> UserTableViews { get; private set; } = new Repository<UserTableView, Guid>(context);
         public IRepository<Profile, Guid> Profiles { get; private set; } = new Repository<Profile, Guid>(context);
         public IRepository<MenuItem, Guid> MenuItems { get; private set; } = new Repository<MenuItem, Guid>(context);
+        public IRepository<MenuItemTranslation, Guid> MenuItemTranslations { get; private set; } = new Repository<MenuItemTranslation, Guid>(context);
         public IRepository<ProfileMenuItem, Guid> ProfileMenuItems { get; private set; } = new Repository<ProfileMenuItem, Guid>(context);
 
         // Shared
@@ -80,6 +83,8 @@ namespace Infrastructure.Persistance
         public IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; private set; } = new Repository<WorkcenterCost, Guid>(context);
         public IRepository<Operator, Guid> Operators { get; private set; } = new Repository<Operator, Guid>(context);
         public IRepository<OperatorType, Guid> OperatorTypes { get; private set; } = new Repository<OperatorType, Guid>(context);
+        public IRepository<RejectionReason, Guid> RejectionReasons { get; private set; } = new Repository<RejectionReason, Guid>(context);
+        public IRepository<WorkOrderPhaseRejection, Guid> WorkOrderPhaseRejections { get; private set; } = new Repository<WorkOrderPhaseRejection, Guid>(context);
         public IMachineStatusRepository MachineStatuses { get; private set; } = new MachineStatusRepository(context);
         public IRepository<Shift, Guid> Shifts { get; private set; } = new Repository<Shift, Guid>(context);
         public IRepository<ShiftDetail, Guid> ShiftDetails { get; private set; } = new Repository<ShiftDetail, Guid>(context);
@@ -99,6 +104,13 @@ namespace Infrastructure.Persistance
         public IRepository<ReferenceType, Guid> ReferenceTypes { get; private set; } = new Repository<ReferenceType, Guid>(context);
         public IRepository<Stock, Guid> Stocks { get; private set; } = new Repository<Stock, Guid>(context);
         public IStockMovementRepository StockMovements { get; private set; } = new StockMovementRepository(context);
+        public ILotRepository Lots { get; private set; } = new LotRepository(context);
+
+        public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
+        {
+            var transaction = await context.Database.BeginTransactionAsync(isolationLevel);
+            return new UnitOfWorkTransaction(transaction);
+        }
 
         public async Task<int> CompleteAsync()
         {
@@ -108,4 +120,3 @@ namespace Infrastructure.Persistance
         public void Dispose() => context.Dispose();
     }
 }
-

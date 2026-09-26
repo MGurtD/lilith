@@ -1,199 +1,236 @@
-<template>
-  <form>
-    <section class="three-columns">
-      <BaseInput
-        class="mb-2"
-        label="Nom"
-        v-model="status.name"
-        :class="{
-          'p-invalid': validation.errors.baseAmount,
-        }"
-      ></BaseInput>
-      <div class="mb-4">
-        <label class="block text-900 mb-2">Color</label>
-        <Select
-          v-model="status.color"
-          :options="colors"
-          optionValue="id"
-          optionLabel="value"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.statusId,
-          }"
-        />
-      </div>
-      <div class="mb-4">
-        <label class="block text-900 mb-2">Deshabilitat</label>
-        <Checkbox v-model="status.disabled" :binary="true" />
-      </div>
-    </section>
-
-    <section v-if="availableTags.length > 0">
-      <div class="mb-4">
-        <label class="block text-900 mb-2">Etiquetes</label>
-        <MultiSelect
-          v-model="selectedTagIds"
-          :options="availableTags"
-          optionValue="id"
-          optionLabel="name"
-          placeholder="Selecciona etiquetes"
-          class="w-full"
-          display="chip"
-        >
-          <template #option="slotProps">
-            <div class="flex align-items-center">
-              <i
-                v-if="slotProps.option.icon"
-                :class="slotProps.option.icon"
-                class="mr-2"
-              ></i>
-              <Tag
-                v-if="slotProps.option.color"
-                :severity="slotProps.option.color as any"
-                class="mr-2"
-              >
-                {{ slotProps.option.name }}
-              </Tag>
-              <span v-else>{{ slotProps.option.name }}</span>
-            </div>
-          </template>
-        </MultiSelect>
-      </div>
-
-      <div
-        v-if="status.lifecycleTags && status.lifecycleTags.length > 0"
-        class="mb-4"
-      >
-        <label class="block text-900 mb-2">Etiquetes assignades</label>
-        <div class="flex gap-2 flex-wrap">
-          <Tag
-            v-for="tag in status.lifecycleTags"
-            :key="tag.id"
-            :severity="tag.color as any"
-          >
-            <i v-if="tag.icon" :class="tag.icon" class="mr-1"></i>
-            {{ tag.name }}
-          </Tag>
-        </div>
-      </div>
-    </section>
-
-    <Button label="Confirmar" @click="submitForm" style="float: right" />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { Status, LifecycleTag } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { booleanValue, stringValue } from "@/components/forms/value-utils";
+import { computed, ref, useId, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { FormActionMode } from "../../../types/component";
 import SharedServices from "../services";
+import type { LifecycleTag, Status } from "../types";
 
-const toast = useToast();
+interface StatusTagChanges {
+  assign: string[];
+  remove: string[];
+}
 
 const props = defineProps<{
   formAction: FormActionMode;
   status: Status;
 }>();
+
 const emit = defineEmits<{
-  (
-    e: "submit",
-    status: Status,
-    tagChanges: { assign: string[]; remove: string[] },
-  ): void;
+  (event: "submit", status: Status, tagChanges: StatusTagChanges): void;
+  (event: "cancel"): void;
 }>();
 
+const { t } = useI18n();
+const form = ref<{
+  setFieldValue: (name: string, value: unknown) => void;
+} | null>(null);
+const tagsInputId = `status-tags-${useId()}`;
+
+// Tags are loaded after the form opens. The assigned tags seed the tagIds
+// field and are the baseline for the assign/remove diff emitted on submit.
 const availableTags = ref<LifecycleTag[]>([]);
-const selectedTagIds = ref<string[]>([]);
+const assignedTags = ref<LifecycleTag[] | undefined>(undefined);
 const initialTagIds = ref<string[]>([]);
+let tagRequestSequence = 0;
 
-onMounted(async () => {
-  // Load tags associated with the status
-  const statusTags = await SharedServices.Lifecycle.getTagsByStatus(
-    props.status.id,
-  );
-  if (statusTags) {
-    props.status.lifecycleTags = statusTags;
-  }
+const loadTags = async (status: Status): Promise<void> => {
+  const requestSequence = ++tagRequestSequence;
+  availableTags.value = [];
+  assignedTags.value = status.lifecycleTags;
+  initialTagIds.value = [];
 
-  // Load available tags from lifecycle
-  if (props.status.lifecycleId) {
-    const tags = await SharedServices.Lifecycle.getTagsByLifecycle(
-      props.status.lifecycleId,
-    );
-    if (tags) {
-      availableTags.value = tags;
-    }
-  }
+  const statusTags = await SharedServices.Lifecycle.getTagsByStatus(status.id);
+  const lifecycleTags = status.lifecycleId
+    ? await SharedServices.Lifecycle.getTagsByLifecycle(status.lifecycleId)
+    : undefined;
+  if (requestSequence !== tagRequestSequence) return;
 
-  // Initialize selected tags
-  console.log("Initializing selected tags:", props.status.lifecycleTags);
-  if (props.status.lifecycleTags) {
-    selectedTagIds.value = props.status.lifecycleTags.map((t) => t.id);
-    initialTagIds.value = [...selectedTagIds.value];
-  }
-});
-
-const schema = Yup.object().shape({
-  name: Yup.string().required("El nom és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.status);
+  if (statusTags) assignedTags.value = statusTags;
+  initialTagIds.value = (assignedTags.value ?? []).map((tag) => tag.id);
+  form.value?.setFieldValue("tagIds", [...initialTagIds.value]);
+  availableTags.value = lifecycleTags ?? [];
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    // Calculate tag changes
-    const tagsToAssign = selectedTagIds.value.filter(
-      (id) => !initialTagIds.value.includes(id),
-    );
-    const tagsToRemove = initialTagIds.value.filter(
-      (id) => !selectedTagIds.value.includes(id),
-    );
+watch(
+  () => props.status,
+  (status) => {
+    void loadTags(status);
+  },
+  { immediate: true },
+);
 
-    emit("submit", props.status, {
-      assign: tagsToAssign,
-      remove: tagsToRemove,
-    });
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-type Color = {
+interface ColorOption {
   id: string;
   value: string;
-};
+}
 
-const colors: Color[] = [
-  { id: "", value: "Cap" },
-  { id: "info", value: "Blau" },
-  { id: "secondary", value: "Gris" },
-  { id: "help", value: "Lila" },
-  { id: "contrast", value: "Negre" },
-  { id: "warn", value: "Taronja" },
-  { id: "success", value: "Verd" },
-  { id: "danger", value: "Vermell" },
-];
+// Stored values stay PrimeVue severities. "help" is no longer offered: Aura has
+// no such severity, so it showed the tenant colour; old values render neutral.
+const colors = computed<ColorOption[]>(() => [
+  { id: "", value: t("shared.statuses.form.colors.none") },
+  { id: "secondary", value: t("shared.statuses.form.colors.secondary") },
+  { id: "info", value: t("shared.statuses.form.colors.info") },
+  { id: "warn", value: t("shared.statuses.form.colors.warn") },
+  { id: "success", value: t("shared.statuses.form.colors.success") },
+  { id: "danger", value: t("shared.statuses.form.colors.danger") },
+  { id: "contrast", value: t("shared.statuses.form.colors.contrast") },
+]);
+
+const colorLabel = (id: unknown): string =>
+  colors.value.find((color) => color.id === (id ?? ""))?.value ??
+  t("shared.statuses.form.colors.none");
+
+const colorSeverity = (id: unknown): string =>
+  typeof id === "string" && id !== "" ? id : "secondary";
+
+const tagIdsValue = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string")
+    : [];
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("shared.statuses.form.name"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("shared.lifecycle.validation.nameRequired"),
+        ),
+      },
+      {
+        name: "color",
+        label: t("shared.statuses.form.color"),
+        type: FormFieldType.Custom,
+        defaultValue: "",
+      },
+      {
+        name: "disabled",
+        label: t("shared.statuses.form.disabled"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+  {
+    section: "tags",
+    fields: [
+      {
+        name: "tagIds",
+        label: t("shared.statuses.form.tags"),
+        type: FormFieldType.Custom,
+        defaultValue: [],
+      },
+    ],
+  },
+]);
+
+const submit = (values: FormValues): void => {
+  const selectedTagIds = tagIdsValue(values.tagIds);
+
+  emit(
+    "submit",
+    {
+      ...props.status,
+      name: stringValue(values.name, ""),
+      color: stringValue(values.color, props.status.color),
+      disabled: booleanValue(values.disabled, false),
+      lifecycleTags: assignedTags.value,
+    },
+    {
+      assign: selectedTagIds.filter((id) => !initialTagIds.value.includes(id)),
+      remove: initialTagIds.value.filter((id) => !selectedTagIds.includes(id)),
+    },
+  );
+};
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="status"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-color="{ value, setValue, disabled, inputId }">
+      <!-- Colours by meaning; each option previews the tag lists will show. -->
+      <Select
+        :input-id="inputId"
+        :model-value="typeof value === 'string' ? value : ''"
+        :options="colors"
+        option-value="id"
+        option-label="value"
+        class="w-full"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      >
+        <template #value="{ value: selected }">
+          <Tag
+            :value="colorLabel(selected)"
+            :severity="colorSeverity(selected)"
+          />
+        </template>
+        <template #option="{ option }">
+          <Tag :value="option.value" :severity="colorSeverity(option.id)" />
+        </template>
+      </Select>
+    </template>
+
+    <template #section-tags="{ values, setFieldValue, disabled }">
+      <div v-if="availableTags.length > 0">
+        <label class="block text-900 mb-2" :for="tagsInputId">
+          {{ t("shared.statuses.form.tags") }}
+        </label>
+        <MultiSelect
+          :input-id="tagsInputId"
+          :model-value="tagIdsValue(values.tagIds)"
+          :options="availableTags"
+          option-value="id"
+          option-label="name"
+          :placeholder="t('shared.statuses.form.tagsPlaceholder')"
+          class="w-full"
+          display="chip"
+          :disabled="disabled"
+          @update:model-value="setFieldValue('tagIds', $event)"
+        >
+          <template #option="{ option }">
+            <div class="flex align-items-center">
+              <i v-if="option.icon" :class="option.icon" class="mr-2"></i>
+              <Tag v-if="option.color" :severity="option.color" class="mr-2">
+                {{ option.name }}
+              </Tag>
+              <span v-else>{{ option.name }}</span>
+            </div>
+          </template>
+        </MultiSelect>
+
+        <div v-if="assignedTags && assignedTags.length > 0" class="mt-3">
+          <span class="block text-900 mb-2">
+            {{ t("shared.statuses.form.assignedTags") }}
+          </span>
+          <div class="flex gap-2 flex-wrap">
+            <Tag
+              v-for="tag in assignedTags"
+              :key="tag.id"
+              :severity="tag.color"
+            >
+              <i v-if="tag.icon" :class="tag.icon" class="mr-1"></i>
+              {{ tag.name }}
+            </Tag>
+          </div>
+        </div>
+      </div>
+    </template>
+  </Form>
+</template>

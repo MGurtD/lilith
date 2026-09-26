@@ -19,6 +19,7 @@ namespace Application.Contracts
 
         public Customer? Customer { get; set; }
         public Site? Site { get; set; }
+        public Enterprise? Enterprise { get; set; }
         public Budget? Budget { get; set; }
         public decimal Total { get; set; }
     }

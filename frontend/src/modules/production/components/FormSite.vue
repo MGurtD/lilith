@@ -1,169 +1,215 @@
-<template>
-  <form v-if="site">
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Nom"
-        id="name"
-        v-model="site.name"
-        :class="{
-          'p-invalid': validation.errors.name,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Descripció"
-        id="description"
-        v-model="site.description"
-        :class="{
-          'p-invalid': validation.errors.description,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="CIF"
-        id="vatNumber"
-        v-model="site.vatNumber"
-        :class="{
-          'p-invalid': validation.errors.vatNumber,
-        }"
-      ></BaseInput>
-    </section>
-    <LocationFields
-      :model-value="site"
-      :validation-errors="validation.errors"
-    />
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Telèfon"
-        id="phone"
-        v-model="site.phoneNumber"
-        :class="{
-          'p-invalid': validation.errors.phone,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Email general"
-        id="email"
-        v-model="site.email"
-        :class="{
-          'p-invalid': validation.errors.email,
-        }"
-      ></BaseInput>
-      <BaseInput
-        label="Email compres"
-        id="emailPurchase"
-        v-model="site.emailPurchase"
-        :class="{
-          'p-invalid': validation.errors.emailPurchase,
-        }"
-      ></BaseInput>
-    </section>
-    <section class="three-columns mb-2">
-      <BaseInput
-        label="Email ventes"
-        id="emailSales"
-        v-model="site.emailSales"
-        :class="{
-          'p-invalid': validation.errors.emailSales,
-        }"
-      ></BaseInput>
-      <div>
-        <label class="block text-900 mb-2">Empresa</label>
-        <Select
-          v-model="site.enterpriseId"
-          :options="siteStore.enterprises"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.enterpriseId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Desactivat</label>
-        <Checkbox v-model="site.disabled" class="w-full" :binary="true" />
-      </div>
-    </section>
-
-    <div>
-      <Button label="Guardar" class="mr-2" @click="submitForm" />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import BaseInput from "../../../components/BaseInput.vue";
-import LocationFields from "@/components/LocationFields.vue";
-import { Site } from "../types";
-import { usePlantModelStore } from "../store/plantmodel";
-
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import LocationFields from "@/components/LocationFields.vue";
+import type { LocationData } from "@/types";
+import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { usePlantModelStore } from "../store/plantmodel";
+import type { Site } from "../types";
 
 const props = defineProps<{
   site: Site;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", site: Site): void;
-  (e: "cancel"): void;
+  (event: "submit", site: Site): void;
 }>();
 
+const { t } = useI18n();
+const plantStore = usePlantModelStore();
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "name",
+        label: t("production.components.nom"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.elNomEsObligatori"))
+          .max(250, t("production.validation.elNomNoPotSuperarEls250Caracters")),
+      },
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .required(t("production.validation.laDescripcioEsObligatoria"))
+          .max(
+            250,
+            t("production.validation.laDescripcioNoPotSuperarEls250Caracters"),
+          ),
+      },
+      {
+        name: "vatNumber",
+        label: t("production.fields.companyVatNumber"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "phoneNumber",
+        label: t("production.components.telefon"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "email",
+        label: t("production.components.emailGeneral"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .email(t("production.validation.elCorreuElectronicNoEsValid"))
+          .required(t("production.validation.elCorreuElectronicEsObligatori")),
+      },
+      {
+        name: "emailPurchase",
+        label: t("production.components.emailCompres"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .email(t("production.validation.elCorreuElectronicDeCompresNoEsValid"))
+          .required(
+            t("production.validation.elCorreuElectronicDeCompresEsObligatori"),
+          ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "emailSales",
+        label: t("production.components.emailVentes"),
+        type: FormFieldType.Text,
+        validation: Yup.string()
+          .email(t("production.validation.elCorreuElectronicDeVentesNoEsValid"))
+          .required(
+            t("production.validation.elCorreuElectronicDeVentesEsObligatori"),
+          ),
+      },
+      {
+        name: "enterpriseId",
+        label: t("production.components.empresa"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantStore.enterprises ?? [],
+          optionLabel: "name",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("production.validation.lEmpresaEsObligatoria"),
+        ),
+      },
+      {
+        name: "disabled",
+        label: t("production.components.desactivat"),
+        type: FormFieldType.Checkbox,
+        defaultValue: false,
+      },
+    ],
+  },
+  {
+    section: "location",
+    fields: [
+      {
+        name: "country",
+        label: t("location.country"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "address",
+        label: t("location.address"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "city",
+        label: t("location.city"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "region",
+        label: t("location.region"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "postalCode",
+        label: t("location.postalCode"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "latitude",
+        label: t("location.latitude"),
+        type: FormFieldType.Custom,
+      },
+      {
+        name: "longitude",
+        label: t("location.longitude"),
+        type: FormFieldType.Custom,
+      },
+    ],
+  },
+]);
+
 onMounted(async () => {
-  await siteStore.fetchEnterprises();
+  await plantStore.fetchEnterprises();
 });
 
-const toast = useToast();
-const siteStore = usePlantModelStore();
-
-const schema = Yup.object().shape({
-  name: Yup.string()
-    .required("El nom és obligatori")
-    .max(250, "El nom no pot superar els 250 caràcters"),
-  description: Yup.string()
-    .required("La descripció és obligatòria")
-    .max(250, "La descripció no pot superar els 250 caràcters"),
-  email: Yup.string()
-    .email("El correu electrònic no és vàlid")
-    .required("El correu electrònic és obligatori"),
-  emailSales: Yup.string()
-    .email("El correu electrònic de ventes no és vàlid")
-    .required("El correu electrònic de ventes és obligatori"),
-  emailPurchase: Yup.string()
-    .email("El correu electrònic de compres no és vàlid")
-    .required("El correu electrònic de compres és obligatori"),
-  enterpriseId: Yup.string().required("L'empresa és obligatòria"),
+const locationValues = (values: FormValues): LocationData => ({
+  country: stringValue(values.country, ""),
+  address: stringValue(values.address, ""),
+  city: stringValue(values.city, ""),
+  region: stringValue(values.region, ""),
+  postalCode: stringValue(values.postalCode, ""),
+  latitude: finiteNumberValue(values.latitude, props.site.latitude),
+  longitude: finiteNumberValue(values.longitude, props.site.longitude),
 });
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.site);
+const setLocationValues = (
+  location: LocationData,
+  setValues: (values: FormValues) => void,
+): void => {
+  setValues({ ...location });
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.site);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.site,
+    name: stringValue(values.name, ""),
+    description: stringValue(values.description, ""),
+    vatNumber: stringValue(values.vatNumber, props.site.vatNumber),
+    phoneNumber: stringValue(values.phoneNumber, props.site.phoneNumber),
+    email: stringValue(values.email, ""),
+    emailPurchase: stringValue(values.emailPurchase, ""),
+    emailSales: stringValue(values.emailSales, ""),
+    enterpriseId: stringValue(values.enterpriseId, props.site.enterpriseId),
+    disabled: booleanValue(values.disabled, false),
+    ...locationValues(values),
+  });
 };
 </script>
 
+<template>
+  <Form page-actions :rows="rows" :initial-values="site" @submit="submit">
+    <template #section-location="{ values, errors, setValues, disabled }">
+      <LocationFields
+        :model-value="locationValues(values)"
+        :validation-errors="errors"
+        :disabled="disabled"
+        @update:model-value="setLocationValues($event, setValues)"
+      />
+    </template>
+  </Form>
+</template>

@@ -1,265 +1,39 @@
-<template>
-  <Tabs v-model:value="activeTab">
-    <TabList>
-      <Tab value="0">Referència</Tab>
-      <Tab value="1">Marges</Tab>
-    </TabList>
-    <TabPanels>
-      <TabPanel value="0">
-        <form v-if="detail">
-          <section class="three-columns">
-            <div class="mb-2">
-              <DropdownReference
-                label="Referència"
-                v-model="detail.referenceId"
-                :customerId="header.customerId"
-                :fullName="true"
-                @update:modelValue="getReferenceInfo()"
-              ></DropdownReference>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2"
-                label="Preu"
-                v-model="referencePrice"
-                :type="BaseInputType.CURRENCY"
-                disabled
-              ></BaseInput>
-            </div>
-            <div class="mb-2">
-              <DropdownWorkmasters
-                label="Ruta de fabricació"
-                v-model="detail.workMasterId"
-                :referenceId="detail.referenceId"
-                @update:modelValue="getWorkmasterCost(false)"
-              ></DropdownWorkmasters>
-            </div>
-          </section>
-
-          <section class="seven-columns">
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Producció"
-                v-model="detail.productionCost"
-                :type="BaseInputType.CURRENCY"
-                disabled
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="% Benefici Producció"
-                v-model="detail.productionProfit"
-                :type="BaseInputType.NUMERIC"
-                :decimals="2"
-                @update:modelValue="updateImports()"
-                :class="{
-                  'p-invalid': validation.errors.profit,
-                }"
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Material"
-                v-model="detail.materialCost"
-                :type="BaseInputType.CURRENCY"
-                disabled
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="% Benefici Material"
-                v-model="detail.materialProfit"
-                :type="BaseInputType.NUMERIC"
-                :decimals="2"
-                @update:modelValue="updateImports()"
-                :class="{
-                  'p-invalid': validation.errors.profit,
-                }"
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Servei"
-                v-model="detail.serviceCost"
-                :type="BaseInputType.CURRENCY"
-                @update:modelValue="updateCosts()"
-                :disabled="detail.workMasterId === null"
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Transport "
-                v-model="detail.transportCost"
-                :type="BaseInputType.CURRENCY"
-                @update:modelValue="updateCosts()"
-                :disabled="detail.workMasterId === null"
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="% Benefici Externs"
-                v-model="detail.externalProfit"
-                :type="BaseInputType.NUMERIC"
-                :decimals="2"
-                @update:modelValue="updateImports()"
-                :class="{
-                  'p-invalid': validation.errors.profit,
-                }"
-              ></BaseInput>
-            </div>
-          </section>
-          <section class="seven-columns">
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Quantitat"
-                v-model="detail.quantity"
-                :type="BaseInputType.NUMERIC"
-                :class="{
-                  'p-invalid': validation.errors.quantity,
-                }"
-                @update:modelValue="updateQuantity()"
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Unitari"
-                v-model="detail.unitCost"
-                :type="BaseInputType.CURRENCY"
-                disabled
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Cost Total"
-                v-model="detail.totalCost"
-                :type="BaseInputType.CURRENCY"
-                disabled
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="% Benefici"
-                v-model="detail.profit"
-                :type="BaseInputType.NUMERIC"
-                :class="{
-                  'p-invalid': validation.errors.profit,
-                }"
-                disabled
-              ></BaseInput>
-            </div>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="% Descompte"
-                v-model="detail.discount"
-                :type="BaseInputType.NUMERIC"
-                :decimals="2"
-                @update:modelValue="updateImports()"
-                :class="{
-                  'p-invalid': validation.errors.discount,
-                }"
-              ></BaseInput>
-            </div>
-            <BaseInput
-              class="mb-2 budgetordercostinput"
-              label="Preu Unitari"
-              v-model="detail.unitPrice"
-              :type="BaseInputType.CURRENCY"
-              @update:modelValue="updateUnitPrice()"
-            ></BaseInput>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Total"
-                v-model="detail.amount"
-                disabled
-                :type="BaseInputType.CURRENCY"
-                :class="{
-                  'p-invalid': validation.errors.amount,
-                }"
-              ></BaseInput>
-            </div>
-          </section>
-
-          <section>
-            <div>
-              <BaseInput
-                class="mb-2 budgetordercostinput"
-                label="Descripció"
-                v-model="detail.description"
-                :type="BaseInputType.TEXT"
-                :class="{
-                  'p-invalid': validation.errors.description,
-                }"
-              ></BaseInput>
-            </div>
-          </section>
-          <section class="mt-2">
-            <div>
-              <label class="block text-900 mb-2">Notes Internes</label>
-              <Textarea
-                class="w-full"
-                rows="3"
-                placeholder="Notes internes"
-                v-model="detail.userNotes"
-              />
-            </div>
-          </section>
-          <Button
-            :disabled="readonly"
-            :label="textActionButton"
-            @click="submitForm"
-            style="float: right"
-          />
-        </form>
-      </TabPanel>
-      <TabPanel value="1">
-        <TableWorkmasterProfit
-          :workMasterId="detail.workMasterId"
-          :quantity="detail.quantity"
-          @updateProfitAverage="copyProfitAverage"
-        />
-      </TabPanel>
-    </TabPanels>
-  </Tabs>
-</template>
 <script setup lang="ts">
-import DropdownReference from "../../shared/components/DropdownReference.vue";
-import { computed, ref, toRefs, onMounted } from "vue";
+import Form from "@/components/forms/Form.vue";
 import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { round } from "lodash";
+import { computed, onUnmounted, ref, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { FormActionMode } from "../../../types/component";
+import DropdownWorkmasters from "../../production/components/DropdownWorkmasters.vue";
+import { useWorkMasterStore } from "../../production/store/workmaster";
+import type {
+  ProductionCosts,
+  WorkmastersOptionsLoadedPayload,
+} from "../../production/types";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
+import { useReferenceStore } from "../../shared/store/reference";
+import type {
   Budget,
   BudgetDetail,
+  DetailPhaseProfit,
   SalesOrderDetail,
   SalesOrderHeader,
 } from "../types";
-import * as Yup from "yup";
-import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { BaseInputType, FormActionMode } from "../../../types/component";
-import { useReferenceStore } from "../../shared/store/reference";
-import { useWorkMasterStore } from "../../production/store/workmaster";
-import { ProductionCosts } from "../../production/types";
-import _ from "lodash";
-import DropdownWorkmasters from "../../production/components/DropdownWorkmasters.vue";
 import TableWorkmasterProfit from "./TableWorkmasterProfit.vue";
 
-const workmasterStore = useWorkMasterStore();
-const referenceStore = useReferenceStore();
-const toast = useToast();
+type OrderDetail = BudgetDetail | SalesOrderDetail;
+
 const props = defineProps<{
   formAction: FormActionMode;
   header: Budget | SalesOrderHeader;
@@ -267,251 +41,696 @@ const props = defineProps<{
   readonly?: boolean;
 }>();
 
-const copyProfitAverage = (profitAverage: number) => {
-  props.detail.productionProfit = profitAverage;
-  updateImports();
-
-  activeTab.value = "0";
-};
-const activeTab = ref("0");
-
 const emit = defineEmits<{
-  (e: "submit", detail: BudgetDetail | SalesOrderDetail): void;
+  (event: "submit", detail: BudgetDetail | SalesOrderDetail): void;
+  (event: "cancel"): void;
 }>();
 
-// Destructure the user prop to get a reactive reference to the age property
-const { detail } = toRefs(props);
+const { t } = useI18n();
+const workmasterStore = useWorkMasterStore();
+const referenceStore = useReferenceStore();
+const form = shallowRef<{
+  setFieldValue: (name: string, value: unknown) => void;
+  setValues: (values: FormValues) => void;
+} | null>(null);
+const activeTab = ref("0");
 
-const textActionButton = computed(() => {
-  return props.formAction === FormActionMode.CREATE ? "Afegir" : "Modificar";
-});
+/** Values read and written by the line calculations. */
+interface DetailCalculationValues {
+  referenceId: string;
+  workMasterId: string | null;
+  description: string;
+  referencePrice: number;
+  quantity: number;
+  profit: number;
+  productionProfit: number;
+  materialProfit: number;
+  externalProfit: number;
+  discount: number;
+  productionCost: number;
+  materialCost: number;
+  transportCost: number;
+  serviceCost: number;
+  unitCost: number;
+  unitPrice: number;
+  totalCost: number;
+  amount: number;
+}
 
-onMounted(async () => {
-  if (props.formAction === FormActionMode.EDIT) {
-    if (
-      detail.value.productionCost === 0 &&
-      detail.value.productionProfit === 0 &&
-      detail.value.workMasterId !== null
-    ) {
-      detail.value.productionCost =
-        detail.value.totalCost -
-        (detail.value.serviceCost + detail.value.transportCost);
+/** Working copy plus the fields a calculation wrote, applied in one batch. */
+interface DetailCalculation {
+  values: DetailCalculationValues;
+  changes: Partial<DetailCalculationValues>;
+}
 
-      if (detail.value.productionCost > 0) {
-        detail.value.productionProfit = detail.value.profit;
-      }
-      if (detail.value.serviceCost > 0 && detail.value.transportCost > 0) {
-        detail.value.externalProfit = detail.value.profit;
-      }
+// `referencePrice` is display-only (not part of the detail) and, as in the
+// legacy form, starts at 0 until a reference is chosen.
+const createInitialValues = (
+  detail: OrderDetail,
+  formAction: FormActionMode,
+): FormValues => {
+  const values = {
+    referenceId: detail.referenceId,
+    workMasterId: detail.workMasterId,
+    description: detail.description,
+    referencePrice: 0,
+    quantity: detail.quantity,
+    profit: detail.profit,
+    productionProfit: detail.productionProfit,
+    materialProfit: detail.materialProfit,
+    externalProfit: detail.externalProfit,
+    discount: detail.discount,
+    productionCost: detail.productionCost,
+    materialCost: detail.materialCost,
+    transportCost: detail.transportCost,
+    serviceCost: detail.serviceCost,
+    unitCost: detail.unitCost,
+    unitPrice: detail.unitPrice,
+    totalCost: detail.totalCost,
+    amount: detail.amount,
+    userNotes: detail.userNotes,
+  };
 
-      console.log(
-        "regularització inicial 'productionCost', 'productionProfit' i 'externalProfit'",
-        detail.value.productionCost,
-        detail.value.productionProfit,
-        detail.value.externalProfit,
-      );
+  // Initial regularisation of lines saved before production cost and
+  // production/external profit were stored separately.
+  if (
+    formAction === FormActionMode.EDIT &&
+    detail.productionCost === 0 &&
+    detail.productionProfit === 0 &&
+    detail.workMasterId !== null
+  ) {
+    values.productionCost =
+      detail.totalCost - (detail.serviceCost + detail.transportCost);
+    if (values.productionCost > 0) values.productionProfit = detail.profit;
+    if (detail.serviceCost > 0 && detail.transportCost > 0) {
+      values.externalProfit = detail.profit;
     }
   }
+
+  return values;
+};
+
+const initialValues = shallowRef<FormValues>(
+  createInitialValues(props.detail, props.formAction),
+);
+// Latest values needed after an await (cost requests).
+const latestValues = shallowRef<FormValues>({ ...initialValues.value });
+
+// Feature-owned state for the per-phase margins grid, which stays outside the
+// form fields and is merged into the payload at submit.
+const phaseProfits = ref<DetailPhaseProfit[]>([
+  ...(props.detail.phaseProfits ?? []),
+]);
+const currentReferenceId = ref(stringValue(initialValues.value.referenceId, ""));
+const currentWorkMasterId = ref(
+  nullableStringValue(initialValues.value.workMasterId, null),
+);
+const currentQuantity = ref(finiteNumberValue(initialValues.value.quantity, 0));
+
+/**
+ * Set only when the user intentionally changes the reference. Cleared as soon
+ * as DropdownWorkmasters reports its fresh options, so rapid changes never
+ * apply a stale result.
+ */
+let autoSelectWorkmaster = false;
+let costRequestSequence = 0;
+let suppressCallbacks = false;
+
+watch(
+  () => props.detail,
+  (detail) => {
+    costRequestSequence += 1;
+    autoSelectWorkmaster = false;
+    initialValues.value = createInitialValues(detail, props.formAction);
+    latestValues.value = { ...initialValues.value };
+    phaseProfits.value = [...(detail.phaseProfits ?? [])];
+    currentReferenceId.value = stringValue(initialValues.value.referenceId, "");
+    currentWorkMasterId.value = nullableStringValue(
+      initialValues.value.workMasterId,
+      null,
+    );
+    currentQuantity.value = finiteNumberValue(initialValues.value.quantity, 0);
+  },
+);
+
+onUnmounted(() => {
+  costRequestSequence += 1;
 });
 
-const referencePrice = ref(0);
-
-const getReferenceInfo = () => {
-  const reference = referenceStore.references!.find(
-    (r) => r.id === detail.value.referenceId,
-  );
-  if (reference) {
-    detail.value.description = reference.description;
-    referencePrice.value = reference.price;
-    detail.value.unitPrice = reference.price;
-    detail.value.workMasterId = null;
-    detail.value.unitCost = reference.lastCost;
-    updateImports();
-  } else {
-    referencePrice.value = 0;
-    detail.value.description = "";
-    detail.value.unitPrice = 0;
-    detail.value.workMasterId = null;
-    detail.value.unitCost = 0;
-    detail.value.totalCost = 0;
-    detail.value.amount = 0;
+const setFormValues = (values: FormValues): void => {
+  suppressCallbacks = true;
+  try {
+    form.value?.setValues(values);
+  } finally {
+    suppressCallbacks = false;
   }
 };
 
-const workmasterCosts = ref<ProductionCosts>({
-  machineCost: 0,
-  materialCost: 0,
-  operatorCost: 0,
-  externalTransportCost: 0,
-  externalServiceCost: 0,
+// Cleared numbers count as 0, as they did in the legacy arithmetic.
+const toCalculation = (values: Readonly<FormValues>): DetailCalculation => ({
+  values: {
+    referenceId: stringValue(values.referenceId, ""),
+    workMasterId: nullableStringValue(values.workMasterId, null),
+    description: stringValue(values.description, ""),
+    referencePrice: finiteNumberValue(values.referencePrice, 0),
+    quantity: finiteNumberValue(values.quantity, 0),
+    profit: finiteNumberValue(values.profit, 0),
+    productionProfit: finiteNumberValue(values.productionProfit, 0),
+    materialProfit: finiteNumberValue(values.materialProfit, 0),
+    externalProfit: finiteNumberValue(values.externalProfit, 0),
+    discount: finiteNumberValue(values.discount, 0),
+    productionCost: finiteNumberValue(values.productionCost, 0),
+    materialCost: finiteNumberValue(values.materialCost, 0),
+    transportCost: finiteNumberValue(values.transportCost, 0),
+    serviceCost: finiteNumberValue(values.serviceCost, 0),
+    unitCost: finiteNumberValue(values.unitCost, 0),
+    unitPrice: finiteNumberValue(values.unitPrice, 0),
+    totalCost: finiteNumberValue(values.totalCost, 0),
+    amount: finiteNumberValue(values.amount, 0),
+  },
+  changes: {},
 });
-const getWorkmasterCost = async (blockExternalCosts: boolean) => {
-  if (detail.value.workMasterId) {
-    const costsResponse = await workmasterStore.getCosts(
-      detail.value.workMasterId,
-      detail.value.quantity,
-    );
 
-    if (costsResponse.result && costsResponse.content) {
-      workmasterCosts.value = costsResponse.content as ProductionCosts;
-      detail.value.transportCost = workmasterCosts.value.externalTransportCost;
-      detail.value.serviceCost = workmasterCosts.value.externalServiceCost;
-      detail.value.productionCost =
-        workmasterCosts.value.machineCost + workmasterCosts.value.operatorCost;
-      detail.value.materialCost = workmasterCosts.value.materialCost;
-
-      detail.value.totalCost =
-        detail.value.transportCost +
-        detail.value.serviceCost +
-        detail.value.productionCost +
-        detail.value.materialCost;
-      detail.value.unitCost = detail.value.totalCost / detail.value.quantity;
-
-      updateImports();
-    }
-  } else {
-    getReferenceInfo();
-    detail.value.transportCost = 0;
-    detail.value.serviceCost = 0;
-    detail.value.productionCost = 0;
-    detail.value.materialCost = 0;
-    detail.value.totalCost = 0;
-  }
+const write = <TKey extends keyof DetailCalculationValues>(
+  calculation: DetailCalculation,
+  key: TKey,
+  value: DetailCalculationValues[TKey],
+): void => {
+  calculation.values[key] = value;
+  calculation.changes[key] = value;
 };
 
-const updateCosts = () => {
-  detail.value.totalCost =
-    detail.value.productionCost +
-    detail.value.serviceCost +
-    detail.value.materialCost +
-    detail.value.transportCost;
-  detail.value.unitCost = detail.value.totalCost / detail.value.quantity;
-
-  updateImports();
+const applyCalculation = (
+  calculation: DetailCalculation,
+  base: Readonly<FormValues>,
+): void => {
+  const changes: FormValues = { ...calculation.changes };
+  if (Object.keys(changes).length > 0) setFormValues(changes);
+  latestValues.value = { ...base, ...changes };
 };
 
-let isUpdatingQuantity = false;
-const updateQuantity = () => {
-  isUpdatingQuantity = true;
-  if (!detail.value.quantity) {
-    detail.value.quantity = 1;
-  }
+const findReference = (referenceId: string) =>
+  referenceStore.references?.find((r) => r.id === referenceId);
 
-  if (detail.value.workMasterId) {
-    getWorkmasterCost(true);
-  }
+const updateImports = (calculation: DetailCalculation): void => {
+  const v = calculation.values;
 
-  updateImports();
-  isUpdatingQuantity = false;
-};
-
-const updateImports = () => {
-  // starting from unit cost
-  detail.value.unitPrice = detail.value.unitCost;
-
-  // no cost, get price from reference
-  if (detail.value.unitPrice === 0) {
-    const reference = referenceStore.references!.find(
-      (r) => r.id === detail.value.referenceId,
-    );
-    detail.value.unitPrice = reference?.price || 0;
+  // starting from unit cost; with no cost, the reference price
+  let unitPrice = v.unitCost;
+  if (unitPrice === 0) {
+    unitPrice = findReference(v.referenceId)?.price || 0;
   }
 
   // apply profit
-  if (
-    detail.value.productionProfit > 0 ||
-    detail.value.externalProfit > 0 ||
-    detail.value.materialProfit > 0
-  ) {
-    console.log(
-      "production",
-      detail.value.productionCost * (1 + detail.value.productionProfit / 100),
-    );
-    console.log(
-      "material",
-      detail.value.materialCost * (1 + detail.value.materialProfit / 100),
-    );
-    console.log(
-      "external",
-      (detail.value.transportCost + detail.value.serviceCost) *
-        (1 + detail.value.externalProfit / 100),
-    );
+  if (v.productionProfit > 0 || v.externalProfit > 0 || v.materialProfit > 0) {
+    unitPrice =
+      (v.productionCost * (1 + v.productionProfit / 100) +
+        v.materialCost * (1 + v.materialProfit / 100) +
+        (v.transportCost + v.serviceCost) * (1 + v.externalProfit / 100)) /
+      v.quantity;
 
-    detail.value.unitPrice =
-      (detail.value.productionCost * (1 + detail.value.productionProfit / 100) +
-        detail.value.materialCost * (1 + detail.value.materialProfit / 100) +
-        (detail.value.transportCost + detail.value.serviceCost) *
-          (1 + detail.value.externalProfit / 100)) /
-      detail.value.quantity;
-
-    console.log("unitcost", detail.value.unitCost);
-    console.log("unitprice", detail.value.unitPrice);
-
-    if (detail.value.unitCost > 0) {
-      detail.value.profit = _.round(
-        (detail.value.unitPrice * 100) / detail.value.unitCost - 100,
-        2,
-      );
+    if (v.unitCost > 0) {
+      write(calculation, "profit", round((unitPrice * 100) / v.unitCost - 100, 2));
     }
-
-    console.log("profit", detail.value.profit);
   }
+
   // apply discount
-  if (detail.value.discount > 0) {
-    detail.value.unitPrice *= 1 - detail.value.discount / 100;
+  if (v.discount > 0) {
+    unitPrice *= 1 - v.discount / 100;
   }
 
   // round it & calculate total price (amount)
-  detail.value.unitPrice = _.round(detail.value.unitPrice, 2);
-  detail.value.amount = _.round(
-    detail.value.unitPrice * detail.value.quantity,
-    2,
+  write(calculation, "unitPrice", round(unitPrice, 2));
+  write(calculation, "amount", round(v.unitPrice * v.quantity, 2));
+};
+
+const updateCosts = (calculation: DetailCalculation): void => {
+  const v = calculation.values;
+  write(
+    calculation,
+    "totalCost",
+    v.productionCost + v.serviceCost + v.materialCost + v.transportCost,
   );
+  write(calculation, "unitCost", v.totalCost / v.quantity);
+  updateImports(calculation);
 };
 
-const updateUnitPrice = () => {
-  detail.value.amount = _.round(
-    detail.value.unitPrice * detail.value.quantity,
-    2,
-  );
+const updateUnitPrice = (calculation: DetailCalculation): void => {
+  const v = calculation.values;
+  write(calculation, "amount", round(v.unitPrice * v.quantity, 2));
 };
 
-const schema = Yup.object().shape({
-  quantity: Yup.number()
-    .required("La quantitat és obligatoria")
-    .min(1, "La quantitat ha de ser un número positiu"),
-  amount: Yup.number()
-    .required("El total és obligatori")
-    .min(0, "El total ha de ser un número igual o major que 0"),
-  profit: Yup.number().required("El benefici és obligatori"),
-  discount: Yup.number().required("El descompte és obligatori"),
-  unitPrice: Yup.number().required("El preu unitari és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.detail);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.detail);
+const getReferenceInfo = (calculation: DetailCalculation): void => {
+  const reference = findReference(calculation.values.referenceId);
+  if (reference) {
+    write(calculation, "description", reference.description);
+    write(calculation, "referencePrice", reference.price);
+    write(calculation, "unitPrice", reference.price);
+    write(calculation, "workMasterId", null);
+    write(calculation, "unitCost", reference.lastCost);
+    updateImports(calculation);
   } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
+    write(calculation, "referencePrice", 0);
+    write(calculation, "description", "");
+    write(calculation, "unitPrice", 0);
+    write(calculation, "workMasterId", null);
+    write(calculation, "unitCost", 0);
+    write(calculation, "totalCost", 0);
+    write(calculation, "amount", 0);
+  }
+  // The next optionsLoaded event may auto-select the workmaster. Never armed
+  // when an existing detail is loaded.
+  autoSelectWorkmaster = true;
+};
+
+const applyWorkmasterCosts = (
+  calculation: DetailCalculation,
+  costs: ProductionCosts,
+): void => {
+  const v = calculation.values;
+  write(calculation, "transportCost", costs.externalTransportCost);
+  write(calculation, "serviceCost", costs.externalServiceCost);
+  write(calculation, "productionCost", costs.machineCost + costs.operatorCost);
+  write(calculation, "materialCost", costs.materialCost);
+  write(
+    calculation,
+    "totalCost",
+    v.transportCost + v.serviceCost + v.productionCost + v.materialCost,
+  );
+  write(calculation, "unitCost", v.totalCost / v.quantity);
+  updateImports(calculation);
+};
+
+const clearWorkmasterCosts = (calculation: DetailCalculation): void => {
+  getReferenceInfo(calculation);
+  write(calculation, "transportCost", 0);
+  write(calculation, "serviceCost", 0);
+  write(calculation, "productionCost", 0);
+  write(calculation, "materialCost", 0);
+  write(calculation, "totalCost", 0);
+};
+
+const recalculate = (
+  values: Readonly<FormValues>,
+  calculate: (calculation: DetailCalculation) => void,
+): void => {
+  const calculation = toCalculation(values);
+  calculate(calculation);
+  applyCalculation(calculation, values);
+};
+
+const loadWorkmasterCosts = async (
+  values: Readonly<FormValues>,
+): Promise<void> => {
+  const requestSequence = ++costRequestSequence;
+  const calculation = toCalculation(values);
+  const workMasterId = calculation.values.workMasterId;
+
+  if (!workMasterId) {
+    clearWorkmasterCosts(calculation);
+    applyCalculation(calculation, values);
+    return;
+  }
+
+  const response = await workmasterStore.getCosts(
+    workMasterId,
+    calculation.values.quantity,
+  );
+  if (requestSequence !== costRequestSequence) return;
+  if (!response.result || !response.content) return;
+
+  const latest = latestValues.value;
+  const latestCalculation = toCalculation(latest);
+  applyWorkmasterCosts(latestCalculation, response.content);
+  applyCalculation(latestCalculation, latest);
+};
+
+const trackValues = (_value: unknown, values: Readonly<FormValues>): void => {
+  latestValues.value = { ...values };
+};
+
+const onReferenceChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  currentReferenceId.value = stringValue(value, "");
+  if (suppressCallbacks) return;
+  costRequestSequence += 1;
+  recalculate(values, getReferenceInfo);
+};
+
+const onWorkMasterChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  currentWorkMasterId.value = nullableStringValue(value, null);
+  if (suppressCallbacks) return;
+  void loadWorkmasterCosts(values);
+};
+
+const onImportSourceChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  if (suppressCallbacks) return;
+  recalculate(values, updateImports);
+};
+
+const onExternalCostChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  if (suppressCallbacks) return;
+  recalculate(values, updateCosts);
+};
+
+const onQuantityChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  currentQuantity.value = finiteNumberValue(value, 0);
+  if (suppressCallbacks) return;
+
+  const calculation = toCalculation(values);
+  if (!calculation.values.quantity) write(calculation, "quantity", 1);
+  if (calculation.values.workMasterId) {
+    void loadWorkmasterCosts({
+      ...values,
+      quantity: calculation.values.quantity,
     });
   }
+  updateImports(calculation);
+  applyCalculation(calculation, values);
+};
+
+const onUnitPriceChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  trackValues(value, values);
+  if (suppressCallbacks) return;
+  recalculate(values, updateUnitPrice);
+};
+
+const onWorkmasterOptionsLoaded = async (
+  payload: WorkmastersOptionsLoadedPayload,
+): Promise<void> => {
+  // Only react when an intentional user reference change armed the flag, and
+  // discard events that belong to a previous (stale) reference fetch.
+  if (!autoSelectWorkmaster) return;
+  if (payload.referenceId !== currentReferenceId.value) return;
+  autoSelectWorkmaster = false;
+
+  // Auto-select only an unambiguous choice (exactly one active workmaster);
+  // with 0 or 2+ options the costs are reset so stale values are never saved.
+  const workMasterId = payload.options.length === 1 ? payload.options[0].id : null;
+  setFormValues({ workMasterId });
+  latestValues.value = { ...latestValues.value, workMasterId };
+  await loadWorkmasterCosts(latestValues.value);
+};
+
+const copyProfitAverage = (profitAverage: number): void => {
+  // Goes through the productionProfit change pipeline (recalculates imports).
+  form.value?.setFieldValue("productionProfit", profitAverage);
+  activeTab.value = "0";
+};
+
+const onPhaseProfitsUpdate = (profits: DetailPhaseProfit[]): void => {
+  phaseProfits.value = profits;
+};
+
+const integerProps = { locale: "en-US", minFractionDigits: 0 } as const;
+const decimalProps = { locale: "en-US", minFractionDigits: 2 } as const;
+const currencyProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+} as const;
+const costColumns = { mobile: 1, tablet: 4, desktop: 7 };
+const withoutWorkmaster = (values: Readonly<FormValues>): boolean =>
+  nullableStringValue(values.workMasterId, null) === null;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "referenceId",
+        label: t("sales.components.referencia"),
+        type: FormFieldType.Custom,
+        onChange: onReferenceChange,
+      },
+      {
+        name: "referencePrice",
+        label: t("sales.components.preu"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+      {
+        name: "workMasterId",
+        label: t("sales.components.rutaDeFabricacio"),
+        type: FormFieldType.Custom,
+        onChange: onWorkMasterChange,
+      },
+    ],
+  },
+  {
+    columns: costColumns,
+    fields: [
+      {
+        name: "productionCost",
+        label: t("sales.components.costProduccio"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+      {
+        name: "productionProfit",
+        label: t("sales.components.beneficiProduccio"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+        onChange: onImportSourceChange,
+      },
+      {
+        name: "materialCost",
+        label: t("sales.components.costMaterial"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+      {
+        name: "materialProfit",
+        label: t("sales.components.beneficiMaterial"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+        onChange: onImportSourceChange,
+      },
+      {
+        name: "serviceCost",
+        label: t("sales.components.costServei"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: withoutWorkmaster,
+        onChange: onExternalCostChange,
+      },
+      {
+        name: "transportCost",
+        label: t("sales.components.costTransport"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: withoutWorkmaster,
+        onChange: onExternalCostChange,
+      },
+      {
+        name: "externalProfit",
+        label: t("sales.components.beneficiExterns"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+        onChange: onImportSourceChange,
+      },
+    ],
+  },
+  {
+    columns: costColumns,
+    fields: [
+      {
+        name: "quantity",
+        label: t("sales.components.quantitat"),
+        type: FormFieldType.Number,
+        props: integerProps,
+        onChange: onQuantityChange,
+        validation: Yup.number()
+          .required(t("sales.validation.quantityRequired"))
+          .min(1, t("sales.validation.quantityPositive")),
+      },
+      {
+        name: "unitCost",
+        label: t("sales.components.costUnitari"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+      {
+        name: "totalCost",
+        label: t("sales.components.costTotal"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+      {
+        name: "profit",
+        label: t("sales.components.benefici"),
+        type: FormFieldType.Number,
+        props: integerProps,
+        disabled: true,
+        validation: Yup.number().required(t("sales.validation.profitRequired")),
+      },
+      {
+        name: "discount",
+        label: t("sales.components.descompte"),
+        type: FormFieldType.Number,
+        props: decimalProps,
+        onChange: onImportSourceChange,
+        validation: Yup.number().required(
+          t("sales.validation.discountRequired"),
+        ),
+      },
+      {
+        name: "unitPrice",
+        label: t("sales.components.preuUnitari"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        onChange: onUnitPriceChange,
+        validation: Yup.number().required(
+          t("sales.validation.unitPriceRequired"),
+        ),
+      },
+      {
+        name: "amount",
+        label: t("sales.components.total"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+        validation: Yup.number()
+          .required(t("sales.validation.totalRequired"))
+          .min(0, t("sales.validation.totalNotNegative")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "description",
+        label: t("sales.components.descripcio"),
+        type: FormFieldType.Text,
+        onChange: trackValues,
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "userNotes",
+        label: t("sales.components.notesInternes"),
+        type: FormFieldType.Textarea,
+        props: { rows: 3, placeholder: t("sales.components.notesInternes") },
+        onChange: trackValues,
+      },
+    ],
+  },
+]);
+
+// Numbers fall back to 0, consistent with the calculations above.
+const detailValues = (values: Readonly<FormValues>): OrderDetail => ({
+  ...props.detail,
+  referenceId: stringValue(values.referenceId, ""),
+  workMasterId: nullableStringValue(
+    values.workMasterId,
+    props.detail.workMasterId,
+  ),
+  description: stringValue(values.description, props.detail.description),
+  quantity: finiteNumberValue(values.quantity, 0),
+  profit: finiteNumberValue(values.profit, 0),
+  productionProfit: finiteNumberValue(values.productionProfit, 0),
+  materialProfit: finiteNumberValue(values.materialProfit, 0),
+  externalProfit: finiteNumberValue(values.externalProfit, 0),
+  discount: finiteNumberValue(values.discount, 0),
+  productionCost: finiteNumberValue(values.productionCost, 0),
+  materialCost: finiteNumberValue(values.materialCost, 0),
+  transportCost: finiteNumberValue(values.transportCost, 0),
+  serviceCost: finiteNumberValue(values.serviceCost, 0),
+  unitCost: finiteNumberValue(values.unitCost, 0),
+  unitPrice: finiteNumberValue(values.unitPrice, 0),
+  totalCost: finiteNumberValue(values.totalCost, 0),
+  amount: finiteNumberValue(values.amount, 0),
+  userNotes: stringValue(values.userNotes, props.detail.userNotes),
+  phaseProfits: phaseProfits.value,
+});
+
+const submit = (values: FormValues): void => {
+  emit("submit", detailValues(values));
 };
 </script>
+
+<template>
+  <Tabs v-model:value="activeTab">
+    <TabList>
+      <Tab value="0">{{ t("sales.components.referencia") }}</Tab>
+      <Tab value="1">{{ t("sales.components.marges") }}</Tab>
+    </TabList>
+    <TabPanels>
+      <TabPanel value="0">
+        <Form
+          ref="form"
+          :rows="rows"
+          :initial-values="initialValues"
+          :disabled="readonly"
+          @submit="submit"
+          @cancel="emit('cancel')"
+        >
+          <template #field-referenceId="{ value, setValue, disabled, inputId }">
+            <DropdownReference
+              :input-id="inputId"
+              label=""
+              :model-value="typeof value === 'string' ? value : null"
+              :customer-id="header.customerId"
+              :full-name="true"
+              :disabled="disabled"
+              @update:model-value="setValue"
+            />
+          </template>
+
+          <template #field-workMasterId="{ value, setValue, disabled, inputId }">
+            <!-- Only forward `disabled` when set: the component disables
+                 itself while loading and $attrs would override that. -->
+            <DropdownWorkmasters
+              :input-id="inputId"
+              label=""
+              :model-value="typeof value === 'string' ? value : null"
+              :reference-id="currentReferenceId"
+              :active-by-reference="true"
+              v-bind="disabled ? { disabled: true } : {}"
+              @update:model-value="setValue"
+              @options-loaded="onWorkmasterOptionsLoaded"
+            />
+          </template>
+        </Form>
+      </TabPanel>
+      <TabPanel value="1">
+        <TableWorkmasterProfit
+          :work-master-id="currentWorkMasterId"
+          :quantity="currentQuantity"
+          :phase-profits="phaseProfits"
+          @updateProfitAverage="copyProfitAverage"
+          @update:phaseProfits="onPhaseProfitsUpdate"
+        />
+      </TabPanel>
+    </TabPanels>
+  </Tabs>
+</template>

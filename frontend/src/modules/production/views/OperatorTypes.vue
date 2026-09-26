@@ -1,87 +1,98 @@
 <template>
-  <DataTable
-    :value="plantmodelStore.operatorTypes"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="plantmodelStore.operatorTypes ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editRow"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Tipus d' operari</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{
+        t("production.operatorTypes.title")
+      }}</span>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Desactivat" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { OperatorType } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("production.fields.name"),
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("production.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchOperatorTypes();
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió de tipus d'operari",
+    title: t("production.operatorTypes.menuTitle"),
   });
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/operatortype/${uuidv4()}` });
+  router.push({ path: `/operatortype/${getNewUuid()}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/operatortype/${row.data.id}` });
-  }
+  router.push({ path: `/operatortype/${row.data.id}` });
 };
 
-const deleteButton = (event: any, operatorType: OperatorType) => {
+const deleteButton = (operatorType: OperatorType) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar el tipus d'operari: ${operatorType.name}?`,
+    message: t("production.messages.confirmDeleteOperatorType", {
+      name: operatorType.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -91,7 +102,7 @@ const deleteButton = (event: any, operatorType: OperatorType) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("production.messages.deleted"),
           life: 3000,
         });
         await plantmodelStore.fetchOperatorTypes();

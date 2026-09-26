@@ -11,6 +11,7 @@ namespace Infrastructure.Persistance.Repositories.Purchase
         public IRepository<BudgetTransport, Guid> Transports { get; }
         public IRepository<BudgetExternalServices, Guid> ExternalServices { get; }
         public IRepository<BudgetExternalServiceDetail, Guid> ExternalServiceDetails { get; }
+        public IRepository<BudgetDetailPhaseProfit, Guid> DetailPhaseProfits { get; }
 
         public BudgetRepository(ApplicationDbContext context) : base(context) 
         {
@@ -18,6 +19,7 @@ namespace Infrastructure.Persistance.Repositories.Purchase
             Transports = new Repository<BudgetTransport, Guid>(context);
             ExternalServices = new Repository<BudgetExternalServices, Guid>(context);
             ExternalServiceDetails = new Repository<BudgetExternalServiceDetail, Guid>(context);
+            DetailPhaseProfits = new Repository<BudgetDetailPhaseProfit, Guid>(context);
         }
 
         public override async Task<Budget?> Get(Guid id)
@@ -25,6 +27,8 @@ namespace Infrastructure.Persistance.Repositories.Purchase
             return await dbSet
                         .Include(d => d.Details)
                             .ThenInclude(d => d.Reference)
+                        .Include(d => d.Details)
+                            .ThenInclude(d => d.PhaseProfits)
                         .Include(d => d.Transports)
                         .Include(d => d.ExternalServices)
                             .ThenInclude(es => es.Details)

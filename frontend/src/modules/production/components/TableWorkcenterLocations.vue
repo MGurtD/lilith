@@ -13,13 +13,13 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Ubicacions assignades</span>
+          <span class="text-900 font-bold">{{ t("production.components.ubicacionsAssignades") }}</span>
           <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAddClick" />
         </div>
       </template>
-      <template #empty>No s'han trobat ubicacions.</template>
-      <template #loading>Carregant ubicacions. Si us plau espera.</template>
-      <Column header="Magatzem" style="width: 40%">
+      <template #empty>{{ t("production.components.noSHanTrobatUbicacions") }}</template>
+      <template #loading>{{ t("production.components.carregantUbicacionsSiUsPlauEspera") }}</template>
+      <Column :header="t('production.components.magatzem')" style="width: 40%">
         <template #body="slotProps">
           {{
             slotProps.data.location?.description ||
@@ -28,7 +28,7 @@
           }}
         </template>
       </Column>
-      <Column header="Ubicació" style="width: 50%">
+      <Column :header="t('production.components.ubicacio')" style="width: 50%">
         <template #body="slotProps">
           {{ slotProps.data.location?.name || "-" }}
         </template>
@@ -46,41 +46,47 @@
 
     <Dialog
       v-model:visible="dialogVisible"
-      header="Vincular ubicació"
+      :header="t('production.components.vincularUbicacio')"
       :closable="true"
       :modal="true"
       :style="{ width: '450px' }"
     >
-      <div class="flex flex-column gap-3 mt-3">
-        <DropdownWarehousesWithLocations
-          label="Ubicació"
-          v-model="selectedLocationId"
-          placeholder="Selecciona una ubicació"
-        />
-      </div>
-
-      <template #footer>
-        <Button
-          label="Cancel·lar"
-          :icon="PrimeIcons.TIMES"
-          text
-          @click="dialogVisible = false"
-        />
-        <Button
-          label="Guardar"
-          :icon="PrimeIcons.CHECK"
-          @click="onSaveHandler"
-        />
-      </template>
+      <Form
+        class="mt-3"
+        :rows="rows"
+        :initial-values="initialValues"
+        @submit="onSubmit"
+        @cancel="dialogVisible = false"
+      >
+        <template #field-locationId="{ value, setValue, disabled, inputId }">
+          <DropdownWarehousesWithLocations
+            :input-id="inputId"
+            :model-value="typeof value === 'string' ? value : null"
+            :placeholder="t('production.components.seleccionaUnaUbicacio')"
+            :disabled="disabled"
+            @update:model-value="setValue"
+          />
+        </template>
+      </Form>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
-import { ref } from "vue";
+import Form from "@/components/forms/Form.vue";
+import {
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { stringValue } from "@/components/forms/value-utils";
+import { computed, ref } from "vue";
 import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import * as Yup from "yup";
 import { WorkcenterLocation } from "../types";
 import DropdownWarehousesWithLocations from "../../warehouse/components/DropdownWarehousesWithLocations.vue";
 
@@ -95,42 +101,45 @@ const emits = defineEmits<{
 }>();
 
 const confirm = useConfirm();
-const toast = useToast();
 
 const dialogVisible = ref(false);
-const selectedLocationId = ref<string | null>(null);
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "locationId",
+        label: t("production.components.ubicacio"),
+        type: FormFieldType.Custom,
+        validation: Yup.string()
+          .nullable()
+          .required(
+            t("production.components.hasDeSeleccionarUnaUbicacioPerContinuar"),
+          )
+          .test(
+            "location-not-assigned",
+            t("production.components.aquestaUbicacioJaEstaAssignadaAAquestaMaquina"),
+            (value) =>
+              !value ||
+              !props.workcenterLocations?.some((wl) => wl.locationId === value),
+          ),
+      },
+    ],
+  },
+]);
+
+// Stable reference: an inline literal would reset the form on every render.
+// The dialog content is unmounted when hidden, so every opening starts from
+// an empty selection.
+const initialValues = { locationId: null };
 
 const onAddClick = () => {
-  selectedLocationId.value = null;
   dialogVisible.value = true;
 };
 
-const onSaveHandler = () => {
-  if (!selectedLocationId.value) {
-    toast.add({
-      severity: "warn",
-      summary: "Ubicació no seleccionada",
-      detail: "Has de seleccionar una ubicació per continuar.",
-      life: 5000,
-    });
-    return;
-  }
-
-  const alreadyAssigned = props.workcenterLocations?.find(
-    (wl) => wl.locationId === selectedLocationId.value,
-  );
-  if (alreadyAssigned) {
-    toast.add({
-      severity: "warn",
-      summary: "Ubicació duplicada",
-      detail: "Aquesta ubicació ja està assignada a aquesta màquina.",
-      life: 5000,
-    });
-    return;
-  }
-
+const onSubmit = (values: FormValues) => {
   dialogVisible.value = false;
-  emits("add", selectedLocationId.value);
+  emits("add", stringValue(values.locationId, ""));
 };
 
 const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
@@ -138,7 +147,9 @@ const onDeleteRow = (event: Event, entity: WorkcenterLocation) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: `Estàs segur que vols desvincular la ubicació '${entity.location?.name || entity.locationId}'?`,
+    message: t("production.messages.confirmUnlinkLocation", {
+      name: entity.location?.name || entity.locationId,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

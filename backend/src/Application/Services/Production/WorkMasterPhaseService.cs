@@ -74,6 +74,18 @@ public class WorkMasterPhaseService(IUnitOfWork unitOfWork, ILocalizationService
             return new GenericResponse(false, 
                 localizationService.GetLocalizedString("WorkMasterPhaseDetailAlreadyExists"));
 
+        // Check if workcenter and machine status combination exists
+        var phase = await unitOfWork.WorkMasters.Phases.Get(detail.WorkMasterPhaseId);
+        var workcenters = await unitOfWork.Workcenters.FindAsync(w => w.WorkcenterTypeId == phase.WorkcenterTypeId);
+        foreach (var w in workcenters)
+        {
+            var existsCost = unitOfWork.WorkcenterCosts.Find(wc => wc.WorkcenterId == w.Id && wc.MachineStatusId == detail.MachineStatusId).Any();
+            if (!existsCost)
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("WorkcenterCostNotFound", w.Id, detail.MachineStatusId));
+            }
+        }
         // Create detail
         await unitOfWork.WorkMasters.Phases.Details.Add(detail);
         return new GenericResponse(true, detail);
@@ -86,7 +98,18 @@ public class WorkMasterPhaseService(IUnitOfWork unitOfWork, ILocalizationService
         if (!exists)
             return new GenericResponse(false, 
                 localizationService.GetLocalizedString("WorkMasterPhaseDetailNotFound"));
-
+// Check if workcenter and machine status combination exists
+        var phase = await unitOfWork.WorkMasters.Phases.Get(detail.WorkMasterPhaseId);
+        var workcenters = await unitOfWork.Workcenters.FindAsync(w => w.WorkcenterTypeId == phase.WorkcenterTypeId);
+        foreach (var w in workcenters)
+        {
+            var existsCost = unitOfWork.WorkcenterCosts.Find(wc => wc.WorkcenterId == w.Id && wc.MachineStatusId == detail.MachineStatusId).Any();
+            if (!existsCost)
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("WorkcenterCostNotFound", w.Id, detail.MachineStatusId));
+            }
+        }
         // Update detail
         await unitOfWork.WorkMasters.Phases.Details.Update(detail);
         return new GenericResponse(true, detail);

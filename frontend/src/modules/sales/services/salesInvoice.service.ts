@@ -95,6 +95,15 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
     }
   }
 
+  async DownloadPdf(id: string): Promise<Blob | undefined> {
+    const endpoint = `${this.resource}/Report/${id}/pdf`;
+    const response = await this.apiClient.get(endpoint, {
+      responseType: "blob",
+    });
+    if (response.status === 200) {
+      return response.data as Blob;
+    }
+  }
   async Update(request: SalesInvoice) {
     const endpoint = `${this.resource}/${request.id}`;
     const response = await this.apiClient.put(endpoint, request);
@@ -144,18 +153,18 @@ export class SalesInvoiceService extends BaseService<SalesInvoice> {
   async AddDeliveryNote(
     id: string,
     deliveryNote: DeliveryNote
-  ): Promise<GenericResponse<any>> {
+  ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
     const endpoint = `${this.resource}/${id}/AddDeliveryNote`;
     const response = await this.apiClient.post(endpoint, deliveryNote);
-    return response.data as GenericResponse<any>;
+    return response.data as GenericResponse<Array<SalesInvoiceDetail>>;
   }
   async RemoveDeliveryNote(
     id: string,
     deliveryNote: DeliveryNote
-  ): Promise<GenericResponse<any>> {
+  ): Promise<GenericResponse<Array<SalesInvoiceDetail>>> {
     const endpoint = `${this.resource}/${id}/RemoveDeliveryNote`;
     const response = await this.apiClient.post(endpoint, deliveryNote);
-    return response.data as GenericResponse<any>;
+    return response.data as GenericResponse<Array<SalesInvoiceDetail>>;
   }
 
   async CreateDetail(

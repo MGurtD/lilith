@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Application.Contracts.Contracts.Production;
 using Domain.Entities.Production;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Services.Production;
@@ -181,7 +182,7 @@ public class WorkOrderPhaseService(
         phase.EndTime = DateTime.Now;
         await unitOfWork.WorkOrders.Phases.Update(phase);
 
-        // Delegate WorkOrder status update
+        // Delegate WorkOrder status update (no hi ha canvi de LotId aquí: el material torna amb el mateix lot, no hi ha producció en una fase externa)
         return await workOrderService.UpdateExternalWorkOrderStatus(phase.WorkOrderId, phaseId);
     }
 
@@ -511,7 +512,7 @@ public class WorkOrderPhaseService(
         if (exists)
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("WorkOrderPhaseDetailAlreadyExists"));
-
+        
         // Create detail
         await unitOfWork.WorkOrders.Phases.Details.Add(detail);
         return new GenericResponse(true, detail);
@@ -787,6 +788,31 @@ public class WorkOrderPhaseService(
         };
 
         return new GenericResponse(true, metrics);
+    }
+
+    #endregion
+
+    #region Rejections
+
+    public async Task<IEnumerable<WorkOrderPhaseRejectionDisplayDto>> GetPhaseRejections(Guid phaseId)
+    {
+        var rejections = await unitOfWork.WorkOrderPhaseRejections
+            .FindAsyncWithQueryParams(r => r.WorkOrderPhaseId == phaseId,
+                                      query => query.Include(r => r.RejectionReason));
+
+        return rejections
+            .OrderBy(r => r.CreatedOn)
+            .Select(r => new WorkOrderPhaseRejectionDisplayDto
+            {
+                Id = r.Id,
+                WorkOrderPhaseId = r.WorkOrderPhaseId,
+                RejectionReasonId = r.RejectionReasonId,
+                RejectionReasonCode = r.RejectionReason?.Code ?? string.Empty,
+                RejectionReasonName = r.RejectionReason?.Name ?? string.Empty,
+                RejectionReasonColor = r.RejectionReason?.Color ?? string.Empty,
+                Quantity = r.Quantity,
+                CreatedOn = r.CreatedOn
+            });
     }
 
     #endregion

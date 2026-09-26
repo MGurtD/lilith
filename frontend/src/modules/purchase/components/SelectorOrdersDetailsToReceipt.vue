@@ -9,30 +9,29 @@
     :value="filteredOrders"
   >
     <template #header>
-      <header class="selector-filter">
-        <div class="selector-filter-field">
-          <label for="">Buscar</label> &nbsp;
-          <InputText
-            style="width: 250px; height: 35px"
-            placeholder="Comanda, OF o referència"
-            v-model="filterReference"
-            size="small"
-          />
-        </div>
-        <div>
-          <div>
-            <Button
-              @click="onSelectedClick"
-              :size="'small'"
-              :icon="PrimeIcons.CHECK_SQUARE"
-              label="Afegir"
-            ></Button>
-          </div>
-        </div>
-      </header>
+      <TableFilter
+        v-model="filter"
+        :config="filterConfig"
+        embedded
+        :show-title="false"
+        :show-action-labels="false"
+        :show-create="false"
+        :show-filter-action="false"
+        :show-clear-action="false"
+      >
+        <template #append>
+          <Button
+            @click="onSelectedClick"
+            :size="'small'"
+            :icon="PrimeIcons.CHECK_SQUARE"
+            :aria-label="t('purchase.orderDetailsToReceipt.actions.add')"
+            :label="t('purchase.orderDetailsToReceipt.actions.add')"
+          ></Button>
+        </template>
+      </TableFilter>
     </template>
     <Column expander style="width: 5%" />
-    <Column header="" field="number" style="width: 85%">
+    <Column header="" field="number" style="width: 55%">
       <template #body="{ data }">
         <b
           >{{ referenceStore.getFullNameById(data.reference.id) }} |
@@ -40,15 +39,26 @@
         </b>
       </template>
     </Column>
+    <Column header="" field="lotId" style="width: 25%">
+      <template #body="{ data }">
+        <div v-if="referenceRequiresLot(data.reference.id)">
+          <SelectorLot
+            :reference-id="data.reference.id"
+            v-model="data.lotId"
+            @update:lotCode="(code) => (data.lotCode = code)"
+          />
+        </div>
+      </template>
+    </Column>
     <Column header="" field="number" style="width: 10%">
       <template #body="{ data }">
         <div>
-          <label>Import</label>
+          <label>{{ t("purchase.orderDetailsToReceipt.fields.amount") }}</label>
           <BaseInput
             :type="BaseInputType.CURRENCY"
             style="width: 250px; height: 35px"
             v-model="data.price"
-            placeholder="Import (€)"
+            :placeholder="t('purchase.orderDetailsToReceipt.placeholders.amount')"
           />
         </div>
       </template>
@@ -60,9 +70,9 @@
         v-model:selection="selectedOrderDetails"
       >
         <Column selectionMode="multiple" headerStyle="width: 2%"></Column>
-        <Column header="Comanda" field="orderNumber" headerStyle="width: 15%" />
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.order')" field="orderNumber" headerStyle="width: 15%" />
         <Column
-          header="D. Prevista"
+          :header="t('purchase.orderDetailsToReceipt.columns.expectedDate')"
           field="expectedReceiptDate"
           headerStyle="width: 15%"
         >
@@ -70,14 +80,14 @@
             {{ formatDate(data.expectedReceiptDate) }}
           </template>
         </Column>
-        <Column header="OF" field="workOrder" headerStyle="width: 60%">
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.workOrder')" field="workOrder" headerStyle="width: 60%">
           <template #body="{ data }">
             <span v-if="data.workOrder.length > 0">{{
               `${data.workOrder} - ${data.workOrderPhase}`
             }}</span>
           </template>
         </Column>
-        <Column header="Quantitat pendent" headerStyle="width: 10%">
+        <Column :header="t('purchase.orderDetailsToReceipt.columns.pendingQuantity')" headerStyle="width: 10%">
           <template #body="{ data }">
             <BaseInput
               style="width: 250px; height: 35px"
@@ -101,19 +111,36 @@ import {
   ReceiptOrderDetail,
   ReceiptOrderDetailGroup,
 } from "../types";
+import SelectorLot from "../../warehouse/components/SelectorLot.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterConfig } from "../../../components/tables/TableFilter.vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDate, getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useToast } from "primevue/usetoast";
+import { useI18n } from "vue-i18n";
 import { useStore } from "../../../store";
 import { BaseInputType } from "../../../types/component";
 
 const toast = useToast();
+const { t } = useI18n();
 const store = useStore();
 const referenceStore = useReferenceStore();
 const expandedRows = ref({});
-const filterReference = ref("");
+const filter = ref({ reference: "" });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "reference",
+    label: t("purchase.orderDetailsToReceipt.search"),
+    type: "text",
+    placeholder: t("purchase.orderDetailsToReceipt.placeholders.search"),
+  },
+]);
 const selectedOrderDetails = ref([] as Array<ReceiptOrderDetail>);
+
+const referenceRequiresLot = (referenceId: string) =>
+  referenceStore.references?.find((r) => r.id === referenceId)?.requiresLot ??
+  false;
 
 const props = defineProps<{
   receipt: Receipt;
@@ -129,7 +156,7 @@ const filteredOrders = computed(() => {
     try {
       // Filter orders by reference full name
       filtered = props.groupedOrderDetails.filter((group) =>
-        group.reference.code.includes(filterReference.value),
+        group.reference.code.includes(filter.value.reference),
       );
     } catch (error) {
       console.error("Error filtering orders", error);
@@ -165,8 +192,8 @@ const validateSelection = () => {
   if (selectedOrderDetails.value.length === 0) {
     toast.add({
       severity: "warn",
-      summary: "Selecció inválida",
-      detail: "Selecciona alguna línia per afegir-la a l'albarà",
+      summary: t("purchase.orderDetailsToReceipt.messages.invalidSelection"),
+      detail: t("purchase.orderDetailsToReceipt.messages.selectLine"),
       life: 6000,
     });
 
@@ -178,8 +205,8 @@ const validateSelection = () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: "Selecció inválida",
-      detail: "No es poden afegir línies amb quantitat 0",
+      summary: t("purchase.orderDetailsToReceipt.messages.invalidSelection"),
+      detail: t("purchase.orderDetailsToReceipt.messages.zeroQuantity"),
       life: 6000,
     });
 
@@ -231,6 +258,8 @@ const onSelectedClick = () => {
         (group.price / totalQuantity) * detail.pendingQuantity,
       );
 
+      const selectedLotCode = group.lotCode;
+
       receptionsRequest.receptions.push({
         receiptDetailId: getNewUuid(),
         purchaseOrderDetailId: detail.id,
@@ -240,6 +269,8 @@ const onSelectedClick = () => {
             ? (group.price / totalQuantity) * detail.pendingQuantity
             : 0,
         user: store.user?.username,
+        lotId: group.lotId ?? null,
+        lotCode: selectedLotCode,
       } as PurchaseOrderReceiptDetail);
     });
   });
@@ -247,9 +278,3 @@ const onSelectedClick = () => {
   emits("selected", receptionsRequest);
 };
 </script>
-<style scoped>
-.selector-filter {
-  display: grid;
-  grid-template-columns: 1fr 0.1fr;
-}
-</style>

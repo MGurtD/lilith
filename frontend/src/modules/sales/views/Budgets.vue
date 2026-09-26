@@ -1,9 +1,10 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="budgetStore.budgets ?? []"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="Budgets"
@@ -19,60 +20,24 @@
     @create="createButtonClick"
     @delete="deleteBudget"
   >
-    <template #prepend>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >Període</label
-        >
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          placeholder="Selecciona període"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >Client</label
-        >
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label">Estat</label>
-        <MultiSelect
-          v-model="statusIds"
-          :options="lifecycleStore.lifecycle?.statuses || []"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="Selecciona estats"
-          display="chip"
-          :showToggleAll="false"
-          class="w-full"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
   </Table>
 
   <Dialog
     v-model:visible="dialogOptions.visible"
-    :header="dialogOptions.title"
+    :header="t('sales.budgets.createTitle')"
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
     :style="{ width: '80vw', maxWidth: '425px' }"
   >
     <FormCreateOrderOrInvoice
       :create-request="createRequest"
+      :loading="creating"
       @submit="createOrder"
+      @cancel="dialogOptions.visible = false"
     />
   </Dialog>
 
@@ -82,9 +47,17 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
-import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
-import { onMounted, onUnmounted, reactive, ref } from "vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStore } from "@/store";
@@ -108,37 +81,73 @@ const store = useStore();
 const budgetStore = useBudgetStore();
 const customerStore = useCustomersStore();
 const lifecycleStore = useLifecyclesStore();
+const { locale, t } = useI18n();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 
-const columns = ref<Column[]>([
-  { field: "number", header: "Número" },
-  { field: "date", header: "Data", sortable: true, columnType: ColumnType.Date },
+const columns = computed<Column[]>(() => [
+  { field: "number", header: t("common.number") },
+  { field: "date", header: t("common.date"), sortable: true, columnType: ColumnType.Date },
   {
     field: "customerId",
-    header: "Client",
+    header: t("common.customer"),
     columnType: ColumnType.Lookup,
     resolver: customerStore.getCustomerNameById,
   },
   {
     field: "statusId",
-    header: "Estat",
-    columnType: ColumnType.Lookup,
+    header: t("common.status"),
+    columnType: ColumnType.Status,
     resolver: lifecycleStore.getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
   },
-  { field: "acceptanceDate", header: "Data d'acceptació", columnType: ColumnType.Date },
-  { field: "deliveryDays", header: "Dies d'entrega" },
+  { field: "acceptanceDate", header: t("sales.budgets.columns.acceptanceDate"), columnType: ColumnType.Date },
+  { field: "deliveryDays", header: t("sales.budgets.columns.deliveryDays") },
+]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "date",
+  meta: ["acceptanceDate", "deliveryDays"],
+};
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+  {
+    key: "statusIds",
+    label: t("common.status"),
+    type: "multiselect",
+    options: lifecycleStore.lifecycle?.statuses || [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("sales.list.statusesPlaceholder"),
+    display: "chip",
+    filter: false,
+    showToggleAll: false,
+  },
 ]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
+  statusIds: [] as Array<string>,
 });
-const statusIds = ref<Array<string>>([]);
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear pressupost",
   closable: true,
   position: "center",
   modal: true,
@@ -159,23 +168,27 @@ onMounted(async () => {
   setCurrentYear();
   await filterBudget();
 
-  store.setMenuItem({
-    icon: PrimeIcons.APPLE,
-    title: "Pressupostos",
-  });
+  setMenuItem();
 });
 onUnmounted(() => {
   budgetStore.budgets = undefined;
 });
 
+const setMenuItem = () => {
+  store.setMenuItem({ icon: PrimeIcons.APPLE, title: t("sales.budgets.title") });
+};
+
+watch(locale, setMenuItem);
+
 const cleanFilter = () => {
   filter.value.customerId = undefined;
-  statusIds.value = [];
+  filter.value.statusIds = [];
   setCurrentYear();
   filterBudget();
 };
 
 const createRequest = ref({} as CreateSalesHeaderRequest);
+const creating = ref(false);
 const generateNewRequest = (): CreateSalesHeaderRequest => {
   return {
     id: getNewUuid(),
@@ -203,31 +216,38 @@ const filterBudget = async () => {
       startTime,
       endTime,
       filter.value.customerId,
-      statusIds.value,
+      filter.value.statusIds,
     );
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("sales.list.messages.invalidFilter"),
+      detail: t("sales.list.messages.selectPeriod"),
       life: 5000,
     });
   }
 };
 
-const createOrder = async () => {
-  const response = await budgetStore.Create(createRequest.value);
-  if (!response) {
-    toast.add({
-      severity: "warn",
-      summary: "Error al crear el pressupost",
-      detail: "Error desconegut, contacte amb l'administrador.",
-      life: 10000,
-    });
-    return;
+const createOrder = async (request: CreateSalesHeaderRequest) => {
+  if (creating.value) return;
+
+  creating.value = true;
+  try {
+    const response = await budgetStore.Create(request);
+    if (!response) {
+      toast.add({
+        severity: "warn",
+        summary: t("sales.budgets.messages.createError"),
+        detail: t("sales.list.messages.unknownError"),
+        life: 10000,
+      });
+      return;
+    }
+    dialogOptions.visible = false;
+    router.push({ path: `/budget/${request.id}` });
+  } finally {
+    creating.value = false;
   }
-  dialogOptions.visible = false;
-  router.push({ path: `/budget/${createRequest.value.id}` });
 };
 
 const editRow = (row: DataTableRowClickEvent) => {
@@ -240,15 +260,15 @@ const deleteBudget = async (budget: Budget) => {
   if (budgetStore.order) {
     toast.add({
       severity: "warn",
-      summary: "No es pot eliminar",
-      detail: `El pressupost té la comanda ${budgetStore.order.number} associada`,
+      summary: t("sales.budgets.messages.cannotDelete"),
+      detail: t("sales.budgets.messages.associatedOrder", { number: budgetStore.order.number }),
       life: 5000,
     });
     return;
   }
 
   confirm.require({
-    message: `Està segur que vol eliminar el pressupost?`,
+    message: t("sales.budgets.messages.confirmDelete"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -257,7 +277,7 @@ const deleteBudget = async (budget: Budget) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("sales.list.messages.deleted"),
           life: 3000,
         });
 

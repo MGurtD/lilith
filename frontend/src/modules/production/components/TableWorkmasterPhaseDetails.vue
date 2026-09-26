@@ -13,32 +13,32 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Pasos de fabricació</span>
+        <span class="text-900 font-bold">{{ t("production.components.pasosDeFabricacio") }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAdd" />
       </div>
     </template>
 
-    <Column sortable field="order" header="Ordre" style="width: 10%"></Column>
+    <Column sortable field="order" :header="t('production.components.ordre')" style="width: 10%"></Column>
 
-    <Column header="Estat de màquina" style="width: 25%">
+    <Column :header="t('production.components.estatDeMaquina')" style="width: 25%">
       <template #body="slotProps">
         {{ getMachineStatus(slotProps.data.machineStatusId) }}
       </template>
     </Column>
 
-    <Column header="Temps de cicle" style="width: 25%">
+    <Column :header="t('production.components.tempsDeCicle')" style="width: 25%">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isCycleTime"></BooleanColumn>
       </template>
     </Column>
     <Column
       field="estimatedTime"
-      header="Temps màquina (min)"
+      :header="t('production.components.tempsMaquinaMin')"
       style="width: 25%"
     ></Column>
     <Column
       field="estimatedOperatorTime"
-      header="Temps operari (min)"
+      :header="t('production.components.tempsOperariMin')"
       style="width: 25%"
     ></Column>
     <Column style="width: 25%">
@@ -54,6 +54,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkMasterPhase, WorkMasterPhaseDetail } from "../types";
@@ -121,7 +124,7 @@ const onEditRow = (row: DataTableRowClickEvent) => {
 const onDeleteRow = (event: any, detail: WorkMasterPhaseDetail) => {
   confirm.require({
     target: event.currentTarget,
-    message: `Está segur que vol eliminar el pas de la fase?`,
+    message: t("production.components.confirmDeletePhaseStep"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

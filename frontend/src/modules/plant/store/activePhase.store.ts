@@ -5,6 +5,7 @@ import {
   ValidatePreviousPhaseQuantityRequest,
   PhaseTimeMetrics,
   BillOfMaterialsItem,
+  WorkOrderPhaseRejectionRequest,
 } from "../../production/types";
 import { StockMovement } from "../../warehouse/types";
 import { NextPhaseInfo } from "../types";
@@ -395,6 +396,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
     async updatePhaseQuantities(
       counterOk: number,
       counterKo: number,
+      rejections: WorkOrderPhaseRejectionRequest[] = [],
     ): Promise<boolean> {
       const workcenterStore = usePlantWorkcenterStore();
 
@@ -415,6 +417,7 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
             workOrderPhaseId: phaseId,
             quantityOk: counterOk,
             quantityKo: counterKo,
+            rejections,
           });
 
         if (result) {
@@ -424,6 +427,34 @@ export const usePlantActivePhaseStore = defineStore("plantActivePhaseStore", {
         return result;
       } catch (error) {
         console.error("Error updating phase quantities:", error);
+        return false;
+      }
+    },
+    /**
+     * Registers the rejection reason breakdown of KO units declared through a
+     * flow that reports the quantities elsewhere, such as unloading a phase.
+     */
+    async registerPhaseRejections(
+      workOrderPhaseId: string,
+      counterKo: number,
+      rejections: WorkOrderPhaseRejectionRequest[],
+    ): Promise<boolean> {
+      if (rejections.length === 0) return true;
+
+      const workcenterStore = usePlantWorkcenterStore();
+      if (!workcenterStore.workcenter) return false;
+
+      try {
+        return await ProductionServices.WorkcenterShift.RegisterPhaseRejections(
+          {
+            workcenterId: workcenterStore.workcenter.id,
+            workOrderPhaseId,
+            quantityKo: counterKo,
+            rejections,
+          },
+        );
+      } catch (error) {
+        console.error("Error registering phase rejections:", error);
         return false;
       }
     },

@@ -2,58 +2,38 @@
   <main class="container">
     <section class="two-columns">
       <div>
-        <DataTable
-          :value="shiftStore.shifts"
+        <Table
+          phone-layout="cards"
+          :card-layout="shiftCardLayout"
+          :items="shiftStore.shifts ?? []"
+          :columns="shiftColumns"
+          :filter-config="[]"
+          :show-filter-actions="false"
           tableStyle="min-width: 100%"
+          @create="openShift"
           @row-click="selectShift"
         >
-          <template #header>
-            <div
-              class="flex flex-wrap align-items-center justify-content-between gap-2"
-            >
-              <span class="text-900 font-bold">Torns</span>
-              <Button
-                :icon="PrimeIcons.PLUS"
-                rounded
-                raised
-                @click="openShift"
-              />
-            </div>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ pt("Torns") }}</span>
           </template>
-          <Column field="name" header="Nom"></Column>
-          <Column field="disabled" header="Desactivat">
-            <template #body="slotProps">
-              <BooleanColumn :value="slotProps.data.disabled" />
-            </template>
-          </Column>
-        </DataTable>
+        </Table>
       </div>
       <div>
-        <DataTable
-          :value="shiftStore.shiftdetails"
+        <Table
+          phone-layout="cards"
+          :card-layout="shiftDetailCardLayout"
+          :items="shiftStore.shiftdetails ?? []"
+          :columns="shiftDetailColumns"
+          :filter-config="[]"
+          :show-filter-actions="false"
+          :show-create="Boolean(selectedShift)"
           tableStyle="min-width: 100%"
+          @create="openShiftDetail"
         >
-          <template #header>
-            <div
-              class="flex flex-wrap align-items-center justify-content-between gap-2"
-            >
-              <span class="text-900 font-bold">Horaris</span>
-              <Button
-                :icon="PrimeIcons.PLUS"
-                rounded
-                raised
-                @click="openShiftDetail"
-              />
-            </div>
+          <template #prepend>
+            <span class="text-900 font-bold">{{ pt("Horaris") }}</span>
           </template>
-          <Column field="startTime" header="Hora inici"></Column>
-          <Column field="endTime" header="Hora fi"></Column>
-          <Column field="isProductiveTime" header="Temps Productiu">
-            <template #body="slotProps">
-              <BooleanColumn :value="slotProps.data.isProductiveTime" />
-            </template>
-          </Column>
-        </DataTable>
+        </Table>
       </div>
     </section>
   </main>
@@ -63,7 +43,12 @@
     :closable="dialogOptions.closable"
     :modal="dialogOptions.modal"
   >
-    <FormShift v-if="shift" :shift="shift" @submit="submitShift" />
+    <FormShift
+      v-if="shift"
+      :shift="shift"
+      @submit="submitShift"
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
   <Dialog
     v-model:visible="dialogOptionsDetail.visible"
@@ -75,11 +60,21 @@
       v-if="shiftdetail"
       :shiftdetail="shiftdetail"
       @submit="submitShiftDetail"
+      @cancel="dialogOptionsDetail.visible = false"
     />
   </Dialog>
 </template>
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "../../../store";
 import { Shift, ShiftDetail } from "../types";
@@ -91,7 +86,6 @@ import FormShift from "../components/FormShift.vue";
 import FormShiftDetail from "../components/FormShiftDetail.vue";
 import { storeToRefs } from "pinia";
 import { getNewUuid } from "../../../utils/functions";
-import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
 
 const store = useStore();
 const shiftStore = useShiftStore();
@@ -99,10 +93,40 @@ const toast = useToast();
 
 const { shift, shiftdetail } = storeToRefs(shiftStore);
 
+const shiftColumns = computed<Column[]>(() => [
+  { field: "name", header: pt("Nom") },
+  {
+    field: "disabled",
+    header: pt("Desactivat"),
+    columnType: ColumnType.Boolean,
+  },
+]);
+
+const shiftCardLayout: CardLayout = {
+  title: "name",
+  meta: ["disabled"],
+};
+
+const shiftDetailColumns = computed<Column[]>(() => [
+  { field: "startTime", header: pt("Hora inici") },
+  { field: "endTime", header: pt("Hora fi") },
+  {
+    field: "isProductiveTime",
+    header: pt("Temps Productiu"),
+    columnType: ColumnType.Boolean,
+  },
+]);
+
+const shiftDetailCardLayout: CardLayout = {
+  title: "startTime",
+  trailing: "endTime",
+  meta: ["isProductiveTime"],
+};
+
 const openShift = () => {
   shiftStore.setNewShift(getNewUuid());
   dialogOptions.visible = true;
-  dialogOptions.title = "Alta de torns";
+  dialogOptions.title = t("production.detail.createShift");
 };
 
 const openShiftDetail = () => {
@@ -141,34 +165,40 @@ onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     backButtonVisible: false,
-    title: "Gestió de torns",
+    title: pt("Gestió de torns"),
   });
 });
 
-const submitShift = async () => {
-  const data = shift.value as Shift;
-  let result = false;
-  result = await shiftStore.createShift(data);
+// The dialog only creates shifts; editing an existing shift is not wired here.
+const submitShift = async (data: Shift) => {
+  const result = await shiftStore.createShift(data);
   if (result) {
     dialogOptions.visible = false;
     toast.add({
       severity: "success",
-      summary: "Torn creat correctament",
+      summary: pt("Torn creat correctament"),
       life: 5000,
     });
   }
 };
-const submitShiftDetail = async () => {
-  const data = shiftdetail.value as ShiftDetail;
-  let result = false;
-  result = await shiftStore.createDetail(data);
+const submitShiftDetail = async (data: ShiftDetail) => {
+  const result = await shiftStore.createDetail(data);
   if (result) {
     dialogOptionsDetail.visible = false;
     toast.add({
       severity: "success",
-      summary: "Detall creat correctament",
+      summary: pt("Detall creat correctament"),
       life: 5000,
     });
   }
 };
 </script>
+
+<style scoped>
+/* Phones stack the shifts above their schedule. */
+@media (max-width: 767.98px) {
+  .two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

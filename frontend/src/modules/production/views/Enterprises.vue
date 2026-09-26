@@ -1,64 +1,83 @@
 <template>
-  <DataTable
-    :value="plantmodelStore.enterprises"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="plantmodelStore.enterprises ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteButton"
     @row-click="editEnterprise"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Empresa</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{
+        t("production.enterprises.title")
+      }}</span>
     </template>
-    <Column field="name" header="Nom" style="width: 25%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column field="defaultSiteId" header="Seu per defecte" style="width: 15%">
-      <template #body="slotProps">
-        {{ plantmodelStore.getSiteNameById(slotProps.data.defaultSiteId) }}
-      </template>
-    </Column>
-    <Column header="Desactivada" style="width: 10%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deleteButton($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { usePlantModelStore } from "../store/plantmodel";
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { Enterprise } from "../types";
+import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
 const confirm = useConfirm();
 const plantmodelStore = usePlantModelStore();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("production.fields.name"),
+    style: "width: 25%",
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "defaultSiteId",
+    header: t("production.enterprises.defaultSite"),
+    columnType: ColumnType.Lookup,
+    resolver: (value) =>
+      typeof value === "string" ? plantmodelStore.getSiteNameById(value) : "",
+    style: "width: 15%",
+  },
+  {
+    field: "disabled",
+    header: t("production.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 10%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["defaultSiteId", "disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchEnterprises();
@@ -66,27 +85,22 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Gestió d'empreses",
+    title: t("production.enterprises.menuTitle"),
   });
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/enterprise/${uuidv4()}` });
+  router.push({ path: `/enterprise/${getNewUuid()}` });
 };
 
 const editEnterprise = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/enterprise/${row.data.id}` });
-  }
+  router.push({ path: `/enterprise/${row.data.id}` });
 };
-const deleteButton = (event: any, entity: Enterprise) => {
+const deleteButton = (entity: Enterprise) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar l'empresa ${entity.name}?`,
+    message: t("production.messages.confirmDeleteEnterprise", {
+      name: entity.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -96,7 +110,7 @@ const deleteButton = (event: any, entity: Enterprise) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("production.messages.deleted"),
           life: 3000,
         });
         await plantmodelStore.fetchEnterprises();

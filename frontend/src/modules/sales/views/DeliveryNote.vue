@@ -1,18 +1,13 @@
 <template>
-  <SplitButton
-    label="Guardar"
-    @click="submitForm"
-    :model="items"
-    :size="'small'"
-    class="grid_add_row_button"
-  />
-
   <FormDeliveryNote
     v-if="deliveryNote"
     class="mt-3 mb-3"
-    ref="deliveryNoteForm"
-    :deliveryNote="deliveryNote"
+    :delivery-note="deliveryNote"
+    :lock-header="isDelivered || isInvoiced"
+    :lock-status="isInvoiced"
     @submit="onDeliveryNoteSubmit"
+    @download="printInvoice"
+    @download-pdf="printPdf"
   />
 
   <TableDeliveryNoteDetails
@@ -25,12 +20,12 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-l text-900 font-bold">Linies de l'albarà</span>
+        <span class="text-l text-900 font-bold">{{ t("sales.detail.labels.deliveryNoteLines") }}</span>
         <div>
           <Button
             :disabled="!canModifyDetails || isAddingOrders"
             :size="'small'"
-            label="Afegir comanda"
+            :label="t('sales.detail.actions.createOrder')"
             @click="openSalesOrderSelector()"
           />
         </div>
@@ -68,16 +63,12 @@ import { useCustomersStore } from "../store/customers";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
 import { DeliveryNote, SalesOrderHeader } from "../types";
-import {
-  createBlobAndDownloadFile,
-  formatDate,
-} from "../../../utils/functions";
+import { createBlobAndDownloadFile } from "../../../utils/functions";
 import { useSalesOrderStore } from "../store/order";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import Services from "../services";
 import { REPORTS, ReportService } from "../../../services/report.service";
-
-const deliveryNoteForm = ref();
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
@@ -91,21 +82,9 @@ const plantModelStore = usePlantModelStore();
 const referenceStore = useReferenceStore();
 const lifecycleStore = useLifecyclesStore();
 const { deliveryNote } = storeToRefs(deliveryNoteStore);
+const { t } = useI18n();
 
-const items = [
-  {
-    label: "Descarregar",
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(true),
-  },
-  {
-    label: "Descarregar sense preu",
-    icon: PrimeIcons.FILE_WORD,
-    command: () => printInvoice(false),
-  },
-];
-
-const dialogTitle = "Selector de comandes";
+const dialogTitle = computed(() => t("sales.detail.dialogs.orderSelector"));
 const isDialogVisible = ref(false);
 const initialStatusId = ref("");
 
@@ -129,6 +108,15 @@ const canModifyDetails = computed(() => {
   return deliveredStatus.id !== initialStatusId.value;
 });
 
+const isDelivered = computed(() => {
+  const deliveredStatus = lifecycleStore.lifecycle?.statuses?.find(
+    (status) => status.name === "Entregat"
+  );
+  return deliveredStatus?.id === initialStatusId.value;
+});
+
+const isInvoiced = computed(() => !!deliveryNote.value?.salesInvoiceId);
+
 const loadView = async () => {
   const id = route.params.id as string;
   await deliveryNoteStore.GetById(id);
@@ -144,13 +132,7 @@ const loadView = async () => {
   let pageTitle = "";
   if (deliveryNote.value) {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Albarà d'entrega ${deliveryNote.value.number}`;
-
-    if (deliveryNote.value.deliveryDate) {
-      deliveryNote.value.deliveryDate = formatDate(
-        deliveryNote.value.deliveryDate
-      );
-    }
+    pageTitle = `${t("sales.deliveryNotes.title")} ${deliveryNote.value.number}`;
   }
 
   store.setMenuItem({
@@ -170,28 +152,24 @@ onUnmounted(() => {
   salesOrderStore.salesOrdersToDeliver = undefined;
 });
 
-const submitForm = () => {
-  if (!deliveryNote.value?.createdOn) {
-    toast.add({
-      severity: "error",
-      summary: "Error al crear la comanda ",
-      detail: "La data no pot estar buida",
-      life: 5000,
-    });
-    return false;
-  }
-  const form = deliveryNoteForm.value as any;
-  form.submitForm();
-};
-
 const toast = useToast();
 
 const onDeliveryNoteSubmit = async (deliveryNote: DeliveryNote) => {
+  if (!deliveryNote.createdOn) {
+    toast.add({
+      severity: "error",
+      summary: t("sales.detail.messages.error"),
+      detail: t("sales.detail.messages.dateRequired"),
+      life: 5000,
+    });
+    return;
+  }
+
   let result = false;
   let message = "";
 
   result = await deliveryNoteStore.Update(deliveryNote.id, deliveryNote);
-  message = result ? "Albarà actualitzat" : "Error al actualitzar l'albarà";
+  message = result ? t("sales.detail.messages.updated") : t("sales.deliveryNotes.messages.createError");
 
   toast.add({
     life: 5000,
@@ -228,11 +206,9 @@ const addSalesOrdersToDeliveryNote = async (
       if (!response.result) {
         toast.add({
           severity: "error",
-          summary: "Error en afegir la comanda",
+          summary: t("sales.detail.messages.orderAddError"),
           detail:
-            typeof response.content === "string"
-              ? response.content
-              : `No s'ha pogut afegir la comanda`,
+            response.errors?.[0] ?? t("sales.detail.messages.orderAddFailed"),
           life: 6000,
         });
         continue;
@@ -244,6 +220,7 @@ const addSalesOrdersToDeliveryNote = async (
         );
     }
 
+    await deliveryNoteStore.GetById(deliveryNote.value!.id);
     await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
   } finally {
     isAddingOrders.value = false;
@@ -251,7 +228,21 @@ const addSalesOrdersToDeliveryNote = async (
 };
 
 const deleteSalesOrder = async (order: SalesOrderHeader) => {
-  await deliveryNoteStore.DeleteOrder(deliveryNote.value!.id, order);
+  const response = await deliveryNoteStore.DeleteOrder(
+    deliveryNote.value!.id,
+    order
+  );
+  if (!response.result) {
+    toast.add({
+      severity: "error",
+      summary: t("sales.deliveryNotes.messages.orderDeleteError"),
+      detail:
+        response.errors?.[0] ??
+        t("sales.deliveryNotes.messages.orderDeleteFailed"),
+      life: 6000,
+    });
+  }
+  await deliveryNoteStore.GetById(deliveryNote.value!.id);
   await salesOrderStore.GetByDeliveryNote(deliveryNote.value!.id);
 };
 
@@ -276,10 +267,15 @@ const printInvoice = async (showPrices: boolean) => {
     } else {
       toast.add({
         severity: "warn",
-        summary: "Error",
-        detail: "No s'ha pugut generar fulla de la comanda",
+        summary: t("sales.detail.messages.error"),
+        detail: t("sales.detail.messages.reportError"),
       });
     }
   }
 };
+const printPdf = async () => {
+  const report = await Services.DeliveryNote.DownloadPdf(deliveryNote.value!.id, true);
+  if (report) createBlobAndDownloadFile(`Albara_${deliveryNote.value?.number}.pdf`, report);
+};
+
 </script>

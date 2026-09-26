@@ -1,20 +1,119 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import type { AddressAutocompleteResult, LocationData } from "@/types";
+import AutocompleteLocation from "@/components/AutocompleteLocation.vue";
+import BaseInput from "@/components/BaseInput.vue";
+import DropdownCountry from "@/modules/shared/components/DropdownCountry.vue";
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: LocationData;
+    showDistance?: boolean;
+    validationErrors?: Record<string, unknown>;
+    showValidationMessages?: boolean;
+    disabled?: boolean;
+  }>(),
+  {
+    showDistance: false,
+    validationErrors: undefined,
+    showValidationMessages: false,
+    disabled: false,
+  },
+);
+
+const emit = defineEmits<{
+  (event: "update:modelValue", value: LocationData): void;
+}>();
+
+const { t } = useI18n();
+const locationSelection = ref<AddressAutocompleteResult | null>(null);
+
+const autocompleteCountryCode = computed(
+  () => props.modelValue.country?.toLowerCase() ?? "es",
+);
+const hasCoordinates = computed(
+  () =>
+    props.modelValue.latitude !== 0 || props.modelValue.longitude !== 0,
+);
+const mapUrl = computed(
+  () =>
+    `https://www.google.com/maps?q=${props.modelValue.latitude},${props.modelValue.longitude}`,
+);
+
+const updateField = <K extends keyof LocationData>(
+  field: K,
+  value: LocationData[K],
+): void => {
+  emit("update:modelValue", { ...props.modelValue, [field]: value });
+};
+
+const errorMessage = (field: keyof LocationData): string => {
+  const error = props.validationErrors?.[field];
+  if (typeof error === "string") return error;
+  if (Array.isArray(error)) return error.length ? String(error[0]) : "";
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message ?? "");
+  }
+  return "";
+};
+
+const onLocationSelected = (result: AddressAutocompleteResult): void => {
+  const addressParts = [result.street, result.housenumber].filter(Boolean);
+  emit("update:modelValue", {
+    ...props.modelValue,
+    address: addressParts.join(", ") || result.addressLine1,
+    city: result.city,
+    region: result.state,
+    postalCode: result.postcode,
+    latitude: result.lat,
+    longitude: result.lon,
+  });
+};
+
+const onLocationCleared = (): void => {
+  emit("update:modelValue", {
+    ...props.modelValue,
+    address: "",
+    city: "",
+    region: "",
+    postalCode: "",
+    latitude: 0,
+    longitude: 0,
+  });
+};
+
+const openMap = (): void => {
+  window.open(mapUrl.value, "_blank", "noopener,noreferrer");
+};
+</script>
+
 <template>
   <section class="three-columns mb-2">
-    <DropdownCountry
-      v-model="model.country"
-      label="País"
-      :class="{
-        'p-invalid': validationErrors?.country,
-      }"
-    />
+    <div>
+      <DropdownCountry
+        :model-value="modelValue.country"
+        :label="t('location.country')"
+        :disabled="disabled"
+        :class="{ 'p-invalid': validationErrors?.country }"
+        @update:model-value="updateField('country', $event)"
+      />
+      <small
+        v-if="showValidationMessages && errorMessage('country')"
+        class="p-error"
+        role="alert"
+      >
+        {{ errorMessage("country") }}
+      </small>
+    </div>
     <div class="col-span-2">
       <label class="block text-900 mb-2">{{ t("location.searchLabel") }}</label>
       <AutocompleteLocation
         v-model="locationSelection"
-        :label="''"
+        label=""
         :placeholder="t('location.placeholder')"
         :country-code="autocompleteCountryCode"
-        :disabled="!model.country"
+        :disabled="disabled || !modelValue.country"
         @select="onLocationSelected"
         @clear="onLocationCleared"
       />
@@ -22,38 +121,74 @@
   </section>
 
   <section class="four-columns mb-2">
-    <BaseInput
-      label="Direcció"
-      id="location-address"
-      v-model="model.address"
-      :class="{
-        'p-invalid': validationErrors?.address,
-      }"
-    ></BaseInput>
-    <BaseInput
-      label="Ciutat"
-      id="location-city"
-      v-model="model.city"
-      :class="{
-        'p-invalid': validationErrors?.city,
-      }"
-    ></BaseInput>
-    <BaseInput
-      label="Província"
-      id="location-region"
-      v-model="model.region"
-      :class="{
-        'p-invalid': validationErrors?.region,
-      }"
-    ></BaseInput>
-    <BaseInput
-      label="Codi Postal"
-      id="location-postalCode"
-      v-model="model.postalCode"
-      :class="{
-        'p-invalid': validationErrors?.postalCode,
-      }"
-    ></BaseInput>
+    <div>
+      <BaseInput
+        :label="t('location.address')"
+        id="location-address"
+        :model-value="modelValue.address"
+        :disabled="disabled"
+        :class="{ 'p-invalid': validationErrors?.address }"
+        @update:model-value="updateField('address', $event)"
+      />
+      <small
+        v-if="showValidationMessages && errorMessage('address')"
+        class="p-error"
+        role="alert"
+      >
+        {{ errorMessage("address") }}
+      </small>
+    </div>
+    <div>
+      <BaseInput
+        :label="t('location.city')"
+        id="location-city"
+        :model-value="modelValue.city"
+        :disabled="disabled"
+        :class="{ 'p-invalid': validationErrors?.city }"
+        @update:model-value="updateField('city', $event)"
+      />
+      <small
+        v-if="showValidationMessages && errorMessage('city')"
+        class="p-error"
+        role="alert"
+      >
+        {{ errorMessage("city") }}
+      </small>
+    </div>
+    <div>
+      <BaseInput
+        :label="t('location.region')"
+        id="location-region"
+        :model-value="modelValue.region"
+        :disabled="disabled"
+        :class="{ 'p-invalid': validationErrors?.region }"
+        @update:model-value="updateField('region', $event)"
+      />
+      <small
+        v-if="showValidationMessages && errorMessage('region')"
+        class="p-error"
+        role="alert"
+      >
+        {{ errorMessage("region") }}
+      </small>
+    </div>
+    <div>
+      <BaseInput
+        :label="t('location.postalCode')"
+        id="location-postalCode"
+        :model-value="modelValue.postalCode"
+        :disabled="disabled"
+        :class="{ 'p-invalid': validationErrors?.postalCode }"
+        @update:model-value="updateField('postalCode', $event)"
+      />
+      <small
+        v-if="showValidationMessages && errorMessage('postalCode')"
+        class="p-error"
+        role="alert"
+      >
+        {{ errorMessage("postalCode") }}
+      </small>
+    </div>
   </section>
 
   <Panel
@@ -62,29 +197,33 @@
         ? t('location.coordinatesSection')
         : t('location.coordinatesSectionNoDistance')
     "
-    :toggleable="true"
-    :collapsed="true"
+    toggleable
+    collapsed
     class="mt-2 mb-2"
   >
     <section class="location-coordinates-grid">
       <div>
         <label class="block text-900 mb-2">{{ t("location.latitude") }}</label>
         <InputNumber
-          v-model="model.latitude"
+          :model-value="modelValue.latitude"
           :minFractionDigits="2"
           :maxFractionDigits="8"
+          :disabled="disabled"
           class="w-full"
           mode="decimal"
+          @update:model-value="updateField('latitude', $event ?? 0)"
         />
       </div>
       <div>
         <label class="block text-900 mb-2">{{ t("location.longitude") }}</label>
         <InputNumber
-          v-model="model.longitude"
+          :model-value="modelValue.longitude"
           :minFractionDigits="2"
           :maxFractionDigits="8"
+          :disabled="disabled"
           class="w-full"
           mode="decimal"
+          @update:model-value="updateField('longitude', $event ?? 0)"
         />
       </div>
       <BaseInput
@@ -92,8 +231,8 @@
         disabled
         :label="t('location.distanceFromSite')"
         id="location-distanceFromSite"
-        :modelValue="model.distanceFromSite ?? null"
-      ></BaseInput>
+        :model-value="modelValue.distanceFromSite ?? null"
+      />
       <div class="map-link-cell mb-2">
         <Button
           v-if="hasCoordinates"
@@ -102,76 +241,13 @@
           severity="secondary"
           text
           size="small"
+          :disabled="disabled"
           @click="openMap"
         />
       </div>
     </section>
   </Panel>
 </template>
-
-<script setup lang="ts">
-import { computed, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import BaseInput from "@/components/BaseInput.vue";
-import AutocompleteLocation from "@/components/AutocompleteLocation.vue";
-import DropdownCountry from "@/modules/shared/components/DropdownCountry.vue";
-import type { AddressAutocompleteResult, LocationData } from "@/types";
-
-const props = withDefaults(
-  defineProps<{
-    modelValue: LocationData;
-    showDistance?: boolean;
-    validationErrors?: Record<string, unknown>;
-  }>(),
-  {
-    showDistance: false,
-    validationErrors: undefined,
-  },
-);
-
-const { t } = useI18n();
-
-const model = computed(() => props.modelValue);
-
-const locationSelection = ref<AddressAutocompleteResult | null>(null);
-
-const autocompleteCountryCode = computed(() => {
-  return model.value?.country?.toLowerCase() ?? "es";
-});
-
-const hasCoordinates = computed(() => {
-  return model.value.latitude !== 0 || model.value.longitude !== 0;
-});
-
-const mapUrl = computed(() => {
-  return `https://www.google.com/maps?q=${model.value.latitude},${model.value.longitude}`;
-});
-
-function openMap() {
-  window.open(mapUrl.value, "_blank", "noopener,noreferrer");
-}
-
-function onLocationSelected(result: AddressAutocompleteResult) {
-  const m = model.value;
-  const addressParts = [result.street, result.housenumber].filter(Boolean);
-  m.address = addressParts.join(", ") || result.addressLine1;
-  m.city = result.city;
-  m.region = result.state;
-  m.postalCode = result.postcode;
-  m.latitude = result.lat;
-  m.longitude = result.lon;
-}
-
-function onLocationCleared() {
-  const m = model.value;
-  m.address = "";
-  m.city = "";
-  m.region = "";
-  m.postalCode = "";
-  m.latitude = 0;
-  m.longitude = 0;
-}
-</script>
 
 <style scoped>
 .col-span-2 {

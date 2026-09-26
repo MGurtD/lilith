@@ -7,7 +7,7 @@ namespace Api.Controllers.Purchase
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PurchaseOrderController(IPurchaseOrderService service, IPurchaseOrderReportService reportService, ILocalizationService localizationService) : ControllerBase
+    public class PurchaseOrderController(IPurchaseOrderService service, IPurchaseOrderReportService reportService, ILocalizationService localizationService, IPurchaseOrderPdfService pdfService) : ControllerBase
     {
         [HttpGet]
         public async Task<IActionResult> Get(DateTime startTime, DateTime endTime, Guid? supplierId, Guid? statusId)
@@ -16,6 +16,14 @@ namespace Api.Controllers.Purchase
 
             if (orders != null) return Ok(orders.OrderByDescending(e => e.Number));
             else return BadRequest();
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        public async Task<IActionResult> GetPdf(Guid id)
+        {
+            var report = await reportService.GetReportById(id);
+            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"comanda-compra-{report.Order.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]
@@ -48,7 +56,7 @@ namespace Api.Controllers.Purchase
                 return BadRequest(response);
         }
         [HttpPost("FromWo")]
-        
+
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateFromWo(PurchaseOrderFromWO[] request)

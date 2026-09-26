@@ -64,12 +64,19 @@ namespace Infrastructure.Persistance.EntityConfiguration.Warehouse
                 .IsRequired(false);
 
             builder
+                .HasOne(b => b.Lot)
+                .WithMany()
+                .HasForeignKey(b => b.LotId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder
                 .HasKey(b => b.Id)
                 .HasName("PK_StockMovements");
             builder.HasIndex(builder => new { builder.StockId }, "idx_stockid");
             builder.HasIndex(builder => new { builder.MovementType }, "idx_movementtype");
             builder.HasIndex(builder => new { builder.StockId, builder.MovementType }, "idx_stockid_movementtype");
             builder.HasIndex(builder => new { builder.Entity, builder.EntityId }, "idx_entity_entityid");
+            builder.HasIndex(builder => new { builder.LotId }, "idx_lotid");
 
             builder.ToTable("StockMovements");
 

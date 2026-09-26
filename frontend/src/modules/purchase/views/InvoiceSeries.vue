@@ -1,47 +1,38 @@
 <template>
-  <DataTable
-    :value="purchaseStore.purchaseInvoiceSeries"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    preset="crud-list"
+    :columns="columns"
+    :items="purchaseStore.purchaseInvoiceSeries ?? []"
+    :filter-config="[]"
+    :show-filter-actions="false"
+    delete-column-width="5%"
+    show-delete-column
     tableStyle="min-width: 100%"
     @row-click="editPurchaseInvoiceSerie"
+    @create="createButtonClick"
+    @delete="deletePurchaseInvoiceSerie"
   >
-    <template #header>
-      <div
-        class="flex flex-wrap align-items-center justify-content-between gap-2"
-      >
-        <span class="text-900 font-bold">Series</span>
-        <Button
-          :icon="PrimeIcons.PLUS"
-          rounded
-          raised
-          @click="createButtonClick"
-        />
-      </div>
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("purchase.invoiceSeries.title") }}</span>
     </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 50%"></Column>
-    <Column header="Desactivada" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" />
-      </template>
-    </Column>
-    <Column>
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deletePurchaseInvoiceSerie($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
-import { onMounted, ref } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { InvoiceSerie } from "../types";
 import { useStore } from "../../../store";
@@ -52,35 +43,53 @@ const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const purchaseStore = usePurchaseInvoiceSeries();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("purchase.invoiceSeries.fields.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("purchase.invoiceSeries.fields.description"),
+    style: "width: 50%",
+  },
+  {
+    field: "disabled",
+    header: t("purchase.invoiceSeries.fields.disabled"),
+    columnType: ColumnType.Boolean,
+    style: "width: 20%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 onMounted(async () => {
   await purchaseStore.fetchPurchaseInvoiceSeries();
   store.setMenuItem({
     icon: PrimeIcons.SERVER,
-    title: "Sèries Factures de Compra",
+    title: t("purchase.invoiceSeries.title"),
   });
 });
 const createButtonClick = () => {
-  router.push({ path: `/purchaseinvoiceserie/${uuidv4()}` });
+  router.push({ path: `/purchaseinvoiceserie/${getNewUuid()}` });
 };
 
 const editPurchaseInvoiceSerie = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    router.push({ path: `/purchaseinvoiceserie/${row.data.id}` });
-  }
+  router.push({ path: `/purchaseinvoiceserie/${row.data.id}` });
 };
 
-const deletePurchaseInvoiceSerie = (
-  event: any,
-  purchaseInvoiceSerie: InvoiceSerie
-) => {
+const deletePurchaseInvoiceSerie = (purchaseInvoiceSerie: InvoiceSerie) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar la sèrie de factures de compra ${purchaseInvoiceSerie.name}?`,
+    message: t("purchase.invoiceSeries.messages.confirmDelete", {
+      name: purchaseInvoiceSerie.name,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -92,7 +101,7 @@ const deletePurchaseInvoiceSerie = (
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminat",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await purchaseStore.fetchPurchaseInvoiceSeries();

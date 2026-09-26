@@ -18,13 +18,15 @@
   import { FormActionMode } from "../../../types/component";
   import router from "../../../router";
   import FormArea from "../components/FormArea.vue";
-  import { usePlantModelStore } from "../store/plantmodel";
+import { usePlantModelStore } from "../store/plantmodel";
+import { useI18n } from "vue-i18n";
   
   const formMode = ref(FormActionMode.EDIT);
   const route = useRoute();
   const store = useStore();
   const plantmodelStore = usePlantModelStore();
-  const { area } = storeToRefs(plantmodelStore);
+const { area } = storeToRefs(plantmodelStore);
+const { t } = useI18n();
   
   const loadView = async () => {
     await plantmodelStore.fetchArea(route.params.id as string);    
@@ -32,10 +34,10 @@
     if (!area.value) {
       formMode.value = FormActionMode.CREATE;
       plantmodelStore.setNewArea(route.params.id as string);
-      pageTitle = "Alta d'area";
+      pageTitle = t("production.detail.createArea");
     } else {
       formMode.value = FormActionMode.EDIT;
-      pageTitle = `Area ${area.value.name}`;
+      pageTitle = t("production.detail.areaTitle", { name: area.value.name });
     }
   
     store.setMenuItem({
@@ -51,17 +53,16 @@
   });
   
   const toast = useToast();
-  const submitForm = async () => {
-    const data = area.value as Area;
+  const submitForm = async (data: Area) => {
     let result = false;
     let message = "";
   
     if (formMode.value === FormActionMode.CREATE) {
       result = await plantmodelStore.createArea(data);
-      message = "Area creada correctament";
+      message = t("production.detail.createdArea");
     } else {
       result = await plantmodelStore.updateArea(data.id, data);
-      message = "Area actualizada correctament";
+      message = t("production.detail.updatedArea");
     }
   
     if (result) {
@@ -74,4 +75,3 @@
     }
   };
   </script>
-  

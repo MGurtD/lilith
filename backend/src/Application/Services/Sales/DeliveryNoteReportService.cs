@@ -20,6 +20,9 @@ namespace Application.Services.Sales
             var site = await unitOfWork.Sites.Get(deliveryNote.SiteId);
             if (site is null) return null;
 
+            var enterprise = await unitOfWork.Enterprises.Get(site.EnterpriseId);
+            if (enterprise is null) return null;
+
             var deliveryNoteOrders = orders.Select(order => new DeliveryNoteOrderReportDto
             {
                 Number = order.Number,
@@ -35,6 +38,7 @@ namespace Application.Services.Sales
                 Orders = deliveryNoteOrders,
                 Customer = customer,
                 Site = site,
+                Enterprise = enterprise,
                 Total = deliveryNote.Details.Sum(d => d.Amount),
             };
             return report;

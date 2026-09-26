@@ -22,13 +22,16 @@ namespace Application.Services.Sales
             var site = await unitOfWork.Sites.Get(order.SiteId.Value);
             if (site is null) return null;
 
+            var enterprise = await unitOfWork.Enterprises.Get(site.EnterpriseId);
+            if (enterprise is null) return null;
+
             // Build report response using customer's preferred language
             var report = new SalesOrderReportResponse(customer.PreferredLanguage, showPrices, localizationService)
             {
                 Order = new SalesOrderHeaderReportDto
                 {
                     Number = order.Number,
-                    Date = order.Date,
+                    Date = order.ExpectedDate ?? order.Date,
                     CustomerNumber = order.CustomerNumber
                 },
                 OrderDetails = [.. order.SalesOrderDetails
@@ -42,6 +45,7 @@ namespace Application.Services.Sales
                     })],
                 Customer = customer,
                 Site = site,
+                Enterprise = enterprise,
                 Total = order.SalesOrderDetails.Sum(d => d.Amount)
             };
 

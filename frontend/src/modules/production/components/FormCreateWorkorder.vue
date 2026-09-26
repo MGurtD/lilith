@@ -1,61 +1,21 @@
-<template>
-  <form v-if="createWorkOrderDto">
-    <div>
-      <label class="block text-900 mb-2">Ruta</label>
-      <Select
-        v-model="createWorkOrderDto.workMasterId"
-        :virtualScrollerOptions="{ itemSize: 38 }"
-        filter
-        :options="
-          filteredWorkMasters
-            ? filteredWorkMasters
-            : workMasterStore.workmasters
-        "
-        optionValue="id"
-        :optionLabel="formatWorkMasterLabel"
-        class="w-full"
-      />
-    </div>
-    <div class="mt-2">
-      <BaseInput
-        class="mb-2 w-full"
-        label="Quantitat"
-        v-model="createWorkOrderDto.plannedQuantity"
-        :type="BaseInputType.NUMERIC"
-      ></BaseInput>
-    </div>
-    <div>
-      <label class="block text-900 mb-2">Data Prevista</label>
-      <DatePicker
-        v-model="createWorkOrderDto.plannedDate"
-        dateFormat="dd/mm/yy"
-        class="mt-2"
-      />
-    </div>
-    <div class="mt-2">
-      <label class="block text-900 mb-2">Comentari Fabriació</label>
-      <Textarea class="w-full" v-model="createWorkOrderDto.comment" />
-    </div>
-    <br />
-    <div>
-      <Button label="Crear" style="float: right" @click="submitForm"></Button>
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { CreateWorkOrderDto, WorkMaster } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, useId } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useWorkMasterStore } from "../store/workmaster";
+import type { CreateWorkOrderDto, WorkMaster } from "../types";
 
 const props = defineProps<{
   createWorkOrderDto: CreateWorkOrderDto;
@@ -67,57 +27,147 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
+const { t } = useI18n();
 const workMasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
-const toast = useToast();
+const lotCodeInputId = `create-workorder-lot-code-${useId()}`;
 
-onMounted(() => {
-  if (!workMasterStore.workmasters) {
-    workMasterStore.fetchAllActives();
-  }
-});
+const referenceRequiresLot = (workMasterId: string): boolean => {
+  const workMaster = workMasterStore.workmasters?.find(
+    (wm) => wm.id === workMasterId,
+  );
+  if (!workMaster) return false;
+  return (
+    referenceStore.references?.find((r) => r.id === workMaster.referenceId)
+      ?.requiresLot ?? false
+  );
+};
 
-const formatWorkMasterLabel = (workMaster: WorkMaster) => {
+const formatWorkMasterLabel = (workMaster: WorkMaster): string => {
   const referenceName = referenceStore.getShortNameById(workMaster.referenceId);
-  let modeName = workMasterStore.workmasterModes.find(
+  const modeName = workMasterStore.workmasterModes.find(
     (mode) => mode.id === workMaster.mode,
   )?.value;
 
   return `${referenceName}  (Base = ${workMaster.baseQuantity} )  ${modeName}`;
 };
 
-const schema = Yup.object().shape({
-  plannedQuantity: Yup.number()
-    .min(1, "La quantitat ha de ser superior a 0")
-    .required("La quanitat és obligatoria"),
-  workMasterId: Yup.string().required("La ruta de fabricació és obligatoria"),
-  plannedDate: Yup.string().required("La data prevista és obligatoria"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const initialValues = computed<FormValues>(() => ({
+  ...props.createWorkOrderDto,
+  plannedDate:
+    props.createWorkOrderDto.plannedDate instanceof Date
+      ? props.createWorkOrderDto.plannedDate
+      : null,
+  lotCode: props.createWorkOrderDto.lotCode ?? "",
+}));
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.createWorkOrderDto);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "workMasterId",
+        label: t("production.components.ruta"),
+        type: FormFieldType.Select,
+        props: {
+          options: props.filteredWorkMasters
+            ? props.filteredWorkMasters
+            : (workMasterStore.workmasters ?? []),
+          optionValue: "id",
+          optionLabel: formatWorkMasterLabel,
+          virtualScrollerOptions: { itemSize: 38 },
+          filter: true,
+        },
+        validation: Yup.string().required(
+          t("production.validation.laRutaDeFabricacioEsObligatoria"),
+        ),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "plannedQuantity",
+        label: t("production.components.quantitat"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .min(1, t("production.validation.laQuantitatHaDeSerSuperiorA0"))
+          .required(t("production.validation.laQuanitatEsObligatoria")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "plannedDate",
+        label: t("production.components.dataPrevista"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("production.validation.laDataPrevistaEsObligatoria"))
+          .required(t("production.validation.laDataPrevistaEsObligatoria")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "comment",
+        label: t("production.components.comentariFabriacio"),
+        type: FormFieldType.Textarea,
+      },
+    ],
+  },
+  {
+    // Registered while hidden so the lot code keeps its value when the
+    // selected route changes; it is only submitted when the route's
+    // reference requires a lot.
+    section: "lot",
+    fields: [{ name: "lotCode", label: "", type: FormFieldType.Custom }],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.createWorkOrderDto);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  const workMasterId = stringValue(
+    values.workMasterId,
+    props.createWorkOrderDto.workMasterId,
+  );
+  const lotCode = stringValue(values.lotCode, "");
+
+  emit("submit", {
+    ...props.createWorkOrderDto,
+    workMasterId,
+    plannedQuantity: finiteNumberValue(
+      values.plannedQuantity,
+      props.createWorkOrderDto.plannedQuantity,
+    ),
+    plannedDate: dateValue(values.plannedDate, null),
+    comment: stringValue(values.comment, ""),
+    lotCode: referenceRequiresLot(workMasterId) ? lotCode : undefined,
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #section-lot="{ values, setFieldValue, disabled }">
+      <div v-if="referenceRequiresLot(stringValue(values.workMasterId, ''))">
+        <label class="block text-900 mb-2" :for="lotCodeInputId">
+          {{ t("production.components.codiLot") }}
+        </label>
+        <InputText
+          :id="lotCodeInputId"
+          class="w-full"
+          :model-value="stringValue(values.lotCode, '')"
+          :disabled="disabled"
+          @update:model-value="setFieldValue('lotCode', $event ?? '')"
+        />
+      </div>
+    </template>
+  </Form>
+</template>

@@ -1,170 +1,179 @@
 <template>
-  <div class="workcenter-card" @click="handleClick">
-    <div class="workcenter-card__status" :style="borderTopStyle"></div>
+  <!-- Phones: one row per machine. -->
+  <button
+    v-if="compact"
+    type="button"
+    class="wc-row"
+    :aria-label="accessibleName"
+    @click="handleClick"
+  >
+    <span class="wc-row__light" :style="lightStyle"></span>
+    <span class="wc-row__text">
+      <span class="wc-row__name">{{ workcenter.config.description }}</span>
+      <span class="wc-row__line">{{ rowLine }}</span>
+    </span>
+    <span class="wc-time" :class="{ 'wc-time--none': signal.noData }">{{
+      formattedTime
+    }}</span>
+  </button>
 
-    <div class="workcenter-card__header">
-      <div class="workcenter-card__title">
-        <i :class="statusIcon" class="workcenter-card__icon"></i>
-        <h3>{{ workcenter.config.description }}</h3>
-      </div>
-      <span class="workcenter-card__badge" :style="badgeStyle">
-        {{ currentMachineStatus?.name || "Sense dades" }}
+  <!-- Tablets: a tile that shows only what exists. -->
+  <button
+    v-else
+    type="button"
+    class="wc-tile"
+    :aria-label="accessibleName"
+    @click="handleClick"
+  >
+    <span class="wc-tile__band" :style="{ background: signal.band }"></span>
+    <span class="wc-tile__body">
+      <span class="wc-tile__name">{{ workcenter.config.description }}</span>
+      <span class="wc-tile__status">
+        <span
+          class="wc-signal"
+          :class="{ 'wc-signal--none': signal.noData }"
+          :style="signal.style"
+          >{{ statusName }}</span
+        >
+        <span class="wc-time" :class="{ 'wc-time--none': signal.noData }">{{
+          formattedTime
+        }}</span>
       </span>
-    </div>
-
-    <div class="workcenter-card__content">
-      <div class="workcenter-card__stat">
-        <div class="stat__label">
-          <i class="pi pi-hashtag"></i>
-          <span>Ordre</span>
-        </div>
-        <div class="stat__value">
-          {{ currentWorkOrder?.workOrderCode || "-" }}
-        </div>
-      </div>
-
-      <div class="workcenter-card__stat">
-        <div class="stat__label">
-          <i class="pi pi-cog"></i>
-          <span>Fase</span>
-        </div>
-        <div class="stat__value stat__value--phase">
-          {{ formattedPhase }}
-        </div>
-      </div>
-
-      <div class="workcenter-card__stat">
-        <div class="stat__label">
-          <i class="pi pi-tag"></i>
-          <span>Referència</span>
-        </div>
-        <div class="stat__value stat__value--reference">
-          {{ formattedReference }}
-        </div>
-      </div>
-
-      <div class="workcenter-card__stat">
-        <div class="stat__label">
-          <i :class="PrimeIcons.CLOCK"></i>
-          <span>Temps</span>
-        </div>
-        <div class="stat__value stat__value--time">
-          {{ formattedTime }}
-        </div>
-      </div>
-    </div>
-  </div>
+      <span v-if="currentWorkOrder" class="wc-tile__order">
+        <span class="wc-tile__of">
+          {{ orderPhase }}
+          <span v-if="extraOrders" class="wc-tile__more">{{
+            t("plant.workcenterTile.moreOrders", { count: extraOrders })
+          }}</span>
+        </span>
+        <span
+          v-if="currentWorkOrder.workOrderPhaseDescription"
+          class="wc-tile__phase"
+          >{{ currentWorkOrder.workOrderPhaseDescription }}</span
+        >
+        <span class="wc-tile__reference">{{ formattedReference }}</span>
+      </span>
+      <span v-if="currentWorkOrder || operators.length" class="wc-tile__foot">
+        <span v-if="currentWorkOrder" class="wc-tile__planned">{{
+          t(
+            "plant.workcenterTile.planned",
+            { count: currentWorkOrder.plannedQuantity },
+            currentWorkOrder.plannedQuantity,
+          )
+        }}</span>
+        <span class="wc-tile__operators">
+          <span
+            v-for="operator in operators"
+            :key="operator.id"
+            class="wc-avatar"
+            :title="operator.name"
+            >{{ operator.initials }}</span
+          >
+        </span>
+      </span>
+    </span>
+  </button>
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons } from "@primevue/core/api";
 import { computed } from "vue";
-import { WorkcenterViewState, WorkcenterRealtime } from "../types";
-import {
-  getBorderTopStyle,
-  normalizeColor,
-  isColorLight,
-} from "../../../utils/functions";
+import { useI18n } from "vue-i18n";
+import { WorkcenterViewState } from "../types";
+import { statusSignal } from "../utils/statusSignal";
 import { usePlantDataStore } from "../store";
+import { useNow } from "../composables/useNow";
+import { NO_TIME, elapsedSeconds, formatElapsed } from "../utils/elapsed";
 
 interface Props {
   workcenter: WorkcenterViewState;
+  /** Phone row instead of the tablet tile. */
+  compact?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { compact: false });
 
 const emit = defineEmits<{
   (e: "click", workcenterId: string): void;
 }>();
 
 const dataStore = usePlantDataStore();
+const { t } = useI18n();
+const now = useNow();
 
-// Obtener el machine status desde el store
 const currentMachineStatus = computed(() => {
   const statusId = props.workcenter.realtime?.statusId;
   if (!statusId) return undefined;
   return dataStore.getMachineStatusById(statusId);
 });
 
-// Estilo del borde superior basado en el color del status desde el store
-const borderTopStyle = computed(() => {
-  const statusColor = currentMachineStatus.value?.color;
-  return getBorderTopStyle(statusColor, "f59e0b"); // Yellow-500 as default
-});
+// Solid status signal: band and badge in the status colour, hatched with no data.
+const signal = computed(() => statusSignal(currentMachineStatus.value?.color));
 
-// Icono del header basado en el status desde el store
-const statusIcon = computed((): string => {
-  const machineStatus = currentMachineStatus.value;
-  if (!machineStatus || !machineStatus.icon) {
-    return PrimeIcons.CIRCLE;
-  }
-  return machineStatus.icon;
-});
+const lightStyle = computed(() => ({
+  background: signal.value.band,
+  boxShadow: signal.value.noData ? "inset 0 0 0 1px var(--p-steel-300)" : undefined,
+}));
 
-// Obtener el trabajo activo actual (primer elemento del array workorders)
-const currentWorkOrder = computed(() => {
-  const workorders = props.workcenter.realtime?.workorders;
-  if (!workorders || workorders.length === 0) return undefined;
-  return workorders[0];
-});
+const statusName = computed(
+  () => currentMachineStatus.value?.name || t("plant.workcenterTile.noData"),
+);
 
-// Formatear fase con código y descripción
-const formattedPhase = computed((): string => {
+const workorders = computed(() => props.workcenter.realtime?.workorders ?? []);
+const currentWorkOrder = computed(() => workorders.value[0]);
+const extraOrders = computed(() => Math.max(0, workorders.value.length - 1));
+
+const orderPhase = computed(() => {
   const wo = currentWorkOrder.value;
-  if (!wo) return "-";
-  if (wo.workOrderPhaseDescription) {
-    return `${wo.workOrderPhaseCode} - ${wo.workOrderPhaseDescription}`;
-  }
-  return wo.workOrderPhaseCode || "-";
+  return wo
+    ? t("plant.workcenterTile.orderPhase", {
+        order: wo.workOrderCode,
+        phase: wo.workOrderPhaseCode,
+      })
+    : "";
 });
 
-// Formatear referencia con código y descripción
-const formattedReference = computed((): string => {
+const formattedReference = computed(() => {
   const wo = currentWorkOrder.value;
-  if (!wo) return "-";
-  if (wo.referenceDescription && wo.referenceDescription !== wo.referenceCode) {
-    return `${wo.referenceCode} - ${wo.referenceDescription}`;
-  }
-  return wo.referenceCode || "-";
+  if (!wo) return "";
+  return wo.referenceDescription && wo.referenceDescription !== wo.referenceCode
+    ? `${wo.referenceCode} - ${wo.referenceDescription}`
+    : wo.referenceCode;
 });
 
-// Formatear tiempo desde statusStartTime
-const formattedTime = computed((): string => {
-  const startTime = props.workcenter.realtime?.statusStartTime;
-  if (!startTime) return "--:--:--";
+const operators = computed(() =>
+  (props.workcenter.realtime?.operators ?? []).map((op) => {
+    const name = `${op.operatorName} ${op.operatorSurname ?? ""}`.trim();
+    const initials = name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("");
+    return { id: op.operatorId, name, initials };
+  }),
+);
 
-  const start = new Date(startTime);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / 1000); // segundos
+// Time in the current status, ticking on the device between messages.
+const formattedTime = computed((): string =>
+  signal.value.noData
+    ? NO_TIME
+    : formatElapsed(
+        elapsedSeconds(props.workcenter.realtime?.statusStartTime, now.value),
+      ),
+);
 
-  if (diff < 0) return "--:--:--";
+const rowLine = computed(() =>
+  currentWorkOrder.value
+    ? `${statusName.value} · ${orderPhase.value}`
+    : statusName.value,
+);
 
-  const hours = Math.floor(diff / 3600);
-  const minutes = Math.floor((diff % 3600) / 60);
-  const seconds = diff % 60;
-
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-});
-
-// Estilo dinámico del badge basado en el color del status
-const badgeStyle = computed(() => {
-  const statusColor = currentMachineStatus.value?.color;
-  if (!statusColor) {
-    // Default: yellow (idle)
-    return {
-      backgroundColor: "var(--p-yellow-100)",
-      color: "var(--p-yellow-800)",
-    };
-  }
-
-  const normalizedColor = normalizeColor(statusColor);
-  const isLight = isColorLight(normalizedColor);
-
-  return {
-    backgroundColor: normalizedColor,
-    color: isLight ? "#000000" : "#ffffff",
-  };
-});
+const accessibleName = computed(() =>
+  t("plant.workcenterTile.label", {
+    name: props.workcenter.config.description,
+    status: statusName.value,
+    time: formattedTime.value,
+  }) + (currentWorkOrder.value ? `, ${orderPhase.value}` : ""),
+);
 
 const handleClick = () => {
   emit("click", props.workcenter.config.id);
@@ -172,139 +181,198 @@ const handleClick = () => {
 </script>
 
 <style scoped>
-/* Workcenter Card */
-.workcenter-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid var(--p-surface-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  position: relative;
-}
-
-.workcenter-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: var(--p-primary-400);
-}
-
-.workcenter-card__status {
-  height: 6px;
+.wc-tile,
+.wc-row {
+  box-sizing: border-box;
   width: 100%;
-  /* Background is set dynamically via :style binding */
+  border: none;
+  font: inherit;
+  color: var(--p-steel-900);
+  text-align: left;
+  background: var(--p-surface-0);
+  cursor: pointer;
 }
 
-/* Card Header */
-.workcenter-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--p-surface-border);
-  gap: 0.2rem;
+.wc-tile:focus-visible,
+.wc-row:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: 2px;
 }
 
-.workcenter-card__title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.workcenter-card__icon {
-  font-size: 1.25rem;
-  color: var(--p-primary-600);
-}
-
-.workcenter-card__title h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-color);
-}
-
-.workcenter-card__badge {
-  padding: 0.25rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-  /* Background and color set dynamically via :style binding */
-}
-
-/* Card Content */
-.workcenter-card__content {
-  padding: 0.75rem;
+/* Tile */
+.wc-tile {
   display: flex;
   flex-direction: column;
+  padding: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--p-steel-200);
+}
+
+.wc-tile:hover {
+  box-shadow: inset 0 0 0 1px var(--p-steel-400);
+}
+
+.wc-tile__band {
+  display: block;
+  height: 8px;
+}
+
+.wc-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem 0.875rem;
+}
+
+.wc-tile__name {
+  font-family: var(--font-condensed);
+  font-size: 1.1875rem;
+  line-height: 1.4375rem;
+  font-weight: 600;
+}
+
+.wc-tile__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
 }
 
-.workcenter-card__stat {
-  display: flex;
-  justify-content: space-between;
+.wc-signal {
+  display: inline-flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  background: var(--p-surface-50);
-  border-radius: 6px;
-  transition: background 0.2s ease;
-  overflow: hidden;
-  gap: 0.75rem; /* Separación asegurada */
-}
-
-.workcenter-card__stat:hover {
-  background: var(--p-surface-100);
-}
-
-.stat__label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text-color-secondary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.stat__label i {
-  font-size: 0.9rem;
-  color: var(--p-primary-500);
-}
-
-.stat__value {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text-color);
+  min-height: 1.625rem;
+  padding: 0 0.5625rem;
+  border-radius: 4px;
+  font-family: var(--font-condensed);
+  font-size: 0.875rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.wc-signal--none {
+  font-weight: 500;
+}
+
+.wc-time {
+  font-family: var(--font-condensed);
+  font-size: 1.375rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wc-time--none {
+  color: var(--p-steel-500);
+}
+
+.wc-tile__order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--p-steel-100);
+}
+
+.wc-tile__of {
+  font-family: var(--font-condensed);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-tile__more {
+  margin-left: 0.25rem;
+  color: var(--p-steel-600);
+  font-weight: 500;
+}
+
+.wc-tile__phase {
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+}
+
+.wc-tile__reference {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--p-steel-600);
+}
+
+.wc-tile__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--p-steel-700);
+}
+
+.wc-tile__operators {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.wc-avatar {
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--p-steel-100);
+  color: var(--p-steel-700);
+  font-family: var(--font-condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Phone row */
+.wc-row {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--p-steel-100);
+}
+
+.wc-row__light {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+}
+
+.wc-row__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.wc-row__name {
+  font-family: var(--font-condensed);
+  font-size: 1.0625rem;
+  line-height: 1.3125rem;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: right;
-  flex: 1;
-  min-width: 0; /* Necesario para truncate flex item */
+  white-space: nowrap;
 }
 
-.stat__value--time {
-  font-family: "Courier New", monospace;
-  font-size: 1rem;
-  color: var(--p-primary-600);
+.wc-row__line {
+  font-size: 0.875rem;
+  line-height: 1.1875rem;
+  color: var(--p-steel-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.stat__value--phase {
-  /* Hereda truncate de .stat__value */
-}
-
-.stat__value--reference {
-  /* Hereda truncate de .stat__value */
-}
-
-.stat__value--phase {
-  /* Hereda truncate de .stat__value */
-}
-
-.stat__value--reference {
-  /* Hereda truncate de .stat__value */
+.wc-row .wc-time {
+  font-size: 1.125rem;
 }
 </style>

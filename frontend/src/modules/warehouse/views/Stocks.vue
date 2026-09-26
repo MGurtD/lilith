@@ -1,7 +1,15 @@
 <template>
-  <DataTable
+  <Table
     class="small-datatable"
-    :value="filteredStocks"
+    :items="filteredStocks"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    :show-filter-action="false"
+    :show-create="false"
+    :card-layout="cardLayout"
+    page="Stocks"
     tableStyle="min-width: 100%"
     scrollable
     scrollHeight="flex"
@@ -9,53 +17,77 @@
     :sortOrder="1"
     :paginator="filteredStocks.length > 20"
     :rows="20"
+    @clear="cleanFilter"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        :show-create="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @clear="cleanFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Magatzem</label>
-            <DropdownWarehouses label="" v-model="filter.warehouseId" />
-          </div>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">Referència</label>
-            <DropdownReference
-              label=""
-              :fullName="true"
-              :options="stockStore.availableReferences"
-              v-model="filter.referenceId"
-            />
-          </div>
-        </template>
-      </TableFilter>
+    <template #filter-warehouseId="{ value, update }">
+      <DropdownWarehouses size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
-    <Column field="referenceDisplay" header="Referència" :sortable="true" style="width: 28%" />
-    <Column field="warehouseName" header="Magatzem" style="width: 16%" />
-    <Column field="locationName" header="Ubicació" style="width: 16%" />
-    <Column field="quantity" header="Uds." style="width: 12%" />
-    <Column field="width" header="Ample (x) mm" style="width: 12%" />
-    <Column field="length" header="Llarg (y) mm" style="width: 12%" />
-    <Column field="height" header="Alt (z) mm" style="width: 12%" />
-    <Column field="diameter" header="Diàmetre mm" style="width: 12%" />
-    <Column field="thickness" header="Gruix mm" style="width: 12%" />
-  </DataTable>
+    <template #filter-referenceId="{ value, update }">
+      <DropdownReference size="small"
+        label=""
+        :fullName="true"
+        :options="stockStore.availableReferences"
+        :model-value="value"
+        @update:model-value="update"
+      />
+    </template>
+    <template #body-lotCode="{ data }">
+      <span class="flex align-items-center gap-2">
+        {{ data.lotCode || "-" }}
+        <Tag
+          v-if="data.lotClosedDate"
+          severity="secondary"
+          :value="t('warehouse.lotTraceability.closed')"
+          v-tooltip.top="t('warehouse.lotTraceability.closed')"
+        />
+      </span>
+    </template>
+    <template #card-quantity="{ data }">
+      {{ t("warehouse.fields.unitsCount", { count: data.quantity }) }}
+    </template>
+    <template #card-dimensions="{ data }">
+      <DimensionChips
+        :width="data.width"
+        :length="data.length"
+        :height="data.height"
+        :diameter="data.diameter"
+        :thickness="data.thickness"
+        hide-empty
+      />
+    </template>
+    <template #body-lotTraceability="{ data }">
+      <Button
+        icon="pi pi-sitemap"
+        text
+        rounded
+        size="small"
+        :disabled="!data.lotId"
+        v-tooltip.top="t('warehouse.lotTraceability.view')"
+        @click="goToLotTraceability(data.referenceId, data.lotId)"
+      />
+    </template>
+  </Table>
 </template>
 
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import DimensionChips from "@/components/DimensionChips.vue";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
-import TableFilter, {
-  type FilterBodyWidth,
+import type {
+  FilterBodyWidth,
+  FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import DropdownWarehouses from "../components/DropdownWarehouses.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
@@ -64,6 +96,8 @@ import { useStockStore } from "../store/stock";
 import { useWarehouseStore } from "../store/warehouse";
 
 const store = useStore();
+const router = useRouter();
+const { t } = useI18n();
 const stockStore = useStockStore();
 const warehouseStore = useWarehouseStore();
 
@@ -77,17 +111,127 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "70%",
 };
 
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "warehouseId",
+    label: t("warehouse.fields.warehouse"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (warehouseStore.warehouses?.find((item) => item.id === value)?.name ??
+          "")
+        : "",
+  },
+  {
+    key: "referenceId",
+    label: t("warehouse.fields.reference"),
+    type: "slot",
+    valueLabel: (value) => {
+      if (typeof value !== "string") return "";
+      const reference = stockStore.availableReferences.find(
+        (item) => item.id === value,
+      );
+      return reference ? `${reference.code} - ${reference.description}` : "";
+    },
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "referenceDisplay",
+    header: t("warehouse.fields.reference"),
+    sortable: true,
+    style: "width: 24%",
+  },
+  {
+    field: "lotCode",
+    header: t("common.lot"),
+    style: "width: 12%",
+    truncate: false,
+  },
+  {
+    field: "warehouseName",
+    header: t("warehouse.fields.warehouse"),
+    style: "width: 14%",
+  },
+  {
+    field: "locationName",
+    header: t("warehouse.fields.location"),
+    style: "width: 14%",
+  },
+  {
+    field: "quantity",
+    header: t("warehouse.fields.units"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "lotTraceability",
+    header: "",
+    style: "width: 6%",
+    truncate: false,
+  },
+  {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
+]);
+
+// Rows are grouped by dimensions, so they are what tells two cards of
+// the same reference apart.
+const cardLayout: CardLayout = {
+  title: "referenceDisplay",
+  trailing: "quantity",
+  subtitle: "dimensions",
+  meta: ["lotCode", "warehouseName", "locationName"],
+};
+
 const filteredStocks = computed(() => {
   if (!stockStore.stocks) return [];
 
   let result = [...stockStore.stocks];
 
   if (filter.value.referenceId) {
-    result = result.filter((stock) => stock.referenceId === filter.value.referenceId);
+    result = result.filter(
+      (stock) => stock.referenceId === filter.value.referenceId,
+    );
   }
 
   if (filter.value.warehouseId) {
-    result = result.filter((stock) => stock.warehouseId === filter.value.warehouseId);
+    result = result.filter(
+      (stock) => stock.warehouseId === filter.value.warehouseId,
+    );
   }
 
   return result.sort((left, right) =>
@@ -100,10 +244,18 @@ const cleanFilter = () => {
   filter.value.warehouseId = undefined;
 };
 
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
+};
+
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.BOX,
-    title: "Gestió de magatzems - Estocs",
+    title: t("warehouse.stocks.title"),
   });
 
   await stockStore.fetchStocks();

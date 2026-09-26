@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import type { Column } from "./types";
+import { CARD_META_MAX, ColumnType, type CardLayout, type Column } from "./types";
+import type { FilterConfig } from "./TableFilter.vue";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
 import { useStore } from "@/store";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { hydrateFilter } from "@/utils/filter-hydrate";
+import { resolveFilterDisplayValue } from "./filterDisplay";
+import { resolveCardLayout } from "./card-layout";
+import TableCardList from "./TableCardList.vue";
+import { useI18n } from "vue-i18n";
 
 
 const props = defineProps<{
@@ -15,17 +21,31 @@ const props = defineProps<{
   activeViewId?: string;
   filterValues?: any;
   activeSortConfig?: SortConfig | null;
+  filterConfig?: FilterConfig[];
+  /** The screen's default phone card. */
+  cardLayout?: CardLayout;
+  /** The active view's phone card; null when it keeps the screen default. */
+  activeCardConfig?: CardLayout | null;
+  /** A row to preview the phone card with. */
+  previewItem?: unknown;
 }>();
 
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
-  (e: "apply-config", columns: Column[], viewId: string): void;
+  (
+    e: "apply-config",
+    columns: Column[],
+    viewId: string,
+    card: CardLayout | null,
+  ): void;
   (e: "update:filterValues", value: any): void;
+  (e: "filter"): void;
   (e: "update:sortConfig", value: SortConfig | null): void;
 }>();
 
 const confirm = useConfirm();
 const toast = useToast();
+const { t } = useI18n();
 const store = useStore();
 const viewStore = useUserTableViewStore();
 
@@ -37,6 +57,10 @@ const isDragging = ref(false);
 const dragSourceIndex = ref<number | null>(null);
 const dragOverIndex = ref<number | null>(null);
 const newViewNameInput = ref<HTMLInputElement | null>(null);
+
+// Phone card of the view being edited; null keeps the screen default.
+const localCard = ref<CardLayout | null>(null);
+const activeTab = ref("columns");
 
 // Local sort config
 const localSortField = ref<string>("");
@@ -62,6 +86,51 @@ function cycleSortForColumn(field: string) {
   );
 }
 
+// --- Saved filters (read-only) ---
+
+// Source of truth is the table's live filterValues: the dialog mirrors the
+// filters currently applied to the table so applying or clearing filters
+// while the dialog is open immediately updates the section. The previous
+// implementation read from the persisted viewConfig, which lagged behind
+// any unsaved filter changes.
+//
+// `hydrateFilter` converts ISO date strings back into Date objects so
+// downstream formatters see native Dates (matches the apply/restore paths
+// in `usertableview.ts`).
+const savedFilters = computed<Record<string, unknown> | null>(() => {
+  const raw = props.filterValues;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return hydrateFilter(raw as Record<string, unknown>);
+});
+
+// Build a map of filter config by key for O(1) lookup
+const filterConfigByKey = computed(() => {
+  const map = new Map<string, FilterConfig>();
+  for (const f of props.filterConfig ?? []) {
+    map.set(f.key, f);
+  }
+  return map;
+});
+
+// Resolved display rows: pairs of (label, value) for the template. The label
+// comes from filterConfig; the raw key is the fallback for stale entries of
+// filters that no longer exist.
+const savedFilterRows = computed(() => {
+  if (!savedFilters.value) return [];
+  const rows: Array<{ key: string; label: string; field: FilterConfig | null; value: unknown }> = [];
+  for (const [key, value] of Object.entries(savedFilters.value)) {
+    const field = filterConfigByKey.value.get(key) ?? null;
+    const label = field?.label ?? key;
+    rows.push({ key, label, field, value });
+  }
+  return rows;
+});
+
+// Readable value, using the field's valueLabel when it has one.
+function resolveDisplayValue(field: FilterConfig | null, value: unknown): string {
+  return resolveFilterDisplayValue(field, value);
+}
+
 // Initialize local columns when dialog opens
 watch(
   () => props.visible,
@@ -75,6 +144,7 @@ watch(
       }));
       // Clear the new view name field — it is for creating only
       newViewName.value = "";
+      localCard.value = props.activeCardConfig ?? null;
       // Initialize sort from active sort config
       localSortField.value = props.activeSortConfig?.field ?? "";
       localSortOrder.value = (props.activeSortConfig?.order ?? 1) as 1 | -1;
@@ -84,7 +154,14 @@ watch(
         await viewStore.fetchViews(userId, props.page);
       }
       // Set selected view after views are loaded so the watch can find it
-      selectedViewId.value = props.activeViewId ?? "";
+      const activeView = props.activeViewId
+        ? viewStore.views.find((view) => view.id === props.activeViewId)
+        : undefined;
+      const selectedView =
+        activeView ??
+        viewStore.views.find((view) => view.isDefault) ??
+        viewStore.views[0];
+      selectedViewId.value = selectedView?.id ?? "";
     }
   }
 );
@@ -92,11 +169,10 @@ watch(
 // Current views for dropdown
 const views = computed(() => viewStore.views);
 
-// Include default application view as first option
-const selectOptions = computed(() => [
-  { id: "", name: "Per defecte (aplicació)", isDefault: false, viewConfig: '{"columns":[]}' },
-  ...views.value,
-]);
+// User-saved views only. The synthetic "Per defecte (aplicació)" entry was
+// removed: with the autoprovision guarantee, every (user, page) pair
+// already has a real "Per defecte" view by the time the dialog opens.
+const selectOptions = computed(() => [...views.value]);
 
 // Selected view object
 const selectedView = computed(() => {
@@ -107,37 +183,69 @@ const selectedView = computed(() => {
 // Whether there are any saved views in the database
 const hasSavedViews = computed(() => views.value.length > 0);
 
-// When selected view changes, apply its configuration immediately
+// Apply a stored view locally: columns + filters + sort, plus emit the
+// authoritative apply-config event so Table.vue updates its active view.
+// Centralized here so save / select / delete all share the same path.
+//
+// `clearMissingFilters` distinguishes explicit user-initiated view
+// changes (selector dropdown) from implicit system re-assignments
+// (saveAsNewView, deleteView fallback). Only the explicit path should
+// clear live filters when the destination view has no persisted state
+// — otherwise programmatic fallbacks wipe filters the user just set and
+// `buildViewConfig` then writes them out as empty.
+function applyViewLocally(viewId: string, clearMissingFilters = false) {
+  const view = views.value.find((v) => v.id === viewId);
+  if (!view) return;
+
+  localColumns.value = viewStore.applyView(view, props.columns);
+  localCard.value = viewStore.applyCardConfig(view);
+  emit("apply-config", localColumns.value, viewId, localCard.value);
+
+  const filterValues = viewStore.applyFilterConfig(view);
+  if (filterValues) {
+    emit("update:filterValues", filterValues);
+    emit("filter");
+  } else if (clearMissingFilters && viewId !== props.activeViewId) {
+    // The user explicitly switched to a view that has no persisted
+    // filters — mirror that on the live state so the UI matches.
+    emit("update:filterValues", {});
+    emit("filter");
+  }
+
+  const sortConfig = viewStore.applySortConfig(view);
+  localSortField.value = sortConfig?.field ?? "";
+  localSortOrder.value = (sortConfig?.order ?? 1) as 1 | -1;
+  emit("update:sortConfig", sortConfig);
+}
+
+// Reset to the base columns (no view selected). Used when the active
+// view is removed and no replacement should be applied — restores the
+// table to its default look and clears live filters/sort.
+function resetToBaseColumns() {
+  localColumns.value = props.columns.map((col, index) => ({
+    ...col,
+    visible: col.visible !== false ? true : col.visible,
+    order: col.order ?? index,
+  }));
+  localCard.value = null;
+  emit("apply-config", props.columns, "", null);
+  emit("update:filterValues", {});
+  emit("filter");
+  localSortField.value = "";
+  localSortOrder.value = 1;
+  emit("update:sortConfig", null);
+}
+
+// When the user picks a different view from the selector, apply it.
+// Only this path passes `clearMissingFilters = true`; programmatic
+// updates (saveAsNewView, deleteView fallback) bypass the watcher
+// and call `applyViewLocally(viewId, false)` directly to avoid
+// clobbering filters the user just configured.
 watch(selectedViewId, (newId) => {
   if (newId) {
-    const view = views.value.find((v) => v.id === newId);
-    if (view) {
-      // Apply the stored configuration to local columns
-      localColumns.value = viewStore.applyView(view, props.columns);
-      emit("apply-config", localColumns.value, newId);
-      // Apply filter configuration if present
-      const filterValues = viewStore.applyFilterConfig(view);
-      if (filterValues) {
-        emit("update:filterValues", filterValues);
-      }
-      // Apply sort configuration if present
-      const sortConfig = viewStore.applySortConfig(view);
-      localSortField.value = sortConfig?.field ?? "";
-      localSortOrder.value = (sortConfig?.order ?? 1) as 1 | -1;
-      emit("update:sortConfig", sortConfig);
-    }
+    applyViewLocally(newId, true);
   } else {
-    // Reset to base columns
-    localColumns.value = props.columns.map((col, index) => ({
-      ...col,
-      visible: col.visible !== false ? true : col.visible,
-      order: col.order ?? index,
-    }));
-    emit("apply-config", props.columns, "");
-    // Reset sort
-    localSortField.value = "";
-    localSortOrder.value = 1;
-    emit("update:sortConfig", null);
+    resetToBaseColumns();
   }
 });
 
@@ -222,8 +330,8 @@ async function saveView() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista existent per actualitzar",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectExistingToUpdate"),
       life: 3000,
     });
     return;
@@ -238,11 +346,11 @@ async function saveView() {
   if (updated) {
     toast.add({
       severity: "success",
-      summary: "Vista actualitzada",
-      detail: "La configuració s'ha desat correctament",
+      summary: t("tables.views.updated"),
+      detail: t("tables.views.updateSuccess"),
       life: 3000,
     });
-    emit("apply-config", localColumns.value, selectedViewId.value);
+    emit("apply-config", localColumns.value, selectedViewId.value, localCard.value);
   }
 }
 
@@ -254,37 +362,45 @@ async function saveAsNewView() {
   if (!newViewName.value.trim()) {
     toast.add({
       severity: "warn",
-      summary: "Nom requerit",
-      detail: "Introdueix un nom per a la nova vista",
+      summary: t("tables.views.nameRequired"),
+      detail: t("tables.views.enterName"),
       life: 3000,
     });
     return;
   }
 
+  const savedName = newViewName.value.trim();
   const newView = viewStore.createNewView(
     userId,
     props.page,
-    newViewName.value.trim(),
+    savedName,
     localColumns.value,
-    props.filterValues
+    props.filterValues,
+    localSortField.value
+      ? { field: localSortField.value, order: localSortOrder.value }
+      : undefined,
+    localCard.value,
   );
 
   const created = await viewStore.create(newView);
-  if (created) {
-    toast.add({
-      severity: "success",
-      summary: "Vista creada",
-      detail: "La nova vista s'ha creat correctament",
-      life: 3000,
-    });
-    // Select the newly created view
-    const savedName = newViewName.value.trim();
-    const savedView = viewStore.views.find((v) => v.name === savedName);
-    if (savedView) {
-      selectedViewId.value = savedView.id;
-    }
-    newViewName.value = "";
+  if (!created) return;
+
+  // viewStore.create already refreshes the views list. The newly created
+  // view should now be present — apply it explicitly through the same path
+  // the selector uses, so Table.vue picks up the new active view on mount
+  // and F5 reads it as the single source of truth.
+  const savedView = viewStore.views.find((v) => v.name === savedName);
+  if (savedView) {
+    applyViewLocally(savedView.id);
   }
+
+  toast.add({
+    severity: "success",
+    summary: t("tables.views.created"),
+    detail: t("tables.views.createSuccess"),
+    life: 3000,
+  });
+  newViewName.value = "";
 }
 
 // Delete current view
@@ -292,26 +408,59 @@ function deleteView() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista per eliminar",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectToDelete"),
       life: 3000,
     });
     return;
   }
 
+  const deletedViewId = selectedView.value.id;
+  const wasActiveInTable = deletedViewId === props.activeViewId;
+
   confirm.require({
-    message: `Està segur que vol eliminar la vista "${selectedView.value.name}"?`,
-    header: "Confirmació",
+    message: t("tables.views.confirmDelete", { name: selectedView.value.name }),
+    header: t("tables.views.confirmation"),
     icon: "pi pi-exclamation-triangle",
     accept: async () => {
-      const deleted = await viewStore.delete(selectedView.value!.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: "Vista eliminada",
-          life: 3000,
-        });
-        selectedViewId.value = "";
+      const deleted = await viewStore.delete(deletedViewId);
+      if (!deleted) return;
+
+      toast.add({
+        severity: "success",
+        summary: t("tables.views.deleted"),
+        life: 3000,
+      });
+
+      // If the deleted view was the one Table.vue was applying, fall
+      // back to the next default/remaining view. If none survives, the
+      // user explicitly removed their default — force a hard reset so
+      // the live filters/sort/columns in Table.vue clear immediately
+      // (the same state F5 would load on next mount).
+      const nextView =
+        viewStore.views.find((view) => view.isDefault) ?? viewStore.views[0];
+      if (nextView) {
+        selectedViewId.value = nextView.id;
+      } else {
+        const userId = store.user?.id;
+        if (userId) {
+          await viewStore.ensureDefault(userId, props.page);
+          const fallback =
+            viewStore.views.find((view) => view.isDefault) ??
+            viewStore.views[0] ??
+            null;
+          if (fallback) {
+            selectedViewId.value = fallback.id;
+          } else if (wasActiveInTable) {
+            // Truly empty: no views survived. Reset the live UI now
+            // so the user sees the same state they'd get on F5.
+            selectedViewId.value = "";
+            resetToBaseColumns();
+          }
+        } else if (wasActiveInTable) {
+          selectedViewId.value = "";
+          resetToBaseColumns();
+        }
       }
     },
   });
@@ -322,8 +471,8 @@ async function toggleDefault() {
   if (selectedViewId.value === "" || !selectedView.value) {
     toast.add({
       severity: "warn",
-      summary: "Seleccioni una vista",
-      detail: "Seleccioni una vista per establir com per defecte",
+      summary: t("tables.views.selectView"),
+      detail: t("tables.views.selectToSetDefault"),
       life: 3000,
     });
     return;
@@ -334,13 +483,59 @@ async function toggleDefault() {
   if (set) {
     toast.add({
       severity: "success",
-      summary: isDefault ? "Vista normal" : "Vista per defecte",
+      summary: isDefault
+        ? t("tables.views.normal")
+        : t("tables.views.default"),
       detail: isDefault
-        ? "La vista ja no és la predeterminada"
-        : "La vista s'ha establert com a per defecte",
+        ? t("tables.views.defaultRemoved")
+        : t("tables.views.defaultSet"),
       life: 3000,
     });
   }
+}
+
+// --- Phone card ---
+
+// Columns the card can use: the ones visible in this view, in its order.
+// Hiding a column above removes it from the card options straight away.
+const cardColumns = computed(() =>
+  localColumns.value.filter(
+    (col) =>
+      col.visible !== false && col.columnType !== ColumnType.ProgressBar,
+  ),
+);
+
+const cardColumnOptions = computed(() =>
+  cardColumns.value.map((col) => ({ label: col.header, value: col.field })),
+);
+
+// What the phone shows for this view: its own card, else the screen's.
+const resolvedCard = computed(() =>
+  resolveCardLayout(localCard.value, props.cardLayout, cardColumns.value),
+);
+
+type SingleCardSlot = "title" | "subtitle" | "badge" | "trailing";
+
+const singleCardSlots = computed<
+  Array<{ slot: SingleCardSlot; label: string; clearable: boolean }>
+>(() => [
+  { slot: "title", label: t("tables.views.card.titleField"), clearable: false },
+  { slot: "subtitle", label: t("tables.views.card.subtitleField"), clearable: true },
+  { slot: "badge", label: t("tables.views.card.badgeField"), clearable: true },
+  { slot: "trailing", label: t("tables.views.card.trailingField"), clearable: true },
+]);
+
+// The first edit starts from the card the user sees, so customising one
+// slot keeps the others as they were.
+function updateCardSlot(
+  slot: keyof CardLayout,
+  value: string | string[] | null | undefined,
+) {
+  localCard.value = { ...resolvedCard.value, [slot]: value ?? undefined };
+}
+
+function resetCardToScreenDefault() {
+  localCard.value = null;
 }
 
 // Build unified view config JSON from local columns, filter values, and sort
@@ -360,6 +555,9 @@ function buildViewConfig(): string {
   if (localSortField.value) {
     config.sort = { field: localSortField.value, order: localSortOrder.value };
   }
+  if (localCard.value) {
+    config.card = localCard.value;
+  }
   return JSON.stringify(config);
 }
 </script>
@@ -368,16 +566,17 @@ function buildViewConfig(): string {
   <Dialog
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
-    header="Configuració de la vista"
+    :header="$t('tables.views.configuration')"
     :modal="true"
     :closable="true"
     :style="{ width: '600px' }"
+    :breakpoints="{ '767px': '95vw' }"
     class="table-view-config-dialog"
   >
     <div class="view-config-content">
       <!-- Top: Current view management -->
       <div v-if="hasSavedViews" class="view-management-section">
-        <label>Vista actual</label>
+        <label>{{ $t("tables.views.current") }}</label>
         <div class="view-management-row">
           <div class="view-selector-wrapper">
             <Select
@@ -385,7 +584,7 @@ function buildViewConfig(): string {
               :options="selectOptions"
               option-label="name"
               option-value="id"
-              placeholder="Selecciona una vista..."
+              :placeholder="$t('tables.views.selectPlaceholder')"
               class="w-full"
               size="small"
             >
@@ -395,7 +594,7 @@ function buildViewConfig(): string {
                   <i
                     v-if="slotProps.option.isDefault"
                     class="pi pi-star-fill default-star"
-                    title="Vista per defecte"
+                    :title="$t('tables.views.default')"
                   />
                 </div>
               </template>
@@ -407,9 +606,9 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              :aria-label="selectedView?.isDefault ? 'Treure de per defecte' : 'Establir com a per defecte'"
+                :aria-label="selectedView?.isDefault ? $t('tables.views.removeDefault') : $t('tables.views.setDefault')"
               @click="toggleDefault"
-              v-tooltip.top="selectedView?.isDefault ? 'Treure de per defecte' : 'Establir com a per defecte'"
+                v-tooltip.top="selectedView?.isDefault ? $t('tables.views.removeDefault') : $t('tables.views.setDefault')"
             />
           </div>
           <div class="view-management-actions">
@@ -419,8 +618,8 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              aria-label="Desar canvis"
-              v-tooltip.top="'Desar canvis'"
+              :aria-label="$t('tables.views.saveChanges')"
+              v-tooltip.top="$t('tables.views.saveChanges')"
               @click="saveView"
               :disabled="selectedViewId === ''"
             />
@@ -430,8 +629,8 @@ function buildViewConfig(): string {
               size="small"
               rounded
               text
-              aria-label="Eliminar"
-              v-tooltip.top="'Eliminar'"
+              :aria-label="$t('tables.views.delete')"
+              v-tooltip.top="$t('tables.views.delete')"
               @click="deleteView"
               :disabled="selectedViewId === ''"
             />
@@ -439,83 +638,190 @@ function buildViewConfig(): string {
         </div>
       </div>
 
-      <!-- Column configuration list -->
-      <div class="field">
-        <label>Configuració de columnes</label>
-        <div class="columns-config-list">
-          <div
-            v-for="(col, index) in localColumns"
-            :key="col.field"
-            class="column-config-row"
-            :class="{
-              'dragging': dragSourceIndex === index,
-              'drag-over': dragOverIndex === index && dragSourceIndex !== index,
-              'drop-before': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex > index,
-              'drop-after': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex < index,
-            }"
-            draggable="true"
-            @dragstart="onDragStart(index, $event)"
-            @dragover="onDragOver(index, $event)"
-            @dragleave="onDragLeave(index, $event)"
-            @drop="onDrop(index, $event)"
-            @dragend="onDragEnd"
-          >
-            <i class="pi pi-bars drag-handle"></i>
-            <Checkbox
-              :model-value="col.visible !== false"
-              :binary="true"
-              @update:model-value="toggleVisibility(index)"
-              :disabled="col.visible === undefined && col.visible !== false"
-            />
-            <span class="column-name">{{ col.header }}</span>
-            <Checkbox
-              v-if="col.total !== undefined"
-              :model-value="col.total !== undefined"
-              :binary="true"
-              @update:model-value="toggleTotal(index)"
-            />
-            <span v-if="col.total !== undefined" class="total-label">Total</span>
-            <!-- Sort toggle -->
-            <Button
-              :icon="
-                localSortField !== col.field
-                  ? 'pi pi-sort'
-                  : localSortOrder === 1
-                    ? 'pi pi-sort-amount-up'
-                    : 'pi pi-sort-amount-down'
-              "
-              :severity="localSortField === col.field ? 'primary' : 'secondary'"
-              size="small"
-              rounded
-              text
-              :aria-label="
-                localSortField !== col.field
-                  ? 'Sense ordenació'
-                  : localSortOrder === 1
-                    ? 'Ascendent'
-                    : 'Descendent'
-              "
-              v-tooltip.top="
-                localSortField !== col.field
-                  ? 'Sense ordenació'
-                  : localSortOrder === 1
-                    ? 'Ascendent'
-                    : 'Descendent'
-              "
-              @click.stop="cycleSortForColumn(col.field)"
-            />
-          </div>
-        </div>
-      </div>
+      <Tabs v-model:value="activeTab">
+        <TabList>
+          <Tab value="columns">{{ $t("tables.views.tabs.columns") }}</Tab>
+          <Tab value="card">{{ $t("tables.views.tabs.card") }}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="columns">
+            <div class="columns-tab">
+              <!-- Saved filters (read-only, sourced from DB via selectedView.viewConfig) -->
+              <div v-if="savedFilterRows.length > 0" class="saved-filters-section">
+                <label>{{ $t("tables.views.savedFilters") }}</label>
+                <div class="saved-filters-list">
+                  <div
+                    v-for="row in savedFilterRows"
+                    :key="row.key"
+                    class="saved-filters-row"
+                  >
+                    <span class="saved-filters-label">{{ row.label }}</span>
+                    <span class="saved-filters-value">
+                      {{ resolveDisplayValue(row.field, row.value) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Column configuration list -->
+              <div class="field">
+                <label>{{ $t("tables.views.columnConfiguration") }}</label>
+                <div class="columns-config-list">
+                  <div
+                    v-for="(col, index) in localColumns"
+                    v-show="!col.cardOnly"
+                    :key="col.field"
+                    class="column-config-row"
+                    :class="{
+                      'dragging': dragSourceIndex === index,
+                      'drag-over': dragOverIndex === index && dragSourceIndex !== index,
+                      'drop-before': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex > index,
+                      'drop-after': dragOverIndex === index && dragSourceIndex !== null && dragSourceIndex < index,
+                    }"
+                    draggable="true"
+                    @dragstart="onDragStart(index, $event)"
+                    @dragover="onDragOver(index, $event)"
+                    @dragleave="onDragLeave(index, $event)"
+                    @drop="onDrop(index, $event)"
+                    @dragend="onDragEnd"
+                  >
+                    <i class="pi pi-bars drag-handle"></i>
+                    <Checkbox
+                      :model-value="col.visible !== false"
+                      :binary="true"
+                      @update:model-value="toggleVisibility(index)"
+                    />
+                    <span class="column-name">{{ col.header }}</span>
+                    <Checkbox
+                      v-if="col.total !== undefined"
+                      :model-value="col.total !== undefined"
+                      :binary="true"
+                      @update:model-value="toggleTotal(index)"
+                    />
+                    <span v-if="col.total !== undefined" class="total-label">{{ $t("tables.views.total") }}</span>
+                    <!-- Sort toggle -->
+                    <Button
+                      :icon="
+                        localSortField !== col.field
+                          ? 'pi pi-sort'
+                          : localSortOrder === 1
+                            ? 'pi pi-sort-amount-up'
+                            : 'pi pi-sort-amount-down'
+                      "
+                      :severity="localSortField === col.field ? 'primary' : 'secondary'"
+                      size="small"
+                      rounded
+                      text
+                      :aria-label="
+                        localSortField !== col.field
+                          ? $t('tables.views.noSort')
+                          : localSortOrder === 1
+                            ? $t('tables.views.ascending')
+                            : $t('tables.views.descending')
+                      "
+                      v-tooltip.top="
+                        localSortField !== col.field
+                          ? $t('tables.views.noSort')
+                          : localSortOrder === 1
+                            ? $t('tables.views.ascending')
+                            : $t('tables.views.descending')
+                      "
+                      @click.stop="cycleSortForColumn(col.field)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabPanel>
+          <TabPanel value="card">
+            <div class="card-config">
+              <p class="card-config__status" role="status">
+                <span>{{
+                  localCard
+                    ? $t("tables.views.card.customized")
+                    : $t("tables.views.card.usingScreenDefault")
+                }}</span>
+                <Button
+                  :label="$t('tables.views.card.resetToScreenDefault')"
+                  icon="pi pi-undo"
+                  size="small"
+                  text
+                  :disabled="!localCard"
+                  @click="resetCardToScreenDefault"
+                />
+              </p>
+
+              <div class="card-config__fields">
+                <div
+                  v-for="item in singleCardSlots"
+                  :key="item.slot"
+                  class="card-config__field"
+                >
+                  <label :for="`card-slot-${item.slot}`">{{ item.label }}</label>
+                  <Select
+                    :input-id="`card-slot-${item.slot}`"
+                    :model-value="resolvedCard[item.slot]"
+                    :options="cardColumnOptions"
+                    option-label="label"
+                    option-value="value"
+                    :show-clear="item.clearable"
+                    :placeholder="$t('tables.views.card.none')"
+                    size="small"
+                    class="w-full"
+                    @update:model-value="updateCardSlot(item.slot, $event)"
+                  />
+                </div>
+                <div class="card-config__field card-config__field--wide">
+                  <label for="card-slot-meta">{{ $t("tables.views.card.metaFields") }}</label>
+                  <MultiSelect
+                    input-id="card-slot-meta"
+                    :model-value="resolvedCard.meta"
+                    :options="cardColumnOptions"
+                    option-label="label"
+                    option-value="value"
+                    :selection-limit="CARD_META_MAX"
+                    :show-toggle-all="false"
+                    :placeholder="$t('tables.views.card.none')"
+                    display="chip"
+                    size="small"
+                    class="w-full"
+                    @update:model-value="updateCardSlot('meta', $event)"
+                  />
+                  <small class="card-config__hint">{{
+                    $t("tables.views.card.metaHint", { max: CARD_META_MAX })
+                  }}</small>
+                </div>
+              </div>
+
+              <div class="card-config__preview">
+                <span id="card-config-preview-label" class="card-config__label">{{
+                  $t("tables.views.card.preview")
+                }}</span>
+                <TableCardList
+                  v-if="previewItem"
+                  aria-labelledby="card-config-preview-label"
+                  :items="[previewItem]"
+                  :columns="cardColumns"
+                  :layout="resolvedCard"
+                  :interactive="false"
+                />
+                <p v-else class="card-config__hint">
+                  {{ $t("tables.views.card.previewEmpty") }}
+                </p>
+              </div>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       <!-- Bottom: Create new view -->
       <div class="create-view-section">
-        <label>Nova vista</label>
+        <label>{{ $t("tables.views.new") }}</label>
         <div class="create-view-row">
           <InputText
             ref="newViewNameInput"
             v-model="newViewName"
-            placeholder="Nom de la nova vista..."
+            :placeholder="$t('tables.views.newNamePlaceholder')"
             class="w-full"
             size="small"
           />
@@ -525,8 +831,8 @@ function buildViewConfig(): string {
             size="small"
             rounded
             text
-            aria-label="Crear nova vista"
-            v-tooltip.top="'Crear nova vista'"
+            :aria-label="$t('tables.views.createNew')"
+            v-tooltip.top="$t('tables.views.createNew')"
             @click="saveAsNewView"
           />
         </div>
@@ -617,9 +923,53 @@ function buildViewConfig(): string {
   width: 100%;
 }
 
+.saved-filters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.saved-filters-section label {
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.saved-filters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-ground);
+}
+
+.saved-filters-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.875rem;
+  padding: 0.15rem 0;
+}
+
+.saved-filters-label {
+  color: var(--text-color-secondary);
+  font-weight: 500;
+  min-width: 8rem;
+  flex-shrink: 0;
+}
+
+.saved-filters-value {
+  color: var(--text-color);
+  word-break: break-word;
+  flex: 1;
+}
+
 .default-star {
   color: var(--p-primary-color);
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
 }
 
 .columns-config-list {
@@ -708,8 +1058,70 @@ function buildViewConfig(): string {
   font-size: 0.875rem;
 }
 
+.columns-tab,
+.card-config {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-config__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.card-config__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.card-config__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.card-config__field--wide {
+  grid-column: 1 / -1;
+}
+
+.card-config__field label,
+.card-config__label {
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+}
+
+.card-config__hint {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.8571rem;
+}
+
+.card-config__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.card-config__preview :deep(.table-cards__list) {
+  padding: 0;
+}
+
+@media (max-width: 767.98px) {
+  .card-config__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .total-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--text-color-secondary);
 }
 

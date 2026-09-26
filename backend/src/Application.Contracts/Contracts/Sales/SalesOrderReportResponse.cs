@@ -17,6 +17,7 @@ public class SalesOrderReportResponse(string languageCode, bool showPrices, ILoc
 
     public Customer? Customer { get; set; }
     public Site? Site { get; set; }
+    public Enterprise? Enterprise { get; set; }
     public SalesOrderHeaderReportDto? Order { get; set; }
     public List<SalesOrderDetailReportDto> OrderDetails { get; set; } = [];
     public decimal Total { get; set; }

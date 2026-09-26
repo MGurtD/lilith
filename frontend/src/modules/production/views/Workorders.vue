@@ -1,42 +1,22 @@
 <template>
-  <TableWorkorders
-    :workorders="filteredWorkorders"
-    @edit="editRow"
+  <Table
+    :items="workOrderStore.workorders ?? []"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="Workorders"
+    :card-layout="cardLayout"
+    preset="crud-list"
+    tableStyle="min-width: 100%"
+    sort-mode="multiple"
+    show-delete-column
+    @filter="filterData"
+    @clear="cleanFilter"
+    @create="createButtonClick"
     @delete="deleteButton"
-  >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterData"
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Seleccioni un període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-      </TableFilter>
-    </template>
-  </TableWorkorders>
+    @row-click="editRow"
+  />
 
   <Dialog
     v-model:visible="dialogOptions.visible"
@@ -46,19 +26,28 @@
     :style="{ width: '600px' }"
   >
     <FormCreateWorkorder
-      :createWorkOrderDto="createWorkOrderDto"
+      :create-work-order-dto="createWorkOrderDto"
       @submit="createWorkOrder"
-    ></FormCreateWorkorder>
+      @cancel="dialogOptions.visible = false"
+    />
   </Dialog>
 </template>
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormCreateWorkorder from "../components/FormCreateWorkorder.vue";
-import TableWorkorders from "../components/TableWorkorders.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import { useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
+import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import { useReferenceStore } from "../../shared/store/reference";
@@ -90,6 +79,64 @@ const customersStore = useCustomersStore();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "75%" };
 
+const columns = computed<Column[]>(() => [
+  {
+    field: "code",
+    header: t("production.components.codi"),
+    style: "width: 15%",
+  },
+  {
+    field: "referenceId",
+    header: t("production.components.referencia"),
+    columnType: ColumnType.Lookup,
+    resolver: referenceStore.getFullNameById,
+    style: "width: 40%",
+  },
+  {
+    field: "reference.customerId",
+    header: t("production.components.client"),
+    columnType: ColumnType.Lookup,
+    resolver: customersStore.getCustomerNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "statusId",
+    header: t("production.components.estat"),
+    columnType: ColumnType.Status,
+    resolver: lifecycleStore.getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
+    style: "width: 10%",
+  },
+  {
+    field: "plannedDate",
+    header: t("production.components.dataPrevista"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 12%",
+  },
+  {
+    field: "order",
+    header: t("production.components.prioritat"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+  {
+    field: "plannedQuantity",
+    header: t("production.components.quantitat"),
+    columnType: ColumnType.Number,
+    style: "width: 10%",
+  },
+]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const cardLayout: CardLayout = {
+  title: "code",
+  subtitle: "referenceId",
+  badge: "statusId",
+  trailing: "plannedDate",
+  meta: ["reference.customerId", "plannedQuantity", "order"],
+};
+
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   referenceId: undefined,
@@ -100,32 +147,38 @@ const filter = ref({
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {
+    key: "dates",
+    label: pt("Període"),
+    type: "date-range",
+    placeholder: pt("Seleccioni un període"),
+  },
+  {
     key: "customerId",
-    label: "Client",
+    label: pt("Client"),
     type: "select",
     options: customersStore.customers || [],
     optionLabel: "comercialName",
     optionValue: "id",
-    placeholder: "Selecciona un client",
+    placeholder: pt("Selecciona un client"),
     size: "md",
     row: 0,
   },
   {
     key: "code",
-    label: "Codi",
+    label: pt("Codi"),
     type: "text",
-    placeholder: "Codi",
+    placeholder: pt("Codi"),
     size: "md",
     row: 0,
   },
   {
     key: "statusId",
-    label: "Estat",
+    label: pt("Estat"),
     type: "select",
     options: lifecycleStore.lifecycle?.statuses || [],
     optionLabel: "name",
     optionValue: "id",
-    placeholder: "Selecciona un estat",
+    placeholder: pt("Selecciona un estat"),
     size: "md",
     row: 0,
   },
@@ -153,9 +206,6 @@ const cleanFilter = () => {
   setCurrentYear();
   userFilterStore.removeFilter("Workorders", "");
 };
-const filteredWorkorders = computed(() => {
-  return workOrderStore.workorders ?? [];
-});
 const filterData = async () => {
   if (
     filter.value.dates &&
@@ -176,8 +226,8 @@ const filterData = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: pt("Filtre invàlid"),
+      detail: pt("Seleccioni un període"),
       life: 5000,
     });
   }
@@ -185,18 +235,19 @@ const filterData = async () => {
 
 const dialogOptions = reactive({
   visible: false,
-  title: "Crear ordre",
+  title: pt("Crear ordre"),
   closable: true,
   position: "center",
   modal: true,
 } as DialogOptions);
 
-const createWorkOrderDto = ref({
+const newCreateWorkOrderDto = (): CreateWorkOrderDto => ({
   workMasterId: "",
-  plannedDate: "",
+  plannedDate: null,
   plannedQuantity: 0,
   comment: "",
-} as CreateWorkOrderDto);
+});
+const createWorkOrderDto = ref<CreateWorkOrderDto>(newCreateWorkOrderDto());
 
 onMounted(async () => {
   await referenceStore.fetchReferencesByModule("sales");
@@ -210,15 +261,15 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.CALENDAR,
-    title: "Ordres de fabricació",
+    title: pt("Ordres de fabricació"),
   });
 
   getUserFilter();
   if (!filter.value.dates) setCurrentYear();
   filterData();
 });
-onUnmounted(() => {
-  userFilterStore.addFilter("Workorders", "", filter.value);
+onBeforeRouteLeave(async () => {
+  await userFilterStore.addFilter("Workorders", "", filter.value);
 });
 
 const getUserFilter = () => {
@@ -238,24 +289,23 @@ const getUserFilter = () => {
 };
 
 const createButtonClick = () => {
+  createWorkOrderDto.value = newCreateWorkOrderDto();
   dialogOptions.visible = true;
 };
 
-const editRow = (workorder: WorkOrder) => {
-  router.push({ path: `/workorder/${workorder.id}` });
+const editRow = (row: DataTableRowClickEvent) => {
+  router.push({ path: `/workorder/${row.data.id}` });
 };
 
-const createWorkOrder = async () => {
-  if (!createWorkOrderDto.value) return;
-
-  const created = await workOrderStore.create(createWorkOrderDto.value);
+const createWorkOrder = async (dto: CreateWorkOrderDto) => {
+  const created = await workOrderStore.create(dto);
   if (created && workOrderStore.workorder)
     router.push({ path: `/workorder/${workOrderStore.workorder.id}` });
 };
 
 const deleteButton = (workorder: WorkOrder) => {
   confirm.require({
-    message: `Está segur que vol eliminar la ordre ${workorder.code}?`,
+    message: t("production.detail.confirmDeleteWorkorder"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -265,7 +315,7 @@ const deleteButton = (workorder: WorkOrder) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: pt("Eliminada"),
           life: 3000,
         });
         filterData();

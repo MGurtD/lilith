@@ -17,7 +17,6 @@ export const useSuppliersStore = defineStore({
   id: "suppliers",
   state: () => ({
     supplierTypes: undefined as Array<SupplierType> | undefined,
-    supplierType: undefined as SupplierType | undefined,
     suppliers: undefined as Array<Supplier> | undefined,
     supplier: undefined as Supplier | undefined,
     logisticSuppliers: undefined as Array<Supplier> | undefined,
@@ -47,12 +46,18 @@ export const useSuppliersStore = defineStore({
         country: "ES",
         disabled: false,
         observations: "",
+        notes: "",
         phone: "",
         postalCode: "",
         region: "",
+        accountNumber: "",
+        supplierTypeId: "",
+        paymentMethodId: "",
+        contacts: [],
+        distanceFromSite: 0,
         latitude: 0,
         longitude: 0,
-      } as Supplier;
+      };
     },
     async fetchSuppliers() {
       this.suppliers = await service.getAll();
@@ -82,18 +87,8 @@ export const useSuppliersStore = defineStore({
       return result;
     },
 
-    setNewSupplierType(id: string) {
-      this.supplierType = {
-        id: id,
-        name: "",
-        description: "",
-      } as SupplierType;
-    },
     async fetchSupplierTypes() {
       this.supplierTypes = await typeService.getAll();
-    },
-    async fetchSupplierType(id: string) {
-      this.supplierType = await typeService.getById(id);
     },
     async createSupplierType(supplierType: SupplierType) {
       const result = await typeService.create(supplierType);

@@ -1,116 +1,119 @@
 <template>
   <div>
-    <DataTable
+    <Table
       class="p-datatable-sm"
-      tableStyle="min-width:100%"
+      :items="filteredMovements"
+      :columns="columns"
+      :filter-config="filterConfig"
+      v-model:filter-values="filter"
+      :filter-body-width="filterBodyWidth"
+      :show-create="false"
+      :card-layout="cardLayout"
+      page="StockMovements"
+      tableStyle="min-width: 100%"
       scrollable
       scrollHeight="flex"
       sortField="movementDate"
       :sortOrder="1"
-      :value="stockMovementStore.stockMovements"
-      :paginator="(stockMovementStore.stockMovements?.length ?? 0) > 20"
+      :paginator="filteredMovements.length > 20"
       :rows="20"
+      @filter="filterMovements"
+      @clear="cleanFilter"
     >
-      <template #header>
-        <TableFilter
-          :config="[]"
-          v-model="filter"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-create="false"
-          :body-width="filterBodyWidth"
-          embedded
-          @filter="filterMovements"
-          @clear="cleanFilter"
-        >
-          <template #prepend>
-            <div class="table-filter-prepend-field table-filter-prepend-field--lg">
-              <label class="filter-label table-filter-prepend-label">Període</label>
-              <DatePicker
-                v-model="filter.dates"
-                selectionMode="range"
-                dateFormat="dd/mm/yy"
-                showIcon
-                class="w-full"
-                size="small"
-                placeholder="Selecciona període"
-              />
-            </div>
-            <div class="table-filter-prepend-field table-filter-prepend-field--md">
-              <label class="filter-label table-filter-prepend-label">Ubicació</label>
-              <DropdownWarehousesWithLocations
-                label=""
-                v-model="filter.locationId"
-              />
-            </div>
-          </template>
-        </TableFilter>
+      <template #filter-locationId="{ value, update }">
+        <DropdownWarehousesWithLocations size="small"
+          label=""
+          :model-value="value"
+          @update:model-value="update"
+        />
       </template>
-      <Column header="Data" field="movementDate" sortable style="width: 10%">
-        <template #body="slotProps">
-          {{ formatDateTime(slotProps.data.movementDate) }}
-        </template>
-      </Column>
-      <Column header="Referència" style="width: 15%">
-        <template #body="slotProps">
-          {{ referenceStore.getFullNameById(slotProps.data.referenceId) }}
-        </template></Column
-      >
-      <Column header="Ubicació" style="width: 10%">
-        <template #body="slotProps">
-          {{ slotProps.data.location?.name }}
-        </template>
-      </Column>
-      <Column field="width" header="Ample (x) mm" style="width: 5%"></Column>
-      <Column field="length" header="Llarg (y) mm" style="width: 5%"></Column>
-      <Column field="height" header="Alt (z) mm" style="width: 5%"></Column>
-      <Column field="diameter" header="Diámetre mm" style="width: 5%"></Column>
-      <Column field="thickness" header="Gruix mm" style="width: 5%"></Column>
-      <Column
-        field="description"
-        header="Descripció"
-        style="width: 25%"
-      ></Column>
-      <Column
-        header="Tipus de moviment"
-        field="movementType"
-        style="width: 10%"
-      >
-        <template #body="slotProps">
-          <TagMovementType :movementType="slotProps.data.movementType" />
-        </template>
-      </Column>
-      <Column field="quantity" header="Quantitat" style="width: 10%"></Column>
-    </DataTable>
+      <template #filter-referenceId="{ value, update }">
+        <DropdownReference size="small"
+          label=""
+          :fullName="true"
+          :model-value="value"
+          @update:model-value="update"
+        />
+      </template>
+      <template #body-lotId="{ data }">
+        {{ getLotCode(data.lotId) }}
+      </template>
+      <template #body-movementType="{ data }">
+        <TagMovementType :movementType="data.movementType" />
+      </template>
+      <!-- The tag gives the direction; the card shows the amount moved. -->
+      <template #card-quantity="{ data }">
+        {{ t("warehouse.fields.unitsCount", { count: Math.abs(data.quantity) }) }}
+      </template>
+      <template #card-dimensions="{ data }">
+        <DimensionChips
+          :width="data.width"
+          :length="data.length"
+          :height="data.height"
+          :diameter="data.diameter"
+          :thickness="data.thickness"
+        />
+      </template>
+      <template #body-lotTraceability="{ data }">
+        <Button
+          v-if="hasVisibleLot(data.lotId)"
+          icon="pi pi-sitemap"
+          text
+          rounded
+          size="small"
+          v-tooltip.top="t('warehouse.lotTraceability.view')"
+          @click="goToLotTraceability(data.referenceId, data.lotId)"
+        />
+      </template>
+    </Table>
   </div>
 </template>
+
 <script setup lang="ts">
-import TableFilter, {
-  type FilterBodyWidth,
-} from "../../../components/tables/TableFilter.vue";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import DropdownWarehousesWithLocations from "../components/DropdownWarehousesWithLocations.vue";
-import TagMovementType from "../../../components/TagMovementType.vue";
+import DropdownReference from "../../shared/components/DropdownReference.vue";
+import TagMovementType from "@/components/TagMovementType.vue";
+import DimensionChips from "@/components/DimensionChips.vue";
 import { useToast } from "primevue/usetoast";
-import { useStore } from "../../../store";
+import { useRouter } from "vue-router";
+import { useStore } from "@/store";
 import { useStockMovementStore } from "../store/stockMovement";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useExerciseStore } from "../../shared/store/exercise";
-import { onMounted, ref } from "vue";
+import { useWarehouseStore } from "../store/warehouse";
+import Services from "../services";
+import { Lot } from "../types";
+import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
-import {
-  formatDateForQueryParameter,
-  formatDateTime,
-} from "../../../utils/functions";
+import { formatDateForQueryParameter } from "@/utils/functions";
 
 const toast = useToast();
+const { t } = useI18n();
+const router = useRouter();
 const store = useStore();
 const stockMovementStore = useStockMovementStore();
 const referenceStore = useReferenceStore();
 const exerciseStore = useExerciseStore();
+const warehouseStore = useWarehouseStore();
+
+const lotsById = ref<Record<string, Lot>>({});
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   locationId: undefined as string | undefined,
+  referenceId: undefined as string | undefined,
+  lotId: undefined as string | undefined,
 });
 
 const filterBodyWidth: FilterBodyWidth = {
@@ -118,10 +121,144 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "70%",
 };
 
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("warehouse.placeholders.selectPeriod"),
+    size: "sm",
+  },
+  {
+    key: "locationId",
+    label: t("warehouse.fields.location"),
+    type: "slot",
+    size: "sm",
+    valueLabel: (value) => {
+      if (typeof value !== "string") return "";
+      for (const warehouse of warehouseStore.warehouses ?? []) {
+        const location = warehouse.locations?.find((item) => item.id === value);
+        if (location) return `${warehouse.name} - ${location.description}`;
+      }
+      return "";
+    },
+  },
+  {
+    key: "referenceId",
+    label: t("warehouse.fields.reference"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string" ? referenceStore.getFullNameById(value) : "",
+  },
+  {
+    key: "lotId",
+    label: t("common.lot"),
+    type: "select",
+    options: lotOptions.value,
+    optionLabel: "code",
+    optionValue: "id",
+    placeholder: t("common.lot"),
+    valueLabel: (value) => (typeof value === "string" ? getLotCode(value) : ""),
+  },
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "movementDate",
+    header: t("common.date"),
+    sortable: true,
+    columnType: ColumnType.DateTime,
+    style: "width: 10%",
+  },
+  {
+    field: "referenceId",
+    header: t("warehouse.fields.reference"),
+    columnType: ColumnType.Lookup,
+    resolver: referenceStore.getFullNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "lotId",
+    header: t("common.lot"),
+    style: "width: 8%",
+  },
+  {
+    field: "location.name",
+    header: t("warehouse.fields.location"),
+    style: "width: 10%",
+  },
+  {
+    field: "width",
+    header: t("warehouse.fields.widthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 5%; min-width: 8rem",
+  },
+  {
+    field: "length",
+    header: t("warehouse.fields.lengthMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 5%; min-width: 8rem",
+  },
+  {
+    field: "height",
+    header: t("warehouse.fields.heightMmAxis"),
+    columnType: ColumnType.Number,
+    style: "width: 5%; min-width: 8rem",
+  },
+  {
+    field: "diameter",
+    header: t("warehouse.fields.diameterMm"),
+    columnType: ColumnType.Number,
+    style: "width: 5%; min-width: 8rem",
+  },
+  {
+    field: "thickness",
+    header: t("warehouse.fields.thicknessMm"),
+    columnType: ColumnType.Number,
+    style: "width: 5%; min-width: 8rem",
+  },
+  {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
+  {
+    field: "description",
+    header: t("common.description"),
+    style: "width: 25%",
+  },
+  {
+    field: "movementType",
+    header: t("warehouse.fields.movementType"),
+    style: "width: 10%",
+    truncate: false,
+  },
+  {
+    field: "quantity",
+    header: t("warehouse.fields.quantity"),
+    columnType: ColumnType.Number,
+    style: "width: 10%; min-width: 8rem",
+  },
+  {
+    field: "lotTraceability",
+    header: "",
+    style: "width: 4%",
+    truncate: false,
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "referenceId",
+  trailing: "quantity",
+  subtitle: "movementDate",
+  badge: "movementType",
+  meta: ["lotId", "location.name", "dimensions"],
+};
+
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MAP,
-    title: "Moviments de magatzem",
+    title: t("warehouse.stockMovements.title"),
   });
   await exerciseStore.fetchAll();
   await referenceStore.fetchReferences();
@@ -143,7 +280,85 @@ const setCurrentYear = () => {
 const cleanFilter = () => {
   filter.value.dates = undefined;
   filter.value.locationId = undefined;
+  filter.value.referenceId = undefined;
+  filter.value.lotId = undefined;
 };
+
+const getLotCode = (lotId?: string | null) => {
+  if (!lotId) return "-";
+  return lotsById.value[lotId]?.code || "-";
+};
+
+const hasVisibleLot = (lotId?: string | null) =>
+  !!lotId && !!lotsById.value[lotId]?.code;
+
+const lotOptions = computed(() =>
+  Object.values(lotsById.value)
+    .filter(
+      (lot) =>
+        !!lot.code &&
+        (!filter.value.referenceId || lot.referenceId === filter.value.referenceId),
+    )
+    .sort((a, b) => a.code.localeCompare(b.code)),
+);
+
+const filteredMovements = computed(() => {
+  let result = stockMovementStore.stockMovements ?? [];
+
+  if (filter.value.referenceId) {
+    result = result.filter((movement) =>
+      movement.referenceId === filter.value.referenceId,
+    );
+  }
+
+  if (filter.value.lotId) {
+    result = result.filter((movement) => movement.lotId === filter.value.lotId);
+  }
+
+  return result;
+});
+
+const resolveLotCodes = async () => {
+  const lotIds = Array.from(
+    new Set(
+      (stockMovementStore.stockMovements ?? [])
+        .map((movement) => movement.lotId)
+        .filter((id): id is string => !!id && !lotsById.value[id]),
+    ),
+  );
+
+  await Promise.all(
+    lotIds.map(async (lotId) => {
+      const lot = await Services.Lot.getById(lotId);
+      if (lot) lotsById.value[lotId] = lot;
+    }),
+  );
+};
+
+const goToLotTraceability = (referenceId: string, lotId?: string | null) => {
+  if (!lotId) return;
+  router.push({
+    path: "/lot-traceability",
+    query: { referenceId, lotId },
+  });
+};
+
+watch(
+  () => stockMovementStore.stockMovements,
+  () => resolveLotCodes(),
+);
+
+watch(
+  () => filter.value.referenceId,
+  () => {
+    if (
+      filter.value.lotId &&
+      !lotOptions.value.some((lot) => lot.id === filter.value.lotId)
+    ) {
+      filter.value.lotId = undefined;
+    }
+  },
+);
 
 const filterMovements = async () => {
   if (filter.value.dates && filter.value.dates[1]) {
@@ -158,8 +373,8 @@ const filterMovements = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("warehouse.messages.invalidFilter"),
+      detail: t("warehouse.messages.selectPeriod"),
       life: 5000,
     });
   }

@@ -7,7 +7,7 @@ namespace Api.Controllers.Sales
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BudgetController(IBudgetService service, IBudgetReportService reportService) : ControllerBase
+    public class BudgetController(IBudgetService service, IBudgetReportService reportService, IBudgetPdfService pdfService) : ControllerBase
     {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -18,6 +18,14 @@ namespace Api.Controllers.Sales
                 return NotFound();
             }
             else { return Ok(budget); }
+        }
+
+        [HttpGet("Report/{id:guid}/pdf")]
+        [Produces("application/pdf")]
+        public async Task<IActionResult> GetPdf(Guid id)
+        {
+            var report = await reportService.GetReportById(id);
+            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"pressupost-{report.Budget!.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]
@@ -179,7 +187,7 @@ namespace Api.Controllers.Sales
         public async Task<IActionResult> UpdateExternalService(Guid id, [FromBody] BudgetExternalServices externalService)
         {
             if (id != externalService.Id) return BadRequest();
-            
+
             var response = await service.UpdateExternalService(externalService);
 
             if (response.Result) return Ok();

@@ -77,14 +77,14 @@
       class="empty-state"
     >
       <i :class="PrimeIcons.INFO_CIRCLE" style="font-size: 2.5rem"></i>
-      <p>No hi ha motius disponibles per aquest estat</p>
+      <p>{{ $t("plant.no-hi-ha-motius-disponibles-per-aquest-estat") }}</p>
     </div>
 
     <!-- Footer Actions -->
     <template #footer>
       <div class="dialog-footer">
         <Button
-          :label="currentStep === 'status' ? 'Cancel·lar' : 'Tornar'"
+          :label="currentStep === 'status' ? $t('plant.actions.cancel') : $t('plant.actions.back')"
           severity="secondary"
           :icon="
             currentStep === 'status' ? PrimeIcons.TIMES : PrimeIcons.ARROW_LEFT
@@ -93,7 +93,7 @@
         />
         <Button
           v-if="currentStep === 'status'"
-          label="Confirmar"
+          :label='$t("plant.confirmar")'
           severity="success"
           :icon="PrimeIcons.CHECK"
           :disabled="!canConfirmStatus"
@@ -101,7 +101,7 @@
         />
         <Button
           v-if="currentStep === 'reason'"
-          label="Confirmar"
+          :label='$t("plant.confirmar")'
           severity="success"
           :icon="PrimeIcons.CHECK"
           :disabled="!selectedReason"
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { MachineStatus, MachineStatusReason } from "../../production/types";
 import { ChangeMachineStatusRequest } from "../types";
@@ -131,6 +132,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 const emit = defineEmits<{
   (e: "update:visible", value: boolean): void;
   (e: "status-changed", request: ChangeMachineStatusRequest): void;
@@ -150,9 +152,11 @@ const dialogVisible = computed({
 
 const dialogTitle = computed(() => {
   if (currentStep.value === "status") {
-    return "Seleccionar estat de la màquina";
+    return t("plant.dialogs.selectMachineStatus");
   }
-  return `Seleccionar motiu - ${selectedStatus.value?.name}`;
+  return t("plant.dialogs.selectStatusReason", {
+    statusName: selectedStatus.value?.name ?? "",
+  });
 });
 
 // Filter active statuses, exclude specified IDs, and sort by preferred

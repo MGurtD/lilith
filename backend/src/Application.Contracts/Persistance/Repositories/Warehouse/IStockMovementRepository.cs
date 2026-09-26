@@ -6,5 +6,6 @@ namespace Application.Contracts
     {
         IEnumerable<StockMovement> GetBetweenDatesWithLocation(DateTime startDate, DateTime endDate, Guid? locationId);
         IEnumerable<StockMovement> GetByEntityReferences(Guid workOrderId, IEnumerable<Guid> workOrderPhaseIds);
+        Task<List<StockMovement>> GetByLotIds(IEnumerable<Guid> lotIds);
     }
 }

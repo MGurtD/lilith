@@ -13,31 +13,31 @@
         <div
           class="flex flex-wrap align-items-center justify-content-between gap-2"
         >
-          <span class="text-900 font-bold">Motius</span>
-          <Button icon="pi pi-plus" label="Afegir motiu" @click="onAdd" />
+          <span class="text-900 font-bold">{{ t("production.components.motius") }}</span>
+          <Button icon="pi pi-plus" :label="t('production.components.afegirMotiu')" @click="onAdd" />
         </div>
       </template>
-      <Column field="code" header="Codi" sortable>
+      <Column field="code" :header="t('production.components.codi')" sortable>
         <template #body="slotProps">
           {{ slotProps.data.code }}
         </template>
       </Column>
-      <Column field="name" header="Nom" sortable>
+      <Column field="name" :header="t('production.components.nom')" sortable>
         <template #body="slotProps">
           {{ slotProps.data.name }}
         </template>
       </Column>
-      <Column field="description" header="Descripció" sortable>
+      <Column field="description" :header="t('production.components.descripcio')" sortable>
         <template #body="slotProps">
           {{ slotProps.data.description }}
         </template>
       </Column>
-      <Column field="color" header="Color" sortable>
+      <Column field="color" :header="t('production.components.color')" sortable>
         <template #body="slotProps">
           <ColorColumn :value="slotProps.data.color" />
         </template>
       </Column>
-      <Column field="icon" header="Icona" sortable>
+      <Column field="icon" :header="t('production.components.icona')" sortable>
         <template #body="slotProps">
           <IconColumn :value="slotProps.data.icon" />
         </template>
@@ -66,6 +66,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 import { ref } from "vue";
 import { MachineStatusReason } from "../types";
 import { getNewUuid } from "../../../utils/functions";

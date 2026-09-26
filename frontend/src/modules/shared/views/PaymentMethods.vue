@@ -1,72 +1,93 @@
 <template>
-  <DataTable
-    :value="filteredPaymentMethods"
+  <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
+    :items="filteredPaymentMethods"
+    :columns="columns"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :show-filter-action="false"
+    preset="crud-list"
     tableStyle="min-width: 100%"
-    scrollHeight="flex"
+    @clear="cleanFilter"
+    @create="createButtonClick"
     @row-click="editPaymentMethod"
-  >
-    <template #header>
-      <TableFilter
-        :config="filterConfig"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="false"
-        embedded
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      />
-    </template>
-    <Column field="name" header="Nom" style="width: 20%"></Column>
-    <Column field="description" header="Descripció" style="width: 20%"></Column>
-    <Column field="dueDays" header="Dies venciment" style="width: 20%"></Column>
-    <Column
-      field="paymentDay"
-      header="Dia pagament"
-      style="width: 20%"
-    ></Column>
-    <Column header="Desactivada" style="width: 20%">
-      <template #body="slotProps">
-        <BooleanColumn :value="slotProps.data.disabled" :showColor="false" />
-      </template>
-    </Column>
-  </DataTable>
+  />
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type { FilterConfig } from "@/components/tables/TableFilter.vue";
+import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { PaymentMethod } from "../types";
 import { useStore } from "../../../store";
 import { usePaymentMethodStore } from "../store/paymentMethod";
-import TableFilter, {
-  type FilterConfig,
-} from "../../../components/tables/TableFilter.vue";
 
-const toast = useToast();
-const confirm = useConfirm();
 const router = useRouter();
 const store = useStore();
 const paymentMethodStore = usePaymentMethodStore();
+const { t } = useI18n();
 
 const filter = ref({
   search: "",
 });
 
-const filterConfig: Array<FilterConfig> = [
+const filterConfig = computed<FilterConfig[]>(() => [
   {
     key: "search",
-    label: "Cercar",
+    label: t("shared.paymentMethods.filters.searchLabel"),
     type: "text",
-    placeholder: "Nom o descripció",
+    placeholder: t("shared.paymentMethods.filters.searchPlaceholder"),
     size: "sm",
     row: 0,
   },
-];
+]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "name",
+    header: t("shared.paymentMethods.columns.name"),
+    style: "width: 20%",
+  },
+  {
+    field: "description",
+    header: t("shared.paymentMethods.columns.description"),
+    style: "width: 20%",
+  },
+  {
+    field: "dueDays",
+    header: t("shared.paymentMethods.columns.dueDays"),
+    columnType: ColumnType.Number,
+    style: "width: 20%",
+  },
+  {
+    field: "paymentDay",
+    header: t("shared.paymentMethods.columns.paymentDay"),
+    columnType: ColumnType.Number,
+    style: "width: 20%",
+  },
+  {
+    field: "disabled",
+    header: t("shared.paymentMethods.columns.disabled"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+    style: "width: 20%",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["dueDays", "paymentDay", "disabled"],
+};
 
 const filteredPaymentMethods = computed(() => {
   if (!paymentMethodStore.paymentMethods) return [];
@@ -87,12 +108,12 @@ onMounted(async () => {
 
   store.setMenuItem({
     icon: PrimeIcons.HASHTAG,
-    title: "Gestió de formes de pagament",
+    title: t("shared.paymentMethods.menuTitle"),
   });
 });
 
 const createButtonClick = () => {
-  router.push({ path: `/payment-methods/${uuidv4()}` });
+  router.push({ path: `/payment-methods/${getNewUuid()}` });
 };
 
 const cleanFilter = () => {
@@ -100,35 +121,7 @@ const cleanFilter = () => {
 };
 
 const editPaymentMethod = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/payment-methods/${row.data.id}` });
-  }
-};
-
-const deletePaymentMethod = (event: any, model: PaymentMethod) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar la forma de pagament ${model.name}?`,
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await paymentMethodStore.delete(model.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: "Eliminat",
-          life: 3000,
-        });
-      }
-
-      await paymentMethodStore.fetchAll();
-    },
-  });
+  router.push({ path: `/payment-methods/${row.data.id}` });
 };
 </script>
 

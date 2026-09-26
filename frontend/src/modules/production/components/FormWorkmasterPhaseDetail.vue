@@ -1,131 +1,121 @@
-<template>
-  <form v-if="detail">
-    <section class="three-columns">
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Ordre"
-          v-model="detail.order"
-          :class="{
-            'p-invalid': validation.errors.order,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Estat</label>
-        <Select
-          v-model="detail.machineStatusId"
-          :options="plantModelStore.machineStatuses"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.machineStatusId,
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-900v mb-1">Temps de cicle</label>
-        <Checkbox v-model="detail.isCycleTime" class="w-full" :binary="true" />
-      </div>
-    </section>
-    <section class="three-columns mt-2">
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Temps màquina (min)"
-          v-model="detail.estimatedTime"
-          :class="{
-            'p-invalid': validation.errors.estimatedTime,
-          }"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          label="Temps operari (min)"
-          v-model="detail.estimatedOperatorTime"
-          :class="{
-            'p-invalid': validation.errors.estimatedTime,
-          }"
-        />
-      </div>
-    </section>
-    <div class="mt-2">
-      <label class="block text-900v mb-1">Comentari fabricació</label>
-      <Textarea class="w-full" v-model="detail.comment"></Textarea>
-    </div>
-
-    <br />
-    <div>
-      <Button
-        label="Guardar pas"
-        style="float: right"
-        size="small"
-        @click="submitForm"
-      />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { WorkMasterPhaseDetail } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { usePlantModelStore } from "../store/plantmodel";
+import type { WorkMasterPhaseDetail } from "../types";
 
 const props = defineProps<{
   detail: WorkMasterPhaseDetail;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", phase: WorkMasterPhaseDetail): void;
-  (e: "cancel"): void;
+  (event: "submit", detail: WorkMasterPhaseDetail): void;
+  (event: "cancel"): void;
 }>();
 
 const plantModelStore = usePlantModelStore();
+const { t } = useI18n();
 
-const toast = useToast();
-const schema = Yup.object().shape({
-  order: Yup.number()
-    .required("L'ordre és obligatori")
-    .positive("L'ordre ha de ser positiu"),
-  estimatedTime: Yup.number().required("El temps estimat és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const timeProps = { locale: "en-US", minFractionDigits: 2 } as const;
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.detail);
-};
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "order",
+        label: t("production.components.ordre"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .typeError(t("production.validation.lOrdreEsObligatori"))
+          .required(t("production.validation.lOrdreEsObligatori"))
+          .positive(t("production.validation.orderMustBePositive")),
+      },
+      {
+        name: "machineStatusId",
+        label: t("production.components.estat"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.machineStatuses ?? [],
+          optionLabel: "description",
+          optionValue: "id",
+        },
+      },
+      {
+        name: "isCycleTime",
+        label: t("production.components.tempsDeCicle"),
+        type: FormFieldType.Checkbox,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "estimatedTime",
+        label: t("production.components.tempsMaquinaMin"),
+        type: FormFieldType.Number,
+        props: timeProps,
+        validation: Yup.number()
+          .typeError(t("production.validation.elTempsEstimatEsObligatori"))
+          .required(t("production.validation.elTempsEstimatEsObligatori")),
+      },
+      {
+        name: "estimatedOperatorTime",
+        label: t("production.components.tempsOperariMin"),
+        type: FormFieldType.Number,
+        props: timeProps,
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "comment",
+        label: t("production.components.comentariFabricacio"),
+        type: FormFieldType.Textarea,
+      },
+    ],
+  },
+]);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.detail);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.detail,
+    order: finiteNumberValue(values.order, props.detail.order),
+    machineStatusId: stringValue(
+      values.machineStatusId,
+      props.detail.machineStatusId,
+    ),
+    isCycleTime: booleanValue(values.isCycleTime, props.detail.isCycleTime),
+    estimatedTime: finiteNumberValue(
+      values.estimatedTime,
+      props.detail.estimatedTime,
+    ),
+    estimatedOperatorTime: finiteNumberValue(values.estimatedOperatorTime, 0),
+    comment: stringValue(values.comment, props.detail.comment ?? ""),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="detail"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

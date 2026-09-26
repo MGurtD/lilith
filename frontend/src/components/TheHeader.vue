@@ -1,311 +1,189 @@
 <template>
-  <div class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
+  <header class="title-bar" :class="{ collapsed: store.sidebar.collapsed }">
     <div class="title-bar__page">
-      <i
+      <Button
+        v-if="isPhone"
+        icon="pi pi-bars"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('ui.openMenu')"
+        aria-haspopup="dialog"
+        :aria-expanded="store.sidebar.mobileOpen"
+        @click="store.sidebar.mobileOpen = true"
+      />
+      <Button
         v-if="store.currentMenuItem.backButtonVisible"
-        class="title-bar__back"
-        :class="PrimeIcons.ARROW_LEFT"
+        :icon="PrimeIcons.ARROW_LEFT"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('ui.back')"
         @click="goBack"
-      ></i>
-      <span class="title-bar__page__text">{{
-        store.currentMenuItem.title
-      }}</span>
+      />
+      <div class="title-bar__heading">
+        <span v-if="moduleTitle" class="title-bar__module">{{ moduleTitle }}</span>
+        <h1 class="title-bar__title">{{ store.currentMenuItem.title }}</h1>
+      </div>
     </div>
     <div class="title-bar__right">
-      <div v-if="plantOperatorStore.operator" class="title-bar__user">
-        <div class="avatar-container" @click="showOverlayPanel">
-          <Avatar
-            :label="
-              plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
-            "
-            class="title-bar__user__avatar title-bar__user__avatar--operator"
-            size="large"
-            shape="circle"
-          />
-        </div>
-        <Popover ref="op">
-          <div class="user-menu">
-            <div class="user-menu__header">
-              <Avatar
-                :label="
-                  plantOperatorStore.operator.name.substring(0, 1).toUpperCase()
-                "
-                class="user-menu__avatar user-menu__avatar--operator"
-                size="large"
-                shape="circle"
-              />
-              <div class="user-menu__name">
-                {{ plantOperatorStore.operator.name }}
-                {{ plantOperatorStore.operator.surname }}
-              </div>
-              <div class="user-menu__username">
-                <i :class="PrimeIcons.USER" class="mr-1"></i>
-                Operari
-              </div>
-            </div>
-
-            <div class="divider" />
-
-            <div class="user-menu__actions">
-              <Button
-                :icon="PrimeIcons.SIGN_OUT"
-                label="Sortir"
-                class="w-full"
-                size="large"
-                @click="logoutOperator"
-              />
-            </div>
-          </div>
-        </Popover>
-      </div>
-      <div class="title-bar__user" v-else-if="store.user">
-        <div class="avatar-container" @click="showOverlayPanel">
-          <Avatar
-            :label="store.user.username.substring(0, 1).toUpperCase()"
-            class="title-bar__user__avatar title-bar__user__avatar--admin"
-            size="large"
-            shape="circle"
-          />
-        </div>
-        <Popover ref="op">
-          <div class="user-menu">
-            <div class="user-menu__header">
-              <Avatar
-                :label="store.user.username.substring(0, 1).toUpperCase()"
-                class="user-menu__avatar user-menu__avatar--admin"
-                size="large"
-                shape="circle"
-              />
-              <div class="user-menu__name">
-                {{ store.user.firstName }} {{ store.user.lastName }}
-              </div>
-              <div class="user-menu__username">
-                <i :class="PrimeIcons.SHIELD" class="mr-1"></i>
-                @{{ store.user.username }}
-              </div>
-            </div>
-
-            <div class="divider" />
-
-            <div class="user-menu__section">
-              <label class="user-menu__label">Idioma</label>
-              <LanguageSwitcher
-                v-model="store.user.preferredLanguage"
-                :changeAppLanguage="true"
-              />
-            </div>
-
-            <div class="user-menu__actions">
-              <Button
-                :icon="PrimeIcons.SIGN_OUT"
-                label="Tancar sessió"
-                class="w-full"
-                size="large"
-                @click="logoutClick"
-              />
-            </div>
-          </div>
-        </Popover>
-      </div>
+      <!-- Screens teleport their page-level actions (Save…) here. -->
+      <div id="page-actions" class="title-bar__actions"></div>
+      <MenuSearchTrigger />
+      <Button
+        v-if="helpKey"
+        icon="pi pi-question-circle"
+        severity="secondary"
+        text
+        rounded
+        :aria-label="t('help.actions.openTooltip')"
+        v-tooltip.bottom="t('help.actions.openTooltip')"
+        @click="helpStore.toggleForRoute(helpKey)"
+      />
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import Avatar from "primevue/avatar";
-import Popover from "primevue/popover";
+import { computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
-import { useRouter } from "vue-router";
-import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
-import { usePlantOperatorStore } from "@/modules/plant/store";
+import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
+import MenuSearchTrigger from "@/components/menu-search/MenuSearchTrigger.vue";
+import { useIsPhone } from "@/composables/useIsPhone";
 import { useStore } from "@/store";
-
-const emits = defineEmits(["logoutClick", "logoutOperatorClick"]);
-const plantOperatorStore = usePlantOperatorStore();
+import { useHelpStore } from "@/store/help";
+import type { MenuItem } from "@/types/component";
+import { ownsRoute } from "@/utils/menuSearch";
 
 const store = useStore();
-const op = ref();
-const showOverlayPanel = (event: Event) => {
-  op.value.toggle(event);
-};
-const logoutClick = () => emits("logoutClick");
-const logoutOperator = () => emits("logoutOperatorClick");
+const isPhone = useIsPhone();
 
+const { t } = useI18n();
+const helpStore = useHelpStore();
+const route = useRoute();
 const router = useRouter();
 const goBack = () => router.back();
+
+const helpKey = computed(() =>
+  typeof route.meta.helpKey === "string" ? route.meta.helpKey : undefined,
+);
+
+// Module that owns the current screen: the top-level sidebar entry whose menu
+// tree (any depth) holds the route. Detail routes (/customers/:id) belong to
+// their list entry (/customers).
+const moduleTitle = computed<string | undefined>(() => {
+  const owner = store.sidebar.menus.find(
+    (module: MenuItem) => !module.href && ownsRoute(module, route.path),
+  );
+  return owner?.title;
+});
 </script>
 
 <style scoped>
 .title-bar {
   position: fixed;
-  background-color: var(--p-blue-900);
-  color: var(--p-surface-400);
   top: 0;
   left: var(--side-bar-width);
-  height: var(--top-panel-height);
-  display: grid;
-  grid-template-columns: 0.7fr 0.3fr;
-  padding-top: 0.3rem;
-  padding-bottom: 0.5rem;
-  padding-top: 0.3rem;
-  padding-bottom: 0.5rem;
   width: calc(100vw - var(--side-bar-width));
+  height: var(--top-panel-height);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.5rem 0 1rem;
+  background-color: var(--p-surface-0);
+  border-bottom: 1px solid var(--p-surface-200);
+  color: var(--p-text-color);
   transition: all 0.3s ease-in-out;
 }
 
 .collapsed {
-  left: 60px;
-  width: calc(100vw - var(--side-bar-collapsed-width));
+  left: calc(var(--side-bar-collapsed-width) + var(--collapsed-side-padding));
+  width: calc(
+    100vw - var(--side-bar-collapsed-width) - var(--collapsed-side-padding)
+  );
+}
+
+/* Phones: navigation lives in a drawer, so the header spans the screen. */
+@media (max-width: 767.98px) {
+  .title-bar,
+  .title-bar.collapsed {
+    left: 0;
+    width: 100vw;
+    gap: 0.5rem;
+    padding: 0 0.75rem 0 0.5rem;
+  }
+
+  .title-bar__heading {
+    padding-left: 0.25rem;
+  }
+
+  .title-bar__title {
+    font-size: 1.2857rem;
+  }
+
+  /* Page actions keep their icon; the label stays for screen readers only, so
+     the page title keeps its room. */
+  .title-bar__actions :deep(.p-button-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.title-bar__page > .p-button {
+  flex-shrink: 0;
 }
 
 .title-bar__page {
-  margin-left: 1vw;
-  margin-top: 0.6rem;
-  margin-top: 0.6rem;
-  text-align: left;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.title-bar__heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.5rem;
+}
+
+.title-bar__module {
+  font-size: 0.8571rem;
+  line-height: 1.2;
+  color: var(--p-text-muted-color);
+}
+
+.title-bar__title {
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 1.4286rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .title-bar__right {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-right: 1.5vw;
-}
-
-.title-bar__page__text {
-  font-size: 1.5rem;
-}
-
-.title-bar__back {
-  font-size: 1.3rem;
-  font-size: 1.3rem;
-  margin-right: 1rem;
-  cursor: pointer;
-}
-
-.title-bar__back:hover {
-  color: #fff;
-}
-
-.title-bar__user {
-  padding-top: 0.2rem;
-  padding-top: 0.2rem;
-  font-size: 1rem;
-  text-align: right;
-}
-
-/* Avatar mejorado con badge */
-.avatar-container {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-}
-
-.title-bar__user__avatar {
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 1.1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
-}
-
-.title-bar__user__avatar:hover {
-  transform: scale(1.05);
-}
-
-/* Gradientes por rol */
-.title-bar__user__avatar--operator {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  color: white;
-}
-
-.title-bar__user__avatar--admin {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  color: #1e3a8a;
-}
-
-.avatar-badge {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* New user overlay menu styles */
-.user-menu {
-  min-width: 16rem;
-  padding: 0.75rem;
-}
-
-.user-menu__header {
-  display: grid;
-  grid-template-columns: 3rem 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 0.75rem;
-  align-items: center;
-}
-
-.user-menu__avatar {
-  grid-row: span 2;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.user-menu__avatar--operator {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  color: white;
-}
-
-.user-menu__avatar--admin {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  color: #1e3a8a;
-}
-
-.user-menu__name {
-  font-weight: 600;
-  color: var(--p-surface-900, #1f2937);
-}
-
-.user-menu__username {
-  font-size: 0.85rem;
-  color: var(--p-surface-500, #6b7280);
-  display: flex;
-  align-items: center;
-}
-
-.divider {
-  height: 1px;
-  background: var(--p-surface-200, #e5e7eb);
-  margin: 0.75rem 0;
-}
-
-.user-menu__section {
-  display: grid;
   gap: 0.5rem;
 }
 
-.user-menu__label {
-  font-size: 0.85rem;
-  color: var(--p-surface-600, #4b5563);
-}
-
-.user-menu__actions {
-  margin-top: 0.75rem;
-}
-
-.title-bar__operator {
-  display: grid;
-  grid-template-columns: 1fr 0.4fr;
+.title-bar__actions {
+  display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+.title-bar__actions:not(:empty) {
+  margin-right: 0.5rem;
 }
 </style>

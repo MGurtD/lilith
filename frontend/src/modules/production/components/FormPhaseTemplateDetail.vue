@@ -1,99 +1,91 @@
-<template>
-  <form v-if="detail">
-    <section class="three-columns">
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Ordre"
-          v-model="detail.order"
-          :class="{ 'p-invalid': validation.errors.order }"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Estat</label>
-        <Select
-          v-model="detail.machineStatusId"
-          :options="plantModelStore.machineStatuses"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          :class="{ 'p-invalid': validation.errors.machineStatusId }"
-        />
-      </div>
-    </section>
-    <div class="mt-2">
-      <label class="block text-900 mb-1">Comentari</label>
-      <Textarea class="w-full" v-model="detail.comment"></Textarea>
-    </div>
-
-    <br />
-    <div>
-      <Button
-        label="Guardar detall"
-        style="float: right"
-        size="small"
-        @click="submitForm"
-      />
-    </div>
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { PhaseTemplateDetail } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { usePlantModelStore } from "../store/plantmodel";
+import type { PhaseTemplateDetail } from "../types";
 
 const props = defineProps<{
   detail: PhaseTemplateDetail;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", detail: PhaseTemplateDetail): void;
-  (e: "cancel"): void;
+  (event: "submit", detail: PhaseTemplateDetail): void;
+  (event: "cancel"): void;
 }>();
 
 const plantModelStore = usePlantModelStore();
+const { t } = useI18n();
 
-const toast = useToast();
-const schema = Yup.object().shape({
-  order: Yup.number()
-    .required("L'ordre és obligatori")
-    .positive("L'ordre ha de ser positiu"),
-  machineStatusId: Yup.string().required("L'estat de màquina és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "order",
+        label: t("phaseTemplates.details.fields.order"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+        validation: Yup.number()
+          .typeError(t("phaseTemplates.details.validation.orderRequired"))
+          .required(t("phaseTemplates.details.validation.orderRequired"))
+          .positive(t("phaseTemplates.details.validation.orderPositive")),
+      },
+      {
+        name: "machineStatusId",
+        label: t("phaseTemplates.details.fields.machineStatus"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.machineStatuses ?? [],
+          optionLabel: "description",
+          optionValue: "id",
+        },
+        validation: Yup.string().required(
+          t("phaseTemplates.details.validation.machineStatusRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 1 },
+    fields: [
+      {
+        name: "comment",
+        label: t("phaseTemplates.details.fields.comment"),
+        type: FormFieldType.Textarea,
+      },
+    ],
+  },
+]);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.detail);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.detail);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.detail,
+    order: finiteNumberValue(values.order, props.detail.order),
+    machineStatusId: stringValue(
+      values.machineStatusId,
+      props.detail.machineStatusId,
+    ),
+    comment: stringValue(values.comment, props.detail.comment),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="detail"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

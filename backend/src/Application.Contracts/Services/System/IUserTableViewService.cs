@@ -14,4 +14,11 @@ public interface IUserTableViewService
     Task<GenericResponse> Update(Guid id, UserTableView userTableView);
     Task<GenericResponse> Delete(Guid id);
     Task<GenericResponse> SetDefault(Guid id, bool isDefault);
+
+    /// <summary>
+    /// Idempotent get-or-create for the per-user, per-page default view.
+    /// Returns the existing default view if one exists; otherwise creates
+    /// a new one with Name="Per defecte", IsDefault=true, ViewConfig='{"columns":[]}'.
+    /// </summary>
+    Task<GenericResponse> EnsureDefault(EnsureDefaultRequest request);
 }

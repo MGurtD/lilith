@@ -3,59 +3,22 @@
     :visible="visible"
     modal
     :closable="true"
-    :style="{ width: '50vw' }"
-    :breakpoints="{ '1024px': '80vw' }"
+    class="declare-dialog"
+    :style="{ width: '46rem' }"
+    :breakpoints="{ '767px': '96vw' }"
     @update:visible="$emit('update:visible', $event)"
   >
     <template #header>
-      <div
-        class="w-full flex align-items-center justify-content-between pr-4"
-      >
-        <div class="flex align-items-center gap-3">
-          <div
-            class="flex align-items-center justify-content-center bg-blue-100 border-circle p-2"
-            style="width: 3rem; height: 3rem"
-          >
-            <i
-              :class="PrimeIcons.PLUS_CIRCLE"
-              class="text-blue-500 text-xl"
-            ></i>
-          </div>
-          <div class="flex flex-column">
-            <span class="font-bold text-lg text-900"
-              >Afegir quantitat</span
-            >
-            <span class="text-sm text-500">{{
-              loadedPhase?.phaseDescription
-            }}</span>
-          </div>
-        </div>
-        <div class="flex gap-4 flex-wrap">
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >Ordre</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.workOrderCode
-            }}</span>
-          </div>
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >Ref.</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.salesReferenceDisplay
-            }}</span>
-          </div>
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >Quantitat</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.plannedQuantity
-            }}</span>
-          </div>
-        </div>
+      <div class="declare-dialog__header">
+        <span class="declare-dialog__title">{{ t("plant.declare.title") }}</span>
+        <span v-if="loadedWorkOrder" class="declare-dialog__context">{{
+          t("plant.declare.context", {
+            order: loadedWorkOrder.workOrderCode,
+            phase: loadedPhase?.phaseCode ?? "",
+            done: loadedPhase?.quantityOk ?? 0,
+            planned: loadedWorkOrder.plannedQuantity,
+          })
+        }}</span>
       </div>
     </template>
 
@@ -69,24 +32,28 @@
         @update:counter-ko="formData.counterKo = $event"
       />
 
-      <!-- Action Buttons -->
+      <PhaseRejectionReasons
+        ref="rejectionReasons"
+        v-model="formData.rejections"
+        :counter-ko="formData.counterKo"
+      />
+
       <div class="actions-panel">
         <Button
-          :icon="PrimeIcons.TIMES"
-          label="Cancel·lar"
+          :label="t('plant.declare.cancel')"
           severity="secondary"
-          @click="onCancel"
+          outlined
           :disabled="isSubmitting"
-          class="action-button"
+          class="action-button action-button--cancel"
+          @click="onCancel"
         />
         <Button
-          :icon="PrimeIcons.CHECK"
-          label="Afegir"
-          severity="primary"
+          icon="pi pi-check"
+          :label="submitLabel"
           :disabled="isSubmitting || !hasQuantity"
           :loading="isSubmitting"
-          @click="onSubmit"
           class="action-button"
+          @click="onSubmit"
         />
       </div>
     </div>
@@ -94,11 +61,15 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { watch, computed, reactive, ref } from "vue";
-import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
+import PhaseRejectionReasons from "./PhaseRejectionReasons.vue";
+import { WorkOrderPhaseRejectionRequest } from "../../../production/types";
+
+const { t } = useI18n();
 
 interface Props {
   visible: boolean;
@@ -128,16 +99,38 @@ const isSubmitting = ref(false);
 interface FormData {
   counterOk: number;
   counterKo: number;
+  rejections: Array<WorkOrderPhaseRejectionRequest>;
 }
 
 const formData = reactive<FormData>({
   counterOk: 0,
   counterKo: 0,
+  rejections: [],
 });
+
+const rejectionReasons = ref<InstanceType<typeof PhaseRejectionReasons>>();
 
 // At least one quantity must be > 0 to enable the submit button
 const hasQuantity = computed(() => {
   return formData.counterOk > 0 || formData.counterKo > 0;
+});
+
+// The button says what it will declare: "Declarar 5 bones i 1 dolenta".
+const submitLabel = computed(() => {
+  const parts = [
+    formData.counterOk > 0
+      ? t("plant.declare.goodCount", { count: formData.counterOk }, formData.counterOk)
+      : "",
+    formData.counterKo > 0
+      ? t("plant.declare.badCount", { count: formData.counterKo }, formData.counterKo)
+      : "",
+  ].filter(Boolean);
+  if (parts.length === 0) return t("plant.declare.submitEmpty");
+  const joined =
+    parts.length === 2
+      ? t("plant.declare.joiner", { first: parts[0], second: parts[1] })
+      : parts[0];
+  return t("plant.declare.submit", { parts: joined });
 });
 
 // Reset form when dialog opens
@@ -147,6 +140,7 @@ watch(
     if (newValue) {
       formData.counterOk = 0;
       formData.counterKo = 0;
+      formData.rejections = [];
     }
   },
 );
@@ -155,8 +149,38 @@ const onCancel = () => {
   emit("update:visible", false);
 };
 
+// Reasons are optional, but a partial breakdown would misreport the KO units
+const isRejectionBreakdownValid = () => {
+  if (formData.rejections.length === 0) return true;
+
+  if (formData.rejections.some((r) => !r.rejectionReasonId)) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.reasonRequired"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  if (!rejectionReasons.value?.isBalanced) {
+    toast.add({
+      severity: "warn",
+      summary: t("plant.rejections.title"),
+      detail: t("plant.rejections.quantityMismatch"),
+      life: 6000,
+    });
+    return false;
+  }
+
+  return true;
+};
+
 const onSubmit = async () => {
   if (!hasQuantity.value) return;
+
+  // The rejection breakdown must cover every declared KO unit
+  if (!isRejectionBreakdownValid()) return;
 
   isSubmitting.value = true;
   try {
@@ -168,7 +192,7 @@ const onSubmit = async () => {
     if (!validation.valid) {
       toast.add({
         severity: "warn",
-        summary: "Validaci\u00f3 de quantitat",
+        summary: t("plant.messages.quantityValidation"),
         detail: validation.error,
         life: 6000,
       });
@@ -179,12 +203,13 @@ const onSubmit = async () => {
     const result = await activePhaseStore.updatePhaseQuantities(
       formData.counterOk,
       formData.counterKo,
+      formData.rejections,
     );
 
     if (result) {
       toast.add({
         severity: "success",
-        summary: "Quantitat afegida correctament",
+        summary: t("plant.messages.quantityAdded"),
         life: 4000,
       });
       emit("quantities-updated");
@@ -192,7 +217,7 @@ const onSubmit = async () => {
     } else {
       toast.add({
         severity: "error",
-        summary: "Error al afegir la quantitat",
+        summary: t("plant.messages.quantityAddError"),
         life: 4000,
       });
     }
@@ -203,27 +228,56 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
+.declare-dialog__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.declare-dialog__title {
+  font-family: var(--font-condensed);
+  font-size: 1.625rem;
+  line-height: 2rem;
+  font-weight: 600;
+  color: var(--p-steel-900);
+}
+
+.declare-dialog__context {
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-steel-700);
+}
+
 .dialog-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  border-top: 1px solid var(--p-surface-border);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--p-steel-200);
 }
 
-/* Actions Panel */
 .actions-panel {
   display: flex;
-  gap: 1rem;
+  gap: 0.625rem;
   justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-steel-200);
 }
 
 .action-button {
-  min-width: 150px;
+  min-height: 56px;
+  padding-inline: 1.25rem;
+  font-size: 1.0625rem;
 }
 
-@media (max-width: 768px) {
+.action-button--cancel {
+  color: var(--p-steel-900);
+  border-color: var(--p-steel-300);
+}
+
+@media (max-width: 767.98px) {
   .actions-panel {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
   .action-button {

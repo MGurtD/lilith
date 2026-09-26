@@ -8,6 +8,7 @@ using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Domain.Entities.Warehouse;
 using Domain.Entities.Transport;
+using System.Data;
 
 namespace Application.Contracts
 {
@@ -22,6 +23,7 @@ namespace Application.Contracts
         IRepository<UserTableView, Guid> UserTableViews { get; }
         IRepository<Profile, Guid> Profiles { get; }
         IRepository<MenuItem, Guid> MenuItems { get; }
+        IRepository<MenuItemTranslation, Guid> MenuItemTranslations { get; }
         IRepository<ProfileMenuItem, Guid> ProfileMenuItems { get; }
 
         // Shared
@@ -72,6 +74,8 @@ namespace Application.Contracts
         IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; }
         IRepository<Operator, Guid> Operators { get; }
         IRepository<OperatorType, Guid> OperatorTypes { get; }
+        IRepository<RejectionReason, Guid> RejectionReasons { get; }
+        IRepository<WorkOrderPhaseRejection, Guid> WorkOrderPhaseRejections { get; }
         IMachineStatusRepository MachineStatuses { get; }
         IRepository<Shift, Guid> Shifts { get; }
         IRepository<ShiftDetail, Guid> ShiftDetails { get; }
@@ -90,8 +94,10 @@ namespace Application.Contracts
         IRepository<WorkcenterLocation, Guid> WorkcenterLocations { get; }
         IRepository<ReferenceType, Guid> ReferenceTypes { get; }
         IRepository<Stock, Guid> Stocks { get; }
+        ILotRepository Lots { get; }
         IStockMovementRepository StockMovements { get; }
 
+        Task<IUnitOfWorkTransaction> BeginTransactionAsync(IsolationLevel isolationLevel = IsolationLevel.ReadCommitted);
         Task<int> CompleteAsync();
         void Dispose();
     }

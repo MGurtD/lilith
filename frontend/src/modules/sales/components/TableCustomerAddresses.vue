@@ -5,64 +5,46 @@
     @submit="submitForm"
     @cancel="() => (selectedAddress = undefined)"
   />
-  <div v-else>
-    <DataTable
-      v-if="customer?.address"
-      :value="customer.address"
-      tableStyle="min-width: 100%"
-      @row-click="rowClick"
-    >
-      <template #header>
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <span class="text-l text-900 font-bold">Adreces</span>
-          <div>
-            <Button
-              :icon="PrimeIcons.PLUS"
-              rounded
-              @click="createButtonClick"
-            />
-          </div>
-        </div>
-      </template>
-      <Column header="Nom" field="name" style="width: 25%"></Column>
-      <Column header="Província" field="region" style="width: 25%"></Column>
-      <Column header="Municipi" field="city" style="width: 25%"></Column>
-      <Column
-        header="Codi Postal"
-        field="postalCode"
-        style="width: 25%"
-      ></Column>
-      <Column header="Principal">
-        <template #body="slotProps">
-          <BooleanColumn :value="slotProps.data.main" :show-color="false" />
-        </template>
-      </Column>
-      <Column>
-        <template #body="slotProps">
-          <i
-            :class="PrimeIcons.TIMES"
-            class="grid_delete_column_button"
-            @click="deleteAddress($event, slotProps.data)"
-          />
-        </template>
-      </Column>
-    </DataTable>
-  </div>
+  <Table
+    v-else-if="customer?.address"
+    :items="customer.address"
+    :columns="columns"
+    :filter-config="[]"
+    :filter-values="noFilters"
+    :show-filter-actions="false"
+    :card-layout="cardLayout"
+    phone-layout="cards"
+    preset="read-only"
+    tableStyle="min-width: 100%"
+    show-delete-column
+    @create="createButtonClick"
+    @delete="deleteAddress"
+    @row-click="rowClick"
+  >
+    <template #prepend>
+      <span class="text-900 font-bold">{{ t("sales.components.adreces") }}</span>
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
-import { ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { useI18n } from "vue-i18n";
+import { computed, ref } from "vue";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import { getNewUuid } from "../../../utils/functions";
 import FormCustomerAddress from "./FormCustomerAddress.vue";
 import { CustomerAddress } from "../types";
 import { storeToRefs } from "pinia";
-import { PrimeIcons } from "@primevue/core/api";
 import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useCustomersStore } from "../store/customers";
 
+const { t } = useI18n();
 const confirm = useConfirm();
 const customerStore = useCustomersStore();
 const { customer } = storeToRefs(customerStore);
@@ -76,10 +58,32 @@ const emit = defineEmits<{
 
 const selectedAddress = ref(undefined as CustomerAddress | undefined);
 
+const noFilters = {};
+
+const columns = computed<Column[]>(() => [
+  { field: "name", header: t("sales.components.nom"), style: "width: 25%" },
+  { field: "region", header: t("sales.components.provincia"), style: "width: 25%" },
+  { field: "city", header: t("sales.components.municipi"), style: "width: 25%" },
+  { field: "postalCode", header: t("sales.components.codiPostal"), style: "width: 25%" },
+  {
+    field: "main",
+    header: t("sales.components.principal"),
+    columnType: ColumnType.Boolean,
+    showColor: false,
+  },
+]);
+
+// Phone card: the default for this table.
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "city",
+  meta: ["region", "postalCode", "main"],
+};
+
 const createButtonClick = () => {
   selectedAddress.value = {
     customerId: customer.value?.id,
-    id: uuidv4(),
+    id: getNewUuid(),
     name: "",
     country: "",
     region: "",
@@ -96,31 +100,23 @@ const createButtonClick = () => {
 };
 
 const rowClick = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    selectedAddress.value = row.data;
-    formMode.value = FormActionMode.EDIT;
-  }
+  selectedAddress.value = { ...(row.data as CustomerAddress) };
+  formMode.value = FormActionMode.EDIT;
 };
 
-const submitForm = () => {
-  const contact = selectedAddress.value as CustomerAddress;
+const submitForm = (address: CustomerAddress) => {
   if (formMode.value === FormActionMode.CREATE) {
-    emit("create", contact);
+    emit("create", address);
   } else {
-    emit("update", contact);
+    emit("update", address);
   }
   // Amb aquesta assignació es torna a pintar la grid
   selectedAddress.value = undefined;
 };
 
-const deleteAddress = (event: any, contact: CustomerAddress) => {
+const deleteAddress = (contact: CustomerAddress) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Está segur que vol eliminar l'adreça?`,
+    message: t("sales.componentMessages.deleteAddress"),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",

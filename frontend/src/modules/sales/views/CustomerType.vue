@@ -1,7 +1,7 @@
 <template>
   <FormCustomerType
-    v-if="customerStore.customerType"
-    :customerType="customerStore.customerType"
+    v-if="customerType"
+    :customer-type="customerType"
     @submit="submitForm"
   />
 </template>
@@ -18,6 +18,7 @@ import { useStore } from "../../../store";
 
 import { useToast } from "primevue/usetoast";
 import { FormActionMode } from "../../../types/component";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const router = useRouter();
@@ -25,6 +26,7 @@ const route = useRoute();
 const store = useStore();
 const customerStore = useCustomersStore();
 const { customerType } = storeToRefs(customerStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await customerStore.fetchCustomerType(route.params.id as string);
@@ -34,10 +36,10 @@ const loadView = async () => {
   if (!customerType.value) {
     formMode.value = FormActionMode.CREATE;
     customerStore.setNewCustomerType(route.params.id as string);
-    pageTitle = "Alta de tipus de client";
+    pageTitle = t("sales.customers.createCustomerType");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Tipus de client ${customerType.value.name}`;
+    pageTitle = `${t("sales.customers.customerTypes")} ${customerType.value.name}`;
   }
 
   store.setMenuItem({
@@ -52,17 +54,16 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = customerType.value as CustomerType;
+const submitForm = async (data: CustomerType) => {
   let result = false;
   let message = "";
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await customerStore.createCustomerType(data);
-    message = "Tipus de client creat correctament";
+    message = t("sales.customers.customerTypeCreated");
   } else {
     result = await customerStore.updateCustomerType(data.id, data);
-    message = "Tipus de client actualizat correctament";
+    message = t("sales.customers.customerTypeUpdated");
   }
 
   if (result) {

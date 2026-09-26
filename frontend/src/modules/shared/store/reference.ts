@@ -86,6 +86,7 @@ export const useReferenceStore = defineStore({
         isService: false,
         lastCost: 0,
         workMasterCost: 0,
+        requiresLot: false,
         customer: null,
         customerId: null,
         areaId: null,

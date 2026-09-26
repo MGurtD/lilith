@@ -17,7 +17,7 @@
       :model-value="modelValue"
       @change="emit('update:modelValue', $event.value)"
       :loading="isLoading"
-      :disabled="!statusId || isLoading"
+      :disabled="disabled || !statusId || isLoading"
     />
   </div>
 </template>
@@ -31,6 +31,7 @@ const props = defineProps<{
   modelValue: string | undefined;
   statusId: string;
   placeholder?: string;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{

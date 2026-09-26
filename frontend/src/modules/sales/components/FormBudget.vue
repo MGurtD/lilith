@@ -1,175 +1,319 @@
-<template>
-  <div>
-    <form v-if="budget">
-      <section class="four-columns mt-2">
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            label="Pressupost"
-            id="number"
-            v-model="budget.number"
-            disabled
-          />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">Data Alta</label>
-          <DatePicker v-model="budget.date" dateFormat="dd/mm/yy" />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">Data Acceptació</label>
-          <DatePicker v-model="budget.acceptanceDate" dateFormat="dd/mm/yy" />
-        </div>
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            :disabled="true"
-            label="Comanda"
-            :modelValue="budgetStore.order?.number ?? ''"
-          />
-        </div>
-      </section>
-      <section class="three-columns mt-2">
-        <div>
-          <DropdownLifecycleStatusTransitions
-            label="Estat"
-            :statusId="budget.statusId"
-            v-model="budget.statusId"
-            :class="{
-              'p-invalid': validation.errors.statusId,
-            }"
-          />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">Client</label>
-          <div style="display: flex; align-items: center; gap: 0.5rem">
-            <Select
-              v-model="budget.customerId"
-              :options="customerStore.customers"
-              optionValue="id"
-              optionLabel="comercialName"
-              class="w-full"
-              :class="{
-                'p-invalid': validation.errors.customerId,
-              }"
-            />
-            <router-link
-              v-if="budget.customerId"
-              :to="`/customers/${budget.customerId}`"
-              style="color: inherit"
-            >
-              <i class="pi pi-search"></i>
-            </router-link>
-          </div>
-        </div>
-        <div>
-          <BaseInput
-            :type="BaseInputType.NUMERIC"
-            label="Dies naturals entrega"
-            id="deliveryDays"
-            v-model="budget.deliveryDays"
-          />
-        </div>
-      </section>
-      <section v-if="budget.notes && budget.notes.length > 0" class="mt-2">
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            label="Notes"
-            id="notes"
-            :modelValue="budget.notes"
-            disabled
-          />
-        </div>
-      </section>
-    </form>
-  </div>
-</template>
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { storeToRefs } from "pinia";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { useCustomersStore } from "../store/customers";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  dateValue,
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { PrimeIcons } from "@primevue/core/api";
+import { isEqual } from "lodash";
+import { computed, ref, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
-import { Budget } from "../types";
-import { BaseInputType } from "../../../types/component";
-import { convertDateTimeToJSON } from "../../../utils/functions";
-import { useBudgetStore } from "../store/budget";
+import { useCustomersStore } from "../store/customers";
+import type { Budget } from "../types";
 
-const emit = defineEmits<{
-  (e: "submit", budget: Budget): void;
-  (e: "cancel"): void;
+const props = defineProps<{
+  budget: Budget;
+  /** Number of the sales order created from this budget, if any. */
+  orderNumber?: string;
 }>();
 
-const budgetStore = useBudgetStore();
+const emit = defineEmits<{
+  (event: "submit", budget: Budget): void;
+  (event: "download"): void;
+  (event: "printPdf"): void;
+  (event: "createOrder"): void;
+  (event: "clone"): void;
+}>();
+
+const { t } = useI18n();
 const customerStore = useCustomersStore();
-const toast = useToast();
+const form = shallowRef<{ getValues: () => FormValues } | null>(null);
 
-const { budget } = storeToRefs(budgetStore);
+// The parent reloads the budget (with its details, transports and external
+// services) after every line change, so the form receives a stable scalar
+// snapshot and only resets when a form-owned value changes. Collections and
+// the automatic notes are merged from the latest prop at submit.
+type BudgetScalars = Pick<
+  Budget,
+  | "id"
+  | "number"
+  | "date"
+  | "acceptanceDate"
+  | "statusId"
+  | "customerId"
+  | "deliveryDays"
+  | "exerciseId"
+  | "userNotes"
+>;
 
-const schema = Yup.object().shape({
-  customerId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
+const toDate = (value: unknown): Date | null => {
+  if (value instanceof Date) return value;
+  if (typeof value === "string" && value !== "") return new Date(value);
+  return null;
+};
+
+const scalarSnapshot = (model: Budget): BudgetScalars => ({
+  id: model.id,
+  number: model.number,
+  date: toDate(model.date),
+  acceptanceDate: toDate(model.acceptanceDate),
+  statusId: model.statusId,
+  customerId: model.customerId,
+  deliveryDays: model.deliveryDays,
+  exerciseId: model.exerciseId,
+  userNotes: model.userNotes,
 });
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+const initialValues = ref(scalarSnapshot(props.budget));
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(budget.value);
-};
+watch(
+  () => scalarSnapshot(props.budget),
+  (next) => {
+    if (!isEqual(next, initialValues.value)) initialValues.value = next;
+  },
+);
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    parseEntityDates();
-    emit("submit", budget.value!);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
+const items = computed(() => [
+  {
+    label: t("sales.detail.actions.download"),
+    icon: PrimeIcons.FILE_WORD,
+    command: () => emit("download"),
+  },
+  {
+    label: t("sales.detail.actions.printPdf"),
+    icon: PrimeIcons.FILE_PDF,
+    command: () => emit("printPdf"),
+  },
+  {
+    label: t("sales.detail.actions.createOrder"),
+    icon: PrimeIcons.FLAG_FILL,
+    command: () => emit("createOrder"),
+  },
+  {
+    label: t("sales.detail.actions.cloneBudget"),
+    icon: PrimeIcons.COPY,
+    command: () => emit("clone"),
+  },
+]);
 
-defineExpose({
-  submitForm,
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "number",
+        label: t("sales.components.pressupost"),
+        type: FormFieldType.Text,
+        disabled: true,
+      },
+      {
+        name: "date",
+        label: t("sales.components.dataAlta"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+        validation: Yup.date()
+          .typeError(t("sales.validation.dateRequired"))
+          .required(t("sales.validation.dateRequired")),
+      },
+      {
+        name: "acceptanceDate",
+        label: t("sales.components.dataAcceptacio"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+      },
+      {
+        name: "orderNumber",
+        label: t("sales.components.comanda"),
+        type: FormFieldType.Custom,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "statusId",
+        label: t("sales.components.estat"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(t("sales.validation.statusRequired")),
+      },
+      {
+        name: "customerId",
+        label: t("sales.components.client"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("sales.validation.customerRequired"),
+        ),
+      },
+      {
+        name: "deliveryDays",
+        label: t("sales.components.diesNaturalsEntrega"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 0 },
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "userNotes",
+        label: t("sales.detail.labels.internalNotes"),
+        type: FormFieldType.Textarea,
+        props: { rows: 3, placeholder: t("sales.detail.labels.internalNotes") },
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "notes",
+        label: t("sales.detail.labels.automaticNotes"),
+        type: FormFieldType.Custom,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    // The fiscal year is not editable here, but the legacy form required it.
+    // The field stays registered and only its error is rendered.
+    section: "exercise",
+    fields: [
+      {
+        name: "exerciseId",
+        label: "",
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("sales.validation.exerciseRequired"),
+        ),
+      },
+    ],
+  },
+]);
+
+const budgetValues = (values: Readonly<FormValues>): Budget => ({
+  ...props.budget,
+  date: dateValue(values.date, toDate(props.budget.date)),
+  acceptanceDate: dateValue(values.acceptanceDate, null),
+  statusId: stringValue(values.statusId, props.budget.statusId),
+  customerId: stringValue(values.customerId, props.budget.customerId),
+  deliveryDays: finiteNumberValue(
+    values.deliveryDays,
+    props.budget.deliveryDays,
+  ),
+  userNotes: stringValue(values.userNotes, props.budget.userNotes),
 });
 
-const parseEntityDates = () => {
-  if (!budget.value) return;
-
-  budget.value.date = convertDateTimeToJSON(budget.value.date);
-  if (budget.value.acceptanceDate) {
-    budget.value.acceptanceDate = convertDateTimeToJSON(
-      budget.value.acceptanceDate,
-    );
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", budgetValues(values));
 };
+
+/**
+ * The budget including unsaved header edits. Creating a sales order sends the
+ * budget body (customer, delivery days) to the API, as the legacy form did
+ * when it edited the store directly.
+ */
+const currentBudget = (): Budget => {
+  const values = form.value?.getValues();
+  return values ? budgetValues(values) : { ...props.budget };
+};
+
+defineExpose({ currentBudget });
 </script>
-<style scoped>
-.save_button {
-  position: absolute;
-  top: 0;
-  right: 1rem;
-}
 
-.summary-field {
-  font-weight: bold;
-  border-bottom: 1px solid black;
+<template>
+  <Form
+    ref="form"
+    page-actions
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+  >
+    <template #field-orderNumber="{ disabled, inputId }">
+      <InputText
+        :id="inputId"
+        :model-value="orderNumber ?? ''"
+        :disabled="disabled"
+        class="w-full"
+      />
+    </template>
+
+    <template #field-statusId="{ value, setValue, disabled, inputId }">
+      <DropdownLifecycleStatusTransitions
+        :input-id="inputId"
+        label=""
+        :status-id="budget.statusId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #field-customerId="{ value, setValue, disabled, inputId }">
+      <div class="flex align-items-center gap-2">
+        <Select
+          :input-id="inputId"
+          :model-value="typeof value === 'string' ? value : null"
+          :options="customerStore.customers ?? []"
+          option-value="id"
+          option-label="comercialName"
+          class="w-full"
+          :disabled="disabled"
+          @update:model-value="setValue"
+        />
+        <router-link
+          v-if="typeof value === 'string' && value !== ''"
+          :to="`/customers/${value}`"
+          style="color: inherit"
+        >
+          <i class="pi pi-search" aria-hidden="true" />
+        </router-link>
+      </div>
+    </template>
+
+    <template #field-notes="{ disabled, inputId }">
+      <InputText
+        :id="inputId"
+        :model-value="budget.notes ?? ''"
+        :disabled="disabled"
+        class="w-full"
+      />
+    </template>
+
+    <template #section-exercise="{ errors }">
+      <small v-if="errors.exerciseId" class="budget-form__error" role="alert">
+        <i class="pi pi-exclamation-circle" aria-hidden="true" />
+        <span>{{ errors.exerciseId }}</span>
+      </small>
+    </template>
+
+    <template #actions="{ submit: submitBudget, loading, disabled }">
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('sales.detail.actions.save')"
+        :model="items"
+        :loading="loading"
+        :disabled="disabled"
+        @click="submitBudget"
+      />
+    </template>
+  </Form>
+</template>
+
+<style scoped>
+.budget-form__error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--p-orange-600);
+  line-height: 1.25;
 }
 </style>

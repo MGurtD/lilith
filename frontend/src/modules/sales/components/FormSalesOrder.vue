@@ -1,201 +1,282 @@
-<template>
-  <div>
-    <form v-if="salesOrder">
-      <section class="four-columns mt-2">
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            label="Num. Comanda"
-            id="salesOrderNumber"
-            v-model="salesOrder.number"
-            disabled
-          />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">Client</label>
-          <div style="display: flex; align-items: center; gap: 0.5rem">
-            <Select
-              v-model="salesOrder.customerId"
-              :options="customerStore.customers"
-              optionValue="id"
-              optionLabel="comercialName"
-              class="w-full"
-              :class="{
-                'p-invalid': validation.errors.customerId,
-              }"
-              @update:modelValue="updateCustomer()"
-            />
-            <router-link
-              v-if="salesOrder.customerId"
-              :to="`/customers/${salesOrder.customerId}`"
-              style="color: inherit"
-            >
-              <i class="pi pi-search"></i>
-            </router-link>
-          </div>
-        </div>
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            label="Comanda Client"
-            id="customerSalesOrderNumber"
-            v-model="salesOrder.customerNumber"
-          />
-        </div>
-        <div>
-          <DropdownLifecycleStatusTransitions
-            label="Estat"
-            :statusId="salesOrder.statusId"
-            v-model="salesOrder.statusId"
-            :class="{
-              'p-invalid': validation.errors.statusId,
-            }"
-          />
-        </div>
-      </section>
-      <section class="four-columns mt-2">
-        <div>
-          <label class="block text-900 mb-2">Data Alta</label>
-          <DatePicker v-model="salesOrder.date" dateFormat="dd/mm/yy" />
-        </div>
-        <div>
-          <label class="block text-900 mb-2">Data Entrega</label>
-          <DatePicker v-model="salesOrder.expectedDate" dateFormat="dd/mm/yy" />
-        </div>
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            label="Num. Pressupost"
-            id="budgetNumber"
-            disabled
-            :modelValue="budgetStore.budget?.number ?? ''"
-          />
-        </div>
-
-        <div>
-          <BaseInput
-            :type="BaseInputType.TEXT"
-            :disabled="true"
-            label="Albarà Entrega"
-            id="deliveryNote"
-            :modelValue="deliveryNoteNumber"
-          />
-        </div>
-      </section>
-    </form>
-  </div>
-</template>
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { storeToRefs } from "pinia";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { dateValue, stringValue } from "@/components/forms/value-utils";
+import { PrimeIcons } from "@primevue/core/api";
+import { isEqual } from "lodash";
 import { useToast } from "primevue/usetoast";
-import { useSalesOrderStore } from "../store/order";
+import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
 import { useCustomersStore } from "../store/customers";
-import { useDeliveryNoteStore } from "../store/deliveryNote";
-import { SalesOrderHeader } from "../types";
-import { BaseInputType } from "../../../types/component";
-import { convertDateTimeToJSON } from "../../../utils/functions";
-import { useBudgetStore } from "../store/budget";
+import type { SalesOrderHeader } from "../types";
 
-const emit = defineEmits<{
-  (e: "submit", salesOrder: SalesOrderHeader): void;
-  (e: "cancel"): void;
+const props = defineProps<{
+  salesOrder: SalesOrderHeader;
+  budgetNumber: string;
+  deliveryNoteNumber: string;
 }>();
 
-const salesOrderStore = useSalesOrderStore();
-const customerStore = useCustomersStore();
-const deliveryNoteStore = useDeliveryNoteStore();
-const budgetStore = useBudgetStore();
+const emit = defineEmits<{
+  (event: "submit", salesOrder: SalesOrderHeader): void;
+  (event: "download", showPrices: boolean): void;
+  (event: "downloadPdf"): void;
+  (event: "createDeliveryNote"): void;
+}>();
+
+const { t } = useI18n();
 const toast = useToast();
+const customerStore = useCustomersStore();
 
-const { salesOrder } = storeToRefs(salesOrderStore);
+const items = computed(() => [
+  {
+    label: t("sales.detail.actions.download"),
+    icon: PrimeIcons.FILE_WORD,
+    command: () => emit("download", true),
+  },
+  {
+    label: t("sales.detail.actions.printPdf"),
+    icon: PrimeIcons.FILE_PDF,
+    command: () => emit("downloadPdf"),
+  },
+  {
+    label: t("sales.detail.actions.downloadWithoutPrice"),
+    icon: PrimeIcons.FILE_WORD,
+    command: () => emit("download", false),
+  },
+  {
+    label: t("sales.detail.actions.createDeliveryNote"),
+    icon: PrimeIcons.TRUCK,
+    command: () => emit("createDeliveryNote"),
+  },
+]);
 
-const deliveryNoteNumber = computed(() => {
-  return deliveryNoteStore.deliveryNote
-    ? deliveryNoteStore.deliveryNote.number
-    : "";
+// The screen reloads the order (details, transports, external services) after
+// every child change, so the form receives a stable scalar snapshot; it only
+// resets when a form-owned value changes. Collections are merged from the
+// latest prop at submit.
+type SalesOrderScalars = Pick<
+  SalesOrderHeader,
+  | "id"
+  | "number"
+  | "customerId"
+  | "customerNumber"
+  | "statusId"
+  | "date"
+  | "expectedDate"
+>;
+
+const scalarSnapshot = (model: SalesOrderHeader): SalesOrderScalars => ({
+  id: model.id,
+  number: model.number,
+  customerId: model.customerId,
+  customerNumber: model.customerNumber,
+  statusId: model.statusId,
+  date: model.date,
+  expectedDate: model.expectedDate,
 });
 
-const schema = Yup.object().shape({
-  siteId: Yup.string().required("L'origen es obligatori"),
-  customerId: Yup.string().required("El client es obligatori"),
-  statusId: Yup.string().required("L'estat es obligatori"),
-  exerciseId: Yup.string().required("L'exercici es obligatori"),
-});
+const initialValues = ref(scalarSnapshot(props.salesOrder));
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+watch(
+  () => scalarSnapshot(props.salesOrder),
+  (next) => {
+    if (!isEqual(next, initialValues.value)) initialValues.value = next;
+  },
+);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(salesOrder.value);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "number",
+        label: t("sales.components.numComanda"),
+        type: FormFieldType.Text,
+        disabled: true,
+      },
+      {
+        name: "customerId",
+        label: t("sales.components.client"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("sales.validation.customerRequired"),
+        ),
+      },
+      {
+        name: "customerNumber",
+        label: t("sales.components.comandaClient"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "statusId",
+        label: t("sales.components.estat"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(t("sales.validation.statusRequired")),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "date",
+        label: t("sales.components.dataAlta"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+      },
+      {
+        name: "expectedDate",
+        label: t("sales.components.dataEntrega"),
+        type: FormFieldType.Date,
+        props: { dateFormat: "dd/mm/yy" },
+      },
+      {
+        name: "budgetNumber",
+        label: t("sales.components.numPressupost"),
+        type: FormFieldType.Custom,
+        disabled: true,
+      },
+      {
+        name: "deliveryNoteNumber",
+        label: t("sales.components.albaraEntrega"),
+        type: FormFieldType.Custom,
+        disabled: true,
+      },
+    ],
+  },
+]);
+
+// siteId and exerciseId are required but not editable here; the legacy form
+// validated them with the visible fields and reported them in a toast.
+const validateHiddenFields = (): boolean => {
+  const errors: string[] = [];
+  if (!props.salesOrder.siteId) errors.push(t("sales.validation.siteRequired"));
+  if (!props.salesOrder.exerciseId)
+    errors.push(t("sales.validation.exerciseRequired"));
+  if (errors.length === 0) return true;
+
+  toast.add({
+    severity: "warn",
+    summary: t("sales.components.formulariInvalid"),
+    detail: errors.join(". "),
+    life: 5000,
+  });
+  return false;
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    parseEntityDates();
-    emit("submit", salesOrder.value!);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
-};
-
-defineExpose({
-  submitForm,
-});
-
-const updateCustomer = () => {
+// Changing the customer copies its identification into the order header.
+const customerFields = (
+  customerId: string,
+): Partial<SalesOrderHeader> => {
+  if (customerId === props.salesOrder.customerId) return {};
   const customer = customerStore.customers?.find(
-    (c) => c.id === salesOrder.value?.customerId,
+    (item) => item.id === customerId,
   );
-  if (customer && salesOrder.value) {
-    salesOrder.value.customerCode = customer.code;
-    salesOrder.value.customerComercialName = customer.comercialName;
-    salesOrder.value.customerTaxName = customer.taxName;
-    salesOrder.value.customerVatNumber = customer.vatNumber;
-    salesOrder.value.customerAccountNumber = customer.accountNumber;
-  }
+  if (!customer) return {};
+  return {
+    customerCode: customer.code,
+    customerComercialName: customer.comercialName,
+    customerTaxName: customer.taxName,
+    customerVatNumber: customer.vatNumber,
+    customerAccountNumber: customer.accountNumber,
+  };
 };
 
-const parseEntityDates = () => {
-  if (!salesOrder.value) return;
+const submit = (values: FormValues): void => {
+  if (!validateHiddenFields()) return;
 
-  salesOrder.value.date = convertDateTimeToJSON(salesOrder.value.date);
-
-  if (salesOrder.value.expectedDate) {
-    salesOrder.value.expectedDate = convertDateTimeToJSON(
-      salesOrder.value.expectedDate,
-    );
-  }
+  const customerId = stringValue(
+    values.customerId,
+    props.salesOrder.customerId,
+  );
+  emit("submit", {
+    ...props.salesOrder,
+    ...customerFields(customerId),
+    customerId,
+    customerNumber: stringValue(
+      values.customerNumber,
+      props.salesOrder.customerNumber,
+    ),
+    statusId: stringValue(values.statusId, props.salesOrder.statusId),
+    date: dateValue(values.date, null),
+    expectedDate: dateValue(values.expectedDate, null),
+  });
 };
 </script>
-<style scoped>
-.save_button {
-  position: absolute;
-  top: 0;
-  right: 1rem;
-}
 
-.summary-field {
-  font-weight: bold;
-  border-bottom: 1px solid black;
-}
-</style>
+<template>
+  <Form
+    page-actions
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+  >
+    <template #field-customerId="{ value, setValue, disabled, inputId }">
+      <div class="flex align-items-center gap-2">
+        <Select
+          :input-id="inputId"
+          :model-value="typeof value === 'string' ? value : undefined"
+          :options="customerStore.customers ?? []"
+          option-value="id"
+          option-label="comercialName"
+          class="w-full"
+          :disabled="disabled"
+          @update:model-value="setValue"
+        />
+        <router-link
+          v-if="typeof value === 'string' && value"
+          :to="`/customers/${value}`"
+          style="color: inherit"
+        >
+          <i class="pi pi-search" />
+        </router-link>
+      </div>
+    </template>
+
+    <template #field-statusId="{ value, setValue, disabled, inputId }">
+      <DropdownLifecycleStatusTransitions
+        :input-id="inputId"
+        label=""
+        :status-id="salesOrder.statusId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+
+    <template #field-budgetNumber="{ inputId }">
+      <InputText
+        :id="inputId"
+        :model-value="budgetNumber"
+        class="w-full"
+        disabled
+      />
+    </template>
+
+    <template #field-deliveryNoteNumber="{ inputId }">
+      <InputText
+        :id="inputId"
+        :model-value="deliveryNoteNumber"
+        class="w-full"
+        disabled
+      />
+    </template>
+
+    <template #actions="{ submit: submitOrder, loading, disabled }">
+      <SplitButton
+        icon="pi pi-save"
+        :label="t('sales.detail.actions.save')"
+        :model="items"
+        :loading="loading"
+        :disabled="disabled"
+        @click="submitOrder"
+      />
+    </template>
+  </Form>
+</template>

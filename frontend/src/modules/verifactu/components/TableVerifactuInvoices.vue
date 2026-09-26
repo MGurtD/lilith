@@ -7,7 +7,7 @@
     dataKey="numSerieFactura"
     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
     :rowsPerPageOptions="[5, 10, 25]"
-    currentPageReportTemplate="Mostrant {first} a {last} de {totalRecords} factures"
+    :currentPageReportTemplate="t('verifactu.findInvoices.table.currentPageReport')"
     responsiveLayout="scroll"
     class="p-datatable-sm"
   >
@@ -17,17 +17,17 @@
       </div>
     </template>
 
-    <Column field="numSerieFactura" header="Número" sortable>
+    <Column field="numSerieFactura" :header="t('verifactu.findInvoices.table.columns.number')" sortable>
       <template #body="{ data }">
         <span class="font-semibold">{{ data.numSerieFactura }}</span>
       </template>
     </Column>
 
-    <Column field="fechaExpedicionFactura" header="Data expedició" sortable />
+    <Column field="fechaExpedicionFactura" :header="t('verifactu.findInvoices.table.columns.issueDate')" sortable />
 
-    <Column field="tipoFactura" header="Tipus" sortable />
+    <Column field="tipoFactura" :header="t('verifactu.findInvoices.table.columns.type')" sortable />
 
-    <Column field="importeTotal" header="Import total" sortable>
+    <Column field="importeTotal" :header="t('verifactu.findInvoices.table.columns.totalAmount')" sortable>
       <template #body="{ data }">
         <span class="font-semibold">{{
           formatCurrency(data.importeTotal)
@@ -35,19 +35,19 @@
       </template>
     </Column>
 
-    <Column field="cuotaTotal" header="IVA" sortable>
+    <Column field="cuotaTotal" :header="t('verifactu.findInvoices.table.columns.tax')" sortable>
       <template #body="{ data }">
         {{ formatCurrency(data.cuotaTotal) }}
       </template>
     </Column>
 
-    <Column field="fechaHoraUsoRegistro" header="Data registre" sortable>
+    <Column field="fechaHoraUsoRegistro" :header="t('verifactu.findInvoices.table.columns.registrationDate')" sortable>
       <template #body="{ data }">
         {{ formatDateTime(data.fechaHoraUsoRegistro) }}
       </template>
     </Column>
 
-    <Column header="Huella" style="width: 250px">
+    <Column :header="t('verifactu.findInvoices.table.columns.hash')" style="width: 250px">
       <template #body="{ data }">
         <div class="text-overflow-ellipsis" :title="data.huella">
           {{ data.huella?.substring(0, 30) }}...
@@ -57,15 +57,18 @@
 
     <template #empty>
       <div class="text-center py-4">
-        <p>No s'han trobat factures per al període seleccionat</p>
+        <p>{{ t("verifactu.findInvoices.table.empty") }}</p>
       </div>
     </template>
   </DataTable>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { VerifactuInvoice } from "../types";
 import { formatCurrency, formatDateTime } from "../../../utils/functions";
+
+const { t } = useI18n();
 
 interface Props {
   invoices: VerifactuInvoice[];

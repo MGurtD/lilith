@@ -1,6 +1,5 @@
 <template>
-  <FormOperator v-if="operator" 
-  :operator="operator" @submit="submitForm" />
+  <FormOperator v-if="operator" :operator="operator" @submit="submitForm" />
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
@@ -16,12 +15,14 @@ import { FormActionMode } from "../../../types/component";
 import router from "../../../router";
 import FormOperator from "../components/FormOperator.vue";
 import { usePlantModelStore } from "../store/plantmodel";
+import { useI18n } from "vue-i18n";
 
 const formMode = ref(FormActionMode.EDIT);
 const route = useRoute();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const { operator } = storeToRefs(plantmodelStore);
+const { t } = useI18n();
 
 const loadView = async () => {
   await plantmodelStore.fetchOperator(route.params.id as string);
@@ -29,10 +30,10 @@ const loadView = async () => {
   if (!operator.value) {
     formMode.value = FormActionMode.CREATE;
     plantmodelStore.setNewOperator(route.params.id as string);
-    pageTitle = "Alta d'operari";
+    pageTitle = t("production.detail.createOperator");
   } else {
     formMode.value = FormActionMode.EDIT;
-    pageTitle = `Operari: ${operator.value.name}`;
+    pageTitle = t("production.detail.operatorTitle", { name: operator.value.name });
   }
 
   store.setMenuItem({
@@ -47,17 +48,16 @@ onMounted(async () => {
 });
 
 const toast = useToast();
-const submitForm = async () => {
-  const data = operator.value as Operator;
+const submitForm = async (data: Operator) => {
   let result = false;
   let message = "";
 
   if (formMode.value === FormActionMode.CREATE) {
     result = await plantmodelStore.createOperator(data);
-    message = "Operari creat correctament";
+    message = t("production.detail.createdOperator");
   } else {
     result = await plantmodelStore.updateOperator(data.id, data);
-    message = "Operari actualizat correctament";
+    message = t("production.detail.updatedOperator");
   }
 
   if (result) {

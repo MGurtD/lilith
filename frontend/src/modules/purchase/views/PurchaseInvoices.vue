@@ -1,175 +1,48 @@
 <template>
-  <DataTable
+  <Table
+    preset="crud-list"
+    :columns="columns"
+    :items="purchaseInvoiceStore.purchaseInvoices ?? []"
+    :filter-config="filterConfig"
+    v-model:filter-values="filter"
+    :filter-body-width="filterBodyWidth"
+    page="PurchaseInvoices"
+    :card-layout="cardLayout"
     class="small-datatable"
     tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    :paginator="
-      purchaseInvoiceStore.purchaseInvoices &&
-      purchaseInvoiceStore.purchaseInvoices.length > 20
-    "
-    :rows="20"
     sortMode="multiple"
-    :value="purchaseInvoiceStore.purchaseInvoices"
+    delete-column-width="3%"
+    show-delete-column
+    :can-delete="canDelete"
+    @filter="filterInvoices"
+    @clear="cleanFilter"
+    @create="createButtonClick"
+    @delete="deletePurchaseInvoice"
     @row-click="editPurchaseInvoice"
   >
-    <template #header>
-      <TableFilter
-        :config="[]"
-        v-model="filter"
-        :show-title="false"
-        :show-action-labels="false"
-        :body-width="filterBodyWidth"
-        embedded
-        @filter="filterInvoices"
-        @clear="cleanFilter"
-        @create="createButtonClick"
-      >
-        <template #prepend>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Període</label
-            >
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Proveïdor</label
-            >
-            <DropdownSupplier label="" v-model="filter.supplierId" />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Mètode de pagament</label
-            >
-            <Select
-              v-model="filter.paymentMethodId"
-              :options="puchaseMasterDataStore.masterData.paymentMethods"
-              optionValue="id"
-              optionLabel="name"
-              showClear
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--sm"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Número de compte</label
-            >
-            <Select
-              v-model="filter.accountNumber"
-              :options="suppliersStore.accountNumbers"
-              showClear
-              class="w-full"
-              size="small"
-            />
-          </div>
-          <div
-            class="table-filter-prepend-field table-filter-prepend-field--md"
-          >
-            <label class="filter-label table-filter-prepend-label"
-              >Venciment</label
-            >
-            <DatePicker
-              v-model="filter.dueDates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              placeholder="Selecciona període"
-              showIcon
-              class="w-full"
-              size="small"
-            />
-          </div>
-        </template>
-        <template #append>
-          <Button
-            label="Importar factura (PDF)"
-            icon="pi pi-file-pdf"
-            class="p-button-sm"
-            severity="secondary"
-            outlined
-            @click="$router.push({ name: 'PurchaseInvoiceImport' })"
-          />
-        </template>
-      </TableFilter>
+    <template #action-prepend>
+      <Button
+        v-tooltip.bottom="t('purchase.purchaseInvoices.importPdf')"
+        :aria-label="t('purchase.purchaseInvoices.importPdf')"
+        icon="pi pi-file-pdf"
+        size="small"
+        severity="secondary"
+        outlined
+        @click="router.push({ name: 'PurchaseInvoiceImport' })"
+      />
     </template>
-    <Column
-      field="number"
-      header="Número"
-      :sortable="true"
-      style="width: 10%"
-    ></Column>
-    <Column
-      header="Data"
-      field="purchaseInvoiceDate"
-      sortable
-      style="width: 10%"
-    >
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.purchaseInvoiceDate) }}
-      </template>
-    </Column>
-    <Column header="Proveïdor" style="width: 15%">
-      <template #body="slotProps">
-        {{ getSupplierNameById(slotProps.data.supplierId) }}
-      </template>
-    </Column>
-    <Column
-      header="Núm. Fra. Proveïdor"
-      style="width: 15%"
-      field="supplierNumber"
-    ></Column>
-    <Column header="Estat" style="width: 15%">
-      <template #body="slotProps">
-        {{ getStatusNameById(slotProps.data.statusId) }}
-      </template>
-    </Column>
-    <Column header="Venciment" style="width: 10%">
-      <template #body="slotProps">
-        {{ getLastDueDate(slotProps.data) }}
-      </template>
-    </Column>
-    <Column header="Import" style="width: 10%">
-      <template #body="slotProps">
-        {{ formatCurrency(slotProps.data.netAmount) }}
-      </template>
-      <template #footer>
-        <div class="total-footer">
-          <span class="total-label">Total</span>
-          <span class="total-value">{{ formatCurrency(totalNetAmount) }}</span>
-        </div>
-      </template>
-    </Column>
-    <Column style="width: 5%">
-      <template #body="slotProps">
-        <i
-          v-if="getStatusNameById(slotProps.data.statusId) === 'Nova'"
-          :class="PrimeIcons.TIMES"
-          class="grid_delete_column_button"
-          @click="deletePurchaseInvoice($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+    <template #filter-supplierId="{ value, update }">
+      <DropdownSupplier size="small" label="" :model-value="value" @update:model-value="update" />
+    </template>
+  </Table>
 </template>
 <script setup lang="ts">
-import { v4 as uuidv4 } from "uuid";
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -182,15 +55,18 @@ import { onMounted, ref, computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import {
   formatDateForQueryParameter,
-  formatDate,
   formatCurrency,
+  getNewUuid,
 } from "../../../utils/functions";
 import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
-import TableFilter from "../../../components/tables/TableFilter.vue";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
+import { useI18n } from "vue-i18n";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -202,6 +78,109 @@ const lifecycleStore = useLifecyclesStore();
 const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const suppliersStore = useSuppliersStore();
+const { t } = useI18n();
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.purchaseInvoices.columns.number"),
+    sortable: true,
+    style: "width: 10%",
+  },
+  {
+    field: "purchaseInvoiceDate",
+    header: t("purchase.purchaseInvoices.columns.date"),
+    sortable: true,
+    columnType: ColumnType.Date,
+    style: "width: 10%",
+  },
+  {
+    field: "supplierId",
+    header: t("purchase.purchaseInvoices.columns.supplier"),
+    columnType: ColumnType.Lookup,
+    resolver: getSupplierNameById,
+    style: "width: 15%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.purchaseInvoices.columns.supplierInvoiceNumber"),
+    style: "width: 15%",
+  },
+  {
+    field: "statusId",
+    header: t("purchase.purchaseInvoices.columns.status"),
+    columnType: ColumnType.Status,
+    resolver: getStatusNameById,
+    severity: lifecycleStore.getStatusColorById,
+    style: "width: 15%",
+  },
+  {
+    field: "dueDate",
+    header: t("purchase.purchaseInvoices.columns.dueDate"),
+    columnType: ColumnType.Date,
+    resolver: resolveLastDueDate,
+    style: "width: 15%",
+  },
+  {
+    field: "netAmount",
+    header: t("purchase.purchaseInvoices.columns.amount"),
+    columnType: ColumnType.Currency,
+    total: "sum",
+    totalFormat: formatCurrency,
+    style: "width: 10%; text-align: right",
+  },
+]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierId",
+  badge: "statusId",
+  trailing: "netAmount",
+  meta: ["purchaseInvoiceDate", "dueDate", "supplierNumber"],
+};
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("purchase.purchaseInvoices.filters.period"),
+    type: "date-range",
+    placeholder: t("purchase.purchaseInvoices.placeholders.selectPeriod"),
+  },
+  {
+    key: "supplierId",
+    label: t("purchase.purchaseInvoices.filters.supplier"),
+    type: "slot",
+    valueLabel: (value) => getSupplierNameById(String(value)),
+  },
+  {
+    key: "paymentMethodId",
+    label: t("purchase.purchaseInvoices.filters.paymentMethod"),
+    type: "select",
+    filter: false,
+    options: puchaseMasterDataStore.masterData.paymentMethods ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    valueLabel: getPaymentMethodNameById,
+  },
+  {
+    key: "accountNumber",
+    label: t("purchase.purchaseInvoices.filters.accountNumber"),
+    type: "select",
+    filter: false,
+    options: (suppliersStore.accountNumbers ?? []).map((accountNumber) => ({
+      label: accountNumber,
+      value: accountNumber,
+    })),
+    size: "sm",
+  },
+  {
+    key: "dueDates",
+    label: t("purchase.purchaseInvoices.filters.dueDate"),
+    type: "date-range",
+    placeholder: t("purchase.purchaseInvoices.placeholders.selectPeriod"),
+  },
+]);
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "100%", tablet: "100%" };
 
@@ -216,7 +195,7 @@ const filter = ref({
 onMounted(async () => {
   store.setMenuItem({
     icon: PrimeIcons.MONEY_BILL,
-    title: "Factures de compra",
+    title: t("purchase.purchaseInvoices.title"),
   });
 
   await lifecycleStore.fetchOneByName(lifecycleName);
@@ -306,8 +285,8 @@ const filterInvoices = async () => {
   } else {
     toast.add({
       severity: "info",
-      summary: "Filtre invàlid",
-      detail: "Seleccioni un període",
+      summary: t("purchase.messages.invalidFilter"),
+      detail: t("purchase.purchaseInvoices.messages.selectPeriod"),
       life: 5000,
     });
   }
@@ -327,11 +306,22 @@ const getStatusNameById = (id: string) => {
   else return "";
 };
 
-const getLastDueDate = (invoice: PurchaseInvoice): string => {
+function getPaymentMethodNameById(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return (
+    puchaseMasterDataStore.masterData.paymentMethods?.find(
+      (method) => method.id === value,
+    )?.name ?? ""
+  );
+}
+
+const resolveLastDueDate = (_value: unknown, data: unknown): string | Date => {
+  if (!data || typeof data !== "object") return "";
+  const invoice = data as PurchaseInvoice;
   if (!invoice.purchaseInvoiceDueDates) {
     return "";
   } else if (invoice.purchaseInvoiceDueDates.length === 0) {
-    return formatDate(invoice.purchaseInvoiceDate);
+    return invoice.purchaseInvoiceDate;
   } else {
     const sortedDueDates = [...invoice.purchaseInvoiceDueDates].sort(
       (left, right) =>
@@ -339,35 +329,26 @@ const getLastDueDate = (invoice: PurchaseInvoice): string => {
     );
     const lastDueDate = sortedDueDates[sortedDueDates.length - 1];
 
-    return formatDate(lastDueDate.dueDate);
+    return lastDueDate.dueDate;
   }
 };
 
-const totalNetAmount = computed(() =>
-  (purchaseInvoiceStore.purchaseInvoices ?? []).reduce(
-    (sum, inv) => sum + (inv.netAmount ?? 0),
-    0,
-  ),
-);
-
 const createButtonClick = () => {
-  router.push({ path: `/purchaseInvoice/${uuidv4()}` });
+  router.push({ path: `/purchaseInvoice/${getNewUuid()}` });
 };
 
 const editPurchaseInvoice = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button",
-    )
-  ) {
-    router.push({ path: `/purchaseinvoice/${row.data.id}` });
-  }
+  router.push({ path: `/purchaseinvoice/${row.data.id}` });
 };
 
-const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
+const canDelete = (invoice: PurchaseInvoice) =>
+  lifecycleStore.lifecycle?.initialStatusId === invoice.statusId;
+
+const deletePurchaseInvoice = (invoice: PurchaseInvoice) => {
   confirm.require({
-    target: event.currentTarget,
-    message: `Està segur que vol eliminar la factura ${invoice.number}?`,
+    message: t("purchase.purchaseInvoices.messages.confirmDelete", {
+      number: invoice.number,
+    }),
     icon: "pi pi-question-circle",
     acceptIcon: "pi pi-check",
     rejectIcon: "pi pi-times",
@@ -376,7 +357,7 @@ const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
       if (deleted) {
         toast.add({
           severity: "success",
-          summary: "Eliminada",
+          summary: t("purchase.messages.deleted"),
           life: 3000,
         });
         await filterInvoices();
@@ -385,22 +366,3 @@ const deletePurchaseInvoice = (event: any, invoice: PurchaseInvoice) => {
   });
 };
 </script>
-
-<style scoped>
-.total-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.total-label {
-  font-weight: 600;
-  color: var(--p-text-muted-color);
-  font-size: 0.85rem;
-}
-
-.total-value {
-  font-weight: 700;
-}
-</style>

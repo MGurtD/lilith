@@ -1,123 +1,149 @@
-<template>
-  <form v-if="invoiceDetail">
-    <section class="two-columns-7525">
-      <div class="mt-2">
-        <BaseInput label="Descripció" v-model="invoiceDetail.description" />
-      </div>
-      <div class="mt-2">
-        <label class="block text-900 mb-2">Impost</label>
-        <Select
-          v-model="invoiceDetail.taxId"
-          :options="sharedData.taxes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-        />
-      </div>
-    </section>
-
-    <section class="three-columns">
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          label="Quantitat"
-          v-model="invoiceDetail.quantity"
-          @update:model-value="calcAmount"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          label="Preu Unitat"
-          v-model:model-value="invoiceDetail.unitPrice"
-          @update:model-value="calcAmount"
-        />
-      </div>
-      <div class="mt-2">
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          label="Total"
-          v-model:model-value="invoiceDetail.amount"
-          disabled
-        />
-      </div>
-    </section>
-
-    <Button
-      label="Crear"
-      @click="submitForm"
-      style="float: right"
-      :size="'small'"
-      class="mt-2"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { ref } from "vue";
-import { SalesInvoiceDetail } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { useSharedDataStore } from "../../shared/store/masterData";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  finiteNumberValue,
+  stringValue,
+} from "@/components/forms/value-utils";
 import { round } from "lodash";
+import { computed, ref, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { useSharedDataStore } from "../../shared/store/masterData";
+import type { SalesInvoiceDetail } from "../types";
 
 const props = defineProps<{
   invoiceDetail: SalesInvoiceDetail;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", invoiceDetail: SalesInvoiceDetail): void;
-  (e: "cancel"): void;
+  (event: "submit", invoiceDetail: SalesInvoiceDetail): void;
+  (event: "cancel"): void;
 }>();
 
-const toast = useToast();
+const { t } = useI18n();
 const sharedData = useSharedDataStore();
+const form = shallowRef<{
+  setFieldValue: (name: string, value: unknown) => void;
+} | null>(null);
 
-const calcAmount = () => {
-  const detail = props.invoiceDetail;
-
-  if (detail.quantity && detail.quantity > 0 && detail.unitPrice) {
-    props.invoiceDetail.unitCost = detail.unitPrice;
-    props.invoiceDetail.amount = round(detail.quantity * detail.unitPrice, 2);
-    props.invoiceDetail.totalCost = props.invoiceDetail.amount;
-  }
-};
-
-const schema = Yup.object().shape({
-  quantity: Yup.number().min(1).required("La quantitat ha de ser superior a 1"),
-  unitPrice: Yup.number().required("El preu unitat és obligatori"),
+// Hidden costs derived from the last valid quantity and unit price.
+const derivedCosts = ref({
+  unitCost: props.invoiceDetail.unitCost,
+  totalCost: props.invoiceDetail.totalCost,
 });
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.invoiceDetail);
+watch(
+  () => props.invoiceDetail,
+  (detail) => {
+    derivedCosts.value = {
+      unitCost: detail.unitCost,
+      totalCost: detail.totalCost,
+    };
+  },
+);
+
+const numberProps = { locale: "en-US", minFractionDigits: 0 } as const;
+const currencyProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+} as const;
+
+// amount has no onChange, so setting it here cannot recurse.
+const calcAmount = (_value: unknown, values: Readonly<FormValues>): void => {
+  const quantity = finiteNumberValue(values.quantity, 0);
+  const unitPrice = finiteNumberValue(values.unitPrice, 0);
+  if (quantity <= 0 || !unitPrice) return;
+
+  const amount = round(quantity * unitPrice, 2);
+  derivedCosts.value = { unitCost: unitPrice, totalCost: amount };
+  form.value?.setFieldValue("amount", amount);
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.invoiceDetail);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "description",
+        label: t("sales.components.descripcio"),
+        type: FormFieldType.Text,
+        span: { desktop: 3 },
+      },
+      {
+        name: "taxId",
+        label: t("sales.components.impost"),
+        type: FormFieldType.Select,
+        props: {
+          options: sharedData.taxes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "quantity",
+        label: t("sales.components.quantitat"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        onChange: calcAmount,
+        validation: Yup.number()
+          .min(1, t("sales.validation.quantityGreaterThanOneRequired"))
+          .required(t("sales.validation.quantityGreaterThanOneRequired")),
+      },
+      {
+        name: "unitPrice",
+        label: t("sales.components.preuUnitat"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        onChange: calcAmount,
+        validation: Yup.number().required(
+          t("sales.validation.unitPriceRequired"),
+        ),
+      },
+      {
+        name: "amount",
+        label: t("sales.components.total"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: true,
+      },
+    ],
+  },
+]);
+
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.invoiceDetail,
+    description: stringValue(values.description, ""),
+    taxId: stringValue(values.taxId, props.invoiceDetail.taxId),
+    quantity: finiteNumberValue(values.quantity, props.invoiceDetail.quantity),
+    unitPrice: finiteNumberValue(
+      values.unitPrice,
+      props.invoiceDetail.unitPrice,
+    ),
+    amount: finiteNumberValue(values.amount, props.invoiceDetail.amount),
+    unitCost: derivedCosts.value.unitCost,
+    totalCost: derivedCosts.value.totalCost,
+  });
 };
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :rows="rows"
+    :initial-values="invoiceDetail"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  />
+</template>

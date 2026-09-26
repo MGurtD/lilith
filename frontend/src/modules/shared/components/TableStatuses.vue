@@ -8,11 +8,11 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-900 font-bold">Estats</span>
+        <span class="text-900 font-bold">{{ $t('shared.statuses.title') }}</span>
         <Button :icon="PrimeIcons.PLUS" rounded raised @click="onAdd" />
       </div>
     </template>
-    <Column field="name" header="Nom" style="width: 75%"></Column>
+    <Column field="name" :header="$t('shared.statuses.columns.name')" style="width: 75%"></Column>
     <Column style="width: 25%">
       <template #body="slotProps">
         <i

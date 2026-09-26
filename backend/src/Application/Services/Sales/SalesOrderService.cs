@@ -83,6 +83,14 @@ namespace Application.Services.Sales
                 {
                     SalesOrderHeaderId = salesOrder.Id
                 };
+                salesOrderDetail.PhaseProfits = detail.PhaseProfits
+                    .Select(pp => new SalesOrderDetailPhaseProfit
+                    {
+                        Id = Guid.NewGuid(),
+                        WorkMasterPhaseDetailId = pp.WorkMasterPhaseDetailId,
+                        ProfitPercentage = pp.ProfitPercentage,
+                    })
+                    .ToList();
                 await AddDetail(salesOrderDetail, skipExternalServices: true);
                 detailMap[detail.Id] = salesOrderDetail.Id;
             }
@@ -474,6 +482,9 @@ namespace Application.Services.Sales
 
         private async Task<GenericResponse> AddDetail(SalesOrderDetail salesOrderDetail, bool skipExternalServices)
         {
+            var phaseProfits = salesOrderDetail.PhaseProfits?.ToList() ?? new List<SalesOrderDetailPhaseProfit>();
+            salesOrderDetail.PhaseProfits = new List<SalesOrderDetailPhaseProfit>();
+
             await unitOfWork.SalesOrderHeaders.AddDetail(salesOrderDetail);
 
             // Afegir serveis externs si té WorkMaster (no quan ve de CreateFromBudget, ja que es copien directament)
@@ -486,10 +497,14 @@ namespace Application.Services.Sales
                 }
             }
 
+            await SavePhaseProfits(salesOrderDetail.Id, phaseProfits, replaceExisting: false);
             return new GenericResponse(true);
         }
         public async Task<GenericResponse> UpdateDetail(SalesOrderDetail salesOrderDetail)
         {
+            var phaseProfits = salesOrderDetail.PhaseProfits?.ToList() ?? new List<SalesOrderDetailPhaseProfit>();
+            salesOrderDetail.PhaseProfits = new List<SalesOrderDetailPhaseProfit>();
+
             // Recuperar el detall antic per obtenir la quantitat anterior
             var oldDetail = unitOfWork.SalesOrderDetails.Find(d => d.Id == salesOrderDetail.Id).FirstOrDefault();
             var oldQuantity = oldDetail?.Quantity ?? 0;
@@ -544,7 +559,38 @@ namespace Application.Services.Sales
             salesOrderDetail.SalesOrderHeader = null;
 
             await unitOfWork.SalesOrderHeaders.UpdateDetail(salesOrderDetail);
+            await SavePhaseProfits(salesOrderDetail.Id, phaseProfits, replaceExisting: true);
             return new GenericResponse(true);
+        }
+
+        private async Task SavePhaseProfits(Guid salesOrderDetailId, IEnumerable<SalesOrderDetailPhaseProfit> phaseProfits, bool replaceExisting)
+        {
+            if (replaceExisting)
+            {
+                var existing = unitOfWork.SalesOrderHeaders.DetailPhaseProfits
+                    .Find(p => p.SalesOrderDetailId == salesOrderDetailId)
+                    .ToList();
+                if (existing.Count > 0)
+                {
+                    await unitOfWork.SalesOrderHeaders.DetailPhaseProfits.RemoveRange(existing);
+                }
+            }
+
+            var rows = phaseProfits
+                .Where(p => p != null)
+                .Select(p => new SalesOrderDetailPhaseProfit
+                {
+                    Id = p.Id == Guid.Empty ? Guid.NewGuid() : p.Id,
+                    SalesOrderDetailId = salesOrderDetailId,
+                    WorkMasterPhaseDetailId = p.WorkMasterPhaseDetailId,
+                    ProfitPercentage = p.ProfitPercentage,
+                })
+                .ToList();
+
+            if (rows.Count > 0)
+            {
+                await unitOfWork.SalesOrderHeaders.DetailPhaseProfits.AddRange(rows);
+            }
         }
         public async Task<GenericResponse> RemoveDetail(Guid id)
         {
@@ -623,31 +669,40 @@ namespace Application.Services.Sales
 
         private async Task<GenericResponse> ChangeDeliveryStatus(Guid deliveryNoteId, bool isDelivered)
         {
-            var orders = GetByDeliveryNoteId(deliveryNoteId);
-            if (orders == null)
+            var operation = isDelivered ? "Deliver" : "UnDeliver";
+            var orderQuery = GetByDeliveryNoteId(deliveryNoteId);
+            if (orderQuery == null)
                 return new GenericResponse(true, localizationService.GetLocalizedString("StatusTransitionNotFound"));
+            var orders = orderQuery.ToList();
 
             var statusResponse = await GetStatusId(isDelivered ? StatusConstants.Statuses.ComandaServida : StatusConstants.Statuses.Comanda);
             if (!statusResponse.Result) return statusResponse;
 
-            foreach (var order in orders.ToList())
+            foreach (var order in orders)
             {
-                // Actualitzar flag de 'servida' en els detalls
                 foreach (var detail in order.SalesOrderDetails)
                 {
-                    detail.IsDelivered = isDelivered;
-                    await UpdateDetail(detail);
+                    PrepareDeliveryFlag(detail, isDelivered);
                 }
 
-                // Canviar estat de la comanda
                 order.StatusId = (Guid)statusResponse.Content!;
-                // Asociar albarà
                 if (order.DeliveryNoteId == null && isDelivered) order.DeliveryNoteId = deliveryNoteId;
-                await Update(order);
+                order.SalesOrderDetails.Clear();
+                unitOfWork.SalesOrderHeaders.UpdateWithoutSave(order);
             }
 
+            await unitOfWork.CompleteAsync();
             return new GenericResponse(true);
         }
+
+        private void PrepareDeliveryFlag(SalesOrderDetail detail, bool isDelivered)
+        {
+            detail.IsDelivered = isDelivered;
+            detail.Reference = null;
+            detail.SalesOrderHeader = null;
+            unitOfWork.SalesOrderDetails.UpdateWithoutSave(detail);
+        }
+
 
         #endregion
 

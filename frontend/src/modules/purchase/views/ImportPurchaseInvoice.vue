@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { nextTick, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";
@@ -196,10 +196,12 @@ const onUploader = async (event: { files: File[] | File }) => {
     // no match, supplierId is left empty so the operator can pick manually.
     store.setFromIngestion(payload);
 
-    // Force header totals to recompute immediately, bypassing the 500ms gate.
-    formRef.value?.calcAmountsNow();
-
+    // The form only mounts once result is true; wait for it, then recompute
+    // header totals without waiting for its mount delay.
     result.value = true;
+    await nextTick();
+    await formRef.value?.calcAmountsNow();
+
     toast.add({
       severity: "success",
       summary: "Dades extretes",

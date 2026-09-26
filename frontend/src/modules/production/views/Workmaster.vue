@@ -19,6 +19,9 @@
   </main>
 </template>
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
+const pt = (key: string): string => t(`production.ui.${key}`);
 import FormWorkmaster from "../components/FormWorkmaster.vue";
 import TableWorkmasterPhases from "../components/TableWorkmasterPhases.vue";
 
@@ -49,7 +52,7 @@ onMounted(async () => {
   await loadViewData();
 
   let pageTitle = "";
-  pageTitle = `Ruta de fabricació`;
+  pageTitle = t("production.detail.workmasterTitle");
   if (workmaster.value) {
     pageTitle = `${pageTitle} ${referenceStore.getFullName(
       workmaster.value.reference!,
@@ -81,8 +84,8 @@ const calculateCostSubmit = async (workmaster: WorkMaster) => {
   if (updated && response.result) {
     toast.add({
       severity: "success",
-      summary: "Cálcul de cost",
-      detail: `${formatCurrency(response.content!)}`,
+      summary: pt("Cálcul de cost"),
+      detail: formatCurrency(response.content!),
       life: 10000,
     });
 
@@ -90,11 +93,11 @@ const calculateCostSubmit = async (workmaster: WorkMaster) => {
   } else {
     toast.add({
       severity: "warn",
-      summary: "Cálcul de cost",
+      summary: pt("Cálcul de cost"),
       detail:
         response.errors.length > 0
           ? response.errors[0]
-          : "Errors detectats durant el cálcul",
+          : t("production.messages.workmasterCalculationErrors"),
       life: 10000,
     });
   }
@@ -110,7 +113,18 @@ const editWorkMasterPhase = (phase: WorkMasterPhase) => {
   router.push({ path: `/workmaster/${id.value}/phase/${phase.id}` });
 };
 const deleteWorkMasterPhase = async (phase: WorkMasterPhase) => {
-  await workmasterStore.deletePhase(phase.id);
+  const result = await workmasterStore.deletePhase(phase.id);
+  if (result) {
+    toast.add({
+      severity: "success",
+      summary: pt("Fase eliminada"),
+      detail: t("production.messages.deletedPhase", {
+        code: phase.code,
+        description: phase.description,
+      }),
+      life: 5000,
+    });
+  }
 };
 </script>
 <style scoped>

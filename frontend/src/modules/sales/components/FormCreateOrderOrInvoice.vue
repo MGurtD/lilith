@@ -1,104 +1,125 @@
-<template>
-  <form>
-    <div class="mb-2">
-      <label class="block text-900 mb-2">Client</label>
-      <DropdownCustomers
-        label=""
-        placeholder=""
-        v-model="createRequest.customerId"
-      />
-    </div>
-    <div class="mb-2">
-      <label class="block text-900 mb-2">Exercici</label>
-      <Select
-        class="w-full"
-        v-model="createRequest.exerciseId"
-        :options="exerciseStore.exercises"
-        optionValue="id"
-        optionLabel="name"
-      />
-    </div>
-    <div class="mb-2">
-      <label class="block text-900 mb-2">Data</label>
-      <DatePicker v-model="createRequest.date" />
-    </div>
-
-    <footer class="mt-4">
-      <Button label="Crear" @click="onSubmit" style="float: right" />
-    </footer>
-  </form>
-</template>
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import { useToast } from "primevue/usetoast";
-import DropdownCustomers from "../components/DropdownCustomers.vue";
-import { CreateSalesHeaderRequest } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { convertDateTimeToJSON } from "../../../utils/functions";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import { dateValue, stringValue } from "@/components/forms/value-utils";
+import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
 import { useExerciseStore } from "../../shared/store/exercise";
+import DropdownCustomers from "./DropdownCustomers.vue";
+import type { CreateSalesHeaderRequest } from "../types";
 
-const toast = useToast();
-const exerciseStore = useExerciseStore();
+// Shared create dialog of the sales order, delivery note, budget and invoice
+// lists. Each list persists the emitted request with its own store.
+const props = withDefaults(
+  defineProps<{
+    createRequest: CreateSalesHeaderRequest;
+    loading?: boolean;
+  }>(),
+  { loading: false },
+);
 
-const props = defineProps<{
-  createRequest: CreateSalesHeaderRequest;
-}>();
 const emit = defineEmits<{
-  (e: "submit", createRequest: CreateSalesHeaderRequest): void;
+  (event: "submit", createRequest: CreateSalesHeaderRequest): void;
+  (event: "cancel"): void;
 }>();
+
+const { t } = useI18n();
+const exerciseStore = useExerciseStore();
+const currentExerciseId = ref("");
+
+const initialValues = computed(() => ({
+  ...props.createRequest,
+  exerciseId: props.createRequest.exerciseId || currentExerciseId.value,
+}));
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "customerId",
+        label: t("sales.components.client"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("sales.validation.customerRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "exerciseId",
+        label: t("sales.components.exercici"),
+        type: FormFieldType.Select,
+        props: {
+          options: exerciseStore.exercises,
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        validation: Yup.string().required(
+          t("sales.validation.exerciseRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "date",
+        label: t("sales.components.data"),
+        type: FormFieldType.Date,
+        validation: Yup.date()
+          .typeError(t("sales.validation.dateRequired"))
+          .required(t("sales.validation.dateRequired")),
+      },
+    ],
+  },
+]);
 
 onMounted(async () => {
   if (!exerciseStore.exercises?.length) {
     await exerciseStore.fetchActive();
   }
 
-  var currentExercise = exerciseStore.exercises?.find(
-    (e) => e.name === new Date().getFullYear().toString(),
-  );
-
-  if (currentExercise) {
-    props.createRequest.exerciseId = currentExercise.id;
-  }
+  currentExerciseId.value =
+    exerciseStore.exercises?.find(
+      (exercise) => exercise.name === String(new Date().getFullYear()),
+    )?.id ?? "";
 });
 
-const schema = Yup.object().shape({
-  exerciseId: Yup.string().required("L'exercici és obligatori"),
-  customerId: Yup.string().required("El client és obligatori"),
-  date: Yup.date().required("La data és obligatòria"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.createRequest);
-};
-
-const onSubmit = () => {
-  validate();
-  if (validation.value.result) {
-    const submitPayload = {
-      ...props.createRequest,
-      date: convertDateTimeToJSON(props.createRequest.date),
-    };
-    emit("submit", submitPayload);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+// The date stays a native Date: Date.prototype.toJSON (utils/functions.ts)
+// applies the local-time conversion when the store serializes the request.
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.createRequest,
+    customerId: stringValue(values.customerId, ""),
+    exerciseId: stringValue(values.exerciseId, ""),
+    date: dateValue(values.date, props.createRequest.date),
+  });
 };
 </script>
+
+<template>
+  <Form
+    :rows="rows"
+    :initial-values="initialValues"
+    :loading="loading"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-customerId="{ value, setValue, disabled, inputId }">
+      <DropdownCustomers
+        :input-id="inputId"
+        label=""
+        :model-value="typeof value === 'string' ? value : null"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>

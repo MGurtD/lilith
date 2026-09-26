@@ -1,206 +1,140 @@
 <template>
   <div class="verifactu-integration-requests">
-    <DataTable
-      :value="filteredRequests"
+    <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
+      :items="filteredRequests"
+      :columns="columns"
+      :filter-config="filterConfig"
+      v-model:filter-values="filters"
+      :filter-body-width="filterBodyWidth"
+      :show-filter-action="false"
+      :show-create="false"
       :loading="loading"
       dataKey="rowKey"
       responsiveLayout="scroll"
+      @clear="clearFilters"
     >
-      <template #header>
-        <TableFilter
-          :config="filterConfig"
-          :body-width="filterBodyWidth"
-          v-model="filters"
-          :show-title="false"
-          :show-action-labels="false"
-          :show-filter-action="false"
-          :show-create="false"
-          embedded
-          @clear="clearFilters"
-        >
-          <template #prepend>
-            <div
-              class="table-filter-prepend-field table-filter-prepend-field--lg"
-            >
-              <label class="filter-label table-filter-prepend-label">{{
-                $t("common.period")
-              }}</label>
-              <DatePicker
-                v-model="filters.dates"
-                selectionMode="range"
-                dateFormat="dd/mm/yy"
-                showIcon
-                inputId="period"
-                placeholder="Selecciona període"
-                size="small"
-                class="w-full"
-              />
-            </div>
-          </template>
-        </TableFilter>
+      <template #body-invoiceNumber="{ data }">
+        <span class="font-semibold">{{ data.invoiceNumber }}</span>
       </template>
-
-      <Column
-        field="invoiceNumber"
-        :header="
-          $t('verifactu.integrationRequests.table.columns.invoiceNumber')
-        "
-        sortable
-      >
-        <template #body="slotProps">
-          <span class="font-semibold">{{ slotProps.data.invoiceNumber }}</span>
-        </template>
-      </Column>
-
-      <Column
-        field="customerComercialName"
-        :header="$t('verifactu.integrationRequests.table.columns.customer')"
-        sortable
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.customerComercialName }}
-        </template>
-      </Column>
-
-      <Column
-        field="timestampResponse"
-        :header="$t('verifactu.integrationRequests.table.columns.date')"
-        sortable
-      >
-        <template #body="slotProps">
-          {{ formatDate(slotProps.data.timestampResponse) }}
-        </template>
-      </Column>
-
-      <Column
-        field="request"
-        :header="$t('verifactu.integrationRequests.table.columns.request')"
-      >
-        <template #body="slotProps">
-          <div class="flex items-center gap-2">
-            <span
-              class="font-mono text-sm truncate max-w-72"
-              :title="slotProps.data.request"
-            >
-              {{ (slotProps.data.request ?? "").substring(0, 60)
-              }}{{ (slotProps.data.request?.length || 0) > 60 ? "..." : "" }}
-            </span>
-            <Button
-              icon="pi pi-copy"
-              size="small"
-              text
-              rounded
-              :aria-label="
-                $t(
-                  'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
-                )
-              "
-              @click="copyToClipboard(slotProps.data.request)"
-            />
-          </div>
-        </template>
-      </Column>
-
-      <Column
-        field="success"
-        :header="$t('verifactu.integrationRequests.table.columns.success')"
-      >
-        <template #body="slotProps">
-          <Tag
-            :value="slotProps.data.success ? 'OK' : 'ERR'"
-            :severity="slotProps.data.success ? 'success' : 'danger'"
+      <template #body-request="{ data }">
+        <div class="flex items-center gap-2">
+          <span
+            class="font-mono text-sm truncate max-w-72"
+            :title="data.request"
+          >
+            {{ (data.request ?? "").substring(0, 60)
+            }}{{ (data.request?.length || 0) > 60 ? "..." : "" }}
+          </span>
+          <Button
+            icon="pi pi-copy"
+            size="small"
+            text
+            rounded
+            :aria-label="
+              $t(
+                'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
+              )
+            "
+            @click="copyToClipboard(data.request)"
           />
-        </template>
-      </Column>
-
-      <Column
-        field="status"
-        :header="$t('verifactu.integrationRequests.table.columns.statusCode')"
-      >
-        <template #body="slotProps">
-          {{ slotProps.data.status }}
-        </template>
-      </Column>
-
-      <Column
-        field="response"
-        :header="$t('verifactu.integrationRequests.table.columns.response')"
-      >
-        <template #body="slotProps">
-          <div class="flex items-center gap-2">
-            <span
-              class="font-mono text-sm truncate max-w-72"
-              :title="slotProps.data.response"
-            >
-              {{ (slotProps.data.response ?? "").substring(0, 60)
-              }}{{ (slotProps.data.response?.length || 0) > 60 ? "..." : "" }}
-            </span>
-            <Button
-              icon="pi pi-copy"
-              size="small"
-              text
-              rounded
-              :aria-label="
-                $t(
-                  'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
-                )
-              "
-              @click="copyToClipboard(slotProps.data.response)"
-            />
-          </div>
-        </template>
-      </Column>
-
-      <Column
-        :header="$t('verifactu.integrationRequests.table.columns.qrCode')"
-      >
-        <template #body="slotProps">
-          <img
-            class="cursor-pointer"
-            v-if="slotProps.data.qrCodeBase64"
-            :src="slotProps.data.qrCodeBase64"
-            alt="QR"
-            style="height: 45px"
-            @click="openQr(slotProps.data.qrCodeUrl)"
+        </div>
+      </template>
+      <template #body-success="{ data }">
+        <Tag
+          :value="
+            data.success
+              ? t('verifactu.integrationRequests.status.success')
+              : t('verifactu.integrationRequests.status.error')
+          "
+          :severity="data.success ? 'success' : 'danger'"
+        />
+      </template>
+      <template #body-response="{ data }">
+        <div class="flex items-center gap-2">
+          <span
+            class="font-mono text-sm truncate max-w-72"
+            :title="data.response"
+          >
+            {{ (data.response ?? "").substring(0, 60)
+            }}{{ (data.response?.length || 0) > 60 ? "..." : "" }}
+          </span>
+          <Button
+            icon="pi pi-copy"
+            size="small"
+            text
+            rounded
+            :aria-label="
+              $t(
+                'verifactu.invoiceIntegration.tableInvoiceRequests.actions.copy',
+              )
+            "
+            @click="copyToClipboard(data.response)"
           />
-          <span v-else>-</span>
-        </template>
-      </Column>
-
-      <Column
-        :header="$t('verifactu.integrationRequests.table.columns.actions')"
-        :style="{ width: '12rem' }"
-      >
-        <template #body="slotProps">
-          <div class="flex items-center gap-2">
-            <Button
-              icon="pi pi-eye"
-              size="small"
-              text
-              rounded
-              :aria-label="
-                $t('verifactu.integrationRequests.actions.viewDetail')
-              "
-              :title="$t('verifactu.integrationRequests.actions.viewDetail')"
-              @click="openDetail(slotProps.data)"
-            />
-            <Button
-              v-if="!slotProps.data.success"
-              icon="pi pi-refresh"
-              size="small"
-              text
-              rounded
-              severity="warn"
-              :loading="resendingId === slotProps.data.invoiceId"
-              :disabled="resendingId === slotProps.data.invoiceId"
-              :aria-label="$t('verifactu.integrationRequests.actions.resend')"
-              :title="$t('verifactu.integrationRequests.actions.resend')"
-              @click="confirmResend(slotProps.data)"
-            />
-          </div>
-        </template>
-      </Column>
-
+        </div>
+      </template>
+      <template #body-qrCode="{ data }">
+        <img
+          class="cursor-pointer"
+          v-if="data.qrCodeBase64"
+          :src="data.qrCodeBase64"
+          :alt="t('verifactu.integrationRequests.table.qrCodeAlt')"
+          style="height: 45px"
+          @click="openQr(data.qrCodeUrl)"
+        />
+        <span v-else>-</span>
+      </template>
+      <template #body-actions="{ data }">
+        <div class="flex items-center gap-2">
+          <Button
+            icon="pi pi-eye"
+            size="small"
+            text
+            rounded
+            :aria-label="$t('verifactu.integrationRequests.actions.viewDetail')"
+            :title="$t('verifactu.integrationRequests.actions.viewDetail')"
+            @click="openDetail(data)"
+          />
+          <Button
+            v-if="!data.success"
+            icon="pi pi-refresh"
+            size="small"
+            text
+            rounded
+            severity="warn"
+            :loading="resendingId === data.invoiceId"
+            :disabled="resendingId === data.invoiceId"
+            :aria-label="$t('verifactu.integrationRequests.actions.resend')"
+            :title="$t('verifactu.integrationRequests.actions.resend')"
+            @click="confirmResend(data)"
+          />
+        </div>
+      </template>
+      <template #card-actions="{ data }">
+        <Button
+          icon="pi pi-eye"
+          size="small"
+          text
+          rounded
+          :aria-label="$t('verifactu.integrationRequests.actions.viewDetail')"
+          :title="$t('verifactu.integrationRequests.actions.viewDetail')"
+          @click="openDetail(data)"
+        />
+        <Button
+          v-if="!data.success"
+          icon="pi pi-refresh"
+          size="small"
+          text
+          rounded
+          severity="warn"
+          :loading="resendingId === data.invoiceId"
+          :disabled="resendingId === data.invoiceId"
+          :aria-label="$t('verifactu.integrationRequests.actions.resend')"
+          :title="$t('verifactu.integrationRequests.actions.resend')"
+          @click="confirmResend(data)"
+        />
+      </template>
       <template #empty>
         <div class="text-center p-4">
           <i class="pi pi-inbox text-4xl text-gray-400 mb-3"></i>
@@ -209,14 +143,12 @@
           </p>
         </div>
       </template>
-    </DataTable>
+    </Table>
 
     <Dialog
       v-model:visible="detailDialogVisible"
       :modal="true"
-      :header="
-        $t('verifactu.integrationRequests.detailDialog.title')
-      "
+      :header="$t('verifactu.integrationRequests.detailDialog.title')"
       :style="{ width: '60vw' }"
       :maximizable="true"
       :draggable="false"
@@ -252,7 +184,11 @@
               $t("verifactu.integrationRequests.table.columns.success")
             }}</span>
             <Tag
-              :value="selectedRequest.success ? 'OK' : 'ERR'"
+              :value="
+                selectedRequest.success
+                  ? t('verifactu.integrationRequests.status.success')
+                  : t('verifactu.integrationRequests.status.error')
+              "
               :severity="selectedRequest.success ? 'success' : 'danger'"
             />
           </div>
@@ -306,7 +242,7 @@
       </div>
       <template #footer>
         <Button
-          :label="$t('common.close') || 'Tancar'"
+          :label="$t('common.close')"
           icon="pi pi-times"
           @click="detailDialogVisible = false"
         />
@@ -321,16 +257,21 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
-import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
-import TableFilter, {
+import {
   type FilterBodyWidth,
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
+import Table from "../../../components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { PrimeIcons } from "@primevue/core/api";
@@ -365,13 +306,72 @@ const filterBodyWidth: FilterBodyWidth = {
 };
 const filterConfig = computed<Array<FilterConfig>>(() => [
   {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("verifactu.integrationRequests.filters.periodPlaceholder"),
+    size: "lg",
+  },
+  {
     key: "searchQuery",
-    label: t("common.search") || "Cercar",
+    label: t("common.search"),
     type: "text",
     placeholder: `${t("common.search")} ...`,
     size: "lg",
   },
 ]);
+
+const columns = computed<Column[]>(() => [
+  {
+    field: "invoiceNumber",
+    header: t("verifactu.integrationRequests.table.columns.invoiceNumber"),
+    sortable: true,
+  },
+  {
+    field: "customerComercialName",
+    header: t("verifactu.integrationRequests.table.columns.customer"),
+    sortable: true,
+  },
+  {
+    field: "timestampResponse",
+    header: t("verifactu.integrationRequests.table.columns.date"),
+    columnType: ColumnType.Date,
+    sortable: true,
+  },
+  {
+    field: "request",
+    header: t("verifactu.integrationRequests.table.columns.request"),
+  },
+  {
+    field: "success",
+    header: t("verifactu.integrationRequests.table.columns.success"),
+  },
+  {
+    field: "status",
+    header: t("verifactu.integrationRequests.table.columns.statusCode"),
+  },
+  {
+    field: "response",
+    header: t("verifactu.integrationRequests.table.columns.response"),
+  },
+  {
+    field: "qrCode",
+    header: t("verifactu.integrationRequests.table.columns.qrCode"),
+  },
+  {
+    field: "actions",
+    header: t("verifactu.integrationRequests.table.columns.actions"),
+    style: "width: 12rem",
+  },
+]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  trailing: "timestampResponse",
+  subtitle: "customerComercialName",
+  badge: "success",
+  meta: ["status"],
+};
 
 // Each sales invoice can have multiple Verifactu requests -> flatten for the table
 const flattenedRequests = computed(() => {
@@ -413,7 +413,13 @@ const filteredRequests = computed(() => {
 
 const isRangeValid = () => {
   const dates = filters.value.dates;
-  return !!dates && dates.length === 2 && !!dates[0] && !!dates[1] && dates[0] <= dates[1];
+  return (
+    !!dates &&
+    dates.length === 2 &&
+    !!dates[0] &&
+    !!dates[1] &&
+    dates[0] <= dates[1]
+  );
 };
 
 const loadRequests = async () => {
@@ -491,9 +497,7 @@ const performResend = async (invoiceId: string) => {
       toast.add({
         severity: "success",
         summary: t("verifactu.integrationRequests.messages.resendSuccess"),
-        detail: t(
-          "verifactu.integrationRequests.messages.resendSuccessDetail",
-        ),
+        detail: t("verifactu.integrationRequests.messages.resendSuccessDetail"),
         life: 5000,
       });
       await loadRequests();
@@ -514,7 +518,8 @@ const performResend = async (invoiceId: string) => {
     toast.add({
       severity: "error",
       summary: t("common.error"),
-      detail: err?.message || t("verifactu.integrationRequests.messages.resendError"),
+      detail:
+        err?.message || t("verifactu.integrationRequests.messages.resendError"),
       life: 7000,
     });
   } finally {
@@ -565,7 +570,7 @@ const confirmResend = (row: any) => {
 }
 
 .verifactu-detail-label {
-  font-size: 0.75rem;
+  font-size: 0.8571rem;
   color: var(--p-text-muted-color);
 }
 

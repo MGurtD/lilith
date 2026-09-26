@@ -11,7 +11,7 @@
     <template #header>
       <header class="selector-filter">
         <div class="selector-filter-field">
-          <label for="">Buscar</label> &nbsp;
+          <label for="" class="mr-2">{{ t("purchase.receiptSelector.search") }}</label>
           <InputText
             style="width: 150px; height: 35px"
             v-model="selectedReceipt"
@@ -23,19 +23,20 @@
             @click="onSelectedClick"
             :size="'small'"
             :icon="PrimeIcons.CHECK_SQUARE"
+            :aria-label="t('purchase.receiptSelector.actions.select')"
           ></Button>
         </div>
       </header>
     </template>
 
     <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-    <Column header="Número" field="number" style="width: 30%"></Column>
+    <Column :header="t('purchase.receiptSelector.columns.number')" field="number" style="width: 30%"></Column>
     <Column
-      header="Número proveïdor"
+      :header="t('purchase.receiptSelector.columns.supplierNumber')"
       field="supplierNumber"
       style="width: 30%"
     ></Column>
-    <Column header="Data" field="date" style="width: 30%">
+    <Column :header="t('purchase.receiptSelector.columns.date')" field="date" style="width: 30%">
       <template #body="slotProps">
         {{ formatDate(slotProps.data.date) }}
       </template>
@@ -46,7 +47,10 @@
 import { computed, ref } from "vue";
 import { Receipt } from "../types";
 import { PrimeIcons } from "@primevue/core/api";
+import { useI18n } from "vue-i18n";
 import { formatDate } from "../../../utils/functions";
+
+const { t } = useI18n();
 
 const selectedReceipts = ref([] as Array<Receipt>);
 

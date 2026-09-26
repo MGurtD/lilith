@@ -1,149 +1,25 @@
-<template>
-  <form v-if="transport" @submit.prevent>
-    <section class="mt-2 mb-4">
-      <div class="flex align-items-center gap-2">
-        <Checkbox
-          v-model="isFinalCustomer"
-          :binary="true"
-          @change="onCustomerToggleChange"
-          inputId="isFinalCustomer"
-        />
-        <label for="isFinalCustomer" class="text-900 font-bold"
-          >Enviament a client final ({{ customerName }})</label
-        >
-      </div>
-    </section>
-
-    <!-- Logistics / Transport Selection -->
-    <section class="two-columns">
-      <div class="mb-2">
-        <label class="block text-900 mb-2"
-          >Proveïdor Logístic (Transportista)</label
-        >
-        <Select
-          v-model="localSupplierId"
-          :options="logisticSuppliers"
-          optionLabel="comercialName"
-          optionValue="id"
-          placeholder="Selecciona transportista"
-          class="w-full"
-          @change="onTransportSupplierChange"
-        />
-      </div>
-      <div class="mb-2">
-        <label class="block text-900 mb-2">Tarifa de Transport</label>
-        <Select
-          v-model="transport.transportRateDetailId"
-          :options="compatibleTransportRates"
-          optionLabel="label"
-          optionValue="id"
-          placeholder="Selecciona tarifa"
-          class="w-full"
-          :disabled="!localSupplierId"
-          @change="onRateChange"
-          :class="{ 'p-invalid': validation.errors.transportRateDetailId }"
-        />
-      </div>
-    </section>
-
-    <!-- Destination Selection -->
-    <section class="mt-3" v-if="!isFinalCustomer">
-      <div class="mb-2">
-        <label class="block text-900 mb-2"
-          >Proveïdor de Destinació (Serveis externs, magatzem...)</label
-        >
-        <Select
-          v-model="destinationSupplierId"
-          :options="allSuppliers"
-          optionLabel="comercialName"
-          optionValue="id"
-          placeholder="Selecciona proveïdor de destinació"
-          class="w-full"
-          @change="onDestinationSupplierChange"
-        />
-      </div>
-    </section>
-
-    <section class="four-columns mt-3">
-      <div>
-        <BaseInput
-          class="mb-2"
-          label="Pes (kg)"
-          v-model="header.totalWeight"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.weight }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          disabled
-          class="mb-2"
-          label="Volum (m³)"
-          v-model="transport.volume"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.volume }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          disabled
-          class="mb-2"
-          label="Distància (km)"
-          :modelValue="distance"
-          :type="BaseInputType.NUMERIC"
-          :decimals="2"
-          :class="{ 'p-invalid': validation.errors.distance }"
-        ></BaseInput>
-      </div>
-      <div>
-        <BaseInput
-          class="mb-2"
-          label="Preu"
-          v-model="transport.price"
-          :type="BaseInputType.CURRENCY"
-          :class="{ 'p-invalid': validation.errors.price }"
-        ></BaseInput>
-      </div>
-    </section>
-
-    <section class="mt-3">
-      <div class="mb-2">
-        <label class="block text-900 mb-2">Descripció</label>
-        <BaseInput
-          class="w-full"
-          v-model="transport.description"
-          :type="BaseInputType.TEXT"
-        ></BaseInput>
-      </div>
-    </section>
-
-    <Button
-      :disabled="readonly"
-      :label="textActionButton"
-      @click="submitForm"
-      style="float: right"
-      class="mt-4"
-    />
-  </form>
-</template>
-
 <script setup lang="ts">
-import { computed, ref, toRefs, onMounted } from "vue";
-import { SalesOrderHeader, SalesOrderTransport } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import { BaseInputType, FormActionMode } from "../../../types/component";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted, onUnmounted, shallowRef, useId, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import { FormActionMode } from "../../../types/component";
 import { useSuppliersStore } from "../../purchase/store/suppliers";
 import { useTransportRateStore } from "../../purchase/store/transportRate";
 import { useCustomersStore } from "../store/customers";
+import type { SalesOrderHeader, SalesOrderTransport } from "../types";
 
-const toast = useToast();
 const props = defineProps<{
   formAction: FormActionMode;
   header: SalesOrderHeader;
@@ -153,122 +29,124 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", transport: SalesOrderTransport): void;
+  (event: "submit", transport: SalesOrderTransport): void;
+  (event: "cancel"): void;
 }>();
 
-const { transport } = toRefs(props);
+interface TransportRateOption {
+  id: string;
+  label: string;
+  price: number;
+}
+
+const { t } = useI18n();
 const supplierStore = useSuppliersStore();
 const transportRateStore = useTransportRateStore();
 const customerStore = useCustomersStore();
+const form = shallowRef<{
+  setValues: (values: FormValues) => void;
+} | null>(null);
+const destinationInputId = `sales-order-transport-destination-${useId()}`;
+let suppressChanges = false;
+let initializeSequence = 0;
 
-const localSupplierId = ref<string | null>(null);
-const destinationSupplierId = ref<string | null>(null);
-const isFinalCustomer = ref(true);
-
-const textActionButton = computed(() => {
-  return props.formAction === FormActionMode.CREATE ? "Afegir" : "Modificar";
+// Form-only values: the final-customer toggle, the logistic and destination
+// suppliers and the order weight used to filter rates are not part of the
+// transport; `destination` and `distance` are hidden values set from them.
+const createInitialValues = (transport: SalesOrderTransport): FormValues => ({
+  ...transport,
+  totalWeight: props.header.totalWeight,
+  isFinalCustomer: true,
+  logisticSupplierId: null,
+  destinationSupplierId: null,
 });
 
-const allSuppliers = computed(() => {
-  return supplierStore.suppliers || [];
-});
+const initialValues = shallowRef<FormValues>(
+  createInitialValues(props.transport),
+);
+// Latest values the rate options and the displayed distance depend on.
+const currentValues = shallowRef<FormValues>({ ...initialValues.value });
 
-const logisticSuppliers = computed(() => {
-  return supplierStore.logisticSuppliers || [];
-});
+const numberProps = { locale: "en-US", minFractionDigits: 2 } as const;
 
-const customerName = computed(() => {
-  const cust = customerStore.customers?.find(
-    (c) => c.id === props.header.customerId,
-  );
-  return cust ? cust.comercialName : "Client";
-});
+const listCustomer = () =>
+  customerStore.customers?.find((item) => item.id === props.header.customerId);
 
-const distance = computed(() => {
-  if (isFinalCustomer.value) {
-    // Usem el customer carregat individualment (té les adreces incloses)
-    const cust =
-      customerStore.customer?.id === props.header.customerId
-        ? customerStore.customer
-        : customerStore.customers?.find(
-            (c) => c.id === props.header.customerId,
-          );
-    if (cust) {
-      return cust.address?.find((a) => a.main)?.distanceFromSite ?? 0;
-    }
+const customerName = computed(
+  () => listCustomer()?.comercialName ?? t("sales.components.client"),
+);
+
+// The customer loaded individually carries its addresses; the customer list
+// does not, so its distance would always be 0. Undefined when the final
+// customer is not available.
+const finalCustomerDistance = (): number | undefined => {
+  const customer =
+    customerStore.customer?.id === props.header.customerId
+      ? customerStore.customer
+      : listCustomer();
+  if (!customer) return undefined;
+  return customer.address?.find((item) => item.main)?.distanceFromSite || 0;
+};
+
+// Distance shown to the user, used to filter rates and saved.
+const displayDistance = (values: Readonly<FormValues>): number => {
+  if (booleanValue(values.isFinalCustomer, true)) {
+    const distance = finalCustomerDistance();
+    if (distance !== undefined) return distance;
   } else {
-    const destSup = supplierStore.suppliers?.find(
-      (s) => s.id === destinationSupplierId.value,
+    const supplier = supplierStore.suppliers?.find(
+      (item) =>
+        item.id === nullableStringValue(values.destinationSupplierId, null),
     );
-    if (destSup) {
-      return destSup.distanceFromSite ?? 0;
-    }
+    if (supplier) return supplier.distanceFromSite ?? 0;
   }
   return 0;
-});
+};
 
-const compatibleTransportRates = computed(() => {
+const compatibleTransportRates = (
+  values: Readonly<FormValues>,
+): TransportRateOption[] => {
   if (!transportRateStore.transportRates) return [];
   const now = new Date();
 
-  const validRates = transportRateStore.transportRates.filter((r) => {
-    if (r.disabled) return false;
-    const from = new Date(r.validFrom);
-    const to = new Date(r.validTo);
+  const validRates = transportRateStore.transportRates.filter((rate) => {
+    if (rate.disabled) return false;
+    const from = new Date(rate.validFrom);
+    const to = new Date(rate.validTo);
     return now >= from && now <= to;
   });
 
-  const weight = props.header.totalWeight || 0;
-  const volume = props.transport.volume || 0;
-  const dist = distance.value || 0;
+  const weight = finiteNumberValue(values.totalWeight, 0);
+  const volume = finiteNumberValue(values.volume, 0);
+  const distance = displayDistance(values);
 
-  let compatibleDetails: any[] = [];
+  const compatibleDetails = validRates.flatMap((rate) =>
+    (rate.details ?? [])
+      .filter((detail) => {
+        const weightOk =
+          weight === 0 ||
+          (detail.minWeight <= weight &&
+            (detail.maxWeight === 0 || detail.maxWeight >= weight));
+        const volumeOk =
+          volume === 0 ||
+          (detail.minVolume <= volume &&
+            (detail.maxVolume === 0 || detail.maxVolume >= volume));
+        const distanceOk =
+          distance === 0 ||
+          (detail.minDistance <= distance &&
+            (detail.maxDistance === 0 || detail.maxDistance >= distance));
+        return weightOk && volumeOk && distanceOk;
+      })
+      .map((detail) => ({ rate, detail })),
+  );
 
-  validRates.forEach((rate) => {
-    if (!rate.details || rate.details.length === 0) return;
+  compatibleDetails.sort((a, b) => a.detail.price - b.detail.price);
 
-    rate.details.forEach((detail) => {
-      const weightOk =
-        weight === 0 ||
-        (detail.minWeight <= weight &&
-          (detail.maxWeight === 0 || detail.maxWeight >= weight));
-      const volumeOk =
-        volume === 0 ||
-        (detail.minVolume <= volume &&
-          (detail.maxVolume === 0 || detail.maxVolume >= volume));
-      const distOk =
-        dist === 0 ||
-        (detail.minDistance <= dist &&
-          (detail.maxDistance === 0 || detail.maxDistance >= dist));
+  return compatibleDetails.map(({ rate, detail }, index) => {
+    let label = `${rate.name}`;
+    if (rate.description) label += ` (${rate.description})`;
 
-      if (weightOk && volumeOk && distOk) {
-        compatibleDetails.push({
-          id: detail.id,
-          rateName: rate.name,
-          rateDescription: rate.description,
-          price: detail.price,
-          minWeight: detail.minWeight,
-          maxWeight: detail.maxWeight,
-          minVolume: detail.minVolume,
-          maxVolume: detail.maxVolume,
-          minDistance: detail.minDistance,
-          maxDistance: detail.maxDistance,
-        });
-      }
-    });
-  });
-
-  // Ordenar per preu (ascendent)
-  compatibleDetails.sort((a, b) => a.price - b.price);
-
-  // Formatejar el label
-  return compatibleDetails.map((detail, index) => {
-    const isCheapest = index === 0;
-    let label = `${detail.rateName}`;
-    if (detail.rateDescription) label += ` (${detail.rateDescription})`;
-
-    // Limits
-    const limits = [];
+    const limits: string[] = [];
     if (detail.maxWeight > 0)
       limits.push(`${detail.minWeight}-${detail.maxWeight} kg`);
     if (detail.maxDistance > 0)
@@ -278,138 +156,336 @@ const compatibleTransportRates = computed(() => {
 
     if (limits.length > 0) label += ` | ${limits.join(", ")}`;
     label += ` — ${detail.price} €`;
-    if (isCheapest) label += " ⭐️ (Millor preu)";
+    if (index === 0) label += ` ⭐️ (${t("sales.customers.bestPrice")})`;
 
-    return {
-      id: detail.id,
-      label: label,
-      price: detail.price,
-    };
+    return { id: detail.id, label, price: detail.price };
   });
-});
-
-onMounted(async () => {
-  await supplierStore.fetchLogisticSuppliers();
-  await supplierStore.fetchSuppliers();
-
-  // Carreguem el client concret per tenir les adreces amb distanceFromSite
-  // (fetchCustomers no inclou adreces al GetAll del backend)
-  if (props.header.customerId) {
-    await customerStore.fetchCustomer(props.header.customerId);
-  }
-
-  if (
-    props.formAction === FormActionMode.CREATE &&
-    !transport.value.destination
-  ) {
-    onCustomerToggleChange();
-  } else {
-    const cust = customerStore.customers?.find(
-      (c) => c.id === props.header.customerId,
-    );
-    if (cust && transport.value.destination === cust.comercialName) {
-      isFinalCustomer.value = true;
-    } else {
-      isFinalCustomer.value = false;
-      const destSup = supplierStore.suppliers?.find(
-        (s) => s.comercialName === transport.value.destination,
-      );
-      if (destSup) {
-        destinationSupplierId.value = destSup.id;
-      }
-    }
-  }
-});
-
-const onCustomerToggleChange = () => {
-  if (isFinalCustomer.value) {
-    const cust = customerStore.customers?.find(
-      (c) => c.id === props.header.customerId,
-    );
-    if (cust) {
-      transport.value.destination = cust.comercialName;
-      const mainAddr = cust.address?.find((a) => a.main);
-      transport.value.distance = mainAddr?.distanceFromSite || 0;
-    }
-    destinationSupplierId.value = null;
-  } else {
-    if (destinationSupplierId.value) {
-      onDestinationSupplierChange();
-    } else {
-      transport.value.destination = "";
-      transport.value.distance = 0;
-    }
-  }
 };
 
-const onTransportSupplierChange = async () => {
-  transport.value.transportRateDetailId = "";
-  if (localSupplierId.value) {
-    await transportRateStore.fetchTransportRatesBySupplierId(
-      localSupplierId.value,
-    );
+const rateOptions = computed(() =>
+  compatibleTransportRates(currentValues.value),
+);
+
+const trackValues = (values: Readonly<FormValues>): void => {
+  currentValues.value = { ...values };
+};
+
+// Programmatic updates must not re-enter the change handlers.
+const applyValues = (values: FormValues): void => {
+  suppressChanges = true;
+  try {
+    form.value?.setValues(values);
+  } finally {
+    suppressChanges = false;
+  }
+  currentValues.value = { ...currentValues.value, ...values };
+};
+
+const destinationValues = (supplierId: string | null): FormValues => {
+  const supplier = supplierStore.suppliers?.find(
+    (item) => item.id === supplierId,
+  );
+  return supplier
+    ? {
+        destination: supplier.comercialName,
+        distance: supplier.distanceFromSite || 0,
+      }
+    : { destination: "", distance: 0 };
+};
+
+const finalCustomerValues = (values: Readonly<FormValues>): FormValues => {
+  if (booleanValue(values.isFinalCustomer, true)) {
+    const customer = listCustomer();
+    return {
+      ...(customer
+        ? {
+            destination: customer.comercialName,
+            distance: finalCustomerDistance() ?? 0,
+          }
+        : {}),
+      destinationSupplierId: null,
+    };
+  }
+  const destinationSupplierId = nullableStringValue(
+    values.destinationSupplierId,
+    null,
+  );
+  return destinationSupplierId
+    ? destinationValues(destinationSupplierId)
+    : { destination: "", distance: 0 };
+};
+
+const onFinalCustomerChange = (
+  _value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  if (suppressChanges) return;
+  trackValues(values);
+  applyValues(finalCustomerValues(values));
+};
+
+const onDestinationSupplierChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  if (suppressChanges) return;
+  trackValues(values);
+  applyValues(destinationValues(nullableStringValue(value, null)));
+};
+
+const onLogisticSupplierChange = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  if (suppressChanges) return;
+  trackValues(values);
+  applyValues({ transportRateDetailId: "" });
+
+  const supplierId = nullableStringValue(value, null);
+  if (supplierId) {
+    void transportRateStore.fetchTransportRatesBySupplierId(supplierId);
   } else {
     transportRateStore.transportRates = [];
   }
 };
 
-const onRateChange = () => {
-  const selectedRate = compatibleTransportRates.value.find(
-    (r) => r.id === transport.value.transportRateDetailId,
+const onRateChange = (value: unknown, values: Readonly<FormValues>): void => {
+  if (suppressChanges) return;
+  trackValues(values);
+  const rate = compatibleTransportRates(values).find(
+    (item) => item.id === nullableStringValue(value, null),
   );
-  if (selectedRate) {
-    transport.value.price = selectedRate.price;
-  }
+  if (rate) applyValues({ price: rate.price });
 };
 
-const onDestinationSupplierChange = () => {
-  const sup = supplierStore.suppliers?.find(
-    (s) => s.id === destinationSupplierId.value,
-  );
-  if (sup) {
-    transport.value.destination = sup.comercialName;
-    transport.value.distance = sup.distanceFromSite || 0;
-  } else {
-    transport.value.destination = "";
-    transport.value.distance = 0;
-  }
+const onWeightChange = (_value: unknown, values: Readonly<FormValues>): void => {
+  trackValues(values);
 };
 
-const schema = Yup.object().shape({
-  transportRateDetailId: Yup.string().required("La tarifa és obligatòria"),
-  weight: Yup.number().min(0, "El pes no pot ser negatiu"),
-  volume: Yup.number().min(0, "El volum no pot ser negatiu"),
-  distance: Yup.number().min(0, "La distància no pot ser negativa"),
-  price: Yup.number()
-    .min(0, "El preu no pot ser negatiu")
-    .required("El preu és obligatori"),
+const initialize = async (transport: SalesOrderTransport): Promise<void> => {
+  const sequence = ++initializeSequence;
+  await supplierStore.fetchLogisticSuppliers();
+  await supplierStore.fetchSuppliers();
+
+  // The customer loaded individually has its addresses with distanceFromSite
+  // (the customer list does not include them).
+  if (props.header.customerId) {
+    await customerStore.fetchCustomer(props.header.customerId);
+  }
+  if (sequence !== initializeSequence) return;
+
+  if (props.formAction === FormActionMode.CREATE && !transport.destination) {
+    applyValues(finalCustomerValues(currentValues.value));
+    return;
+  }
+
+  const customer = listCustomer();
+  if (customer && transport.destination === customer.comercialName) {
+    applyValues({ isFinalCustomer: true });
+    return;
+  }
+
+  const destinationSupplier = supplierStore.suppliers?.find(
+    (item) => item.comercialName === transport.destination,
+  );
+  applyValues({
+    isFinalCustomer: false,
+    ...(destinationSupplier
+      ? { destinationSupplierId: destinationSupplier.id }
+      : {}),
+  });
+};
+
+watch(
+  () => props.transport,
+  (transport) => {
+    initialValues.value = createInitialValues(transport);
+    currentValues.value = { ...initialValues.value };
+    void initialize(transport);
+  },
+);
+
+onMounted(() => {
+  void initialize(props.transport);
 });
 
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
+onUnmounted(() => {
+  initializeSequence += 1;
+});
 
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.transport);
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    fields: [
+      {
+        name: "isFinalCustomer",
+        label: t("sales.customers.shipToFinalCustomer", { customer: customerName.value }),
+        type: FormFieldType.Checkbox,
+        onChange: onFinalCustomerChange,
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 2 },
+    fields: [
+      {
+        name: "logisticSupplierId",
+        label: t("sales.components.proveidorLogisticTransportista"),
+        type: FormFieldType.Select,
+        props: {
+          options: supplierStore.logisticSuppliers ?? [],
+          optionLabel: "comercialName",
+          optionValue: "id",
+          placeholder: t("sales.components.seleccionaTransportista"),
+        },
+        onChange: onLogisticSupplierChange,
+      },
+      {
+        name: "transportRateDetailId",
+        label: t("sales.components.tarifaDeTransport"),
+        type: FormFieldType.Select,
+        props: {
+          options: rateOptions.value,
+          optionLabel: "label",
+          optionValue: "id",
+          placeholder: t("sales.components.seleccionaTarifa"),
+        },
+        disabled: (values) => !values.logisticSupplierId,
+        onChange: onRateChange,
+        validation: Yup.string().required(
+          t("sales.validation.transportRateRequired"),
+        ),
+      },
+    ],
+  },
+  {
+    // Shown only when the transport does not go to the final customer; the
+    // hidden destination name is registered with it.
+    section: "destination",
+    fields: [
+      {
+        name: "destinationSupplierId",
+        label: "",
+        type: FormFieldType.Custom,
+        onChange: onDestinationSupplierChange,
+      },
+      { name: "destination", label: "", type: FormFieldType.Custom },
+    ],
+  },
+  {
+    columns: { mobile: 1, tablet: 2, desktop: 4 },
+    fields: [
+      {
+        name: "totalWeight",
+        label: t("sales.components.pesKg"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        onChange: onWeightChange,
+      },
+      {
+        name: "volume",
+        label: t("sales.components.volumM"),
+        type: FormFieldType.Number,
+        props: numberProps,
+        disabled: true,
+        validation: Yup.number().min(0, t("sales.validation.volumeNotNegative")),
+      },
+      {
+        name: "distance",
+        label: t("sales.components.distanciaKm"),
+        type: FormFieldType.Custom,
+        disabled: true,
+        validation: Yup.number().min(0, t("sales.validation.distanceNotNegative")),
+      },
+      {
+        name: "price",
+        label: t("sales.components.preu"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 2, suffix: " €" },
+        validation: Yup.number()
+          .min(0, t("sales.validation.priceNotNegative"))
+          .required(t("sales.validation.priceRequired")),
+      },
+    ],
+  },
+  {
+    fields: [
+      {
+        name: "description",
+        label: t("sales.components.descripcio"),
+        type: FormFieldType.Text,
+      },
+    ],
+  },
+]);
+
+// Saves the distance shown in the dialog. For the final customer it comes from
+// the loaded customer (also when editing without changing the destination);
+// a destination supplier keeps the hidden value set by its selection.
+const submittedDistance = (values: Readonly<FormValues>): number => {
+  const hiddenDistance = finiteNumberValue(
+    values.distance,
+    props.transport.distance,
+  );
+  if (!booleanValue(values.isFinalCustomer, true)) return hiddenDistance;
+  return finalCustomerDistance() ?? hiddenDistance;
 };
 
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    emit("submit", props.transport);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
-    });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari invàlid",
-      detail: errors,
-      life: 5000,
-    });
-  }
+const submit = (values: FormValues): void => {
+  emit("submit", {
+    ...props.transport,
+    transportRateDetailId: stringValue(
+      values.transportRateDetailId,
+      props.transport.transportRateDetailId,
+    ),
+    volume: finiteNumberValue(values.volume, props.transport.volume),
+    distance: submittedDistance(values),
+    price: finiteNumberValue(values.price, props.transport.price),
+    description: stringValue(values.description, props.transport.description),
+    destination: stringValue(values.destination, props.transport.destination),
+  });
 };
 </script>
+
+<template>
+  <Form
+    ref="form"
+    class="mt-2"
+    :rows="rows"
+    :initial-values="initialValues"
+    :disabled="readonly"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #section-destination="{ values, setFieldValue, disabled }">
+      <div v-if="values.isFinalCustomer !== true">
+        <label class="block text-900 mb-2" :for="destinationInputId">
+          {{ t("sales.components.proveidorDeDestinacioServeisExternsMagatzem") }}
+        </label>
+        <Select
+          :input-id="destinationInputId"
+          :model-value="nullableStringValue(values.destinationSupplierId, null)"
+          :options="supplierStore.suppliers ?? []"
+          option-label="comercialName"
+          option-value="id"
+          :placeholder="t('sales.components.seleccionaProveidorDeDestinacio')"
+          class="w-full"
+          :disabled="disabled"
+          @update:model-value="setFieldValue('destinationSupplierId', $event)"
+        />
+      </div>
+    </template>
+
+    <!-- Shows the distance used to filter rates, which is also the one saved
+         (see submittedDistance). -->
+    <template #field-distance="{ inputId }">
+      <InputNumber
+        :input-id="inputId"
+        :model-value="displayDistance(currentValues)"
+        locale="en-US"
+        :min-fraction-digits="2"
+        class="w-full"
+        disabled
+      />
+    </template>
+  </Form>
+</template>

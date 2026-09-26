@@ -4,25 +4,25 @@
     :multiSortMeta="sortingFields"
     :value="processedPhases"
   >
-    <Column field="code" sortable header="Fase"></Column>
-    <Column field="order" sortable header="Pas"></Column>
-    <Column field="workcenterTypeId" header="Màquina">
+    <Column field="code" sortable :header="t('sales.components.fase')"></Column>
+    <Column field="order" sortable :header="t('sales.components.pas')"></Column>
+    <Column field="workcenterTypeId" :header="t('sales.components.maquina')">
       <template #body="slotProps">
         {{ getWorkcenterType(slotProps.data.workcenterTypeId) }}
       </template>
     </Column>
-    <Column field="machineStatusId" header="Estat">
+    <Column field="machineStatusId" :header="t('sales.components.estat')">
       <template #body="slotProps">
         {{ getStatusName(slotProps.data.machineStatusId) }}
       </template>
     </Column>
-    <Column field="estimatedTime" header="Temps total"> </Column>
-    <Column field="isCycleTime" header="Temps de cicle">
+    <Column field="estimatedTime" :header="t('sales.components.tempsTotal')"> </Column>
+    <Column field="isCycleTime" :header="t('sales.components.tempsDeCicle')">
       <template #body="slotProps">
         <BooleanColumn :value="slotProps.data.isCycleTime" />
       </template>
     </Column>
-    <Column header="% de benefici">
+    <Column :header="t('sales.components.deBenefici')">
       <template #body="slotProps">
         <BaseInput
           :type="BaseInputType.NUMERIC"
@@ -40,7 +40,7 @@
       <div
         class="flex flex-wrap align-items-center justify-content-between gap-2"
       >
-        <span class="text-l text-900">Temps total operatiu </span>
+        <span class="text-l text-900">{{ t("sales.componentMessages.totalOperatingTime") }}</span>
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :minFractionDigits="0"
@@ -50,7 +50,7 @@
           disabled
         >
         </BaseInput>
-        <span class="text-l text-900 font-bold">Benefici ponderat </span>
+        <span class="text-l text-900 font-bold">{{ t("sales.componentMessages.weightedProfit") }}</span>
         <BaseInput
           :type="BaseInputType.NUMERIC"
           :minFractionDigits="2"
@@ -59,13 +59,14 @@
           suffix="%"
           readonly
         />
-        <Button @click="emitProfitAverage" icon="pi pi-copy" label="Aplicar" />
+        <Button @click="emitProfitAverage" icon="pi pi-copy" :label="t('sales.components.aplicar')" />
       </div>
     </template>
   </DataTable>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { ref, watchEffect, computed, onMounted, reactive, watch } from "vue";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import {
@@ -78,6 +79,8 @@ import { BaseInputType } from "../../../types/component";
 import { usePlantModelStore } from "../../production/store/plantmodel";
 import { DataTableSortMeta } from "primevue/datatable";
 import BooleanColumn from "../../../components/tables/BooleanColumn.vue";
+import { DetailPhaseProfit } from "../types";
+import { getNewUuid } from "../../../utils/functions";
 
 interface ProcessedPhase {
   id: string;
@@ -90,9 +93,11 @@ interface ProcessedPhase {
   profitPercentage: number;
 }
 
+const { t } = useI18n();
 const props = defineProps<{
   workMasterId: string | null;
   quantity: number;
+  phaseProfits: DetailPhaseProfit[];
 }>();
 
 const sortingFields = ref([
@@ -113,7 +118,7 @@ const profitAverage = ref(0);
 
 const stepProfitPercentages = reactive<{ [key: string]: number }>({});
 
-const emit = defineEmits(["updateProfitAverage"]);
+const emit = defineEmits(["updateProfitAverage", "update:phaseProfits"]);
 
 const processPhases = (
   phases: WorkMasterPhase[],
@@ -121,10 +126,14 @@ const processPhases = (
 ): ProcessedPhase[] => {
   return phases.flatMap((phase) =>
     phase.details!.map((detail) => {
-      const key = `${phase.code}-${detail.order}-${phase.workcenterTypeId}`;
-      // Inicializar profitPercentage a nivel de paso si no está definido
+      // Persist per-step profit keyed by the stable WorkMasterPhaseDetail id.
+      const key = detail.id;
       if (!(key in stepProfitPercentages)) {
-        stepProfitPercentages[key] = phase.profitPercentage ?? 0;
+        const persisted = props.phaseProfits?.find(
+          (p) => p.workMasterPhaseDetailId === key
+        );
+        stepProfitPercentages[key] =
+          persisted?.profitPercentage ?? phase.profitPercentage ?? 0;
       }
       return {
         id: detail.id,
@@ -160,6 +169,51 @@ const totalTime = computed(() => {
   }, 0);
 });
 
+// NOTE: createUniqueKey and calculateWeightedProfit must be declared here,
+// BEFORE the watchEffect below. watchEffect runs its callback synchronously
+// during setup when the sync (no-await) branch executes (workMasterId is
+// null), so calling a `const` function declared later in the file would hit
+// the temporal dead zone (ReferenceError: Cannot access '...' before
+// initialization). onMounted/watch callbacks are deferred, so they are safe
+// regardless of declaration order, but watchEffect is not.
+const createUniqueKey = (phase: ProcessedPhase) => {
+  return phase.id;
+};
+
+const calculateWeightedProfit = () => {
+  let totalTime = 0;
+  let weightedSum = 0;
+
+  processedPhases.value.forEach((phase) => {
+    const key = createUniqueKey(phase);
+    const profit = stepProfitPercentages[key];
+    const time = tableEstimatedTimes[key] ?? phase.estimatedTime;
+
+    totalTime += time;
+    weightedSum += time * profit;
+  });
+
+  profitAverage.value =
+    !isNaN(totalTime) && totalTime > 0 && !isNaN(weightedSum)
+      ? Number((weightedSum / totalTime).toFixed(2))
+      : 0;
+};
+
+// Rebuild the persisted per-step profit list from current steps and notify the parent.
+const syncPhaseProfits = () => {
+  const profits: DetailPhaseProfit[] = processedPhases.value.map((phase) => {
+    const existing = props.phaseProfits?.find(
+      (p) => p.workMasterPhaseDetailId === phase.id
+    );
+    return {
+      id: existing?.id ?? getNewUuid(),
+      workMasterPhaseDetailId: phase.id,
+      profitPercentage: stepProfitPercentages[phase.id] ?? 0,
+    };
+  });
+  emit("update:phaseProfits", profits);
+};
+
 onMounted(async () => {
   await plantModelStore.fetchWorkcenterTypes();
   await plantModelStore.fetchMachineStatuses();
@@ -189,9 +243,16 @@ watchEffect(async () => {
   calculateWeightedProfit();
 });
 
-const createUniqueKey = (phase: ProcessedPhase) => {
-  return `${phase.code}-${phase.order}-${phase.workcenterTypeId}`;
-};
+watch(
+  () => props.workMasterId,
+  () => {
+    // A different route invalidates any per-step profits kept for the previous one.
+    Object.keys(stepProfitPercentages).forEach(
+      (k) => delete stepProfitPercentages[k]
+    );
+    emit("update:phaseProfits", []);
+  }
+);
 
 const getWorkcenterType = (workcenterTypeId: string | undefined) => {
   const workcenterType = workcenterTypes.value?.find(
@@ -218,30 +279,12 @@ const updateProfitPercentage = (phase: ProcessedPhase, value: number) => {
     phase.profitPercentage = value;
     tableProfitPercentages[key] = value;
     calculateWeightedProfit();
+    syncPhaseProfits();
   } else {
     console.error(
       "Attempted to set a non-number value for profit percentage:",
       value
     );
   }
-};
-
-const calculateWeightedProfit = () => {
-  let totalTime = 0;
-  let weightedSum = 0;
-
-  processedPhases.value.forEach((phase) => {
-    const key = createUniqueKey(phase);
-    const profit = stepProfitPercentages[key];
-    const time = tableEstimatedTimes[key] ?? phase.estimatedTime;
-
-    totalTime += time;
-    weightedSum += time * profit;
-  });
-
-  profitAverage.value =
-    !isNaN(totalTime) && totalTime > 0 && !isNaN(weightedSum)
-      ? Number((weightedSum / totalTime).toFixed(2))
-      : 0;
 };
 </script>

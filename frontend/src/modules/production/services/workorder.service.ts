@@ -12,6 +12,7 @@ import {
   PhaseTimeMetrics,
   CreatePhaseFromTemplateDto,
   WorkOrderDashboardItem,
+  WorkOrderPhaseRejection,
 } from "../types";
 import BaseService from "../../../api/base.service";
 import { NextPhaseInfo } from "../../plant/types";
@@ -25,11 +26,13 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     }
   }
 
-  async GetReportDataById(id: string) {
+  async GetReportDataById(
+    id: string,
+  ): Promise<Record<string, unknown> | undefined> {
     const endpoint = `${this.resource}/Report/${id}`;
     const response = await this.apiClient.get(endpoint);
     if (response.status === 200) {
-      return response.data;
+      return response.data as Record<string, unknown>;
     }
   }
 
@@ -91,8 +94,26 @@ export class WorkOrderService extends BaseService<WorkOrder> {
     );
     return response.data as GenericResponse<boolean>;
   }
+
+  async DownloadPdf(id: string): Promise<Blob | undefined> {
+    const response = await this.apiClient.get(`${this.resource}/Report/${id}/pdf`, {
+      responseType: "blob",
+    });
+    return response.status === 200 ? (response.data as Blob) : undefined;
+  }
 }
 export class WorkOrderPhaseService extends BaseService<WorkOrderPhase> {
+  async getRejections(
+    phaseId: string,
+  ): Promise<Array<WorkOrderPhaseRejection> | undefined> {
+    const response = await this.apiClient.get(
+      `${this.resource}/${phaseId}/Rejections`,
+    );
+    if (response.status === 200) {
+      return response.data as Array<WorkOrderPhaseRejection>;
+    }
+  }
+
   async getByWorkOrderId(
     workOrderId: string,
   ): Promise<Array<WorkOrderPhase> | undefined> {

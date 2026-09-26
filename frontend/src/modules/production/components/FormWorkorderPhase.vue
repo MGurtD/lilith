@@ -1,269 +1,395 @@
-<template>
-  <form v-if="phase">
-    <div>
-      <Button
-        label="Guardar Fase"
-        class="grid_add_row_button"
-        size="small"
-        @click="submitForm"
-      />
-      <br />
-    </div>
-    <section class="three-columns mb-2">
-      <div>
-        <BaseInput label="Codi de la fase" v-model="phase.code" />
-      </div>
-      <div>
-        <BaseInput label="Descripció" v-model="phase.description" />
-      </div>
-      <div>
-        <DropdownLifecycleStatusTransitions
-          ref="statusTransitionsDropdown"
-          label="Estat"
-          :statusId="phase.statusId"
-          v-model="phase.statusId"
-          :class="{
-            'p-invalid': validation.errors.statusId,
-          }"
-        />
-      </div>
-    </section>
-    <section class="four-columns mb-2">
-      <div>
-        <label class="block text-900 mb-2">Tipus de màquina</label>
-        <Select
-          v-model="phase.workcenterTypeId"
-          :options="plantModelStore.workcenterTypes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.workcenterTypeId,
-          }"
-          @change="workcenterTypeUpdated"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Màquina preferida</label>
-        <Select
-          v-model="phase.preferredWorkcenterId"
-          :options="preferredWorkcenters"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          @change="workcenterUpdated"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.NUMERIC"
-          :minFractionDigits="2"
-          class="mb-2"
-          label="Marge de benefici"
-          id="profitPercentage"
-          v-model="phase.profitPercentage"
-          suffix="%"
-          @change="workcenterUpdated"
-        ></BaseInput>
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Tipus d'operari</label>
-        <Select
-          v-model="phase.operatorTypeId"
-          :options="plantModelStore.operatorTypes"
-          optionValue="id"
-          optionLabel="description"
-          class="w-full"
-          :class="{
-            'p-invalid': validation.errors.operatorTypeId,
-          }"
-        />
-      </div>
-    </section>
-    <section class="four-columns mb-2">
-      <div>
-        <label class="block text-900 mt-1 mb-1">Externa</label>
-        <Checkbox
-          v-model="phase.isExternalWork"
-          class="w-full"
-          :binary="true"
-          @change="isExternalWorkChanged"
-        />
-      </div>
-      <div>
-        <label class="block text-900 mb-2">Servei</label>
-        <Select
-          v-model="phase.serviceReferenceId"
-          :options="serviceReferences"
-          optionValue="id"
-          :optionLabel="(r) => r.code + ' - ' + r.description"
-          :disabled="!phase.isExternalWork"
-          class="w-full"
-          @change="onServiceReferenceChanged"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          label="Cost servei"
-          v-model="phase.externalWorkCost"
-          :disabled="!phase.isExternalWork"
-          :class="{
-            'p-invalid': validation.errors.externalWorkCost,
-          }"
-        />
-      </div>
-      <div>
-        <BaseInput
-          :type="BaseInputType.CURRENCY"
-          label="Cost transport"
-          v-model="phase.transportCost"
-          :disabled="!phase.isExternalWork"
-          :class="{
-            'p-invalid': validation.errors.externalWorkCost,
-          }"
-        />
-      </div>
-    </section>
-  </form>
-</template>
-
 <script setup lang="ts">
-import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
-import { computed, onMounted, ref } from "vue";
-import { WorkOrder, WorkOrderPhase } from "../types";
-import * as Yup from "yup";
+import Form from "@/components/forms/Form.vue";
 import {
-  FormValidation,
-  FormValidationResult,
-} from "../../../utils/form-validator";
-import { useToast } from "primevue/usetoast";
-import BaseInput from "../../../components/BaseInput.vue";
-import { BaseInputType } from "../../../types/component";
-import { usePlantModelStore } from "../store/plantmodel";
-import { Reference, ReferenceCategoryEnum } from "../../shared/types";
+  FormFieldType,
+  type FormRowConfig,
+  type FormValues,
+} from "@/components/forms/types";
+import {
+  booleanValue,
+  finiteNumberValue,
+  nullableStringValue,
+  stringValue,
+} from "@/components/forms/value-utils";
+import { computed, onMounted, ref, shallowRef, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import * as Yup from "yup";
+import DropdownLifecycleStatusTransitions from "../../shared/components/DropdownLifecycleStatusTransitions.vue";
 import { useReferenceStore } from "../../shared/store/reference";
+import { type Reference, ReferenceCategoryEnum } from "../../shared/types";
+import { usePlantModelStore } from "../store/plantmodel";
+import type { WorkOrder, WorkOrderPhase } from "../types";
 
 const props = defineProps<{
+  /** Rendered inside a dialog: keep Save in the dialog footer instead of the header. */
+  inDialog?: boolean;
   workorder: WorkOrder;
   phase: WorkOrderPhase;
 }>();
 
 const emit = defineEmits<{
-  (e: "submit", phase: WorkOrderPhase): void;
-  (e: "cancel"): void;
+  (event: "submit", phase: WorkOrderPhase): void;
+  (event: "cancel"): void;
 }>();
+
+const { t } = useI18n();
+const plantModelStore = usePlantModelStore();
+const referencesStore = useReferenceStore();
+const form = ref<{
+  getValues: () => FormValues;
+  submit: () => void;
+  setValues: (values: FormValues) => void;
+} | null>(null);
+const statusTransitionsDropdown = ref<InstanceType<
+  typeof DropdownLifecycleStatusTransitions
+> | null>(null);
+const serviceReferences = ref<Reference[]>([]);
+let suppressCascades = false;
+
+// The parent refetches the phase (and its details and materials) after every
+// detail or material change, so the form receives a stable scalar snapshot
+// instead of the whole entity; it only resets when a form-owned value changes.
+type PhaseScalars = Pick<
+  WorkOrderPhase,
+  | "id"
+  | "code"
+  | "description"
+  | "statusId"
+  | "workcenterTypeId"
+  | "preferredWorkcenterId"
+  | "profitPercentage"
+  | "operatorTypeId"
+  | "isExternalWork"
+  | "serviceReferenceId"
+  | "externalWorkCost"
+  | "transportCost"
+>;
+
+const scalarSnapshot = (phase: WorkOrderPhase): PhaseScalars => ({
+  id: phase.id,
+  code: phase.code,
+  description: phase.description,
+  statusId: phase.statusId,
+  workcenterTypeId: phase.workcenterTypeId ?? null,
+  preferredWorkcenterId: phase.preferredWorkcenterId ?? null,
+  profitPercentage: phase.profitPercentage,
+  operatorTypeId: phase.operatorTypeId ?? null,
+  isExternalWork: phase.isExternalWork,
+  serviceReferenceId: phase.serviceReferenceId ?? null,
+  externalWorkCost: phase.externalWorkCost,
+  transportCost: phase.transportCost,
+});
+
+const initialValues = shallowRef<PhaseScalars>(scalarSnapshot(props.phase));
+// Mirrors the workcenter type so the preferred workcenter options follow it.
+const workcenterTypeId = ref<string | null>(
+  initialValues.value.workcenterTypeId ?? null,
+);
+
+watch(
+  () => scalarSnapshot(props.phase),
+  (next) => {
+    const current = initialValues.value;
+    const changed = (Object.keys(next) as Array<keyof PhaseScalars>).some(
+      (key) => next[key] !== current[key],
+    );
+    if (changed) {
+      initialValues.value = next;
+      workcenterTypeId.value = next.workcenterTypeId ?? null;
+    }
+  },
+);
 
 onMounted(async () => {
   serviceReferences.value =
-    await referencesStore.getReferencesByModuleAndCategory(
+    (await referencesStore.getReferencesByModuleAndCategory(
       "purchase",
       ReferenceCategoryEnum.SERVICE,
-    );
+    )) ?? [];
 });
 
-const toast = useToast();
-const plantModelStore = usePlantModelStore();
-const referencesStore = useReferenceStore();
-const statusTransitionsDropdown =
-  ref<InstanceType<typeof DropdownLifecycleStatusTransitions> | null>(null);
+const preferredWorkcenters = computed(() =>
+  workcenterTypeId.value
+    ? plantModelStore.getWorkcentersByTypeId(workcenterTypeId.value)
+    : [],
+);
 
-const serviceReferences = ref(undefined as undefined | Reference[]);
-
-const preferredWorkcenters = computed(() => {
-  return props.phase.workcenterTypeId
-    ? plantModelStore.getWorkcentersByTypeId(props.phase.workcenterTypeId)
-    : [];
-});
-
-const onServiceReferenceChanged = () => {
-  if (serviceReferences.value) {
-    const selectedReference = serviceReferences.value.find(
-      (r) => r.id === props.phase.serviceReferenceId,
-    );
-    if (selectedReference) {
-      props.phase.externalWorkCost = selectedReference.price;
-      props.phase.transportCost = selectedReference.transportAmount;
-    }
+const setFormValues = (values: FormValues): void => {
+  suppressCascades = true;
+  try {
+    form.value?.setValues(values);
+  } finally {
+    suppressCascades = false;
   }
 };
 
-const workcenterTypeUpdated = () => {
-  props.phase.preferredWorkcenterId = null;
-  let selectedWorkcenterType = plantModelStore.workcenterTypes?.find(
-    (wt) => wt.id === props.phase.workcenterTypeId,
+const workcenterTypeProfit = (typeId: unknown): number | undefined =>
+  plantModelStore.workcenterTypes?.find((type) => type.id === typeId)
+    ?.profitPercentage;
+
+const workcenterTypeUpdated = (value: unknown): void => {
+  if (suppressCascades) return;
+  workcenterTypeId.value = nullableStringValue(value, null);
+
+  const profitPercentage = workcenterTypeProfit(value);
+  setFormValues(
+    profitPercentage === undefined
+      ? { preferredWorkcenterId: null }
+      : { preferredWorkcenterId: null, profitPercentage },
   );
-  props.phase.profitPercentage = selectedWorkcenterType!.profitPercentage;
 };
 
-const workcenterUpdated = () => {
-  let selectedWorkcenter = plantModelStore.workcenters?.find(
-    (wt) => wt.id === props.phase.preferredWorkcenterId,
+const workcenterUpdated = (
+  value: unknown,
+  values: Readonly<FormValues>,
+): void => {
+  if (suppressCascades) return;
+  const workcenter = plantModelStore.workcenters?.find(
+    (item) => item.id === value,
   );
-  if (selectedWorkcenter!.profitPercentage > 0) {
-    props.phase.profitPercentage = selectedWorkcenter!.profitPercentage;
-  } else {
-    let selectedWorkcenterType = plantModelStore.workcenterTypes?.find(
-      (wt) => wt.id === props.phase.workcenterTypeId,
-    );
-    props.phase.profitPercentage = selectedWorkcenterType!.profitPercentage;
-  }
+  if (!workcenter) return;
+
+  const profitPercentage =
+    workcenter.profitPercentage > 0
+      ? workcenter.profitPercentage
+      : workcenterTypeProfit(values.workcenterTypeId);
+  if (profitPercentage !== undefined) setFormValues({ profitPercentage });
 };
 
-const isExternalWorkChanged = async () => {
-  if (props.phase.isExternalWork) {
-    props.phase.operatorTypeId = null;
-    props.phase.workcenterTypeId = null;
-    props.phase.preferredWorkcenterId = null;
-  } else {
-    props.phase.externalWorkCost = 0;
-    props.phase.transportCost = 0;
-    props.phase.serviceReferenceId = null;
-  }
-};
-
-const schema = Yup.object().shape({
-  code: Yup.string().required("El codi és obligatori"),
-  statusId: Yup.string().required("L'estat és obligatori"),
-});
-const validation = ref({
-  result: false,
-  errors: {},
-} as FormValidationResult);
-
-const validate = () => {
-  const formValidation = new FormValidation(schema);
-  validation.value = formValidation.validate(props.phase);
-};
-
-const submitForm = async () => {
-  validate();
-  if (validation.value.result) {
-    if (props.phase.preferredWorkcenterId === "") {
-      props.phase.preferredWorkcenterId = null;
-    }
-
-    emit("submit", props.phase);
-  } else {
-    let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
-      errors += `${e[1].map((e) => e)}.   `;
+const isExternalWorkChanged = (value: unknown): void => {
+  if (suppressCascades) return;
+  if (value === true) {
+    workcenterTypeId.value = null;
+    setFormValues({
+      operatorTypeId: null,
+      workcenterTypeId: null,
+      preferredWorkcenterId: null,
     });
-    toast.add({
-      severity: "warn",
-      summary: "Formulari inválid",
-      detail: errors,
-      life: 5000,
+  } else {
+    setFormValues({
+      externalWorkCost: 0,
+      transportCost: 0,
+      serviceReferenceId: null,
     });
   }
 };
 
-const reloadLifecycleTransitions = async () => {
+const onServiceReferenceChanged = (value: unknown): void => {
+  if (suppressCascades) return;
+  const selectedReference = serviceReferences.value.find(
+    (reference) => reference.id === value,
+  );
+  if (selectedReference) {
+    setFormValues({
+      externalWorkCost: selectedReference.price,
+      transportCost: selectedReference.transportAmount,
+    });
+  }
+};
+
+const isNotExternalWork = (values: Readonly<FormValues>): boolean =>
+  values.isExternalWork !== true;
+
+const currencyProps = {
+  locale: "en-US",
+  minFractionDigits: 2,
+  suffix: " €",
+} as const;
+
+const rows = computed<FormRowConfig[]>(() => [
+  {
+    columns: { mobile: 1, desktop: 3 },
+    fields: [
+      {
+        name: "code",
+        label: t("production.components.codiDeLaFase"),
+        type: FormFieldType.Text,
+        validation: Yup.string().required(
+          t("production.validation.elCodiEsObligatori"),
+        ),
+      },
+      {
+        name: "description",
+        label: t("production.components.descripcio"),
+        type: FormFieldType.Text,
+      },
+      {
+        name: "statusId",
+        label: t("production.components.estat"),
+        type: FormFieldType.Custom,
+        validation: Yup.string().required(
+          t("production.validation.lEstatEsObligatori"),
+        ),
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "workcenterTypeId",
+        label: t("production.components.tipusDeMaquina"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.workcenterTypes ?? [],
+          optionValue: "id",
+          optionLabel: "name",
+        },
+        onChange: workcenterTypeUpdated,
+      },
+      {
+        name: "preferredWorkcenterId",
+        label: t("production.components.maquinaPreferida"),
+        type: FormFieldType.Select,
+        props: {
+          options: preferredWorkcenters.value,
+          optionValue: "id",
+          optionLabel: "description",
+        },
+        onChange: workcenterUpdated,
+      },
+      {
+        name: "profitPercentage",
+        label: t("production.components.margeDeBenefici"),
+        type: FormFieldType.Number,
+        props: { locale: "en-US", minFractionDigits: 2, suffix: "%" },
+      },
+      {
+        name: "operatorTypeId",
+        label: t("production.components.tipusDOperari"),
+        type: FormFieldType.Select,
+        props: {
+          options: plantModelStore.operatorTypes ?? [],
+          optionValue: "id",
+          optionLabel: "description",
+        },
+      },
+    ],
+  },
+  {
+    columns: { mobile: 1, desktop: 4 },
+    fields: [
+      {
+        name: "isExternalWork",
+        label: t("production.components.externa"),
+        type: FormFieldType.Checkbox,
+        onChange: isExternalWorkChanged,
+      },
+      {
+        name: "serviceReferenceId",
+        label: t("production.components.servei"),
+        type: FormFieldType.Select,
+        props: {
+          options: serviceReferences.value,
+          optionValue: "id",
+          optionLabel: (reference: Reference) =>
+            `${reference.code} - ${reference.description}`,
+        },
+        disabled: isNotExternalWork,
+        onChange: onServiceReferenceChanged,
+      },
+      {
+        name: "externalWorkCost",
+        label: t("production.components.costServei"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: isNotExternalWork,
+      },
+      {
+        name: "transportCost",
+        label: t("production.components.costTransport"),
+        type: FormFieldType.Number,
+        props: currencyProps,
+        disabled: isNotExternalWork,
+      },
+    ],
+  },
+]);
+
+const toPhase = (values: FormValues): WorkOrderPhase => {
+  const preferredWorkcenterId = nullableStringValue(
+    values.preferredWorkcenterId,
+    props.phase.preferredWorkcenterId ?? null,
+  );
+
+  return {
+    ...props.phase,
+    code: stringValue(values.code, props.phase.code),
+    description: stringValue(values.description, props.phase.description),
+    statusId: stringValue(values.statusId, props.phase.statusId),
+    workcenterTypeId: nullableStringValue(
+      values.workcenterTypeId,
+      props.phase.workcenterTypeId ?? null,
+    ),
+    preferredWorkcenterId:
+      preferredWorkcenterId === "" ? null : preferredWorkcenterId,
+    profitPercentage: finiteNumberValue(
+      values.profitPercentage,
+      props.phase.profitPercentage,
+    ),
+    operatorTypeId: nullableStringValue(
+      values.operatorTypeId,
+      props.phase.operatorTypeId ?? null,
+    ),
+    isExternalWork: booleanValue(
+      values.isExternalWork,
+      props.phase.isExternalWork,
+    ),
+    serviceReferenceId: nullableStringValue(
+      values.serviceReferenceId,
+      props.phase.serviceReferenceId ?? null,
+    ),
+    externalWorkCost: finiteNumberValue(
+      values.externalWorkCost,
+      props.phase.externalWorkCost,
+    ),
+    transportCost: finiteNumberValue(
+      values.transportCost,
+      props.phase.transportCost,
+    ),
+  };
+};
+
+const submit = (values: FormValues): void => {
+  emit("submit", toPhase(values));
+};
+
+// Unsaved header edits, used by the screen when saving steps or materials
+// so the reload that follows does not discard them (no validation, as
+// before the migration).
+const currentPhase = (): WorkOrderPhase => {
+  const values = form.value?.getValues();
+  return values ? toPhase(values) : props.phase;
+};
+
+const submitForm = (): void => form.value?.submit();
+
+const reloadLifecycleTransitions = async (): Promise<void> => {
   await statusTransitionsDropdown.value?.reloadTransitions();
 };
 
-defineExpose({
-  submitForm,
-  reloadLifecycleTransitions,
-});
+defineExpose({ submitForm, reloadLifecycleTransitions, currentPhase });
 </script>
+
+<template>
+  <Form
+    ref="form"
+    :page-actions="!inDialog"
+    :rows="rows"
+    :initial-values="initialValues"
+    @submit="submit"
+    @cancel="emit('cancel')"
+  >
+    <template #field-statusId="{ value, setValue, disabled, inputId }">
+      <DropdownLifecycleStatusTransitions
+        ref="statusTransitionsDropdown"
+        :input-id="inputId"
+        label=""
+        :status-id="phase.statusId"
+        :model-value="typeof value === 'string' ? value : undefined"
+        :disabled="disabled"
+        @update:model-value="setValue"
+      />
+    </template>
+  </Form>
+</template>
