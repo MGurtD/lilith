@@ -7,6 +7,7 @@
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="PurchaseOrders"
+    :card-layout="cardLayout"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sortMode="multiple"
@@ -42,6 +43,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
@@ -107,6 +109,14 @@ const columns = computed<Column[]>(() => [
     style: "width: 25%",
   },
 ]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierId",
+  badge: "statusId",
+  trailing: "date",
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

@@ -47,6 +47,24 @@ export type ColumnResolver = {
   resolve(value: unknown, data: unknown): unknown;
 }["resolve"];
 
+/**
+ * Which column fills each slot of a row's phone card. Values are column
+ * fields. A screen declares its default with Table's `cardLayout` prop;
+ * a saved view may override it as a whole.
+ */
+export interface CardLayout {
+  title?: string;
+  subtitle?: string;
+  /** Usually a Status column, shown as a Tag. */
+  badge?: string;
+  /** An amount or a date, right-aligned next to the title. */
+  trailing?: string;
+  /** Extra "Label: value" lines, in column order. */
+  meta?: string[];
+}
+
+export const CARD_META_MAX = 3;
+
 export interface Column {
   field: string;
   header: string;

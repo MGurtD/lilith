@@ -6,6 +6,7 @@
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="Workorders"
+    :card-layout="cardLayout"
     preset="crud-list"
     tableStyle="min-width: 100%"
     sort-mode="multiple"
@@ -33,7 +34,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -122,6 +127,15 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const cardLayout: CardLayout = {
+  title: "code",
+  subtitle: "referenceId",
+  badge: "statusId",
+  trailing: "plannedDate",
+  meta: ["reference.customerId", "plannedQuantity", "order"],
+};
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

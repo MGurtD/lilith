@@ -44,6 +44,12 @@ Never rely on a static feature matrix. Inspect the current component and current
 - Preserve numeric alignment in both body and footer. If the shared footer does not inherit column styles, fix that globally rather than adding repeated local footer CSS.
 - Keep column resolvers distinct from a filter's `valueLabel`. A filter's readable value is declared on its own `filterConfig` entry, even when it reuses the same lookup function as a column.
 
+## Phone Cards
+
+- Below 768px a `Table.vue` with a `page` renders each row as a card (`TableCardList.vue`) instead of the table. Tables that use selection, row reordering, row groups or expansion keep the table; pass `phone-layout="table"` to opt out explicitly.
+- Declare the screen's default card next to its columns with the `cardLayout` prop (`title`, `subtitle`, `badge`, `trailing`, up to three `meta` fields, all column fields). Users can override it per saved view in the view settings dialog's Phone card tab. Without `cardLayout`, the card is derived from the visible columns.
+- Cards reuse the column types, resolvers and `#body-{field}` slots, so check that each slot renders sensibly outside a table cell. Only visible columns can appear on a card.
+
 ## Shared Fixes
 
 - Fix layout defects in the owning shared component when the expected behavior is global; do not add per-view CSS for a base-component defect.

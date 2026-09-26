@@ -13,6 +13,8 @@ import TableFilter from "./TableFilter.vue";
 import type { FilterConfig, FilterBodyWidth } from "./TableFilter.vue";
 import TableViewConfig from "./TableViewConfig.vue";
 import TableAttachmentViewer from "./TableAttachmentViewer.vue";
+import TableCardList, { type CardTotal } from "./TableCardList.vue";
+import TableSortSheet from "./TableSortSheet.vue";
 import BooleanColumn from "./BooleanColumn.vue";
 import TruncatedCell from "./TruncatedCell.vue";
 import ProgressColumn from "@/components/ProgressColumn.vue";
@@ -22,17 +24,22 @@ import type { DataTableRowClickEvent } from "primevue/datatable";
 import { useStore } from "@/store";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
+import { useIsPhone } from "@/composables/useIsPhone";
 import { resolveFieldValue } from "./field-value";
 import {
-  formatDate,
-  formatDateTime,
-  formatTime,
-  formatCurrency,
-} from "@/utils/functions";
+  formatCellValue,
+  hasValue,
+  resolveBooleanValue,
+  resolveCellValue,
+  statusSeverity,
+} from "./cell-format";
+import { resolveCardLayout } from "./card-layout";
+import { createReusableTemplate } from "./reusable-template";
 import {
   ColumnType,
   type Aggregation,
   type AttachmentConfig,
+  type CardLayout,
   type TablePreset,
   type Column,
 } from "./types";
@@ -107,8 +114,13 @@ const props = withDefaults(
     sortField?: string;
     sortOrder?: number;
     multiSortMeta?: Array<{ field: string; order: 1 | -1 }>;
+    /** The screen's default phone card; a saved view may override it. */
+    cardLayout?: CardLayout;
+    /** "auto" shows cards on phones when the table supports them. */
+    phoneLayout?: "auto" | "table";
   }>(),
   {
+    phoneLayout: "auto",
     showFilters: true,
     showFilterActions: true,
     showFilterAction: null,
@@ -253,6 +265,8 @@ const attrs = useAttrs();
 const store = useStore();
 const viewStore = useUserTableViewStore();
 const { t } = useI18n();
+const isPhone = useIsPhone();
+const [DefineHeader, ReuseHeader] = createReusableTemplate();
 
 const attachmentViewer = ref<InstanceType<typeof TableAttachmentViewer> | null>(
   null,
@@ -269,6 +283,8 @@ const activeViewId = ref<string>("");
 const activeIsDefault = ref(false);
 const viewConfigVisible = ref(false);
 const activeSortConfig = ref<SortConfig | null>(null);
+// The active view's phone card; null keeps the screen's `cardLayout`.
+const activeCardConfig = ref<CardLayout | null>(null);
 
 // Increments each time the user triggers a "clear filters" action. Used as
 // the Vue :key on the embedded TableFilter so PrimeVue InputText/Select
@@ -297,9 +313,14 @@ function markStateDirty() {
   stateDirty.value = true;
 }
 
-function onApplyViewConfig(columns: Column[], viewId: string) {
+function onApplyViewConfig(
+  columns: Column[],
+  viewId: string,
+  card: CardLayout | null,
+) {
   appliedColumns.value = columns;
   activeViewId.value = viewId;
+  activeCardConfig.value = card;
   // Refresh the cached default flag from the (possibly updated) store
   // snapshot. Falls back to false when the view isn't in the list yet
   // (e.g. a brand-new view created in the same tick before
@@ -415,11 +436,13 @@ async function loadDefaultView() {
     const sortConfig = viewStore.applySortConfig(defaultView);
     activeSortConfig.value = sortConfig;
     emit("update:sortConfig", sortConfig);
+    activeCardConfig.value = viewStore.applyCardConfig(defaultView);
   } else {
     appliedColumns.value = [...props.columns];
     activeViewId.value = "";
     activeIsDefault.value = false;
     activeSortConfig.value = null;
+    activeCardConfig.value = null;
     emit("update:sortConfig", null);
   }
 }
@@ -598,47 +621,6 @@ const filterSlotNames = computed(() =>
   Object.keys(slots).filter((name) => name.startsWith("filter-")),
 );
 
-// Empty-value guard: prevents Date/DateTime/Time columns from rendering
-// the epoch (01/01/1970) when the field is null/undefined/empty string.
-// `new Date(null)` is `Date(0)` → epoch, which Intl then formats as 01/01/1970.
-function hasValue(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  if (typeof value === "string" && value.trim() === "") return false;
-  return true;
-}
-
-// Single source of truth for the display string of a cell value.
-// Used by the default/typed body templates so the rendered text matches
-// what consumers see, regardless of columnType.
-function formatCellValue(col: Column, data: any): string {
-  const value = resolveCellValue(col, data);
-  switch (col.columnType) {
-    case ColumnType.Date:
-      return typeof value === "string" || value instanceof Date
-        ? formatDate(value)
-        : "";
-    case ColumnType.DateTime:
-      return typeof value === "string"
-        ? formatDateTime(value)
-        : value instanceof Date
-          ? formatDateTime(value.toISOString())
-          : "";
-    case ColumnType.Time:
-      return typeof value === "string" || value instanceof Date
-        ? formatTime(value)
-        : "";
-    case ColumnType.Currency:
-      return typeof value === "number" ? formatCurrency(value) : "";
-    case ColumnType.Lookup:
-    case ColumnType.Status:
-      return String(value ?? "");
-    case ColumnType.Number:
-      return String(value);
-    default:
-      return String(value ?? "");
-  }
-}
-
 // Amounts and quantities are right-aligned so figures line up by place value.
 function columnPt(col: Column) {
   const numeric =
@@ -654,47 +636,157 @@ function columnPt(col: Column) {
   };
 }
 
-function resolveCellValue(col: Column, data: unknown): unknown {
-  const value = resolveFieldValue(data, col.field);
-  if (!col.resolver) return value;
-  const isLookup =
-    col.columnType === ColumnType.Lookup || col.columnType === ColumnType.Status;
-  if (isLookup && typeof value !== "string") {
-    return undefined;
-  }
-  return col.resolver(value, data);
-}
+// --- Phone cards ---
 
-// Colours come from the lifecycle administration as PrimeVue severities;
-// a status without one stays neutral.
-const STATUS_SEVERITIES = ["secondary", "info", "warn", "success", "danger", "contrast"];
+// Cards replace the table on phones for list screens, unless the table
+// relies on something a card cannot show (selection, reordering, groups
+// or expansion). Tablets keep the table.
+const showCards = computed(
+  () =>
+    isPhone.value &&
+    props.phoneLayout === "auto" &&
+    !!props.page &&
+    !props.showSelectionColumn &&
+    !props.showRowReorderColumn &&
+    !props.rowGroupMode &&
+    props.expandedRows === undefined,
+);
 
-function statusSeverity(col: Column, data: unknown) {
-  const value = resolveFieldValue(data, col.field);
-  const severity = col.severity?.(value, data);
-  // Unknown or retired values ("help") fall back to neutral.
-  return (severity && STATUS_SEVERITIES.includes(severity) ? severity : "secondary") as
-    | "secondary"
-    | "info"
-    | "success"
-    | "warn"
-    | "danger"
-    | "contrast"
-    | undefined;
-}
+const resolvedCardLayout = computed(() =>
+  resolveCardLayout(
+    activeCardConfig.value,
+    props.cardLayout,
+    visibleColumns.value,
+  ),
+);
 
-function resolveBooleanValue(
-  data: unknown,
-  field: string,
-): boolean | null | undefined {
-  const value = resolveFieldValue(data, field);
-  if (typeof value === "boolean" || value === null) return value;
-  return undefined;
-}
+// Cards sort by one field; in multiple-sort mode that is the first one.
+const cardSort = computed<SortConfig | null>(() => {
+  if (isMultipleSort.value) return resolvedMultiSortMeta.value?.[0] ?? null;
+  if (!resolvedSortField.value || resolvedSortOrder.value === undefined)
+    return null;
+  return {
+    field: resolvedSortField.value,
+    order: resolvedSortOrder.value as 1 | -1,
+  };
+});
+
+const sortableColumns = computed(() =>
+  visibleColumns.value.filter((c) => c.sortable),
+);
+
+const sortSheetVisible = ref(false);
+
+const cardTotals = computed<CardTotal[]>(() =>
+  columnsWithTotal.value.map((col) => ({
+    field: col.field,
+    label: col.header,
+    value: formatTotal(col),
+  })),
+);
+
+// Consumer #body-{field} slots render the same values inside the cards.
+const bodySlotNames = computed(() =>
+  Object.keys(slots).filter((name) => name.startsWith("body-")),
+);
 </script>
 
 <template>
+  <!-- The filter bar, shared by the table header and the phone cards -->
+  <DefineHeader>
+    <TableFilter
+      :key="clearKey"
+      :config="filterConfig"
+      :model-value="filterValues"
+      :body-width="filterBodyWidth"
+      :result-count="items.length"
+      :show-title="false"
+      :show-action-labels="false"
+      :show-filter-action="showFilterAction ?? showFilterActions"
+      :show-clear-action="showClearAction ?? showFilterActions"
+      :show-create="showCreate"
+      embedded
+      @update:model-value="emit('update:filterValues', $event)"
+      @filter="onFilterApplied"
+      @clear="onClearApplied"
+      @create="emit('create')"
+    >
+      <!-- Forward #prepend and #append to TableFilter -->
+      <template v-if="slots.prepend" #prepend>
+        <slot name="prepend" />
+      </template>
+      <template v-if="slots.append" #append>
+        <slot name="append" />
+      </template>
+      <!-- Consumer actions and table view config appear before standard actions -->
+      <template v-if="slots['action-prepend'] || page" #action-prepend>
+        <slot name="action-prepend" />
+        <Button
+          v-if="page"
+          icon="pi pi-cog"
+          size="small"
+          text
+          rounded
+          :aria-label="t('tables.views.configuration')"
+          v-tooltip.top="t('tables.views.configuration')"
+          @click="viewConfigVisible = true"
+        />
+        <Button
+          v-if="showCards && sortableColumns.length"
+          icon="pi pi-sort-alt"
+          size="small"
+          text
+          rounded
+          :aria-label="t('tables.sort.open')"
+          v-tooltip.top="t('tables.sort.open')"
+          @click="sortSheetVisible = true"
+        />
+      </template>
+      <!-- Forward the #filter-{key} slots of type "slot" filter fields -->
+      <template
+        v-for="name in filterSlotNames"
+        :key="name"
+        #[name]="slotProps"
+      >
+        <slot :name="name" v-bind="slotProps" />
+      </template>
+    </TableFilter>
+  </DefineHeader>
+
+  <!-- Phones: one card per row -->
+  <TableCardList
+    v-if="showCards"
+    :class="attrs.class"
+    :items="items"
+    :columns="visibleColumns"
+    :layout="resolvedCardLayout"
+    :data-key="dataKey"
+    :paginator="resolvedPaginator ?? false"
+    :rows="resolvedRows"
+    :sort-field="cardSort?.field"
+    :sort-order="cardSort?.order"
+    :show-delete="showDeleteColumn"
+    :can-delete="canDelete"
+    :show-attachments="!!attachmentConfig"
+    :totals="cardTotals"
+    :loading="loading"
+    @row-click="onRowClick"
+    @delete="emit('delete', $event)"
+    @attachments="openAttachments"
+  >
+    <template v-if="showFilters && filterConfig" #header>
+      <ReuseHeader />
+    </template>
+    <template v-for="name in bodySlotNames" :key="name" #[name]="slotProps">
+      <slot :name="name" v-bind="slotProps" />
+    </template>
+    <template v-if="slots.empty" #empty>
+      <slot name="empty" />
+    </template>
+  </TableCardList>
+
   <DataTable
+    v-else
     :key="sortKey"
     showGridlines
     v-bind="resolvedDataTableProps"
@@ -710,53 +802,7 @@ function resolveBooleanValue(
   >
     <!-- TableFilter embedded in DataTable's native header slot -->
     <template v-if="showFilters && filterConfig" #header>
-      <TableFilter
-        :key="clearKey"
-        :config="filterConfig"
-        :model-value="filterValues"
-        :body-width="filterBodyWidth"
-        :result-count="items.length"
-        :show-title="false"
-        :show-action-labels="false"
-        :show-filter-action="showFilterAction ?? showFilterActions"
-        :show-clear-action="showClearAction ?? showFilterActions"
-        :show-create="showCreate"
-        embedded
-        @update:model-value="emit('update:filterValues', $event)"
-        @filter="onFilterApplied"
-        @clear="onClearApplied"
-        @create="emit('create')"
-      >
-        <!-- Forward #prepend and #append to TableFilter -->
-        <template v-if="slots.prepend" #prepend>
-          <slot name="prepend" />
-        </template>
-        <template v-if="slots.append" #append>
-          <slot name="append" />
-        </template>
-        <!-- Consumer actions and table view config appear before standard actions -->
-        <template v-if="slots['action-prepend'] || page" #action-prepend>
-          <slot name="action-prepend" />
-          <Button
-            v-if="page"
-            icon="pi pi-cog"
-            size="small"
-            text
-            rounded
-            :aria-label="t('tables.views.configuration')"
-            v-tooltip.top="t('tables.views.configuration')"
-            @click="viewConfigVisible = true"
-          />
-        </template>
-        <!-- Forward the #filter-{key} slots of type "slot" filter fields -->
-        <template
-          v-for="name in filterSlotNames"
-          :key="name"
-          #[name]="slotProps"
-        >
-          <slot :name="name" v-bind="slotProps" />
-        </template>
-      </TableFilter>
+      <ReuseHeader />
     </template>
 
     <!-- Selection system column -->
@@ -880,7 +926,7 @@ function resolveBooleanValue(
           v-if="canDelete ? canDelete(slotProps.data) : true"
           class="delete-cell"
           @click.stop="emit('delete', slotProps.data)"
-          v-tooltip.top="'Eliminar'"
+          v-tooltip.top="t('tables.cards.delete')"
         >
           <i class="pi pi-trash delete-icon"></i>
         </div>
@@ -953,9 +999,20 @@ function resolveBooleanValue(
     :filter-values="filterValues"
     :active-sort-config="activeSortConfig"
     :filter-config="filterConfig"
+    :card-layout="cardLayout"
+    :active-card-config="activeCardConfig"
+    :preview-item="items[0]"
     @apply-config="onApplyViewConfig"
     @update:sort-config="onSortConfigUpdate"
     @update:filter-values="emit('update:filterValues', $event)"
+  />
+
+  <TableSortSheet
+    v-if="showCards"
+    v-model:visible="sortSheetVisible"
+    :columns="sortableColumns"
+    :sort="cardSort"
+    @update:sort="onSortConfigUpdate"
   />
 
   <TableAttachmentViewer

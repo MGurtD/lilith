@@ -20,6 +20,7 @@
     :filter-body-width="customerFilterBodyWidth"
     preset="crud-list"
     page="Customers"
+    :card-layout="customerCardLayout"
     tableStyle="min-width: 100%"
     sort-field="comercialName"
     :sort-order="1"
@@ -59,7 +60,7 @@ import { DataTableRowClickEvent } from "primevue/datatable";
 import { Customer, CustomerType } from "../types";
 import { useStore } from "../../../store";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/types";
+import type { CardLayout, Column } from "../../../components/tables/types";
 import { ColumnType } from "../../../components/tables/types";
 import type { FilterConfig, FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
 import { useI18n } from "vue-i18n";
@@ -107,6 +108,13 @@ const customerColumns = computed<Column[]>(() => [
   },
   { field: "disabled", header: t("sales.customers.disabled"), sortable: true, columnType: ColumnType.Boolean, style: "width: 20%" },
 ]);
+
+// Phone card: the default for this screen; a saved view may override it.
+const customerCardLayout: CardLayout = {
+  title: "comercialName",
+  subtitle: "taxName",
+  meta: ["vatNumber", "customerTypeId", "disabled"],
+};
 
 const customerTypeColumns = computed<Column[]>(() => [
   { field: "name", header: t("sales.customers.name"), style: "width: 33%" },
