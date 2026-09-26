@@ -2,17 +2,26 @@
   <div class="lot-traceability">
     <Card class="mb-3">
       <template #content>
-        <section class="three-columns">
-          <DropdownReference
-            :label="t('warehouse.lotTraceability.fields.reference')"
-            :fullName="true"
-            v-model="filter.referenceId"
-          />
-          <div class="mb-2">
-            <label class="block text-900 mb-2">{{
-              t("warehouse.lotTraceability.fields.lot")
-            }}</label>
-            <Select
+        <TableFilter
+          v-model="filter"
+          :config="filterConfig"
+          embedded
+          :show-title="false"
+          :show-action-labels="false"
+          :show-create="false"
+          :show-filter-action="false"
+          :show-clear-action="false"
+        >
+          <template #filter-referenceId="{ value, update }">
+            <DropdownReference size="small"
+              label=""
+              :fullName="true"
+              :model-value="value"
+              @update:model-value="update"
+            />
+          </template>
+          <template #filter-lotId="{ value, update }">
+            <Select size="small"
               showClear
               filter
               :filter-fields="['code']"
@@ -25,10 +34,11 @@
               optionValue="id"
               optionLabel="code"
               class="w-full"
-              v-model="filter.lotId"
+              :model-value="value"
+              @update:model-value="update"
             />
-          </div>
-          <div class="flex align-items-end mb-2">
+          </template>
+          <template #append>
             <Button
               :label="t('warehouse.lotTraceability.recall.title')"
               icon="pi pi-exclamation-triangle"
@@ -37,8 +47,8 @@
               :loading="lotTraceabilityStore.loadingRecall"
               @click="onRecall"
             />
-          </div>
-        </section>
+          </template>
+        </TableFilter>
       </template>
     </Card>
 
@@ -267,6 +277,8 @@ import { useReferenceStore } from "../../shared/store/reference";
 import { useLotTraceabilityStore } from "../store/lotTraceability";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import TagMovementType from "../../../components/TagMovementType.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterConfig } from "../../../components/tables/TableFilter.vue";
 import Services from "../services";
 import { formatDate, formatDateTime } from "@/utils/functions";
 import { Lot, LotTraceabilityNode } from "../types";
@@ -306,6 +318,22 @@ const filter = ref({
 
 const lots = ref<Lot[]>([]);
 const lotsLoading = ref(false);
+
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "referenceId",
+    label: t("warehouse.lotTraceability.fields.reference"),
+    type: "slot",
+    size: "lg",
+    valueLabel: (value) => referenceStore.getFullNameById(String(value)),
+  },
+  {
+    key: "lotId",
+    label: t("warehouse.lotTraceability.fields.lot"),
+    type: "slot",
+    valueLabel: (value) => lots.value.find((lot) => lot.id === value)?.code ?? "",
+  },
+]);
 const pendingLotIdFromQuery = ref<string | undefined>(undefined);
 
 const traceabilityRowDate = (data: TraceabilityTreeRowData): string =>

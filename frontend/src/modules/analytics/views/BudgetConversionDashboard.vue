@@ -3,6 +3,7 @@
     :columns="columns"
     :items="result?.rows ?? []"
     :kpis="kpis"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     sort-field="budgetNumber"
@@ -10,27 +11,12 @@
     @filter="load"
     @clear="clearFilter"
   >
-    <template #filter>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("common.period") }}
-        </label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('analytics.budgetConversion.filters.periodPlaceholder')"
-          showIcon
-          size="small"
-          class="w-full"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("common.customer") }}
-        </label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
 
     <!-- Clickable customer -->
@@ -66,7 +52,10 @@ import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import StatsDashboard, { type StatKpi } from "@/components/StatsDashboard.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import {
   formatDateForQueryParameter,
   formatCurrency,
@@ -74,6 +63,7 @@ import {
 import { useStore } from "@/store";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import DropdownCustomers from "../../sales/components/DropdownCustomers.vue";
+import { useCustomersStore } from "../../sales/store/customers";
 import { BudgetConversionService } from "../services/budgetConversion.service";
 import type { BudgetConversionResult } from "../types";
 
@@ -81,6 +71,7 @@ const router = useRouter();
 const { t, locale } = useI18n();
 const store = useStore();
 const lifecycleStore = useLifecyclesStore();
+const customersStore = useCustomersStore();
 const service = new BudgetConversionService("/budgetconversion");
 
 const currentYear = new Date().getFullYear();
@@ -90,6 +81,20 @@ const filter = ref({
     | undefined,
   customerId: undefined as string | undefined,
 });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("analytics.budgetConversion.filters.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customersStore.getCustomerNameById(String(value)),
+  },
+]);
 const filterBodyWidth: FilterBodyWidth = { desktop: "28rem", tablet: "32rem" };
 const result = ref<BudgetConversionResult>();
 

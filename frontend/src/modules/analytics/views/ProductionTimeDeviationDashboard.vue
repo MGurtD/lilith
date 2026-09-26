@@ -3,6 +3,7 @@
     :columns="columns"
     :items="result?.rows ?? []"
     :kpis="kpis"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     sort-field="workOrderCode"
@@ -10,23 +11,6 @@
     @filter="load"
     @clear="clearFilter"
   >
-    <template #filter>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("common.period") }}
-        </label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('analytics.productionDeviation.filters.periodPlaceholder')"
-          showIcon
-          size="small"
-          class="w-full"
-        />
-      </div>
-    </template>
-
     <!-- Clickable work order -->
     <template #body-workOrderCode="{ data }">
       <a class="stats-cell-link" @click.stop="go(`/workorder/${data.workOrderId}`)">
@@ -54,7 +38,10 @@ import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import StatsDashboard, { type StatKpi } from "@/components/StatsDashboard.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import { formatDateForQueryParameter } from "@/utils/functions";
 import { useStore } from "@/store";
 import { ProductionTimeDeviationService } from "../services/productionTimeDeviation.service";
@@ -71,6 +58,14 @@ const filter = ref({
     | Array<Date>
     | undefined,
 });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("analytics.productionDeviation.filters.periodPlaceholder"),
+  },
+]);
 const filterBodyWidth: FilterBodyWidth = { desktop: "28rem", tablet: "32rem" };
 const result = ref<ProductionTimeDeviationResult>();
 

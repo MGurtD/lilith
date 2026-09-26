@@ -7,8 +7,8 @@ import type { SortConfig } from "@/store/usertableview";
 import { useStore } from "@/store";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
-import { formatDate } from "@/utils/functions";
 import { hydrateFilter } from "@/utils/filter-hydrate";
+import { resolveFilterDisplayValue } from "./filterDisplay";
 import { useI18n } from "vue-i18n";
 
 
@@ -20,22 +20,6 @@ const props = defineProps<{
   filterValues?: any;
   activeSortConfig?: SortConfig | null;
   filterConfig?: FilterConfig[];
-  /**
-   * User-friendly labels for filter keys that are NOT in `filterConfig`
-   * (typically prepend-slot filters like DropdownCustomers).
-   * Without this, prepend keys fall back to their raw key name
-   * (e.g. "customerId" instead of "Client").
-   */
-  filterLabels?: Record<string, string>;
-  /**
-   * Optional resolvers for keys whose value is an ID (UUID/foreign key)
-   * and needs to be translated to a human-readable label.
-   * Used for prepend-slot filters like DropdownCustomers where the
-   * options aren't passed in `filterConfig` because they are loaded
-   * lazily by the dropdown component itself.
-   * Receives the raw value, returns the display string.
-   */
-  filterValueResolvers?: Record<string, (value: unknown) => string>;
 }>();
 
 const emit = defineEmits<{
@@ -111,135 +95,23 @@ const filterConfigByKey = computed(() => {
   return map;
 });
 
-// Resolved display rows: pairs of (label, value) for the template.
-// Label resolution priority:
-//   1. FilterConfig.label (if the key is declared in filterConfig)
-//   2. props.filterLabels[key] (for prepend-slot filters like DropdownCustomers)
-//   3. key (raw fallback, e.g. for stale entries from removed filters)
+// Resolved display rows: pairs of (label, value) for the template. The label
+// comes from filterConfig; the raw key is the fallback for stale entries of
+// filters that no longer exist.
 const savedFilterRows = computed(() => {
   if (!savedFilters.value) return [];
-  const labels = props.filterLabels ?? {};
   const rows: Array<{ key: string; label: string; field: FilterConfig | null; value: unknown }> = [];
   for (const [key, value] of Object.entries(savedFilters.value)) {
     const field = filterConfigByKey.value.get(key) ?? null;
-    const label = field?.label ?? labels[key] ?? key;
+    const label = field?.label ?? key;
     rows.push({ key, label, field, value });
   }
   return rows;
 });
 
-// Resolved display value: applies an external resolver if one was provided
-// for this key (e.g. customerId → "Acme Corp"). Used by the template so
-// prepend-slot filters with no options in filterConfig can still show
-// human-readable text instead of raw UUIDs.
-function resolveDisplayValue(key: string, field: FilterConfig | null, value: unknown): string {
-  const resolvers = props.filterValueResolvers ?? {};
-  const resolver = resolvers[key];
-  if (resolver && !Array.isArray(value)) {
-    try {
-      const resolved = resolver(value);
-      if (resolved) return resolved;
-    } catch {
-      // fall through to default formatter
-    }
-  }
-  return formatFilterValue(field, value);
-}
-
-// Format a single date (Date object or ISO string) using the project's
-// standard formatDate. Falls back to the raw string if parsing fails.
-function formatDateValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? "—" : formatDate(value);
-  }
-  if (typeof value === "string" && value) {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? "—" : formatDate(parsed);
-  }
-  if (typeof value === "object") return "—";
-  return String(value ?? "");
-}
-
-// Format a stored filter value for display. Uses the FilterConfig metadata
-// (label, type, options) to render the value the same way the user sees it
-// in the TableFilter inputs. Empty values render as "—" so the user can
-// distinguish "no filter" from "filter with empty value".
-//
-// Special case: date-range arrays (e.g. PrimeVue `selectionMode="range"`
-// DatePicker) are formatted as "dd/MM/yyyy — dd/MM/yyyy" rather than raw
-// JSON. Detected by: field is null/unknown AND value is an array of length 2
-// where each entry parses to a Date.
-function formatFilterValue(field: FilterConfig | null, value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (value === false) return "No";
-
-  // Date range: array of two date-like entries, no matching field config
-  // (PrimeVue range DatePicker is typically a prepend-slot filter).
-  // Treat empty or invalid endpoints as "no filter" (—) so an
-  // accidentally-initialised empty range doesn't render as "[{},{}]".
-  const isDateLike = (entry: unknown): boolean =>
-    entry instanceof Date ||
-    typeof entry === "string" ||
-    entry === null ||
-    entry === undefined ||
-    (typeof entry === "object" && entry !== null);
-
-  if (Array.isArray(value) && value.length === 2 &&
-      isDateLike(value[0]) && isDateLike(value[1])) {
-    const start = formatDateValue(value[0]);
-    const end = formatDateValue(value[1]);
-    if (start === "—" || end === "—") return "—";
-    return `${start} — ${end}`;
-  }
-
-  if (!field) {
-    if (value instanceof Date) return formatDate(value);
-    if (typeof value === "string" || typeof value === "number") {
-      return String(value);
-    }
-    return JSON.stringify(value);
-  }
-
-  if (field.type === "checkbox") {
-    return value === true ? "Sí" : "No";
-  }
-
-  if (field.type === "select") {
-    const optionValue = field.optionValue ?? "value";
-    const optionLabel = field.optionLabel ?? "label";
-    const option = (field.options ?? []).find(
-      (o) => (o as Record<string, unknown>)[optionValue] === value,
-    );
-    return option
-      ? String((option as Record<string, unknown>)[optionLabel] ?? value)
-      : String(value);
-  }
-
-  if (field.type === "multiselect") {
-    if (!Array.isArray(value)) return String(value);
-    const optionValue = field.optionValue ?? "value";
-    const optionLabel = field.optionLabel ?? "label";
-    const labels = value.map((v) => {
-      const option = (field.options ?? []).find(
-        (o) => (o as Record<string, unknown>)[optionValue] === v,
-      );
-      return option
-        ? String((option as Record<string, unknown>)[optionLabel] ?? v)
-        : String(v);
-    });
-    return labels.join(", ");
-  }
-
-  if (field.type === "number") {
-    return typeof value === "number" ? String(value) : String(value);
-  }
-
-  if (value instanceof Date) {
-    return formatDate(value);
-  }
-
-  return String(value);
+// Readable value, using the field's valueLabel when it has one.
+function resolveDisplayValue(field: FilterConfig | null, value: unknown): string {
+  return resolveFilterDisplayValue(field, value);
 }
 
 // Initialize local columns when dialog opens
@@ -708,7 +580,7 @@ function buildViewConfig(): string {
           >
             <span class="saved-filters-label">{{ row.label }}</span>
             <span class="saved-filters-value">
-              {{ resolveDisplayValue(row.key, row.field, row.value) }}
+              {{ resolveDisplayValue(row.field, row.value) }}
             </span>
           </div>
         </div>

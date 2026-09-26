@@ -3,7 +3,7 @@
     preset="crud-list"
     :columns="columns"
     :items="budgetStore.budgets ?? []"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="Budgets"
@@ -19,46 +19,8 @@
     @create="createButtonClick"
     @delete="deleteBudget"
   >
-    <template #prepend>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("common.period") }}</label
-        >
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('sales.list.periodPlaceholder')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("common.customer") }}</label
-        >
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label">{{ t("common.status") }}</label>
-        <MultiSelect
-          v-model="statusIds"
-          :options="lifecycleStore.lifecycle?.statuses || []"
-          optionLabel="name"
-          optionValue="id"
-          :placeholder="t('sales.list.statusesPlaceholder')"
-          display="chip"
-          :showToggleAll="false"
-          class="w-full"
-        />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
   </Table>
@@ -85,7 +47,10 @@ import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "@/components/tables/types";
-import type { FilterBodyWidth } from "@/components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "@/components/tables/TableFilter.vue";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -135,11 +100,38 @@ const columns = computed<Column[]>(() => [
   { field: "deliveryDays", header: t("sales.budgets.columns.deliveryDays") },
 ]);
 
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+  {
+    key: "statusIds",
+    label: t("common.status"),
+    type: "multiselect",
+    options: lifecycleStore.lifecycle?.statuses || [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("sales.list.statusesPlaceholder"),
+    display: "chip",
+    filter: false,
+    showToggleAll: false,
+  },
+]);
+
 const filter = ref({
   dates: undefined as Array<Date> | undefined,
   customerId: undefined as string | undefined,
+  statusIds: [] as Array<string>,
 });
-const statusIds = ref<Array<string>>([]);
 
 const dialogOptions = reactive({
   visible: false,
@@ -177,7 +169,7 @@ watch(locale, setMenuItem);
 
 const cleanFilter = () => {
   filter.value.customerId = undefined;
-  statusIds.value = [];
+  filter.value.statusIds = [];
   setCurrentYear();
   filterBudget();
 };
@@ -211,7 +203,7 @@ const filterBudget = async () => {
       startTime,
       endTime,
       filter.value.customerId,
-      statusIds.value,
+      filter.value.statusIds,
     );
   } else {
     toast.add({

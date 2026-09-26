@@ -2,9 +2,7 @@
   <Table
     :columns="columns"
     :items="deliveryNoteStore.deliveryNotes ?? []"
-    :filter-config="[]"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -21,23 +19,8 @@
     @delete="deleteDeliveryNote"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('sales.list.periodPlaceholder')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t("common.customer") }}</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
   </Table>
@@ -62,7 +45,10 @@ import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -80,7 +66,6 @@ import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
 import { useConfirm } from "primevue/useconfirm";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
-import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const router = useRouter();
 const toast = useToast();
@@ -114,9 +99,20 @@ const columns = computed<Column[]>(() => [
   },
 ]);
 
-const filterMetadata = computed(() =>
-  createSalesTableViewFilterMetadata(columns.value),
-);
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customerStore.getCustomerNameById(String(value)),
+  },
+]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

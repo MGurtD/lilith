@@ -179,64 +179,6 @@ html {
   justify-content: flex-end;
 }
 
-.datatable-filter {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-}
-
-.datatable-filter-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-}
-
-.datatable-filter-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2rem;
-}
-
-.datatable-filter-5 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr;
-  gap: 2rem;
-}
-
-.filter-field {
-  display: grid;
-  grid-template-columns: 0.4fr 1fr;
-  font-size: 0.8rem !important;
-}
-
-.filter-field > label {
-  padding-top: 12px;
-  font-size: 1rem;
-}
-
-/* ── Flex-based filter toolbar ── */
-.filter-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 1rem;
-  width: 100%;
-}
-
-.filter-toolbar__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 10rem;
-}
-
-.filter-toolbar__actions {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
 /* ── Shared filter label ── */
 .filter-label {
   display: block;

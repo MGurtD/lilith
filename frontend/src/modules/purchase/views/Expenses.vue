@@ -3,9 +3,7 @@
     preset="crud-list"
     :columns="columns"
     :items="filteredExpenses"
-    :filter-config="[]"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     page="Expenses"
@@ -21,59 +19,7 @@
     @create="createButtonClick"
     @delete="deleteExpense"
     @row-click="editExpense"
-  >
-    <template #prepend>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("purchase.fields.period") }}</label
-        >
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('purchase.placeholders.selectPeriod')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--md"
-      >
-        <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.type") }}</label>
-        <Select
-          v-model="filter.expenseTypeId"
-          :options="expenseStore.expenseTypes"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :placeholder="t('purchase.placeholders.allExpenseTypes')"
-          showClear
-          size="small"
-        />
-      </div>
-      <div
-        class="table-filter-prepend-field table-filter-prepend-field--sm"
-      >
-        <label class="filter-label table-filter-prepend-label"
-          >{{ t("purchase.fields.frequency") }}</label
-        >
-        <Select
-          v-model="filter.frecuency"
-          :options="frequencyOptions"
-          optionValue="id"
-          optionLabel="name"
-          class="w-full"
-          :placeholder="t('purchase.placeholders.allFrequencies')"
-          showClear
-          size="small"
-        />
-      </div>
-    </template>
-
-  </Table>
+  />
 </template>
 <script setup lang="ts">
 import Table from "../../../components/tables/Table.vue";
@@ -81,7 +27,6 @@ import {
   ColumnType,
   type Column,
 } from "../../../components/tables/types";
-import { createTableViewFilterMetadata } from "../../../components/tables/table-view-filter-metadata";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { useExpenseStore } from "../store/expense";
@@ -94,7 +39,10 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useI18n } from "vue-i18n";
 import { useUserFilterStore } from "../../../store/userfilter";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 
 const router = useRouter();
 const store = useStore();
@@ -158,18 +106,38 @@ const frequencyOptions = computed(() => [
   { id: 12, name: t("purchase.frequency.yearly") },
 ]);
 
-const filterMetadata = computed(() =>
-  createTableViewFilterMetadata(columns.value, {
-    labels: {
-      dates: t("purchase.fields.period"),
-      frecuency: t("purchase.fields.frequency"),
-    },
-    valueResolvers: {
-      frecuency: (value) =>
-        typeof value === "number" ? getFrequencyName(value, value !== 0) : "",
-    },
-  }),
-);
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("purchase.fields.period"),
+    type: "date-range",
+    placeholder: t("purchase.placeholders.selectPeriod"),
+  },
+  {
+    key: "expenseTypeId",
+    label: t("purchase.fields.type"),
+    type: "select",
+    filter: false,
+    options: expenseStore.expenseTypes ?? [],
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("purchase.placeholders.allExpenseTypes"),
+    valueLabel: (value) => getExpenseTypeNameById(String(value)),
+  },
+  {
+    key: "frecuency",
+    label: t("purchase.fields.frequency"),
+    type: "select",
+    filter: false,
+    options: frequencyOptions.value,
+    optionLabel: "name",
+    optionValue: "id",
+    placeholder: t("purchase.placeholders.allFrequencies"),
+    size: "sm",
+    valueLabel: (value) =>
+      typeof value === "number" ? getFrequencyName(value, value !== 0) : "",
+  },
+]);
 
 const setMenuTitle = () => {
   store.setMenuItem({

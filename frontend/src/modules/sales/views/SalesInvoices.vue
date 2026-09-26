@@ -2,9 +2,7 @@
   <Table
     :columns="columns"
     :items="invoiceStore.invoices ?? []"
-    :filter-config="[]"
-    :filter-labels="filterMetadata.filterLabels"
-    :filter-value-resolvers="filterMetadata.filterValueResolvers"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
     :filter-body-width="filterBodyWidth"
     preset="crud-list"
@@ -18,23 +16,8 @@
     @delete="deleteSalesInvoice"
     @row-click="editRow"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t("common.period") }}</label>
-        <DatePicker
-          v-model="filter.dates"
-          selectionMode="range"
-          dateFormat="dd/mm/yy"
-          :placeholder="t('sales.list.periodPlaceholder')"
-          showIcon
-          class="w-full"
-          size="small"
-        />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">{{ t("common.customer") }}</label>
-        <DropdownCustomers label="" v-model="filter.customerId" />
-      </div>
+    <template #filter-customerId="{ value, update }">
+      <DropdownCustomers size="small" label="" :model-value="value" @update:model-value="update" />
     </template>
 
     <template #body-dueDate="{ data }">
@@ -62,7 +45,10 @@ import DropdownCustomers from "../components/DropdownCustomers.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
@@ -82,7 +68,6 @@ import {
 import { CreateSalesHeaderRequest, SalesInvoice } from "../types";
 import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
-import { createSalesTableViewFilterMetadata } from "@/modules/sales/utils/sales-table-view-filter-metadata";
 
 const toast = useToast();
 const confirm = useConfirm();
@@ -118,9 +103,20 @@ const columns = computed<Column[]>(() => [
   { field: "netAmount", header: t("common.amount"), columnType: ColumnType.Currency, style: "width: 20%" },
 ]);
 
-const filterMetadata = computed(() =>
-  createSalesTableViewFilterMetadata(columns.value),
-);
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "dates",
+    label: t("common.period"),
+    type: "date-range",
+    placeholder: t("sales.list.periodPlaceholder"),
+  },
+  {
+    key: "customerId",
+    label: t("common.customer"),
+    type: "slot",
+    valueLabel: (value) => customersStore.getCustomerNameById(String(value)),
+  },
+]);
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

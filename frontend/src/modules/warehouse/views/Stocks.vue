@@ -3,10 +3,8 @@
     class="small-datatable"
     :items="filteredStocks"
     :columns="columns"
-    :filter-config="[]"
+    :filter-config="filterConfig"
     v-model:filter-values="filter"
-    :filter-labels="filterLabels"
-    :filter-value-resolvers="filterValueResolvers"
     :filter-body-width="filterBodyWidth"
     :show-filter-action="false"
     :show-create="false"
@@ -20,24 +18,21 @@
     :rows="20"
     @clear="cleanFilter"
   >
-    <template #prepend>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("warehouse.fields.warehouse") }}
-        </label>
-        <DropdownWarehouses label="" v-model="filter.warehouseId" />
-      </div>
-      <div class="table-filter-prepend-field table-filter-prepend-field--md">
-        <label class="filter-label table-filter-prepend-label">
-          {{ t("warehouse.fields.reference") }}
-        </label>
-        <DropdownReference
-          label=""
-          :fullName="true"
-          :options="stockStore.availableReferences"
-          v-model="filter.referenceId"
-        />
-      </div>
+    <template #filter-warehouseId="{ value, update }">
+      <DropdownWarehouses size="small"
+        label=""
+        :model-value="value"
+        @update:model-value="update"
+      />
+    </template>
+    <template #filter-referenceId="{ value, update }">
+      <DropdownReference size="small"
+        label=""
+        :fullName="true"
+        :options="stockStore.availableReferences"
+        :model-value="value"
+        @update:model-value="update"
+      />
     </template>
     <template #body-lotCode="{ data }">
       <span class="flex align-items-center gap-2">
@@ -71,7 +66,10 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import DropdownWarehouses from "../components/DropdownWarehouses.vue";
 import DropdownReference from "../../shared/components/DropdownReference.vue";
 import { useStore } from "../../../store";
@@ -94,25 +92,30 @@ const filterBodyWidth: FilterBodyWidth = {
   tablet: "70%",
 };
 
-const filterLabels = computed<Record<string, string>>(() => ({
-  warehouseId: t("warehouse.fields.warehouse"),
-  referenceId: t("warehouse.fields.reference"),
-}));
-
-const filterValueResolvers: Record<string, (value: unknown) => string> = {
-  warehouseId: (value) =>
-    typeof value === "string"
-      ? (warehouseStore.warehouses?.find((item) => item.id === value)?.name ??
-        "")
-      : "",
-  referenceId: (value) => {
-    if (typeof value !== "string") return "";
-    const reference = stockStore.availableReferences.find(
-      (item) => item.id === value,
-    );
-    return reference ? `${reference.code} - ${reference.description}` : "";
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "warehouseId",
+    label: t("warehouse.fields.warehouse"),
+    type: "slot",
+    valueLabel: (value) =>
+      typeof value === "string"
+        ? (warehouseStore.warehouses?.find((item) => item.id === value)?.name ??
+          "")
+        : "",
   },
-};
+  {
+    key: "referenceId",
+    label: t("warehouse.fields.reference"),
+    type: "slot",
+    valueLabel: (value) => {
+      if (typeof value !== "string") return "";
+      const reference = stockStore.availableReferences.find(
+        (item) => item.id === value,
+      );
+      return reference ? `${reference.code} - ${reference.description}` : "";
+    },
+  },
+]);
 
 const columns = computed<Column[]>(() => [
   {

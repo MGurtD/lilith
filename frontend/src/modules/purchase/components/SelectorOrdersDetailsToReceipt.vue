@@ -9,28 +9,26 @@
     :value="filteredOrders"
   >
     <template #header>
-      <header class="selector-filter">
-        <div class="selector-filter-field">
-          <label for="" class="mr-2">{{ t("purchase.orderDetailsToReceipt.search") }}</label>
-          <InputText
-            style="width: 250px; height: 35px"
-            :placeholder="t('purchase.orderDetailsToReceipt.placeholders.search')"
-            v-model="filterReference"
-            size="small"
-          />
-        </div>
-        <div>
-          <div>
-            <Button
-              @click="onSelectedClick"
-              :size="'small'"
-              :icon="PrimeIcons.CHECK_SQUARE"
-              :aria-label="t('purchase.orderDetailsToReceipt.actions.add')"
-              :label="t('purchase.orderDetailsToReceipt.actions.add')"
-            ></Button>
-          </div>
-        </div>
-      </header>
+      <TableFilter
+        v-model="filter"
+        :config="filterConfig"
+        embedded
+        :show-title="false"
+        :show-action-labels="false"
+        :show-create="false"
+        :show-filter-action="false"
+        :show-clear-action="false"
+      >
+        <template #append>
+          <Button
+            @click="onSelectedClick"
+            :size="'small'"
+            :icon="PrimeIcons.CHECK_SQUARE"
+            :aria-label="t('purchase.orderDetailsToReceipt.actions.add')"
+            :label="t('purchase.orderDetailsToReceipt.actions.add')"
+          ></Button>
+        </template>
+      </TableFilter>
     </template>
     <Column expander style="width: 5%" />
     <Column header="" field="number" style="width: 55%">
@@ -114,6 +112,8 @@ import {
   ReceiptOrderDetailGroup,
 } from "../types";
 import SelectorLot from "../../warehouse/components/SelectorLot.vue";
+import TableFilter from "../../../components/tables/TableFilter.vue";
+import type { FilterConfig } from "../../../components/tables/TableFilter.vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { formatDate, getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../shared/store/reference";
@@ -127,7 +127,15 @@ const { t } = useI18n();
 const store = useStore();
 const referenceStore = useReferenceStore();
 const expandedRows = ref({});
-const filterReference = ref("");
+const filter = ref({ reference: "" });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "reference",
+    label: t("purchase.orderDetailsToReceipt.search"),
+    type: "text",
+    placeholder: t("purchase.orderDetailsToReceipt.placeholders.search"),
+  },
+]);
 const selectedOrderDetails = ref([] as Array<ReceiptOrderDetail>);
 
 const referenceRequiresLot = (referenceId: string) =>
@@ -148,7 +156,7 @@ const filteredOrders = computed(() => {
     try {
       // Filter orders by reference full name
       filtered = props.groupedOrderDetails.filter((group) =>
-        group.reference.code.includes(filterReference.value),
+        group.reference.code.includes(filter.value.reference),
       );
     } catch (error) {
       console.error("Error filtering orders", error);
@@ -270,9 +278,3 @@ const onSelectedClick = () => {
   emits("selected", receptionsRequest);
 };
 </script>
-<style scoped>
-.selector-filter {
-  display: grid;
-  grid-template-columns: 1fr 0.1fr;
-}
-</style>

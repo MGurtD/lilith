@@ -3,7 +3,7 @@
     <Table
       :items="invoices"
       :columns="columns"
-      :filter-config="[]"
+      :filter-config="filterConfig"
       v-model:filter-values="filters"
       :filter-body-width="filterBodyWidth"
       :show-filter-action="false"
@@ -13,23 +13,6 @@
       responsiveLayout="scroll"
       @clear="clearFilters"
     >
-      <template #prepend>
-        <div class="table-filter-prepend-field table-filter-prepend-field--md">
-          <label class="filter-label table-filter-prepend-label">{{
-            $t("verifactu.invoiceIntegration.filters.toDate")
-          }}</label>
-          <DatePicker
-            v-model="filters.limitDate"
-            dateFormat="dd/mm/yy"
-            :placeholder="
-              $t('verifactu.invoiceIntegration.filters.selectToDate')
-            "
-            showIcon
-            class="w-full"
-            size="small"
-          />
-        </div>
-      </template>
       <template #append>
         <Button
           :label="$t('verifactu.invoiceIntegration.actions.integrateSelected')"
@@ -187,11 +170,13 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "primevue/usetoast";
 import { storeToRefs } from "pinia";
-import DatePicker from "primevue/datepicker";
 import Dialog from "primevue/dialog";
 import ProgressBar from "primevue/progressbar";
 import Tag from "primevue/tag";
-import type { FilterBodyWidth } from "../../../components/tables/TableFilter.vue";
+import type {
+  FilterBodyWidth,
+  FilterConfig,
+} from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
 import { ColumnType, type Column } from "../../../components/tables/types";
 import { useVerifactuStore } from "../store/verifactu";
@@ -265,6 +250,14 @@ const errorCount = computed(
 const filters = ref({
   limitDate: new Date(), // Date limit
 });
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "limitDate",
+    label: t("verifactu.invoiceIntegration.filters.toDate"),
+    type: "date",
+    placeholder: t("verifactu.invoiceIntegration.filters.selectToDate"),
+  },
+]);
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "25%",
   tablet: "33%",

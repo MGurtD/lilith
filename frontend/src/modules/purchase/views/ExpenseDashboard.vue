@@ -11,22 +11,7 @@
         :body-width="filterBodyWidth"
         embedded
         @clear="clearFilter"
-      >
-        <template #prepend>
-          <div class="table-filter-prepend-field table-filter-prepend-field--md">
-            <label class="filter-label table-filter-prepend-label">{{ t("purchase.fields.period") }}</label>
-            <DatePicker
-              v-model="filter.dates"
-              selectionMode="range"
-              dateFormat="dd/mm/yy"
-              :placeholder="t('purchase.placeholders.selectPeriod')"
-              showIcon
-              size="small"
-              class="w-full"
-            />
-          </div>
-        </template>
-      </TableFilter>
+      />
     </div>
     <div class="dashboard-kpis">
       <div class="kpi-card">
@@ -126,6 +111,12 @@ const filter = ref({
 });
 
 const filterConfig = computed<Array<FilterConfig>>(() => [
+  {
+    key: "dates",
+    label: t("purchase.fields.period"),
+    type: "date-range",
+    placeholder: t("purchase.placeholders.selectPeriod"),
+  },
   {
     key: "type",
     label: t("purchase.fields.type"),
