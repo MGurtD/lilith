@@ -29,6 +29,7 @@ Each step was validated with screenshots of the real running app (see *Visual ve
 - Colours come from preset tokens (`--p-surface-*`, `--p-steel-*`, `--p-primary-*`); no hex in components.
 - Density comes from tokens, not `!important`.
 - Nothing below 11px of rendered text in the office UI.
+- **Plant (shop floor)**: the machine status is the strongest signal on screen and everything else is steel. Machine status is a solid fill in the catalogue colour with contrast-picked ink (`modules/plant/utils/statusSignal.ts`); document statuses keep tinted Tags. Touch targets 56px for primary actions and 44px minimum; time follows `modules/plant/utils/elapsed.ts` and ticks on the device (`useNow`). The placa (`WorkcenterPlaca.vue`) is the plant's signature element, sibling of the caixetí. Full rules and task log: `plant-mes-redesign.md`.
 
 ## Next Phases
 

@@ -192,7 +192,7 @@ const onSubmit = async () => {
     if (!validation.valid) {
       toast.add({
         severity: "warn",
-        summary: t("plant.validaci-u00f3-de-quantitat"),
+        summary: t("plant.messages.quantityValidation"),
         detail: validation.error,
         life: 6000,
       });
@@ -209,7 +209,7 @@ const onSubmit = async () => {
     if (result) {
       toast.add({
         severity: "success",
-        summary: t("plant.quantitat-afegida-correctament"),
+        summary: t("plant.messages.quantityAdded"),
         life: 4000,
       });
       emit("quantities-updated");
@@ -217,7 +217,7 @@ const onSubmit = async () => {
     } else {
       toast.add({
         severity: "error",
-        summary: t("plant.error-al-afegir-la-quantitat"),
+        summary: t("plant.messages.quantityAddError"),
         life: 4000,
       });
     }

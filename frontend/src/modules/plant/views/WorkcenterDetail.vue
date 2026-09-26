@@ -484,7 +484,7 @@ onMounted(async () => {
   if (!workcenter.value) {
     toast.add({
       severity: "error",
-      summary: t("plant.centre-de-treball-no-trobat"),
+      summary: t("plant.messages.workcenterNotFound"),
       life: 4000,
     });
     return;
@@ -538,7 +538,7 @@ const handleOperatorClockIn = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: t("plant.entrada-registrada-correctament"),
+      summary: t("plant.messages.clockInDone"),
       life: 4000,
     });
   } else {
@@ -555,13 +555,13 @@ const handleOperatorClockOut = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: t("plant.sortida-registrada-correctament"),
+      summary: t("plant.messages.clockOutDone"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: t("plant.error-al-registrar-la-sortida"),
+      summary: t("plant.messages.clockOutError"),
       life: 4000,
     });
   }
@@ -634,13 +634,13 @@ const handleCloseMachine = async () => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: t("plant.maquina-tancada-correctament"),
+      summary: t("plant.messages.machineClosed"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: t("plant.error-al-tancar-la-maquina"),
+      summary: t("plant.messages.machineCloseError"),
       life: 4000,
     });
   }
@@ -652,7 +652,7 @@ const handleActivityChange = async (statusId: string) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: t("plant.activitat-canviada-correctament"),
+      summary: t("plant.messages.activityChanged"),
       life: 4000,
     });
   } else {
@@ -673,7 +673,7 @@ const onStatusChanged = async (request: ChangeMachineStatusRequest) => {
   if (result) {
     toast.add({
       severity: "success",
-      summary: t("plant.estat-canviat-correctament"),
+      summary: t("plant.messages.statusChanged"),
       life: 4000,
     });
   } else {
@@ -719,14 +719,14 @@ const handlePhaseDetailSelected = async (data: {
     }
     toast.add({
       severity: "success",
-      summary: t("plant.fase-de-fabricacio-carregada"),
+      summary: t("plant.messages.phaseLoaded"),
       detail: t("plant.messages.activityLoaded"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: t("plant.error-al-carregar-la-fase"),
+      summary: t("plant.messages.phaseLoadError"),
       detail: t("plant.messages.activityLoadError"),
       life: 4000,
     });
@@ -749,7 +749,7 @@ const handleWorkOrderPhaseClose = async () => {
   ) {
     toast.add({
       severity: "warn",
-      summary: t("plant.no-hi-ha-cap-fase-carregada"),
+      summary: t("plant.messages.noPhaseLoaded"),
       life: 4000,
     });
     return;
@@ -833,13 +833,13 @@ const handlePhaseUnloaded = async (
     }
     toast.add({
       severity: "success",
-      summary: t("plant.fase-finalitzada-correctament"),
+      summary: t("plant.messages.phaseFinished"),
       life: 4000,
     });
   } else {
     toast.add({
       severity: "error",
-      summary: t("plant.error-al-finalitzar-la-fase"),
+      summary: t("plant.messages.phaseFinishError"),
       life: 4000,
     });
   }
