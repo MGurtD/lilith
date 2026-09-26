@@ -4,11 +4,11 @@
     :modal="true"
     :draggable="false"
     :style="{ width: '92vw', maxWidth: '1080px' }"
-    :header='$t("plant.estoc-disponible")'
+    :header="$t('plant.stock.availableTitle')"
   >
     <div class="stock-dialog">
       <div class="stock-dialog-header">
-        <span class="stock-dialog-caption">{{ $t("plant.selecciona-la-quantitat-i-l-accio-a-realitzar-sobre-l-estoc") }}</span>
+        <span class="stock-dialog-caption">{{ $t("plant.stock.caption") }}</span>
       </div>
 
       <BomMaterialHeader
@@ -25,173 +25,90 @@
 
       <div v-if="stockItems.length === 0" class="stock-empty">
         <i class="pi pi-exclamation-circle"></i>
-        <span>{{ $t("plant.sense-estoc-disponible") }}</span>
+        <span>{{ $t("plant.stock.none") }}</span>
       </div>
 
       <template v-else>
-        <!-- Supply stock (at workcenter location) -->
-        <div v-if="supplyStockItems.length > 0" class="stock-group">
-          <div class="stock-group-header stock-group-header--supply">
-            <i class="pi pi-box"></i>
-            <span>{{ $t("plant.estoc-aprovisionat") }}</span>
-          </div>
-          <DataTable
-            :value="supplyStockItems"
-            size="small"
-            scrollable
+        <section
+          v-for="group in groups"
+          :key="group.key"
+          class="stock-group"
+          :aria-labelledby="`stock-group-${group.key}`"
+        >
+          <h3 :id="`stock-group-${group.key}`" class="stock-group-header">
+            <i :class="group.icon" aria-hidden="true"></i>
+            {{ group.title }}
+          </h3>
+          <Table
+            :items="group.items"
+            :columns="columns"
+            :card-layout="cardLayout"
+            phone-layout="cards"
+            :show-filters="false"
+            :show-create="false"
+            data-key="stockId"
             class="stock-table"
           >
-            <Column :header='$t("plant.ubicacio")' style="min-width: 180px">
-              <template #body="slotProps">
-                <div class="stock-location-cell">
-                  <span class="font-semibold">{{ slotProps.data.locationName }}</span>
-                  <span v-if="slotProps.data.locationDescription" class="stock-location-detail">
-                    {{ slotProps.data.locationDescription }}
-                  </span>
-                </div>
-              </template>
-            </Column>
-            <Column :header='$t("plant.mesures")' style="min-width: 260px">
-              <template #body="slotProps">
-                <div class="stock-measures">
-                  <span
-                    v-for="measure in getStockMeasures(slotProps.data)"
-                    :key="`${slotProps.data.stockId}-${measure}`"
-                    class="stock-measure-chip"
-                  >
-                    {{ measure }}
-                  </span>
-                </div>
-              </template>
-            </Column>
-            <Column :header='$t("plant.lot")' style="min-width: 120px">
-              <template #body="slotProps">
-                <span>{{ slotProps.data.lotCode || "—" }}</span>
-              </template>
-            </Column>
-            <Column
-              field="quantity"
-              :header='$t("plant.disponible")'
-              style="width: 110px; text-align: right"
-            >
-              <template #body="slotProps">
-                <span class="font-semibold">{{ slotProps.data.quantity }}</span>
-              </template>
-            </Column>
-            <Column :header='$t("plant.quantitat")' style="width: 140px">
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="moveQuantities[slotProps.data.stockId]"
-                  :min="1"
-                  :max="slotProps.data.quantity"
-                  :disabled="movingStockId !== null"
-                  showButtons
-                  buttonLayout="horizontal"
-                  incrementButtonIcon="pi pi-plus"
-                  decrementButtonIcon="pi pi-minus"
-                  inputClass="stock-qty-input"
-                  class="stock-qty-spinner"
-                />
-              </template>
-            </Column>
-            <Column :header='$t("plant.retornar")' style="width: 90px; text-align: center">
-              <template #body="slotProps">
-                <Button
-                  icon="pi pi-arrow-left"
-                  text
-                  rounded
-                  severity="warn"
-                  :loading="movingStockId === slotProps.data.stockId"
-                  :disabled="movingStockId !== null || !isValidQuantity(slotProps.data.stockId, slotProps.data.quantity)"
-                  @click="handleReturnStock(slotProps.data)"
-                  v-tooltip.top="$t('plant.tooltips.returnToDefaultLocation')"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
-
-        <!-- Other stock (available to move to supply) -->
-        <div v-if="otherStockItems.length > 0" class="stock-group">
-          <div class="stock-group-header stock-group-header--available">
-            <i class="pi pi-warehouse"></i>
-            <span>{{ $t("plant.estoc-disponible") }}</span>
-          </div>
-          <DataTable
-            :value="otherStockItems"
-            size="small"
-            scrollable
-            class="stock-table"
-          >
-            <Column :header='$t("plant.ubicacio")' style="min-width: 180px">
-              <template #body="slotProps">
-                <div class="stock-location-cell">
-                  <span class="font-semibold">{{ slotProps.data.locationName }}</span>
-                  <span v-if="slotProps.data.locationDescription" class="stock-location-detail">
-                    {{ slotProps.data.locationDescription }}
-                  </span>
-                </div>
-              </template>
-            </Column>
-            <Column :header='$t("plant.mesures")' style="min-width: 260px">
-              <template #body="slotProps">
-                <div class="stock-measures">
-                  <span
-                    v-for="measure in getStockMeasures(slotProps.data)"
-                    :key="`${slotProps.data.stockId}-${measure}`"
-                    class="stock-measure-chip"
-                  >
-                    {{ measure }}
-                  </span>
-                </div>
-              </template>
-            </Column>
-            <Column :header='$t("plant.lot")' style="min-width: 120px">
-              <template #body="slotProps">
-                <span>{{ slotProps.data.lotCode || "—" }}</span>
-              </template>
-            </Column>
-            <Column
-              field="quantity"
-              :header='$t("plant.disponible")'
-              style="width: 110px; text-align: right"
-            >
-              <template #body="slotProps">
-                <span class="font-semibold">{{ slotProps.data.quantity }}</span>
-              </template>
-            </Column>
-            <Column :header='$t("plant.quantitat")' style="width: 140px">
-              <template #body="slotProps">
-                <InputNumber
-                  v-model="moveQuantities[slotProps.data.stockId]"
-                  :min="0"
-                  :max="slotProps.data.quantity"
-                  :disabled="movingStockId !== null"
-                  showButtons
-                  buttonLayout="horizontal"
-                  incrementButtonIcon="pi pi-plus"
-                  decrementButtonIcon="pi pi-minus"
-                  inputClass="stock-qty-input"
-                  class="stock-qty-spinner"
-                />
-              </template>
-            </Column>
-            <Column :header='$t("plant.moure")' style="width: 90px; text-align: center">
-              <template #body="slotProps">
-                <Button
-                  icon="pi pi-arrow-right"
-                  text
-                  rounded
-                  severity="secondary"
-                  :loading="movingStockId === slotProps.data.stockId"
-                  :disabled="movingStockId !== null || !isValidQuantity(slotProps.data.stockId, slotProps.data.quantity)"
-                  @click="handleMoveStock(slotProps.data)"
-                  v-tooltip.top="$t('plant.tooltips.moveToSupplyLocation')"
-                />
-              </template>
-            </Column>
-          </DataTable>
-        </div>
+            <template #body-locationName="{ data }">
+              <span class="stock-location-cell">
+                <span class="stock-location-name">{{ data.locationName }}</span>
+                <span v-if="data.locationDescription" class="stock-location-detail">{{
+                  data.locationDescription
+                }}</span>
+              </span>
+            </template>
+            <template #body-dimensions="{ data }">
+              <DimensionChips
+                :width="data.width"
+                :length="data.length"
+                :height="data.height"
+                :diameter="data.diameter"
+                :thickness="data.thickness"
+              />
+            </template>
+            <template #body-lotCode="{ data }">{{ data.lotCode || "—" }}</template>
+            <template #body-moveQty="{ data }">
+              <InputNumber
+                v-model="moveQuantities[data.stockId]"
+                :min="group.min"
+                :max="data.quantity"
+                :disabled="movingStockId !== null"
+                showButtons
+                buttonLayout="horizontal"
+                incrementButtonIcon="pi pi-plus"
+                decrementButtonIcon="pi pi-minus"
+                :inputProps="{ 'aria-label': t('plant.stock.quantity') }"
+                inputClass="stock-qty-input"
+                class="stock-qty-spinner"
+              />
+            </template>
+            <template #body-action="{ data }">
+              <Button
+                :icon="group.actionIcon"
+                :aria-label="group.actionLabel"
+                v-tooltip.top="group.actionLabel"
+                outlined
+                severity="secondary"
+                class="stock-action"
+                :loading="movingStockId === data.stockId"
+                :disabled="movingStockId !== null || !isValidQuantity(data.stockId, data.quantity)"
+                @click="group.run(data)"
+              />
+            </template>
+            <template #card-actions="{ data }">
+              <Button
+                :icon="group.actionIcon"
+                :aria-label="group.actionLabel"
+                outlined
+                severity="secondary"
+                class="stock-action"
+                :loading="movingStockId === data.stockId"
+                :disabled="movingStockId !== null || !isValidQuantity(data.stockId, data.quantity)"
+                @click="group.run(data)"
+              />
+            </template>
+          </Table>
+        </section>
       </template>
     </div>
   </Dialog>
@@ -201,13 +118,13 @@
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import type { BillOfMaterialsItem } from "../../../production/types";
 import type { StockResponse } from "../../../warehouse/types";
-import { formatDimensions } from "@/utils/functions";
+import Table from "@/components/tables/Table.vue";
+import { ColumnType, type CardLayout, type Column } from "@/components/tables/types";
+import DimensionChips from "@/components/DimensionChips.vue";
 import BomMaterialHeader from "./BomMaterialHeader.vue";
 
 interface Props {
@@ -288,15 +205,53 @@ function handleReturnStock(stockItem: StockResponse) {
   emit("return-stock", { stockItem, quantity });
 }
 
-function getStockMeasures(stockItem: StockResponse): string[] {
-  return formatDimensions(t, {
-    width: stockItem.width,
-    length: stockItem.length,
-    height: stockItem.height,
-    diameter: stockItem.diameter,
-    thickness: stockItem.thickness,
-  });
-}
+// Both groups share the table; each row moves or returns stock with its
+// own quantity. On phones the rows become cards with the action button.
+const columns = computed<Column[]>(() => [
+  { field: "locationName", header: t("plant.stock.location") },
+  { field: "dimensions", header: t("plant.stock.dimensions") },
+  { field: "lotCode", header: t("plant.stock.lot") },
+  {
+    field: "quantity",
+    header: t("plant.stock.available"),
+    columnType: ColumnType.Number,
+    style: "width: 7rem",
+  },
+  { field: "moveQty", header: t("plant.stock.quantity"), style: "width: 11rem" },
+  { field: "action", header: t("plant.stock.action"), style: "width: 5rem" },
+]);
+
+const cardLayout: CardLayout = {
+  title: "locationName",
+  trailing: "quantity",
+  subtitle: "dimensions",
+  meta: ["lotCode", "moveQty"],
+};
+
+const groups = computed(() =>
+  [
+    {
+      key: "supply",
+      title: t("plant.stock.supplyTitle"),
+      icon: "pi pi-box",
+      items: supplyStockItems.value,
+      min: 1,
+      actionIcon: "pi pi-arrow-left",
+      actionLabel: t("plant.tooltips.returnToDefaultLocation"),
+      run: handleReturnStock,
+    },
+    {
+      key: "available",
+      title: t("plant.stock.availableTitle"),
+      icon: "pi pi-warehouse",
+      items: otherStockItems.value,
+      min: 0,
+      actionIcon: "pi pi-arrow-right",
+      actionLabel: t("plant.tooltips.moveToSupplyLocation"),
+      run: handleMoveStock,
+    },
+  ].filter((group) => group.items.length > 0),
+);
 </script>
 
 <style scoped>
@@ -308,21 +263,20 @@ function getStockMeasures(stockItem: StockResponse): string[] {
 
 .stock-dialog-header {
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--surface-border);
+  border-bottom: 1px solid var(--p-steel-200);
 }
 
 .stock-dialog-caption {
-  font-size: 0.9rem;
-  color: var(--text-color-secondary);
+  font-size: 0.9375rem;
+  color: var(--p-steel-700);
 }
 
 .stock-empty {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 0;
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
+  padding: 1.5rem;
+  color: var(--p-steel-700);
 }
 
 .stock-group {
@@ -335,61 +289,40 @@ function getStockMeasures(stockItem: StockResponse): string[] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 1.125rem;
   font-weight: 600;
-  font-size: 0.88rem;
-}
-
-.stock-group-header--supply {
-  background: var(--p-orange-50);
-  color: var(--p-orange-700);
-  border: 1px solid var(--p-orange-200);
-}
-
-.stock-group-header--available {
-  background: var(--p-blue-50);
-  color: var(--p-blue-700);
-  border: 1px solid var(--p-blue-200);
-}
-
-.stock-table {
-  width: 100%;
+  color: var(--p-steel-900);
 }
 
 .stock-location-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+}
+
+.stock-location-name {
+  font-weight: 600;
 }
 
 .stock-location-detail {
-  font-size: 0.8rem;
-  color: var(--text-color-secondary);
+  font-size: 0.8125rem;
+  color: var(--p-steel-600);
 }
 
-.stock-measures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+.stock-qty-spinner :deep(.p-inputtext),
+.stock-qty-spinner :deep(.p-button) {
+  min-height: 48px;
 }
 
-.stock-measure-chip {
-  border: 1px solid var(--surface-border);
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.78rem;
-  color: var(--text-color-secondary);
-  background: var(--surface-50);
-}
-
-.stock-qty-spinner {
-  width: 100%;
-}
-
-:deep(.stock-qty-input) {
-  width: 3rem !important;
+.stock-qty-spinner :deep(.stock-qty-input) {
+  width: 4rem;
   text-align: center;
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-action {
+  width: 48px;
+  height: 48px;
 }
 </style>

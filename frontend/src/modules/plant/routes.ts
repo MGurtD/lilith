@@ -61,6 +61,7 @@ export default [
         name: "SiteAreas",
         component: SiteAreas,
         beforeEnter: checkOperatorAuth,
+        meta: { helpKey: "plant/areas" },
       },
       {
         path: "/plant/workcenter/:id",
@@ -68,6 +69,7 @@ export default [
         component: WorkcenterDetail,
         beforeEnter: checkOperatorAuth,
         props: true,
+        meta: { helpKey: "plant/workcenter/detail" },
       },
     ],
   },

@@ -1,6 +1,6 @@
 # Plant MES Redesign
 
-> **Status**: In progress on `feat/plant-mes-redesign`.
+> **Status**: Phases 1–6 done on `feat/plant-mes-redesign`.
 > **Created**: 2026-09-26 · **Owner**: Marc Gurt
 > **Design canvas**: https://claude.ai/artifact/N7mbr8zHW3Lds7U1b7jfCL, rows "Planta: com és avui", "Planta: sistema" and "Planta: proposta MES" (private; share it from its Share menu)
 > **Related**: `ui-redesign-taller.md` (the Taller system this extends), issue #153 (raw DataTables)
@@ -66,9 +66,9 @@ Every task is verified in the running app before it is ticked:
 
 ### Phase 6: Tables and cleanup
 
-- [ ] **6.1** Move `WorkOrderLoader.vue` and `AvailableStockDialog.vue` from raw `DataTable` to `Table.vue` (see #153).
-- [ ] **6.2** Migrate the legacy `plant.*` sentence-slug i18n keys touched by this work to English camelCase keys.
-- [ ] **6.3** Update contextual help for the plant screens and record the plant rules in `ui-redesign-taller.md`.
+- [x] **6.1** Replace the raw `DataTable`s of `WorkOrderLoader.vue` and `AvailableStockDialog.vue` (see #153): the stock dialog uses `Table.vue` with phone cards; the phase picker, a single-selection list that `Table.vue` cards cannot do yet (gap G3 in #153), becomes touch radio rows.
+- [x] **6.2** Migrate the legacy `plant.*` sentence-slug i18n keys touched by this work to English camelCase keys.
+- [x] **6.3** Update contextual help for the plant screens and record the plant rules in `ui-redesign-taller.md`.
 
 ## Log
 
@@ -80,3 +80,4 @@ Every task is verified in the running app before it is ticked:
 | 2026-09-26 | 3.1–3.4 | `SiteAreas.vue` rewritten: sticky toolbar with status chips and the "only mine" switch (replaces the FAB), steel area headers (`h2` + disclosure button, status lights with a count summary), grid of tiles on tablets and 72px rows on phones (`WorkcenterCard` `compact`). A status missing from the catalogue counts as no data in both the tile and the filter. Plural "peça/peces previstes". UI test PASS at both viewports (read-only). |
 | 2026-09-26 | 4.1–4.5 | `WorkcenterPlaca.vue` (tablet and `compact` phone) replaces `WorkcenterRealtimePanel` and its four children, now removed, together with the unused `getStatusCardStyle`, `getBorderTopStyle` and `formatDuration`. New `PhaseTimeSummary.vue` ("Fase actual"); `WorkcenterWorkOrderSelector.vue` rewritten as rows with a load button (no raw DataTable). Dock with status keys (current one filled, disabled) and the phase group only when a phase is loaded; phone dock with bottom sheets (PrimeVue `Drawer`). Keys `plant.placa.*`, `plant.detail.*`. UI test PASS at both viewports (read-only). Not observed on staging: phase activities and time metrics, because `POST /api/WorkOrder/Loaded` returns no phases for the only machine with an order loaded (already the case before this work); verify with a machine whose phase data is consistent. |
 | 2026-09-26 | 5.1 | `PhaseQuantityForm.vue` rewritten (same props/emits, so the close-phase dialog gets it too): 72px − / + keys, typed field, +5, +10, reset. `WorkOrderPhaseQuantities.vue`: title and context line, submit label with plurals ("Declarar 8 bones i 1 dolenta"), 56px footer, stacked on phones. Rejection controls 48px. Keys `plant.declare.*`. UI test PASS at both viewports (counters only, nothing submitted). Not observed: the context line (needs the loaded work order, empty on staging) and the close-phase dialog (opening it counts as a write for the tester's guard). |
+| 2026-09-26 | 6.1–6.3 | Load dialog: header with context, radiogroup rows (other machine types locked and explained), 56px activity select and "Carrega l'activitat", hardcoded Catalan warnings moved to `plant.loader.*`. Stock dialog on `Table.vue` with `DimensionChips`, `#card-actions` and 48px controls (not observed: no phase with materials on staging). 21 legacy keys renamed to `plant.messages.*` / `plant.stock.*` and 54 plant keys left unused by the redesign removed (0 unused plant keys in `i18n:audit`). Help `plant/areas` and `plant/workcenter/detail` (ca; other locales fall back) with `meta.helpKey` on both routes. Load dialog UI test PASS at both viewports (opened only, nothing loaded). |
