@@ -16,6 +16,17 @@ html {
 
   &.plant-mode {
     font-size: 16px;
+
+    // Shop-floor touch targets: header icon buttons reach the 44px minimum.
+    .title-bar .p-button.p-button-icon-only {
+      width: 44px;
+      height: 44px;
+    }
+
+    .title-bar .menu-search-trigger {
+      height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
