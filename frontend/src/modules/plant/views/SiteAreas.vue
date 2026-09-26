@@ -266,7 +266,7 @@ const totalWorkcentersCount = computed(() => {
 <style scoped>
 .plant-layout {
   padding: 0.5rem;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Barra de Filtros */

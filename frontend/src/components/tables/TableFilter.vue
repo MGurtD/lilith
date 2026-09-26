@@ -764,14 +764,16 @@ const tableFilterClassName = computed(() => ({
 </style>
 
 <style>
-/* The filter sheet is teleported to <body>, so it is styled globally. */
-.p-drawer.table-filter-sheet--bottom {
+/* The filter sheet is teleported to <body>, so it is styled globally.
+   The position class (.p-drawer-bottom/-right) outranks PrimeVue's default
+   drawer size, which otherwise wins or loses on stylesheet load order. */
+.p-drawer-bottom .p-drawer.table-filter-sheet--bottom {
   height: auto;
   max-height: 85dvh;
   border-radius: var(--p-border-radius-xl) var(--p-border-radius-xl) 0 0;
 }
 
-.p-drawer.table-filter-sheet--side {
+.p-drawer-right .p-drawer.table-filter-sheet--side {
   width: min(24rem, 100vw);
 }
 

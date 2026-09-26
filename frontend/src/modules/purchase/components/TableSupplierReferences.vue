@@ -19,7 +19,7 @@
       v-if="supplierReferences"
       :value="supplierReferences"
       tableStyle="min-width: 100%"
-      :scroll-height="'calc(100vh - 260px)'"
+      :scroll-height="'calc(100dvh - 260px)'"
       sortField="supplierCode"
       :sortOrder="1"
       @row-click="rowContactClick"

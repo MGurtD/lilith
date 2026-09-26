@@ -181,7 +181,7 @@ function restoreFocus() {
 
 <style>
 /* Teleported to <body>, so styled globally, matching the filter sheet. */
-.p-drawer.table-sort-sheet {
+.p-drawer-bottom .p-drawer.table-sort-sheet {
   height: auto;
   max-height: 85dvh;
   border-radius: var(--p-border-radius-xl) var(--p-border-radius-xl) 0 0;

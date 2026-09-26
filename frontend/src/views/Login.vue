@@ -137,7 +137,7 @@ const navigateToLogin = () => (showLogin.value = true);
 
 <style scoped>
 .login {
-  min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
   display: flex;
   background: var(--p-surface-0);
