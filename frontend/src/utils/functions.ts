@@ -49,19 +49,6 @@ export const formatTime = (date: Date | string): string => {
   return d.toLocaleTimeString("ca-ES", { hour: "2-digit", minute: "2-digit" });
 };
 
-/**
- * Formats a duration in minutes as a human-readable string.
- * Examples: 45 -> "45'", 90 -> "1h30'", 125 -> "2h5'"
- */
-export const formatDuration = (minutes: number): string => {
-  if (minutes < 60) {
-    return `${Math.round(minutes)}m`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = Math.round(minutes % 60);
-  return `${hours}h ${mins}m`;
-};
-
 export const formatDate = (date: string | Date) => {
   const formatter = new Intl.DateTimeFormat("es-ES", {
     year: "numeric",
@@ -138,22 +125,6 @@ export const convertDateTimeToJSON = (dateTime: any): any => {
 
 export const formatDateForQueryParameter = (date: Date): string => {
   return convertDateTimeToJSON(date).split("T")[0];
-};
-
-export const calculateDuration = (startTime: string | null): string => {
-  if (!startTime) return "--";
-
-  const start = new Date(startTime);
-  const now = new Date();
-  let diff = now.getTime() - start.getTime();
-
-  // Avoid negative duration if server time is slightly ahead
-  if (diff < 0) diff = 0;
-
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  return `${hours}h ${minutes}m`;
 };
 
 export const createBlobAndDownloadFile = (
@@ -279,42 +250,6 @@ export const adjustBrightness = (color: string, percent: number): string => {
       .toString(16)
       .slice(1)
   );
-};
-
-/**
- * Generates dynamic styles for status cards with gradient and text color
- * @param color - Status color (with or without # prefix)
- * @returns Object with CSS custom properties for status styling
- */
-export const getStatusCardStyle = (color: string | undefined) => {
-  const baseColor = normalizeColor(color);
-  const isLightColor = isColorLight(baseColor);
-
-  return {
-    "--status-color": baseColor,
-    "--status-gradient": isLightColor
-      ? `linear-gradient(135deg, ${baseColor}, ${adjustBrightness(baseColor, -10)})`
-      : `linear-gradient(135deg, ${baseColor}, ${adjustBrightness(baseColor, -15)})`,
-    "--status-text-color": isLightColor ? "#000000" : "#ffffff",
-  };
-};
-
-/**
- * Generates border top style with gradient for workcenter cards
- * @param color - Status color (with or without # prefix)
- * @param defaultColor - Default color if color is undefined
- * @returns Object with borderTop CSS property
- */
-export const getBorderTopStyle = (
-  color: string | undefined,
-  defaultColor: string = "6c757d",
-) => {
-  const baseColor = normalizeColor(color, defaultColor);
-  const darkerColor = adjustBrightness(baseColor, -10);
-
-  return {
-    background: `linear-gradient(90deg, ${baseColor}, ${darkerColor})`,
-  };
 };
 
 /**

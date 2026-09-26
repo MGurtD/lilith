@@ -1,107 +1,66 @@
 <template>
-  <div class="phase-selector">
-    <DataTable
-      :value="workOrders"
-      :loading="loading"
-      scrollable
-      scrollHeight="flex"
-      stripedRows
-      v-model:selectionKeys="selectedKey"
-      selectionMode="single"
-      :rowClass="getRowClass"
-      @row-select="onRowSelect"
-    >
-      <!-- Code -->
-      <Column field="workOrderCode" :header='$t("plant.codi")'>
-        <template #body="slotProps">
-          <span class="font-bold">{{ slotProps.data.workOrderCode }}</span>
-        </template>
-      </Column>
+  <div class="queue">
+    <div class="queue__head" aria-hidden="true">
+      <span>{{ t("plant.placa.order") }}</span>
+      <span>{{ t("plant.placa.reference") }}</span>
+      <span class="queue__num">{{ t("plant.detail.pieces") }}</span>
+      <span>{{ t("plant.detail.plannedDate") }}</span>
+      <span class="queue__num">{{ t("plant.detail.priority") }}</span>
+      <span></span>
+    </div>
 
-      <!-- Customer Name -->
-      <Column field="customerName" :header='$t("plant.client")'>
-        <template #body="slotProps">
-          <span>{{ slotProps.data.customerName }}</span>
-        </template>
-      </Column>
+    <p v-if="loading && !workOrders.length" class="queue__empty">
+      <ProgressSpinner style="width: 2rem; height: 2rem" />
+    </p>
+    <p v-else-if="!workOrders.length" class="queue__empty">
+      {{ t("plant.detail.noQueue") }}
+    </p>
 
-      <!-- Reference -->
-      <Column field="salesReferenceDisplay" :header='$t("plant.referencia")'>
-        <template #body="slotProps">
-          <span
-            class="reference-text"
-            :title="slotProps.data.salesReferenceDisplay"
-          >
-            {{ slotProps.data.salesReferenceDisplay }}
-          </span>
-        </template>
-      </Column>
-
-      <!-- Quantity -->
-      <Column
-        field="plannedQuantity"
-        :header='$t("plant.quantitat")'
-        :sortable="true"
-        style="min-width: 100px; text-align: right"
-      />
-
-      <!-- Planned Date -->
-      <Column :header='$t("plant.planificada")'>
-        <template #body="slotProps">
-          <span v-if="slotProps.data.plannedDate">
-            {{ formatDate(slotProps.data.plannedDate) }}
-          </span>
-        </template>
-      </Column>
-
-      <!-- Start Time -->
-      <Column :header='$t("plant.iniciada")'>
-        <template #body="slotProps">
-          <span v-if="slotProps.data.startTime">
-            {{ formatDate(slotProps.data.startTime) }}
-          </span>
-        </template>
-      </Column>
-
-      <!-- Work Order Status -->
-      <Column :header='$t("plant.estat")'>
-        <template #body="slotProps">
-          <Tag
-            :value="slotProps.data.workOrderStatus"
-            severity="info"
-            rounded
-          />
-        </template>
-      </Column>
-
-      <!-- Priority -->
-      <Column
-        field="priority"
-        :header='$t("plant.prioritat")'
-        style="min-width: 100px; text-align: center"
-      />
-
-      <template #empty>
-        <div class="no-data">
-          <i :class="PrimeIcons.INBOX" style="font-size: 2rem"></i>
-          <p>{{ $t("plant.no-s-han-trobat-ordres-de-fabricacio-planificades-per-aquest-tipus-de-maquina") }}</p>
-        </div>
-      </template>
-    </DataTable>
+    <ul v-else class="queue__list">
+      <li
+        v-for="workOrder in workOrders"
+        :key="workOrder.workOrderId"
+        class="queue__row"
+        :class="{ 'queue__row--loaded': isLoaded(workOrder) }"
+      >
+        <span class="queue__code">{{ workOrder.workOrderCode }}</span>
+        <span class="queue__reference">
+          <span>{{ workOrder.salesReferenceDisplay }}</span>
+          <span class="queue__muted">{{
+            [workOrder.customerName, workOrder.workOrderStatus]
+              .filter(Boolean)
+              .join(" · ")
+          }}</span>
+        </span>
+        <span class="queue__num queue__qty">{{ workOrder.plannedQuantity }}</span>
+        <span class="queue__date" :class="{ 'queue__date--late': isLate(workOrder) }">{{
+          workOrder.plannedDate ? formatDate(workOrder.plannedDate) : "—"
+        }}</span>
+        <span class="queue__num queue__priority">{{ workOrder.priority }}</span>
+        <Button
+          :label="isLoaded(workOrder) ? t('plant.detail.loaded') : t('plant.detail.load')"
+          :disabled="isLoaded(workOrder)"
+          class="queue__load"
+          @click="emit('workorder-selected', workOrder)"
+        />
+      </li>
+    </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { PrimeIcons } from "@primevue/core/api";
+import { useI18n } from "vue-i18n";
+import ProgressSpinner from "primevue/progressspinner";
 import { WorkOrderWithPhases } from "../../../production/types";
 import { usePlantWorkcenterStore } from "../../store";
 import { formatDate } from "../../../../utils/functions";
 
+// "Fases disponibles": the work orders planned for this machine type, as
+// readable rows with a load button (replaces the dense selection table).
 interface Props {
   workcenterTypeId: string;
-  excludePhaseId?: string;
 }
 
 const props = defineProps<Props>();
@@ -109,31 +68,25 @@ const emit = defineEmits<{
   (e: "workorder-selected", workOrder: WorkOrderWithPhases): void;
 }>();
 
+const { t } = useI18n();
 const workcenterStore = usePlantWorkcenterStore();
 const { availableWorkOrders, availableWorkOrdersLoading, workcenterRt } =
   storeToRefs(workcenterStore);
 
-const selectedKey = ref();
-
-const workOrders = computed(() => availableWorkOrders.value);
+const workOrders = computed(() => availableWorkOrders.value ?? []);
 const loading = computed(() => availableWorkOrdersLoading.value);
 
-// Set of loaded work order codes for quick lookup
-const loadedWorkOrderCodes = computed(() => {
-  if (!workcenterRt.value?.workorders) return new Set<string>();
-  return new Set(workcenterRt.value.workorders.map((wo) => wo.workOrderCode));
-});
+const loadedCodes = computed(
+  () => new Set((workcenterRt.value?.workorders ?? []).map((wo) => wo.workOrderCode)),
+);
 
-const getRowClass = (data: WorkOrderWithPhases) => {
-  if (loadedWorkOrderCodes.value.has(data.workOrderCode)) {
-    return "loaded-workorder-row";
-  }
-  return "";
-};
+const isLoaded = (workOrder: WorkOrderWithPhases) =>
+  loadedCodes.value.has(workOrder.workOrderCode);
 
-const onRowSelect = (event: any) => {
-  emit("workorder-selected", event.data);
-};
+const startOfToday = new Date();
+startOfToday.setHours(0, 0, 0, 0);
+const isLate = (workOrder: WorkOrderWithPhases) =>
+  !!workOrder.plannedDate && new Date(workOrder.plannedDate) < startOfToday;
 
 onMounted(async () => {
   await workcenterStore.fetchAvailableWorkOrders(props.workcenterTypeId);
@@ -141,54 +94,118 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.phase-selector {
-  width: 100%;
+.queue {
+  padding: 0.25rem 1.125rem 0;
 }
 
-.phase-selector :deep(.loaded-workorder-row) {
-  background: var(--loaded-row-bg) !important;
-  border-left: 4px solid var(--loaded-row-border) !important;
+.queue__head,
+.queue__row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 4.5rem 6.5rem 4.5rem 8rem;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.no-data {
+.queue__head {
+  min-height: 2.25rem;
+  border-bottom: 1px solid var(--p-steel-200);
+  font-family: var(--font-condensed);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--p-steel-600);
+}
+
+.queue__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.queue__row {
+  min-height: 4rem;
+  border-bottom: 1px solid var(--p-steel-100);
+  font-size: 0.9375rem;
+  color: var(--p-steel-900);
+}
+
+.queue__row--loaded {
+  background: var(--p-steel-50);
+}
+
+.queue__code {
+  font-family: var(--font-condensed);
+  font-size: 1.1875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue__reference {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+}
+
+.queue__muted {
+  font-size: 0.8125rem;
+  color: var(--p-steel-600);
+}
+
+.queue__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue__date {
+  font-variant-numeric: tabular-nums;
+}
+
+.queue__date--late {
+  color: var(--p-red-800);
+  font-weight: 500;
+}
+
+.queue__priority {
+  color: var(--p-steel-700);
+}
+
+.queue__load {
+  min-height: 48px;
+}
+
+.queue__empty {
+  display: flex;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  color: var(--text-color-secondary);
-}
-
-.no-data i {
-  color: var(--text-color-secondary);
-  opacity: 0.5;
-}
-
-.no-data p {
   margin: 0;
-  font-size: 1rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--p-steel-700);
 }
 
-/* Reference text truncation for smaller screens */
-.reference-text {
-  display: block;
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Hide priority column on tablets and smaller devices */
-@media screen and (max-width: 1024px) {
-  .reference-text {
-    max-width: 150px;
+@media (max-width: 767.98px) {
+  .queue {
+    padding: 0 0.75rem;
   }
-}
 
-@media screen and (max-width: 768px) {
-  .reference-text {
-    max-width: 100px;
+  .queue__head {
+    display: none;
+  }
+
+  .queue__row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "code date load"
+      "ref ref load";
+    row-gap: 0.25rem;
+    padding: 0.625rem 0;
+  }
+
+  .queue__code { grid-area: code; }
+  .queue__date { grid-area: date; }
+  .queue__reference { grid-area: ref; }
+  .queue__load { grid-area: load; }
+  .queue__qty,
+  .queue__priority {
+    display: none;
   }
 }
 </style>
