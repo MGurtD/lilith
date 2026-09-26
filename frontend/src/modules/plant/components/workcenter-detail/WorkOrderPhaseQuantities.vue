@@ -3,59 +3,22 @@
     :visible="visible"
     modal
     :closable="true"
-    :style="{ width: '50vw' }"
-    :breakpoints="{ '1024px': '80vw' }"
+    class="declare-dialog"
+    :style="{ width: '46rem' }"
+    :breakpoints="{ '767px': '96vw' }"
     @update:visible="$emit('update:visible', $event)"
   >
     <template #header>
-      <div
-        class="w-full flex align-items-center justify-content-between pr-4"
-      >
-        <div class="flex align-items-center gap-3">
-          <div
-            class="flex align-items-center justify-content-center bg-blue-100 border-circle p-2"
-            style="width: 3rem; height: 3rem"
-          >
-            <i
-              :class="PrimeIcons.PLUS_CIRCLE"
-              class="text-blue-500 text-xl"
-            ></i>
-          </div>
-          <div class="flex flex-column">
-            <span class="font-bold text-lg text-900"
-              >{{ $t("plant.afegir-quantitat") }}</span
-            >
-            <span class="text-sm text-500">{{
-              loadedPhase?.phaseDescription
-            }}</span>
-          </div>
-        </div>
-        <div class="flex gap-4 flex-wrap">
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >{{ $t("plant.ordre") }}</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.workOrderCode
-            }}</span>
-          </div>
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >{{ $t("plant.ref-2") }}</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.salesReferenceDisplay
-            }}</span>
-          </div>
-          <div class="flex flex-column align-items-end">
-            <span class="text-xs text-500 uppercase font-semibold"
-              >{{ $t("plant.quantitat") }}</span
-            >
-            <span class="font-medium text-900 text-lg">{{
-              loadedWorkOrder?.plannedQuantity
-            }}</span>
-          </div>
-        </div>
+      <div class="declare-dialog__header">
+        <span class="declare-dialog__title">{{ t("plant.declare.title") }}</span>
+        <span v-if="loadedWorkOrder" class="declare-dialog__context">{{
+          t("plant.declare.context", {
+            order: loadedWorkOrder.workOrderCode,
+            phase: loadedPhase?.phaseCode ?? "",
+            done: loadedPhase?.quantityOk ?? 0,
+            planned: loadedWorkOrder.plannedQuantity,
+          })
+        }}</span>
       </div>
     </template>
 
@@ -75,24 +38,22 @@
         :counter-ko="formData.counterKo"
       />
 
-      <!-- Action Buttons -->
       <div class="actions-panel">
         <Button
-          :icon="PrimeIcons.TIMES"
-          :label='$t("plant.cancel-lar")'
+          :label="t('plant.declare.cancel')"
           severity="secondary"
-          @click="onCancel"
+          outlined
           :disabled="isSubmitting"
-          class="action-button"
+          class="action-button action-button--cancel"
+          @click="onCancel"
         />
         <Button
-          :icon="PrimeIcons.CHECK"
-          :label='$t("plant.afegir")'
-          severity="primary"
+          icon="pi pi-check"
+          :label="submitLabel"
           :disabled="isSubmitting || !hasQuantity"
           :loading="isSubmitting"
-          @click="onSubmit"
           class="action-button"
+          @click="onSubmit"
         />
       </div>
     </div>
@@ -102,7 +63,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import { watch, computed, reactive, ref } from "vue";
-import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { usePlantWorkcenterStore, usePlantActivePhaseStore } from "../../store";
 import PhaseQuantityForm from "./PhaseQuantityForm.vue";
@@ -153,6 +113,24 @@ const rejectionReasons = ref<InstanceType<typeof PhaseRejectionReasons>>();
 // At least one quantity must be > 0 to enable the submit button
 const hasQuantity = computed(() => {
   return formData.counterOk > 0 || formData.counterKo > 0;
+});
+
+// The button says what it will declare: "Declarar 5 bones i 1 dolenta".
+const submitLabel = computed(() => {
+  const parts = [
+    formData.counterOk > 0
+      ? t("plant.declare.goodCount", { count: formData.counterOk }, formData.counterOk)
+      : "",
+    formData.counterKo > 0
+      ? t("plant.declare.badCount", { count: formData.counterKo }, formData.counterKo)
+      : "",
+  ].filter(Boolean);
+  if (parts.length === 0) return t("plant.declare.submitEmpty");
+  const joined =
+    parts.length === 2
+      ? t("plant.declare.joiner", { first: parts[0], second: parts[1] })
+      : parts[0];
+  return t("plant.declare.submit", { parts: joined });
 });
 
 // Reset form when dialog opens
@@ -250,27 +228,56 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
+.declare-dialog__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.declare-dialog__title {
+  font-family: var(--font-condensed);
+  font-size: 1.625rem;
+  line-height: 2rem;
+  font-weight: 600;
+  color: var(--p-steel-900);
+}
+
+.declare-dialog__context {
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-steel-700);
+}
+
 .dialog-content {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  border-top: 1px solid var(--p-surface-border);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--p-steel-200);
 }
 
-/* Actions Panel */
 .actions-panel {
   display: flex;
-  gap: 1rem;
+  gap: 0.625rem;
   justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-steel-200);
 }
 
 .action-button {
-  min-width: 150px;
+  min-height: 56px;
+  padding-inline: 1.25rem;
+  font-size: 1.0625rem;
 }
 
-@media (max-width: 768px) {
+.action-button--cancel {
+  color: var(--p-steel-900);
+  border-color: var(--p-steel-300);
+}
+
+@media (max-width: 767.98px) {
   .actions-panel {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
   .action-button {

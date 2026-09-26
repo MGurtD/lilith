@@ -1,69 +1,74 @@
 <template>
-  <div class="phase-quantity-form">
-    <div class="info-section">
-      <div class="produced-units-row">
-        <div class="produced-column">
-          <h4 class="section-title">
-            <i :class="PrimeIcons.CHECK_CIRCLE" class="mr-2"></i>{{ $t("plant.quantitat-produida") }}</h4>
-          <div class="produced-unit-card ok">
-            <span class="produced-value">{{ quantityOk }}</span>
-          </div>
-        </div>
-        <div class="produced-column">
-          <h4 class="section-title">
-            <i :class="PrimeIcons.EXCLAMATION_TRIANGLE" class="mr-2"></i>{{ $t("plant.quantitat-defectuosa") }}</h4>
-          <div class="produced-unit-card ko">
-            <span class="produced-value">{{ quantityKo }}</span>
-          </div>
-        </div>
+  <div class="qty-form">
+    <div
+      v-for="counter in counters"
+      :key="counter.key"
+      class="qty-counter"
+      role="group"
+      :aria-labelledby="`qty-${counter.key}-${uid}`"
+    >
+      <div class="qty-counter__head">
+        <span :id="`qty-${counter.key}-${uid}`" class="qty-counter__label">
+          <span class="qty-counter__dot" :class="`qty-counter__dot--${counter.key}`"></span>
+          {{ counter.label }}
+        </span>
+        <span class="qty-counter__declared">{{
+          t("plant.declare.declared", { count: counter.declared })
+        }}</span>
       </div>
-    </div>
-
-    <div class="input-section">
-      <h4 class="section-title">
-        <i :class="PrimeIcons.PLUS_CIRCLE" class="mr-2"></i>{{ $t("plant.afegir-mes-quantitat") }}</h4>
-      <p class="section-hint">{{ $t("plant.introdueix-la-quantitat-addicional-produida-en-aquesta-sessio") }}</p>
-      <div class="counters-row">
-        <div class="counter-field">
-          <InputNumber
-            :model-value="counterOk"
-            :min="0"
-            :useGrouping="false"
-            class="w-full"
-            showButtons
-            buttonLayout="horizontal"
-            :step="1"
-            decrementButtonClass="p-button-secondary"
-            incrementButtonClass="p-button-secondary"
-            incrementButtonIcon="pi pi-plus"
-            decrementButtonIcon="pi pi-minus"
-            @update:model-value="emit('update:counterOk', $event ?? 0)"
-          />
-        </div>
-        <div class="counter-field">
-          <InputNumber
-            :model-value="counterKo"
-            :min="0"
-            :useGrouping="false"
-            class="w-full"
-            showButtons
-            buttonLayout="horizontal"
-            :step="1"
-            decrementButtonClass="p-button-secondary"
-            incrementButtonClass="p-button-secondary"
-            incrementButtonIcon="pi pi-plus"
-            decrementButtonIcon="pi pi-minus"
-            @update:model-value="emit('update:counterKo', $event ?? 0)"
-          />
-        </div>
+      <div class="qty-counter__row">
+        <button
+          type="button"
+          class="qty-key"
+          :aria-label="t('plant.declare.minus', { kind: counter.kind })"
+          :disabled="counter.value === 0"
+          @click="counter.set(counter.value - 1)"
+        >
+          <i class="pi pi-minus" aria-hidden="true"></i>
+        </button>
+        <input
+          class="qty-counter__value"
+          :class="{ 'qty-counter__value--zero': counter.value === 0 }"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          :value="counter.value"
+          :aria-label="counter.label"
+          @input="counter.set(Number(($event.target as HTMLInputElement).value))"
+          @focus="($event.target as HTMLInputElement).select()"
+        />
+        <button
+          type="button"
+          class="qty-key"
+          :aria-label="t('plant.declare.plus', { kind: counter.kind })"
+          @click="counter.set(counter.value + 1)"
+        >
+          <i class="pi pi-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="qty-counter__quick">
+        <button type="button" class="qty-quick" @click="counter.set(counter.value + 5)">+5</button>
+        <button type="button" class="qty-quick" @click="counter.set(counter.value + 10)">+10</button>
+        <button
+          type="button"
+          class="qty-quick qty-quick--reset"
+          :disabled="counter.value === 0"
+          @click="counter.set(0)"
+        >
+          {{ t("plant.declare.reset") }}
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons } from "@primevue/core/api";
+import { computed, useId } from "vue";
+import { useI18n } from "vue-i18n";
 
+// Good and bad piece counters for the shop floor: 72px keys, +5/+10 and a
+// field that accepts typing (plant-mes-redesign.md, task 5.1). Shared by
+// "Declarar peces" and the phase close dialog.
 interface Props {
   quantityOk: number;
   quantityKo: number;
@@ -71,100 +76,195 @@ interface Props {
   counterKo: number;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (event: "update:counterOk", value: number): void;
   (event: "update:counterKo", value: number): void;
 }>();
+
+const { t } = useI18n();
+const uid = useId();
+
+const clamp = (value: number) =>
+  Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+
+const counters = computed(() => [
+  {
+    key: "ok",
+    label: t("plant.declare.good"),
+    kind: t("plant.declare.goodKind"),
+    declared: props.quantityOk,
+    value: props.counterOk,
+    set: (value: number) => emit("update:counterOk", clamp(value)),
+  },
+  {
+    key: "ko",
+    label: t("plant.declare.bad"),
+    kind: t("plant.declare.badKind"),
+    declared: props.quantityKo,
+    value: props.counterKo,
+    set: (value: number) => emit("update:counterKo", clamp(value)),
+  },
+]);
 </script>
 
 <style scoped>
-.phase-quantity-form {
-  display: flex;
-  flex-direction: column;
+.qty-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
-.section-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.95rem;
+.qty-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.qty-counter__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.qty-counter__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-condensed);
+  font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--p-steel-900);
+}
+
+.qty-counter__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.qty-counter__dot--ok {
+  background: var(--p-steel-900);
+}
+
+.qty-counter__dot--ko {
+  background: var(--p-red-700);
+}
+
+.qty-counter__declared {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-steel-600);
+}
+
+.qty-counter__row {
   display: flex;
   align-items: center;
+  gap: 0.625rem;
 }
 
-.section-hint {
-  margin: 0 0 1rem 0;
-  font-size: 0.85rem;
-  color: var(--text-color-secondary);
-}
-
-.info-section {
-  background: var(--p-surface-50);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.produced-units-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.produced-column {
+.qty-key {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
   display: flex;
-  flex-direction: column;
-}
-
-.produced-unit-card {
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  border-radius: 8px;
+  border: none;
+  border-radius: 6px;
   background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
+  box-shadow:
+    inset 0 0 0 1px var(--p-steel-300),
+    0 1px 0 var(--p-steel-300);
+  color: var(--p-steel-900);
+  font-size: 1.5rem;
+  cursor: pointer;
 }
 
-.produced-unit-card.ok {
-  border-left: 4px solid var(--p-green-500);
+.qty-key i {
+  font-size: 1.5rem;
 }
 
-.produced-unit-card.ko {
-  border-left: 4px solid var(--p-red-500);
+.qty-key:active:not(:disabled) {
+  background: var(--p-steel-100);
 }
 
-.produced-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-color);
+.qty-key:disabled {
+  color: var(--p-steel-400);
+  cursor: default;
 }
 
-.input-section {
-  background: var(--p-surface-0);
-  border: 1px solid var(--p-surface-border);
-  border-radius: 8px;
-  padding: 1rem;
+.qty-counter__value {
+  flex: 1;
+  min-width: 0;
+  height: 72px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 6px;
+  background: var(--p-steel-50);
+  text-align: center;
+  font-family: var(--font-condensed);
+  font-size: 3rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--p-steel-900);
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
-.counters-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+.qty-counter__value::-webkit-outer-spin-button,
+.qty-counter__value::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
-.counter-field {
+.qty-counter__value--zero {
+  color: var(--p-steel-500);
+}
+
+.qty-key:focus-visible,
+.qty-quick:focus-visible,
+.qty-counter__value:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: 2px;
+}
+
+.qty-counter__quick {
   display: flex;
-  flex-direction: column;
+  gap: 0.5rem;
 }
 
-@media (max-width: 768px) {
-  .produced-units-row,
-  .counters-row {
-    grid-template-columns: 1fr;
+.qty-quick {
+  min-height: 44px;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--p-steel-50);
+  font-family: var(--font-condensed);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--p-steel-700);
+  cursor: pointer;
+}
+
+.qty-quick--reset {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.qty-quick:disabled {
+  color: var(--p-steel-400);
+  cursor: default;
+}
+
+@media (max-width: 767.98px) {
+  .qty-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
   }
 }
 </style>
