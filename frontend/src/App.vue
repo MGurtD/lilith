@@ -5,6 +5,7 @@ import { applyPrimeVueLocale } from "./i18n";
 import { usePrimeVue } from "primevue/config";
 import { useRoute, useRouter } from "vue-router";
 import HelpDrawer from "@/components/help/HelpDrawer.vue";
+import MenuSearchDialog from "@/components/menu-search/MenuSearchDialog.vue";
 import Header from "@/components/TheHeader.vue";
 import PwaUpdatePrompt from "@/components/PwaUpdatePrompt.vue";
 import SideBar from "@/components/TheSidebar.vue";
@@ -13,6 +14,8 @@ import { useStore } from "@/store";
 import { useApiStore } from "@/store/backend";
 import { useSpanishGeography } from "@/store/geography";
 import { useHelpStore } from "@/store/help";
+import { useMenuSearchStore } from "@/store/menuSearch";
+import { findOwningEntry } from "@/utils/menuSearch";
 import Login from "@/views/Login.vue";
 
 const store = useStore();
@@ -20,6 +23,7 @@ const plantOperatorStore = usePlantOperatorStore();
 const apiStore = useApiStore();
 const spanishGeography = useSpanishGeography();
 const helpStore = useHelpStore();
+const menuSearch = useMenuSearchStore();
 const route = useRoute();
 const router = useRouter();
 const primevue = usePrimeVue();
@@ -64,8 +68,26 @@ const handleHelpShortcut = (event: KeyboardEvent) => {
   void helpStore.toggleForRoute(resolveRouteHelpKey());
 };
 
+// Ctrl/⌘+K also works while typing in a field: it is the only shortcut that
+// takes over editable targets, as in most command palettes.
+const handleMenuSearchShortcut = (event: KeyboardEvent) => {
+  if (
+    !store.authorization ||
+    !(event.ctrlKey || event.metaKey) ||
+    event.altKey ||
+    event.shiftKey ||
+    event.key.toLowerCase() !== "k"
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  menuSearch.toggle();
+};
+
 onMounted(async () => {
   window.addEventListener("keydown", handleHelpShortcut);
+  window.addEventListener("keydown", handleMenuSearchShortcut);
   spanishGeography.fetch();
 
   // Initialize language for anonymous users; JWT-based locale will be handled in setAuthorization
@@ -75,7 +97,25 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleHelpShortcut);
+  window.removeEventListener("keydown", handleMenuSearchShortcut);
 });
+
+// Recent screens are per user; every visit to a menu screen counts, whether it
+// was opened from the searcher or the sidebar. Detail routes count as their list.
+watch(
+  () => store.user?.id,
+  (userId) => menuSearch.loadRecents(userId),
+  { immediate: true },
+);
+
+watch(
+  [() => route.path, () => menuSearch.entries],
+  ([path, entries]) => {
+    const entry = findOwningEntry(entries, path);
+    if (entry) menuSearch.recordVisit(entry.href);
+  },
+  { immediate: true },
+);
 
 watch(
   () => store.language.current,
@@ -101,6 +141,7 @@ watch(
 
 const logout = async () => {
   helpStore.reset();
+  menuSearch.reset();
   await store.removeAuthorization();
   router.push("/login");
 };
@@ -117,6 +158,7 @@ const logoutOperator = () => {
     <Header />
     <SideBar @logout-click="logout" @logout-operator-click="logoutOperator" />
     <HelpDrawer />
+    <MenuSearchDialog />
     <main class="app__view" :class="{ collapsed: store.sidebar.collapsed }">
       <ScrollPanel style="height: calc(100vh - 5rem)">
         <RouterView />

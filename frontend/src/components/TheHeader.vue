@@ -29,6 +29,7 @@
     <div class="title-bar__right">
       <!-- Screens teleport their page-level actions (Save…) here. -->
       <div id="page-actions" class="title-bar__actions"></div>
+      <MenuSearchTrigger />
       <Button
         v-if="helpKey"
         icon="pi pi-question-circle"
@@ -48,10 +49,12 @@ import { computed } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import MenuSearchTrigger from "@/components/menu-search/MenuSearchTrigger.vue";
 import { useIsPhone } from "@/composables/useIsPhone";
 import { useStore } from "@/store";
 import { useHelpStore } from "@/store/help";
 import type { MenuItem } from "@/types/component";
+import { ownsRoute } from "@/utils/menuSearch";
 
 const store = useStore();
 const isPhone = useIsPhone();
@@ -69,10 +72,6 @@ const helpKey = computed(() =>
 // Module that owns the current screen: the top-level sidebar entry whose menu
 // tree (any depth) holds the route. Detail routes (/customers/:id) belong to
 // their list entry (/customers).
-const ownsRoute = (entry: MenuItem, path: string): boolean =>
-  (!!entry.href && (path === entry.href || path.startsWith(`${entry.href}/`))) ||
-  (entry.child ?? []).some((child) => ownsRoute(child, path));
-
 const moduleTitle = computed<string | undefined>(() => {
   const owner = store.sidebar.menus.find(
     (module: MenuItem) => !module.href && ownsRoute(module, route.path),
