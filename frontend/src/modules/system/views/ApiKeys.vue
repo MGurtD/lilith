@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useStore } from "@/store";
 import { useApiKeysStore } from "@/modules/system/store/apiKeys";
+import Message from "primevue/message";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { PrimeIcons } from "@primevue/core/api";

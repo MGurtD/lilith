@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import ProgressSpinner from "primevue/progressspinner";
 import { useToast } from "primevue/usetoast";
 import FileViewer from "@/components/FileViewer.vue";
 import { FileService } from "@/services/file.service";
