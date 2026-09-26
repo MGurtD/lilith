@@ -1,6 +1,8 @@
 <template>
   <div class="card">
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="tableItems"
       :columns="columns"
       :filter-config="[]"
@@ -42,7 +44,11 @@ import { UserService } from "@/modules/system/services/user.service";
 import { useStore } from "@/store";
 import { PrimeIcons } from "@primevue/core/api";
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { User, Profile, Role, Language } from "@/types";
@@ -141,6 +147,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 20%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "username",
+  subtitle: "profileName",
+  meta: ["firstName", "lastName", "disabled"],
+};
 
 const openUser = (row: DataTableRowClickEvent) => {
   router.push({ path: `/user/${row.data.id}` });

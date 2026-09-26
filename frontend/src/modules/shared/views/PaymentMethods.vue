@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="filteredPaymentMethods"
     :columns="columns"
     :filter-config="filterConfig"
@@ -14,7 +16,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type { FilterConfig } from "@/components/tables/TableFilter.vue";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
@@ -76,6 +82,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 20%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["dueDays", "paymentDay", "disabled"],
+};
 
 const filteredPaymentMethods = computed(() => {
   if (!paymentMethodStore.paymentMethods) return [];

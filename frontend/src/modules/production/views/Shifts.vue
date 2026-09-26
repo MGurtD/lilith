@@ -3,6 +3,8 @@
     <section class="two-columns">
       <div>
         <Table
+          phone-layout="cards"
+          :card-layout="shiftCardLayout"
           :items="shiftStore.shifts ?? []"
           :columns="shiftColumns"
           :filter-config="[]"
@@ -18,6 +20,8 @@
       </div>
       <div>
         <Table
+          phone-layout="cards"
+          :card-layout="shiftDetailCardLayout"
           :items="shiftStore.shiftdetails ?? []"
           :columns="shiftDetailColumns"
           :filter-config="[]"
@@ -62,7 +66,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -94,6 +102,11 @@ const shiftColumns = computed<Column[]>(() => [
   },
 ]);
 
+const shiftCardLayout: CardLayout = {
+  title: "name",
+  meta: ["disabled"],
+};
+
 const shiftDetailColumns = computed<Column[]>(() => [
   { field: "startTime", header: pt("Hora inici") },
   { field: "endTime", header: pt("Hora fi") },
@@ -103,6 +116,12 @@ const shiftDetailColumns = computed<Column[]>(() => [
     columnType: ColumnType.Boolean,
   },
 ]);
+
+const shiftDetailCardLayout: CardLayout = {
+  title: "startTime",
+  trailing: "endTime",
+  meta: ["isProductiveTime"],
+};
 
 const openShift = () => {
   shiftStore.setNewShift(getNewUuid());
@@ -174,3 +193,12 @@ const submitShiftDetail = async (data: ShiftDetail) => {
   }
 };
 </script>
+
+<style scoped>
+/* Phones stack the shifts above their schedule. */
+@media (max-width: 767.98px) {
+  .two-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>

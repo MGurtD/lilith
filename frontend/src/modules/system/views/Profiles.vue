@@ -3,7 +3,11 @@ import { computed, onMounted, ref } from "vue";
 import { useStore } from "@/store";
 import { useProfilesStore } from "@/modules/system/store/profiles";
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type { Profile } from "@/types";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -42,6 +46,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 15%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["isSystem"],
+};
 
 const load = async () => {
   loading.value = true;
@@ -84,6 +94,8 @@ onMounted(async () => {
 <template>
   <div class="card">
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="profiles.items"
       :columns="columns"
       :filter-config="[]"

@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="taxStore.taxes ?? []"
     :columns="columns"
     :filter-config="[]"
@@ -14,11 +16,16 @@
     <template #prepend>
       <span class="text-900 font-bold">{{ t("shared.taxes.title") }}</span>
     </template>
+    <template #card-percentatge="{ data }">{{ data.percentatge }} %</template>
   </Table>
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { computed, onMounted, watch } from "vue";
@@ -66,6 +73,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 15%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  trailing: "percentatge",
+  meta: ["isReverseCharge", "disabled"],
+};
 
 const refreshMenu = () => {
   store.setMenuItem({

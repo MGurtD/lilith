@@ -66,6 +66,8 @@
 
       <TabPanel value="1">
         <Table
+          phone-layout="cards"
+          :card-layout="cardLayout"
           :items="tableData"
           :columns="columns"
           :show-filters="false"
@@ -109,7 +111,10 @@ import TableFilter, {
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/types";
+import type {
+  CardLayout,
+  Column,
+} from "../../../components/tables/types";
 
 import { CustomerSalesRanking } from "../types";
 import { CustomerRankingService } from "../services/customerRanking.service";
@@ -190,6 +195,11 @@ const columns = computed<Column[]>(() => [
     sortable: true,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "customerName",
+  trailing: "totalSales",
+};
 
 const setMenuTitle = () => {
   store.setMenuItem({

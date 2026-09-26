@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="plantmodelStore.operatorTypes ?? []"
     :columns="columns"
     :filter-config="[]"
@@ -20,7 +22,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -58,6 +64,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchOperatorTypes();

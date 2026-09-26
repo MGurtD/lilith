@@ -1,6 +1,8 @@
 <template>
   <div>
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="groupedSaturation"
       :columns="columns"
       :filter-config="filterConfig"
@@ -42,6 +44,15 @@
           size="small"
         />
       </template>
+      <template #card-actions="{ data }">
+        <Button
+          :icon="PrimeIcons.SEARCH"
+          text
+          rounded
+          :aria-label="pt('Veure detall')"
+          @click="showDetail(data)"
+        />
+      </template>
     </Table>
 
     <!-- Dialog de detall -->
@@ -52,6 +63,8 @@
       :modal="true"
     >
       <Table
+        phone-layout="cards"
+        :card-layout="detailCardLayout"
         :items="selectedDetails"
         :columns="detailColumns"
         :show-filters="false"
@@ -71,7 +84,11 @@
 
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -139,6 +156,11 @@ const columns = computed<Column[]>(() => [
   },
 ]);
 
+const cardLayout: CardLayout = {
+  title: "workcenterTypeName",
+  trailing: "totalEstimatedTime",
+};
+
 const detailColumns = computed<Column[]>(() => [
   {
     field: "workOrderCode",
@@ -186,6 +208,13 @@ const detailColumns = computed<Column[]>(() => [
     style: "width: 15%",
   },
 ]);
+
+const detailCardLayout: CardLayout = {
+  title: "workOrderCode",
+  trailing: "workOrderPlannedDate",
+  subtitle: "phaseDescription",
+  meta: ["workOrderPriority", "plannedQuantity", "estimatedTime"],
+};
 
 // Computed property to group data by workcenterTypeId
 const groupedSaturation = computed(() => {

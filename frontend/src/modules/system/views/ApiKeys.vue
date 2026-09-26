@@ -13,7 +13,10 @@ import FormApiKey, {
 } from "@/modules/system/components/FormApiKey.vue";
 import type { CreateApiKeyResponse } from "@/types";
 import Table from "@/components/tables/Table.vue";
-import type { Column } from "@/components/tables/types";
+import type {
+  CardLayout,
+  Column,
+} from "@/components/tables/types";
 
 const { t } = useI18n();
 const globalStore = useStore();
@@ -72,6 +75,13 @@ const columns = computed<Column[]>(() => [
     style: "width: 5%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  badge: "disabled",
+  meta: ["keyPrefix", "scopes", "expiresOn"],
+};
 
 const openCreateDialog = () => {
   formInitialData.value = { id: getNewUuid(), name: "", expiresOn: null };
@@ -155,6 +165,8 @@ onMounted(async () => {
 <template>
   <div class="card">
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="store.items"
       :columns="columns"
       :filter-config="[]"
@@ -204,6 +216,17 @@ onMounted(async () => {
           :disabled="slotProps.data.disabled"
           @click.stop="confirmDisable(slotProps)"
           v-tooltip.left="t('apiKeys.disable.tooltip')"
+        />
+      </template>
+      <template #card-actions="slotProps">
+        <Button
+          icon="pi pi-ban"
+          text
+          rounded
+          severity="danger"
+          :disabled="slotProps.data.disabled"
+          :aria-label="t('apiKeys.disable.tooltip')"
+          @click="confirmDisable(slotProps)"
         />
       </template>
     </Table>

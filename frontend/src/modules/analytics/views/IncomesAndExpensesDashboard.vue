@@ -79,6 +79,8 @@
       </TabPanel>
       <TabPanel value="1">
         <Table
+          phone-layout="cards"
+          :card-layout="cardLayout"
           :items="totals"
           :columns="columns"
           :show-filters="false"
@@ -117,7 +119,11 @@ import TableFilter, {
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 
 import {
   formatDateForQueryParameter,
@@ -171,6 +177,13 @@ const columns = computed<Column[]>(() => [
   { field: "description", header: t("common.description") },
   { field: "total", header: t("common.total") },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "description",
+  trailing: "total",
+  subtitle: "detail",
+  meta: ["date", "type"],
+};
 
 const clearFilter = () => {
   filter.value.dates = [

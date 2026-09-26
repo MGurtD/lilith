@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="expenseStore.expenseTypes ?? []"
@@ -21,6 +23,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import { getNewUuid } from "../../../utils/functions";
@@ -59,6 +62,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 20%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 const setMenuTitle = () => {
   store.setMenuItem({

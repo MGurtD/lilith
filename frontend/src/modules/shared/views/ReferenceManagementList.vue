@@ -1,6 +1,8 @@
 <template>
   <div>
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="filteredReferences"
       :columns="columns"
       :filter-config="filterConfig"
@@ -23,7 +25,11 @@
 
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type { FilterConfig } from "@/components/tables/TableFilter.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -98,6 +104,12 @@ const columns = computed<Column[]>(() => [
     showColor: false,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "code",
+  subtitle: "description",
+  meta: ["version", "active"],
+};
 
 const tableItems = computed(() =>
   (references.value ?? []).map((reference) => ({

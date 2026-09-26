@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="lifecyclesStore.lifecycles ?? []"
     :columns="columns"
     :filter-config="[]"
@@ -20,7 +22,10 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import type { Column } from "@/components/tables/types";
+import type {
+  CardLayout,
+  Column,
+} from "@/components/tables/types";
 import { getNewUuid } from "@/utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { computed, onMounted } from "vue";
@@ -56,6 +61,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 25%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["initialStatusId"],
+};
 
 onMounted(async () => {
   await lifecyclesStore.fetchAll();

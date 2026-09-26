@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="phaseTemplateStore.phaseTemplates ?? []"
     :columns="columns"
     :filter-config="[]"
@@ -43,7 +45,11 @@ import {
 } from "@/components/forms/types";
 import { stringValue } from "@/components/forms/value-utils";
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { computed, onMounted, reactive, watch } from "vue";
@@ -84,6 +90,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["disabled"],
+};
 
 const createRows = computed<FormRowConfig[]>(() => [
   {
