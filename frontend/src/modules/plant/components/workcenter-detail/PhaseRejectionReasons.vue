@@ -209,6 +209,24 @@ defineExpose({ isBalanced, assignedQuantity });
   width: 100%;
 }
 
+/* Shop-floor touch targets. */
+.rejection-reason,
+.rejection-quantity :deep(.p-inputtext),
+.rejection-quantity :deep(.p-button),
+.rejection-row > :deep(.p-button),
+.rejection-actions :deep(.p-button) {
+  min-height: 48px;
+}
+
+.rejection-row > :deep(.p-button) {
+  min-width: 48px;
+}
+
+.rejection-reason :deep(.p-select-label) {
+  display: flex;
+  align-items: center;
+}
+
 .rejection-actions {
   display: flex;
   align-items: center;
@@ -222,7 +240,7 @@ defineExpose({ isBalanced, assignedQuantity });
 }
 
 .rejection-summary.invalid {
-  color: var(--p-red-500);
+  color: var(--p-red-700);
   font-weight: 600;
 }
 
