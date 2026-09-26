@@ -884,8 +884,6 @@ const es = {
         loadError: "Error cargando las facturas pendientes",
         integrateSuccess: "Factura {number} integrada correctamente",
         integrateError: "Error integrando la factura {number}",
-        bulkIntegrateSuccess: "Facturas seleccionadas integradas correctamente",
-        bulkIntegrateError: "Error integrando las facturas seleccionadas",
         requestsError: "Error cargando las solicitudes de la factura",
         integrationFailed: "La integración ha fallado",
         unexpectedError: "Se ha producido un error inesperado",

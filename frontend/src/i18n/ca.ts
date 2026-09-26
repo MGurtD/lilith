@@ -884,8 +884,6 @@ const ca = {
         loadError: "Error carregant les factures pendents",
         integrateSuccess: "Factura {number} integrada correctament",
         integrateError: "Error integrant la factura {number}",
-        bulkIntegrateSuccess: "Factures seleccionades integrades correctament",
-        bulkIntegrateError: "Error integrant les factures seleccionades",
         requestsError: "Error carregant les sol·licituds de la factura",
         integrationFailed: "La integració ha fallat",
         unexpectedError: "S'ha produït un error inesperat",
