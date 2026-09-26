@@ -1,6 +1,7 @@
 <template>
   <div>
     <Table
+      :card-layout="cardLayout"
       class="p-datatable-sm small-datatable"
       dataKey="key"
       :items="workcenterShifts"
@@ -23,7 +24,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -123,6 +128,13 @@ const columns = computed<Column[]>(() => [
   { field: "referenceDescription", header: pt("Descripcio referencia") },
   { field: "customerComercialName", header: pt("Client") },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "workcenter",
+  subtitle: "operator",
+  trailing: "startTime",
+  meta: ["machineStatus", "quantityOk", "workOrderCode"],
+};
 
 const filter = ref({
   dates: undefined as Array<Date> | undefined,

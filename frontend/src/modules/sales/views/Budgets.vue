@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="budgetStore.budgets ?? []"
@@ -46,7 +47,11 @@
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -99,6 +104,14 @@ const columns = computed<Column[]>(() => [
   { field: "acceptanceDate", header: t("sales.budgets.columns.acceptanceDate"), columnType: ColumnType.Date },
   { field: "deliveryDays", header: t("sales.budgets.columns.deliveryDays") },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "date",
+  meta: ["acceptanceDate", "deliveryDays"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

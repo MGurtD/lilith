@@ -1,5 +1,5 @@
 <template>
-  <div class="dimension-chips">
+  <div v-if="formattedDimensions.length" class="dimension-chips">
     <span
       v-for="dimension in formattedDimensions"
       :key="dimension"
@@ -21,20 +21,25 @@ interface Props {
   height: number;
   diameter: number;
   thickness: number;
+  /** Render nothing instead of the "no dimensions" chip. */
+  hideEmpty?: boolean;
 }
 
 const props = defineProps<Props>();
 const { t } = useI18n();
 
-const formattedDimensions = computed(() =>
-  formatDimensions(t, {
+const formattedDimensions = computed(() => {
+  const dimensions = {
     width: props.width,
     length: props.length,
     height: props.height,
     diameter: props.diameter,
     thickness: props.thickness,
-  }),
-);
+  };
+  if (props.hideEmpty && !Object.values(dimensions).some((value) => value > 0))
+    return [];
+  return formatDimensions(t, dimensions);
+});
 </script>
 
 <style scoped>

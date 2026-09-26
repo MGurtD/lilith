@@ -1,5 +1,6 @@
 <template>
   <StatsDashboard
+    :card-layout="cardLayout"
     :columns="columns"
     :items="result?.rows ?? []"
     :kpis="kpis"
@@ -51,7 +52,11 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import StatsDashboard, { type StatKpi } from "@/components/StatsDashboard.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -135,6 +140,14 @@ const columns = computed<Column[]>(() => [
   },
   { field: "amount", header: t("common.amount"), columnType: ColumnType.Currency },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "budgetNumber",
+  subtitle: "customerName",
+  badge: "statusId",
+  trailing: "amount",
+  meta: ["budgetDate", "orderNumber", "daysToConversion"],
+};
 
 const kpis = computed<StatKpi[]>(() => [
   {

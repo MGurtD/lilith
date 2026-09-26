@@ -8,6 +8,7 @@
     :filter-body-width="filterBodyWidth"
     :show-filter-action="false"
     :show-create="false"
+    :card-layout="cardLayout"
     page="Stocks"
     tableStyle="min-width: 100%"
     scrollable
@@ -45,6 +46,19 @@
         />
       </span>
     </template>
+    <template #card-quantity="{ data }">
+      {{ t("warehouse.fields.unitsCount", { count: data.quantity }) }}
+    </template>
+    <template #card-dimensions="{ data }">
+      <DimensionChips
+        :width="data.width"
+        :length="data.length"
+        :height="data.height"
+        :diameter="data.diameter"
+        :thickness="data.thickness"
+        hide-empty
+      />
+    </template>
     <template #body-lotTraceability="{ data }">
       <Button
         icon="pi pi-sitemap"
@@ -61,7 +75,12 @@
 
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import DimensionChips from "@/components/DimensionChips.vue";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -182,7 +201,21 @@ const columns = computed<Column[]>(() => [
     style: "width: 6%",
     truncate: false,
   },
+  {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
 ]);
+
+// Rows are grouped by dimensions, so they are what tells two cards of
+// the same reference apart.
+const cardLayout: CardLayout = {
+  title: "referenceDisplay",
+  trailing: "quantity",
+  subtitle: "dimensions",
+  meta: ["lotCode", "warehouseName", "locationName"],
+};
 
 const filteredStocks = computed(() => {
   if (!stockStore.stocks) return [];

@@ -6,6 +6,7 @@
     :show-filter-actions="false"
     :show-create="false"
     page="WorkorderPlanning"
+    :card-layout="cardLayout"
     show-row-reorder-column
     tableStyle="min-width: 100%"
     class="p-datatable-sm small-datatable"
@@ -25,7 +26,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
@@ -75,6 +80,14 @@ const columns = computed<Column[]>(() => [
     columnType: ColumnType.Number,
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "code",
+  trailing: "order",
+  subtitle: "reference.code",
+  badge: "status.name",
+  meta: ["reference.customer.comercialName", "plannedDate", "plannedQuantity"],
+};
 
 onMounted(async () => {
   store.setMenuItem({

@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="filteredExpenses"
@@ -25,6 +26,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import { useRouter } from "vue-router";
@@ -88,6 +90,13 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%; text-align: right",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "description",
+  subtitle: "expenseTypeId",
+  trailing: "amount",
+  meta: ["paymentDate", "frecuency"],
+};
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "66%", tablet: "100%" };
 

@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     preset="crud-list"
     :columns="columns"
     :items="receiptsStore.receipts ?? []"
@@ -43,6 +44,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import FormCreatePurchaseDocument from "../components/FormCreatePurchaseDocument.vue";
@@ -113,6 +115,14 @@ const columns = computed<Column[]>(() => [
     style: "width: 20%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierId",
+  badge: "statusId",
+  trailing: "date",
+  meta: ["supplierNumber"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

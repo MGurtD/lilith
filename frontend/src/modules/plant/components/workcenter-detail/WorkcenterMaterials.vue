@@ -113,7 +113,7 @@ import type { StockResponse } from "../../../warehouse/types";
 import WarehouseServices from "../../../warehouse/services";
 import ProductionServices from "../../../production/services";
 import AvailableStockDialog from "./AvailableStockDialog.vue";
-import DimensionChips from "./DimensionChips.vue";
+import DimensionChips from "@/components/DimensionChips.vue";
 
 const { t } = useI18n();
 

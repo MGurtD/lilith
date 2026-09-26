@@ -1,5 +1,6 @@
 <template>
   <Table
+    :card-layout="cardLayout"
     :columns="columns"
     :items="invoiceStore.invoices ?? []"
     :filter-config="filterConfig"
@@ -44,7 +45,11 @@
 import DropdownCustomers from "../components/DropdownCustomers.vue";
 import FormCreateOrderOrInvoice from "../components/FormCreateOrderOrInvoice.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -102,6 +107,14 @@ const columns = computed<Column[]>(() => [
   { field: "dueDate", header: t("sales.list.columns.dueDate"), style: "width: 15%", sortable: true },
   { field: "netAmount", header: t("common.amount"), columnType: ColumnType.Currency, style: "width: 20%" },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  subtitle: "customerId",
+  badge: "statusId",
+  trailing: "netAmount",
+  meta: ["invoiceDate", "dueDate"],
+};
 
 const filterConfig = computed<FilterConfig[]>(() => [
   {

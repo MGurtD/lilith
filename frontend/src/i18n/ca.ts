@@ -272,7 +272,7 @@ const ca = {
     cancel: "Cancel·lar",
   },
   production: {
-    actions: { create: "Crear", delete: "Eliminar" },
+    actions: { create: "Crear", delete: "Eliminar", copy: "Copiar" },
       components: {
         afegirMotiu: "Afegir motiu",
         alcadaMm: "Alçada (mm)",
@@ -2023,7 +2023,7 @@ const ca = {
   warehouse: {
     actions: { all: "Tots", create: "Crear" },
     fields: {
-      warehouse: "Magatzem", name: "Nom", site: "Centre", defaultLocation: "Ubicació per defecte", disabled: "Desactivat", locationType: "Tipologia", material: "Material", quantity: "Quantitat", widthMm: "Amplada (mm)", lengthMm: "Longitud (mm)", heightMm: "Alçada (mm)", diameterMm: "Diàmetre (mm)", thicknessMm: "Gruix (mm)", widthMmAxis: "Ample (x) mm", lengthMmAxis: "Llarg (y) mm", heightMmAxis: "Alt (z) mm", reference: "Referència", location: "Ubicació", units: "Uds.", movementType: "Tipus de moviment",
+      warehouse: "Magatzem", name: "Nom", site: "Centre", defaultLocation: "Ubicació per defecte", disabled: "Desactivat", locationType: "Tipologia", material: "Material", quantity: "Quantitat", widthMm: "Amplada (mm)", lengthMm: "Longitud (mm)", heightMm: "Alçada (mm)", diameterMm: "Diàmetre (mm)", thicknessMm: "Gruix (mm)", widthMmAxis: "Ample (x) mm", lengthMmAxis: "Llarg (y) mm", heightMmAxis: "Alt (z) mm", reference: "Referència", location: "Ubicació", units: "Uds.", unitsCount: "{count} u.", dimensions: "Mesures", movementType: "Tipus de moviment",
     },
     locationTypes: { supply: "Subministrament", receiving: "Recepció", shipping: "Expedició", storage: "Emmagatzematge" },
     placeholders: { selectWarehouse: "Selecciona un magatzem", selectLocation: "Selecciona una ubicació", noLocationType: "Sense tipus", allLocationTypes: "Tots els tipus", selectPeriod: "Selecciona un període" },
@@ -2123,6 +2123,7 @@ const ca = {
       filters: { period: "Període", supplier: "Proveïdor", showManaged: "Gestionades" },
       placeholders: { selectSupplier: "Selecciona un proveïdor" },
       columns: { number: "Número", supplier: "Proveïdor", supplierInvoiceNumber: "Núm. fra. proveïdor", status: "Estat", date: "Data", dueDate: "Venciment", baseAmount: "Import base" },
+      actions: { download: "Descarregar factura" },
       messages: { selectPeriod: "Selecciona un període", accountingCompleted: "Comptabilització de factures", accountedInvoices: "Factures comptabilitzades: {count}" },
     },
     purchaseInvoiceImport: {
@@ -2229,7 +2230,14 @@ const ca = {
     filters: { title: "Filtres", selectPlaceholder: "Selecciona...", apply: "Filtrar", clear: "Netejar", clearTooltip: "Netejar filtres", create: "Nou", createTooltip: "Crear nou", active: "Filtres aplicats", openCount: "Filtres | Filtres, {n} aplicat | Filtres, {n} aplicats", editFilter: "Canviar el filtre {label}", resultCount: "Cap resultat | {n} resultat | {n} resultats", done: "Fet" },
     views: { selectView: "Selecciona una vista", selectExistingToUpdate: "Selecciona una vista existent per actualitzar", updated: "Vista actualitzada", updateSuccess: "La configuració s'ha desat correctament", nameRequired: "Nom requerit", enterName: "Introdueix un nom per a la nova vista", created: "Vista creada", createSuccess: "La nova vista s'ha creat correctament", selectToDelete: "Selecciona una vista per eliminar", confirmDelete: "Segur que vols eliminar la vista \"{name}\"?", confirmation: "Confirmació", deleted: "Vista eliminada", selectToSetDefault: "Selecciona una vista per establir com a per defecte", normal: "Vista normal", default: "Vista per defecte", defaultRemoved: "La vista ja no és la predeterminada", defaultSet: "La vista s'ha establert com a per defecte", configuration: "Configuració de la vista", current: "Vista actual", selectPlaceholder: "Selecciona una vista...", removeDefault: "Treure de per defecte", setDefault: "Establir com a per defecte", saveChanges: "Desar canvis", delete: "Eliminar", savedFilters: "Filtres desats", columnConfiguration: "Configuració de columnes", total: "Total", noSort: "Sense ordenació", ascending: "Ascendent", descending: "Descendent", new: "Nova vista", newNamePlaceholder: "Nom de la nova vista...", createNew: "Crear nova vista", tabs: { columns: "Columnes", card: "Targeta mòbil" }, card: { titleField: "Títol", subtitleField: "Subtítol", badgeField: "Etiqueta d'estat", trailingField: "Valor destacat", metaFields: "Dades addicionals", metaHint: "Fins a {max} camps, en l'ordre de les columnes.", none: "Cap", usingScreenDefault: "S'utilitza la targeta per defecte de la pantalla.", customized: "Targeta personalitzada per a aquesta vista.", resetToScreenDefault: "Restablir", preview: "Vista prèvia", previewEmpty: "No hi ha cap fila per mostrar la vista prèvia." } },
     sort: { title: "Ordenar", open: "Ordenar", none: "Sense ordenació", status: "Ordenat per {column}, {direction}", openActive: "Ordenar: {column}, {direction}" },
-    cards: { delete: "Eliminar", empty: "No hi ha cap registre" },
+    cards: {
+      delete: "Eliminar", empty: "No hi ha cap registre",
+      moveUp: "Moure amunt",
+      moveDown: "Moure avall",
+      select: "Seleccionar",
+      selectAll: "Seleccionar-ho tot",
+      selectedCount: "{count} seleccionats",
+    },
   },
 };
 

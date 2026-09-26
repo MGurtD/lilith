@@ -669,6 +669,7 @@ function buildViewConfig(): string {
                 <div class="columns-config-list">
                   <div
                     v-for="(col, index) in localColumns"
+                    v-show="!col.cardOnly"
                     :key="col.field"
                     class="column-config-row"
                     :class="{

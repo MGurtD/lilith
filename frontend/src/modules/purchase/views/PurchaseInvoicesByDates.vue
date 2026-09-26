@@ -10,6 +10,7 @@
     selection-column-width="2%"
     preset="crud-list"
     page="PurchaseInvoicesByDates"
+    :card-layout="cardLayout"
     class="small-datatable"
     tableStyle="min-width: 100%"
     sortMode="multiple"
@@ -47,6 +48,15 @@
         @click="downloadInvoices(data)"
       />
     </template>
+    <template #card-actions="{ data }">
+      <Button
+        :icon="PrimeIcons.DOWNLOAD"
+        text
+        rounded
+        :aria-label="t('purchase.purchaseInvoicesByDates.actions.download')"
+        @click="downloadInvoices(data)"
+      />
+    </template>
   </Table>
 </template>
 <script setup lang="ts">
@@ -58,7 +68,11 @@ import {
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
@@ -160,6 +174,14 @@ const columns = computed<Column[]>(() => [
   },
   { field: "download", header: "", style: "width: 2%" },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "number",
+  trailing: "baseAmount",
+  subtitle: "supplierId",
+  badge: "_status",
+  meta: ["supplierNumber", "purchaseInvoiceDate", "_dueDate"],
+};
 const selectedInvoices = ref([] as Array<PurchaseInvoice>);
 const lifecycleName = "PurchaseInvoice";
 
