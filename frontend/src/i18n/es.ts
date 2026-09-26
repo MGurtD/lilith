@@ -863,7 +863,7 @@ const es = {
       actions: {
         search: "Buscar",
         integrate: "Integrar",
-        integrateSelected: "Integrar Pendientes",
+        sendToVerifactu: "Enviar a Verifactu",
         viewRequests: "Ver solicitudes",
       },
       table: {

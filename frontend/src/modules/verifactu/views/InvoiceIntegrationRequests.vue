@@ -1,6 +1,8 @@
 <template>
   <div class="verifactu-integration-requests">
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="filteredRequests"
       :columns="columns"
       :filter-config="filterConfig"
@@ -108,6 +110,30 @@
             @click="confirmResend(data)"
           />
         </div>
+      </template>
+      <template #card-actions="{ data }">
+        <Button
+          icon="pi pi-eye"
+          size="small"
+          text
+          rounded
+          :aria-label="$t('verifactu.integrationRequests.actions.viewDetail')"
+          :title="$t('verifactu.integrationRequests.actions.viewDetail')"
+          @click="openDetail(data)"
+        />
+        <Button
+          v-if="!data.success"
+          icon="pi pi-refresh"
+          size="small"
+          text
+          rounded
+          severity="warn"
+          :loading="resendingId === data.invoiceId"
+          :disabled="resendingId === data.invoiceId"
+          :aria-label="$t('verifactu.integrationRequests.actions.resend')"
+          :title="$t('verifactu.integrationRequests.actions.resend')"
+          @click="confirmResend(data)"
+        />
       </template>
       <template #empty>
         <div class="text-center p-4">
@@ -241,7 +267,11 @@ import {
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { PrimeIcons } from "@primevue/core/api";
@@ -334,6 +364,14 @@ const columns = computed<Column[]>(() => [
     style: "width: 12rem",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  trailing: "timestampResponse",
+  subtitle: "customerComercialName",
+  badge: "success",
+  meta: ["status"],
+};
 
 // Each sales invoice can have multiple Verifactu requests -> flatten for the table
 const flattenedRequests = computed(() => {

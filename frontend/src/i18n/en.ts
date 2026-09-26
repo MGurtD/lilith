@@ -863,7 +863,7 @@ const en = {
       actions: {
         search: "Search",
         integrate: "Integrate",
-        integrateSelected: "Integrate remaining",
+        sendToVerifactu: "Send to Verifactu",
         viewRequests: "View requests",
       },
       table: {

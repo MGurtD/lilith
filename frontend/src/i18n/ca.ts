@@ -863,7 +863,7 @@ const ca = {
       actions: {
         search: "Cercar",
         integrate: "Integrar",
-        integrateSelected: "Integrar Seleccionades",
+        sendToVerifactu: "Enviar a Verifactu",
         viewRequests: "Veure Sol·licituds",
       },
       table: {

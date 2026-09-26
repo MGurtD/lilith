@@ -13,6 +13,8 @@
     <TabPanels>
       <TabPanel value="0">
         <Table
+          phone-layout="cards"
+          :card-layout="supplierCardLayout"
           preset="crud-list"
           :columns="supplierColumns"
           :items="filteredSuppliers"
@@ -30,6 +32,8 @@
       </TabPanel>
       <TabPanel value="1">
         <Table
+          phone-layout="cards"
+          :card-layout="supplierTypeCardLayout"
           preset="crud-list"
           :columns="supplierTypeColumns"
           :items="supplierStore.supplierTypes ?? []"
@@ -71,6 +75,7 @@
 import Table from "../../../components/tables/Table.vue";
 import {
   ColumnType,
+  type CardLayout,
   type Column,
 } from "../../../components/tables/types";
 import type {
@@ -178,6 +183,12 @@ const supplierColumns = computed<Column[]>(() => [
   },
 ]);
 
+const supplierCardLayout: CardLayout = {
+  title: "comercialName",
+  subtitle: "taxName",
+  meta: ["vatNumber", "phone", "supplierTypeId"],
+};
+
 const supplierTypeColumns = computed<Column[]>(() => [
   {
     field: "name",
@@ -190,6 +201,11 @@ const supplierTypeColumns = computed<Column[]>(() => [
     style: "width: 47.5%",
   },
 ]);
+
+const supplierTypeCardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+};
 
 onMounted(async () => {
   await supplierStore.fetchSuppliers();

@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="filteredInventories"
     :columns="columns"
     :filter-config="filterConfig"
@@ -34,6 +36,19 @@
     <template #body-lotCode="{ data }">
       {{ data.lotCode || "-" }}
     </template>
+    <template #card-oldQuantity="{ data }">
+      {{ t("warehouse.fields.unitsCount", { count: data.oldQuantity }) }}
+    </template>
+    <template #card-dimensions="{ data }">
+      <DimensionChips
+        :width="data.width"
+        :length="data.length"
+        :height="data.height"
+        :diameter="data.diameter"
+        :thickness="data.thickness"
+        hide-empty
+      />
+    </template>
     <template #body-newQuantity="{ data }">
       <BaseInput label="" id="newQuantity" v-model="data.newQuantity" />
     </template>
@@ -54,7 +69,11 @@ import {
   type FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import type { Column } from "../../../components/tables/types";
+import DimensionChips from "@/components/DimensionChips.vue";
+import type {
+  CardLayout,
+  Column,
+} from "../../../components/tables/types";
 import { useStore } from "../../../store";
 import { useStockStore } from "../store/stock";
 import { useInventoryStore } from "../store/inventory";
@@ -149,7 +168,19 @@ const columns = computed<Column[]>(() => [
     field: "thickness",
     header: t("warehouse.fields.thicknessMm"),
   },
+  {
+    field: "dimensions",
+    header: t("warehouse.fields.dimensions"),
+    cardOnly: true,
+  },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "referenceName",
+  trailing: "oldQuantity",
+  subtitle: "dimensions",
+  meta: ["lotCode", "locationName", "newQuantity"],
+};
 
 const filterBodyWidth: FilterBodyWidth = {
   desktop: "55%",

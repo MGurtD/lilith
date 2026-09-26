@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="rejections"
     :columns="columns"
     :filter-config="[]"
@@ -23,7 +25,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { WorkOrderPhaseRejection } from "../types";
 
 const props = defineProps<{
@@ -56,6 +62,13 @@ const columns = computed<Column[]>(() => [
     style: "width: 20%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "rejectionReasonName",
+  trailing: "quantity",
+  subtitle: "rejectionReasonCode",
+  meta: ["createdOn"],
+};
 
 const totalRejectedQuantity = computed(() =>
   props.rejections.reduce((total, r) => total + r.quantity, 0),

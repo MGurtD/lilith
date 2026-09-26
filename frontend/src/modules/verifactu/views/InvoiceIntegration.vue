@@ -1,6 +1,8 @@
 <template>
   <div class="verifactu-invoice-integration">
     <Table
+      phone-layout="cards"
+      :card-layout="cardLayout"
       :items="invoices"
       :columns="columns"
       :filter-config="filterConfig"
@@ -14,8 +16,10 @@
       @clear="clearFilters"
     >
       <template #append>
+        <!-- Sends every listed invoice, so the badge shows how many. -->
         <Button
-          :label="$t('verifactu.invoiceIntegration.actions.integrateSelected')"
+          :label="$t('verifactu.invoiceIntegration.actions.sendToVerifactu')"
+          :badge="invoices.length ? String(invoices.length) : undefined"
           :size="'small'"
           icon="pi pi-upload"
           @click="integrateVisibleInvoices"
@@ -38,6 +42,9 @@
             {{ data.customerVatNumber }}
           </div>
         </div>
+      </template>
+      <template #card-customer="{ data }">
+        {{ data.customerComercialName || data.customerTaxName }}
       </template>
       <template #body-totalAmount="{ data }">
         <span class="font-semibold">{{
@@ -178,7 +185,11 @@ import type {
   FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
 import Table from "../../../components/tables/Table.vue";
-import { ColumnType, type Column } from "../../../components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "../../../components/tables/types";
 import { useVerifactuStore } from "../store/verifactu";
 import { useStore } from "../../../store";
 import { formatDate, formatCurrency } from "../../../utils/functions";
@@ -292,6 +303,13 @@ const columns = computed<Column[]>(() => [
     header: t("verifactu.invoiceIntegration.table.columns.amount"),
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "invoiceNumber",
+  trailing: "totalAmount",
+  subtitle: "customer",
+  meta: ["invoiceDate", "dueDate"],
+};
 
 // Helpers
 const naturalCompare = (a: string, b: string) =>

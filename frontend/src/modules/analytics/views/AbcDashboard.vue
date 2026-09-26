@@ -51,6 +51,8 @@
 
       <TabPanel value="1">
         <Table
+          phone-layout="cards"
+          :card-layout="cardLayout"
           preset="read-only"
           :columns="columns"
           :items="result?.rows ?? []"
@@ -98,7 +100,11 @@ import TableFilter, {
   type FilterConfig,
 } from "@/components/tables/TableFilter.vue";
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { formatCurrency, formatDateForQueryParameter } from "@/utils/functions";
 import { useStore } from "@/store";
 import { AbcAnalysisService } from "../services/abcAnalysis.service";
@@ -148,6 +154,14 @@ const columns = computed<Column[]>(() => [
   { field: "cumulativePercent", header: t("analytics.abc.columns.cumulativePercent"), columnType: ColumnType.Number },
   { field: "category", header: t("analytics.abc.columns.category"), sortable: true },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  trailing: "value",
+  subtitle: "code",
+  badge: "category",
+  meta: ["rank", "valuePercent", "cumulativePercent"],
+};
 
 const chartData = computed(() => {
   const rows = result.value?.rows ?? [];

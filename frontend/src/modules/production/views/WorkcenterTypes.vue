@@ -1,5 +1,7 @@
 <template>
   <Table
+    phone-layout="cards"
+    :card-layout="cardLayout"
     :items="plantmodelStore.workcenterTypes ?? []"
     :columns="columns"
     :filter-config="[]"
@@ -17,7 +19,11 @@
 </template>
 <script setup lang="ts">
 import Table from "@/components/tables/Table.vue";
-import { ColumnType, type Column } from "@/components/tables/types";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { useI18n } from "vue-i18n";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
@@ -62,6 +68,12 @@ const columns = computed<Column[]>(() => [
     style: "width: 10%",
   },
 ]);
+
+const cardLayout: CardLayout = {
+  title: "name",
+  subtitle: "description",
+  meta: ["profitPercentage", "disabled"],
+};
 
 onMounted(async () => {
   await plantmodelStore.fetchWorkcenterTypes();
