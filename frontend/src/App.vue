@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from "vue";
+import { computed, onMounted, onUnmounted, watch } from "vue";
 import ScrollPanel from "primevue/scrollpanel";
 import { applyPrimeVueLocale } from "./i18n";
 import { usePrimeVue } from "primevue/config";
@@ -9,6 +9,7 @@ import MenuSearchDialog from "@/components/menu-search/MenuSearchDialog.vue";
 import Header from "@/components/TheHeader.vue";
 import PwaUpdatePrompt from "@/components/PwaUpdatePrompt.vue";
 import SideBar from "@/components/TheSidebar.vue";
+import PlantHeader from "@/modules/plant/components/PlantHeader.vue";
 import { usePlantOperatorStore } from "@/modules/plant/store";
 import { useStore } from "@/store";
 import { useApiStore } from "@/store/backend";
@@ -139,6 +140,16 @@ watch(
   { immediate: true },
 );
 
+// A clocked-in operator gets the shop-floor shell: no office sidebar, a
+// plant header with shift, clock and the operator's menu. Clock-in keeps
+// the office shell so an office user can still leave the plant.
+const plantShell = computed(
+  () =>
+    route.path.startsWith("/plant") &&
+    !!plantOperatorStore.operator &&
+    route.name !== "OperatorClockIn",
+);
+
 const logout = async () => {
   helpStore.reset();
   menuSearch.reset();
@@ -155,11 +166,20 @@ const logoutOperator = () => {
 
 <template>
   <div v-if="store.authorization">
-    <Header />
-    <SideBar @logout-click="logout" @logout-operator-click="logoutOperator" />
+    <PlantHeader v-if="plantShell" @exit="logoutOperator" />
+    <template v-else>
+      <Header />
+      <SideBar @logout-click="logout" @logout-operator-click="logoutOperator" />
+    </template>
     <HelpDrawer />
     <MenuSearchDialog />
-    <main class="app__view" :class="{ collapsed: store.sidebar.collapsed }">
+    <main
+      class="app__view"
+      :class="{
+        collapsed: store.sidebar.collapsed && !plantShell,
+        'app__view--plant': plantShell,
+      }"
+    >
       <ScrollPanel class="app__scroll">
         <div class="app__content">
           <RouterView />
@@ -215,6 +235,12 @@ const logoutOperator = () => {
   width: calc(
     100vw - var(--side-bar-collapsed-width) - var(--collapsed-side-padding)
   );
+}
+
+/* Operator shell: no sidebar, the content takes the full width. */
+.app__view.app__view--plant {
+  left: 0;
+  width: 100vw;
 }
 
 /* Phones: the sidebar becomes a drawer, content takes the full width. */
