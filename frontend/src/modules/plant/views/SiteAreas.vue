@@ -1,80 +1,99 @@
 <template>
-  <main class="plant-layout">
-    <!-- Barra de filtros sticky (solo visible cuando hay filtro activo) -->
-    <div v-if="showOnlyMyWorkcenters" class="filters-container">
-      <Chip
-        :label='$t("plant.els-meus-centres")'
-        icon="pi pi-user-check"
-        class="filter-chip filter-active"
-        removable
-        @remove="toggleMyWorkcenters"
-      />
-
-      <div class="filter-summary">
-        <i class="pi pi-info-circle"></i>
+  <main class="plant-areas">
+    <div
+      class="plant-areas__toolbar"
+      role="toolbar"
+      :aria-label="t('plant.areas.filterLabel')"
+    >
+      <button
+        v-for="filter in statusFilters"
+        :key="filter.id"
+        type="button"
+        class="plant-chip"
+        :class="{ 'plant-chip--on': statusFilter === filter.id }"
+        :aria-pressed="statusFilter === filter.id"
+        @click="statusFilter = filter.id"
+      >
+        {{ filter.label }}
+        <span class="plant-chip__count">{{ filter.count }}</span>
+      </button>
+      <span class="plant-areas__spacer"></span>
+      <button
+        type="button"
+        role="switch"
+        class="plant-chip plant-chip--switch"
+        :aria-checked="showOnlyMyWorkcenters"
+        @click="toggleMyWorkcenters"
+      >
         <span
-          >Mostrant {{ myWorkcentersCount }} de
-          {{ totalWorkcentersCount }} centres</span
-        >
-      </div>
+          class="plant-switch"
+          :class="{ 'plant-switch--on': showOnlyMyWorkcenters }"
+          aria-hidden="true"
+        ></span>
+        {{ t("plant.areas.onlyMine") }}
+      </button>
     </div>
 
-    <div v-for="area in filteredAreas" :key="area.id" class="area-section">
-      <header class="area__header" @click="toggleArea(area.id)">
-        <div class="area__header-content">
-          <i class="pi pi-building area__icon"></i>
-          <span class="area__name">{{ area.name }}</span>
-          <span class="area__count"
-            >{{ getFilteredWorkcenters(area.id).length }} centres</span
-          >
-
-          <!-- Indicador si tengo fichajes en esta área -->
-          <Badge
-            v-if="hasMyWorkcentersInArea(area.id)"
-            value="Actiu"
-            severity="success"
-            class="area__badge"
-          />
-        </div>
-        <i
-          :class="
-            isAreaVisible(area.id) ? 'pi pi-chevron-up' : 'pi pi-chevron-down'
-          "
-          class="area__toggle-icon"
-        ></i>
-      </header>
-
-      <section v-show="isAreaVisible(area.id)" class="area__workcenters">
+    <section
+      v-for="area in areaSections"
+      :key="area.id"
+      class="plant-area"
+      :aria-labelledby="`area-title-${area.id}`"
+    >
+      <h2 :id="`area-title-${area.id}`" class="plant-area__title">
+        <button
+          type="button"
+          class="plant-area__toggle"
+          :aria-expanded="area.expanded"
+          :aria-controls="`area-${area.id}`"
+          @click="toggleArea(area.id)"
+        >
+          <span class="plant-area__name">{{ area.name }}</span>
+          <span class="plant-area__count">{{
+            t("plant.areas.workcenterCount", { count: area.total })
+          }}</span>
+          <span class="plant-area__rule" aria-hidden="true"></span>
+          <span class="plant-area__lights" role="img" :aria-label="area.summary">
+            <span
+              v-for="light in area.lights"
+              :key="light.id"
+              class="plant-area__light"
+              :style="light.style"
+            ></span>
+          </span>
+          <i
+            class="pi plant-area__chevron"
+            :class="area.expanded ? 'pi-chevron-up' : 'pi-chevron-down'"
+            aria-hidden="true"
+          ></i>
+        </button>
+      </h2>
+      <div
+        v-show="area.expanded"
+        :id="`area-${area.id}`"
+        :class="isPhone ? 'plant-area__list' : 'plant-area__grid'"
+      >
         <WorkcenterCard
-          v-for="view in getFilteredWorkcenters(area.id)"
+          v-for="view in area.workcenters"
           :key="view.config.id"
           :workcenter="view"
+          :compact="isPhone"
           @click="(id: string) => $router.push(`/plant/workcenter/${id}`)"
         />
-      </section>
-    </div>
+      </div>
+    </section>
 
-    <!-- Floating Action Button -->
-    <Button
-      icon="pi pi-filter"
-      rounded
-      :severity="showOnlyMyWorkcenters ? 'success' : 'secondary'"
-      class="filter-fab"
-      @click="toggleMyWorkcenters"
-      v-tooltip.left="
-        showOnlyMyWorkcenters
-          ? $t('plant.tooltips.showAllWorkcenters')
-          : $t('plant.tooltips.showMyWorkcenters')
-      "
-      :badge="myWorkcentersCount > 0 ? String(myWorkcentersCount) : undefined"
-      badgeSeverity="success"
-    />
+    <p v-if="areaSections.length === 0" class="plant-areas__empty">
+      {{ t("plant.areas.empty") }}
+    </p>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { PrimeIcons } from "@primevue/core/api";
+import { useIsPhone } from "@/composables/useIsPhone";
 import {
   usePlantDataStore,
   usePlantRealtimeStore,
@@ -83,88 +102,55 @@ import {
 import { WorkcenterViewState } from "../types";
 import WorkcenterCard from "../components/WorkcenterCard.vue";
 import { useStore } from "../../../store";
-import { PrimeIcons } from "@primevue/core/api";
 import {
   useWebSocketConnection,
   WS_ENDPOINTS,
 } from "../composables/useWebSocketConnection";
-import Chip from "primevue/chip";
-import Badge from "primevue/badge";
-import Button from "primevue/button";
+import { statusSignal } from "../utils/statusSignal";
+
+type StatusGroup = "run" | "stop" | "none";
+type StatusFilter = "all" | StatusGroup;
 
 const STORAGE_KEY = "temges.plant-visible-areas";
 const FILTER_STORAGE_KEY = "temges.plant-filter-my-workcenters";
 
 const store = useStore();
 const { t } = useI18n();
+const isPhone = useIsPhone();
 const dataStore = usePlantDataStore();
 const realtimeStore = usePlantRealtimeStore();
 const operatorStore = usePlantOperatorStore();
 const visibleAreas = ref<Set<string>>(new Set());
 const showOnlyMyWorkcenters = ref(false);
+const statusFilter = ref<StatusFilter>("all");
 const { connect } = useWebSocketConnection();
 
-// Carregar àrees desplegades del localStorage
-const loadVisibleAreas = (): void => {
+const readStored = <T,>(key: string, fallback: T): T => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored) as string[];
-      visibleAreas.value = new Set(parsed);
-    }
-  } catch (error) {
-    console.warn("Error carregant àrees desplegades:", error);
-    visibleAreas.value = new Set();
+    const stored = localStorage.getItem(key);
+    return stored ? (JSON.parse(stored) as T) : fallback;
+  } catch {
+    return fallback;
   }
 };
 
-// Guardar àrees desplegades al localStorage
-const saveVisibleAreas = (): void => {
+const writeStored = (key: string, value: unknown): void => {
   try {
-    const areaIds = Array.from(visibleAreas.value);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(areaIds));
-  } catch (error) {
-    console.warn("Error guardant àrees desplegades:", error);
-  }
-};
-
-// Carregar preferència de filtre del localStorage
-const loadFilterPreference = (): void => {
-  try {
-    const stored = localStorage.getItem(FILTER_STORAGE_KEY);
-    if (stored) {
-      showOnlyMyWorkcenters.value = JSON.parse(stored);
-    }
-  } catch (error) {
-    console.warn("Error carregant preferència de filtre:", error);
-    showOnlyMyWorkcenters.value = false;
-  }
-};
-
-// Guardar preferència de filtre al localStorage
-const saveFilterPreference = (): void => {
-  try {
-    localStorage.setItem(
-      FILTER_STORAGE_KEY,
-      JSON.stringify(showOnlyMyWorkcenters.value)
-    );
-  } catch (error) {
-    console.warn("Error guardant preferència de filtre:", error);
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or blocked: preferences are a convenience only.
   }
 };
 
 onMounted(async () => {
-  // 1. Carregar estat de les àrees desplegades i preferència de filtre
-  loadVisibleAreas();
-  loadFilterPreference();
+  visibleAreas.value = new Set(readStored<string[]>(STORAGE_KEY, []));
+  showOnlyMyWorkcenters.value = readStored<boolean>(FILTER_STORAGE_KEY, false);
 
-  // 2. Carregar dades mestres d'àrees, workcenters i estats de màquina
   await Promise.all([
     dataStore.fetchAreasWithWorkcenters(),
     dataStore.fetchMachineStatuses(),
   ]);
 
-  // 3. Configurar header
   store.setMenuItem({
     icon: PrimeIcons.BUILDING,
     title: t("plant.titles.siteAreas", {
@@ -172,15 +158,13 @@ onMounted(async () => {
     }),
   });
 
-  // 4. Connectar WebSocket general i configurar handlers al store
   realtimeStore.connectToGeneral();
   connect(WS_ENDPOINTS.GENERAL, { debug: true });
 });
 
 onUnmounted(() => {
-  // Guardar estat de les àrees desplegades i preferència de filtre abans de sortir
-  saveVisibleAreas();
-  saveFilterPreference();
+  writeStored(STORAGE_KEY, Array.from(visibleAreas.value));
+  writeStored(FILTER_STORAGE_KEY, showOnlyMyWorkcenters.value);
 });
 
 const toggleArea = (areaId: string) => {
@@ -191,255 +175,313 @@ const toggleArea = (areaId: string) => {
   }
 };
 
-const isAreaVisible = (areaId: string): boolean => {
-  return visibleAreas.value.has(areaId);
-};
-
-// ID del operario actual
-const currentOperatorId = computed(() => operatorStore.operator?.id);
-
-// Toggle del filtro de mis workcenters
 const toggleMyWorkcenters = () => {
   showOnlyMyWorkcenters.value = !showOnlyMyWorkcenters.value;
-  saveFilterPreference();
+  writeStored(FILTER_STORAGE_KEY, showOnlyMyWorkcenters.value);
 };
 
-// Verificar si un workcenter pertenece al operario actual
-const isMyWorkcenter = (view: WorkcenterViewState): boolean => {
-  if (!currentOperatorId.value) return false;
-  return (
-    view.realtime?.operators?.some(
-      (op) => op.operatorId === currentOperatorId.value
-    ) ?? false
-  );
+const currentOperatorId = computed(() => operatorStore.operator?.id);
+
+const isMyWorkcenter = (view: WorkcenterViewState): boolean =>
+  !!currentOperatorId.value &&
+  (view.realtime?.operators?.some(
+    (op) => op.operatorId === currentOperatorId.value,
+  ) ??
+    false);
+
+// Running and stopped come from the status flags; a status missing from
+// the catalogue counts as no data, as the tile shows it.
+const statusGroup = (view: WorkcenterViewState): StatusGroup => {
+  const rt = view.realtime;
+  if (!rt?.statusId || !dataStore.getMachineStatusById(rt.statusId)) return "none";
+  return rt.statusStopped || rt.statusClosed ? "stop" : "run";
 };
 
-// Verificar si un área tiene workcenters del operario actual
-const hasMyWorkcentersInArea = (areaId: string): boolean => {
-  if (!currentOperatorId.value) return false;
+const scope = computed(() =>
+  realtimeStore.areasWorkcentersView.filter(
+    (view) => !showOnlyMyWorkcenters.value || isMyWorkcenter(view),
+  ),
+);
 
-  return realtimeStore.areasWorkcentersView
-    .filter((view) => view.config.areaId === areaId)
-    .some((view) => isMyWorkcenter(view));
-};
-
-// Obtener workcenters filtrados de un área
-const getFilteredWorkcenters = (areaId: string): WorkcenterViewState[] => {
-  const workcenters = realtimeStore.areasWorkcentersView.filter(
-    (view) => view.config.areaId === areaId
-  );
-
-  if (!showOnlyMyWorkcenters.value || !currentOperatorId.value) {
-    return workcenters;
-  }
-
-  return workcenters.filter((view) => isMyWorkcenter(view));
-};
-
-// Obtener workcenters de un área usando el getter combinado (LEGACY - mantener por compatibilidad)
-const getAreaWorkcenters = (areaId: string): WorkcenterViewState[] => {
-  return getFilteredWorkcenters(areaId);
-};
-
-// Áreas filtradas (solo mostrar áreas que tienen workcenters visibles)
-const filteredAreas = computed(() => {
-  return dataStore.areas.filter((area) => {
-    const workcenters = getFilteredWorkcenters(area.id);
-    return workcenters.length > 0;
-  });
+const statusFilters = computed(() => {
+  const count = (group: StatusFilter) =>
+    group === "all"
+      ? scope.value.length
+      : scope.value.filter((view) => statusGroup(view) === group).length;
+  const labels: Record<StatusFilter, string> = {
+    all: t("plant.areas.all"),
+    run: t("plant.areas.running"),
+    stop: t("plant.areas.stopped"),
+    none: t("plant.areas.noData"),
+  };
+  return (["all", "run", "stop", "none"] as StatusFilter[]).map((id) => ({
+    id,
+    label: labels[id],
+    count: count(id),
+  }));
 });
 
-// Contador de mis workcenters
-const myWorkcentersCount = computed(() => {
-  if (!currentOperatorId.value) return 0;
-  return realtimeStore.areasWorkcentersView.filter((view) =>
-    isMyWorkcenter(view)
-  ).length;
-});
+const statusColor = (view: WorkcenterViewState) => {
+  const statusId = view.realtime?.statusId;
+  return statusId ? dataStore.getMachineStatusById(statusId)?.color : undefined;
+};
 
-// Total de workcenters
-const totalWorkcentersCount = computed(() => {
-  return realtimeStore.areasWorkcentersView.length;
-});
+const areaSections = computed(() =>
+  dataStore.areas
+    .map((area) => {
+      const all = realtimeStore.areasWorkcentersView.filter(
+        (view) => view.config.areaId === area.id,
+      );
+      const workcenters = scope.value.filter(
+        (view) =>
+          view.config.areaId === area.id &&
+          (statusFilter.value === "all" ||
+            statusGroup(view) === statusFilter.value),
+      );
+      const groups = all.map(statusGroup);
+      return {
+        id: area.id,
+        name: area.name,
+        total: all.length,
+        workcenters,
+        // A status filter opens every area that has a match.
+        expanded: statusFilter.value !== "all" || visibleAreas.value.has(area.id),
+        summary: t("plant.areas.summary", {
+          run: groups.filter((g) => g === "run").length,
+          stop: groups.filter((g) => g === "stop").length,
+          none: groups.filter((g) => g === "none").length,
+        }),
+        lights: all.map((view) => {
+          const signal = statusSignal(statusColor(view));
+          return {
+            id: view.config.id,
+            style: {
+              background: signal.band,
+              boxShadow: signal.noData
+                ? "inset 0 0 0 1px var(--p-steel-300)"
+                : undefined,
+            },
+          };
+        }),
+      };
+    })
+    .filter((area) => area.workcenters.length > 0),
+);
 </script>
 
 <style scoped>
-.plant-layout {
-  padding: 0.5rem;
-  min-height: 100dvh;
+.plant-areas {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1.5rem;
 }
 
-/* Barra de Filtros */
-.filters-container {
+.plant-areas__toolbar {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: var(--p-surface-ground);
-  padding: 1rem 0.5rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border-bottom: 2px solid var(--p-surface-border);
-}
-
-.filter-chip {
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.filter-chip:hover {
-  transform: scale(1.05);
-}
-
-.filter-chip.filter-active {
-  background: var(--p-green-100);
-  color: var(--p-green-900);
-  border-color: var(--p-green-500);
-}
-
-.filter-summary {
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-steel-200);
+  border-radius: 6px;
 }
 
-.filter-summary i {
-  color: var(--p-primary-500);
+.plant-areas__toolbar::-webkit-scrollbar {
+  display: none;
 }
 
-.area-section {
-  margin-bottom: 1.5rem;
+.plant-areas__spacer {
+  flex: 1;
 }
 
-/* Area Header */
-.area__header {
-  display: flex;
+.plant-chip {
+  flex-shrink: 0;
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  background: linear-gradient(135deg, var(--p-primary-500), var(--p-primary-600));
-  color: white;
-  padding: 0.85rem 1.25rem;
-  border-radius: 10px;
+  gap: 0.5rem;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 1px var(--p-steel-300);
+  background: var(--p-surface-0);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--p-steel-900);
   cursor: pointer;
-  user-select: none;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
-.area__header:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+.plant-chip:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: 2px;
 }
 
-.area__header-content {
+.plant-chip--on {
+  box-shadow: none;
+  background: var(--p-steel-900);
+  color: var(--p-surface-0);
+}
+
+.plant-chip__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--p-steel-600);
+}
+
+.plant-chip--on .plant-chip__count {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.plant-chip--switch {
+  padding-left: 0.5rem;
+}
+
+.plant-switch {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--p-steel-300);
+  transition: background-color 0.15s;
+}
+
+.plant-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--p-surface-0);
+  transition: transform 0.15s;
+}
+
+.plant-switch--on {
+  background: var(--p-primary-color);
+}
+
+.plant-switch--on::after {
+  transform: translateX(16px);
+}
+
+.plant-area__title {
+  margin: 0;
+}
+
+.plant-area__toggle {
+  width: 100%;
+  min-height: 60px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--p-steel-900);
+  text-align: left;
+  cursor: pointer;
 }
 
-.area__icon {
-  font-size: 1.35rem;
-  opacity: 0.9;
+.plant-area__toggle:focus-visible {
+  outline: 3px solid var(--p-steel-900);
+  outline-offset: 2px;
 }
 
-.area__name {
+.plant-area__name {
+  font-family: var(--font-condensed);
   font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.area__count {
-  background: rgba(255, 255, 255, 0.25);
-  padding: 0.25rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
   font-weight: 600;
 }
 
-.area__badge {
-  margin-left: 0.5rem;
+.plant-area__count {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--p-steel-600);
+  white-space: nowrap;
 }
 
-.area__toggle-icon {
-  font-size: 1rem;
-  transition: transform 0.3s ease;
+.plant-area__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--p-steel-200);
 }
 
-/* Workcenters Grid */
-.area__workcenters {
+.plant-area__lights {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 40%;
+}
+
+.plant-area__light {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.plant-area__chevron {
+  width: 44px;
+  text-align: center;
+  color: var(--p-steel-700);
+}
+
+.plant-area__grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  animation: fadeIn 0.4s ease;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  align-items: start;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.plant-area__list {
+  border: 1px solid var(--p-steel-200);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-/* Responsive */
-@media (max-width: 1400px) {
-  .area__workcenters {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  }
+.plant-areas__empty {
+  margin: 3rem 0;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--p-steel-700);
 }
 
-@media (max-width: 768px) {
-  .plant-layout {
+@media (max-width: 767.98px) {
+  .plant-areas__toolbar {
     padding: 0.5rem;
   }
 
-  .area__header {
-    padding: 0.75rem 1rem;
+  .plant-area__toggle {
+    min-height: 48px;
+    gap: 0.5rem;
   }
 
-  .area__name {
-    font-size: 1.1rem;
+  .plant-area__name {
+    font-size: 1.0625rem;
   }
 
-  .area__workcenters {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .plant-area__rule {
+    display: none;
   }
 
-  .filters-container {
-    flex-direction: column;
-    align-items: flex-start;
+  .plant-area__lights {
+    margin-left: auto;
   }
 
-  .filter-fab {
-    bottom: 1rem;
-    right: 1rem;
-    width: 3.5rem;
-    height: 3.5rem;
+  .plant-area__light {
+    width: 12px;
+    height: 12px;
   }
-}
-
-/* Floating Action Button */
-.filter-fab {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 4rem;
-  height: 4rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  z-index: 100;
-  transition: all 0.3s ease;
-}
-
-.filter-fab:hover {
-  transform: scale(1.1);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 </style>
