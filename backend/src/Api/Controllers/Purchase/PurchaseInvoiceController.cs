@@ -1,6 +1,5 @@
 ﻿using Application.Contracts;
 using Application.Contracts.Ingestion;
-using Application.Ingestion;
 using Domain.Entities.Purchase;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -130,16 +129,11 @@ namespace Api.Controllers.Purchase
         }
 
         // POST /api/PurchaseInvoice/Ingest
-        // Ingests a supplier invoice PDF via LlamaParse and returns a pre-fill draft.
-        // Operator-facing env-vars (no appsettings entry exists):
-        //   Ingestion__ApiKey, Ingestion__ProjectId (required for v2/extract),
-        //   Ingestion__BaseUrl (default https://api.cloud.llamaindex.ai),
-        //   Ingestion__Tier (default agentic), Ingestion__Version (default 2026-03-31),
-        //   Ingestion__ConfidenceScores (default true),
-        //   Ingestion__TimeoutSeconds (default 90, leaves a 5s buffer for non-polling work).
+        // Reads a supplier invoice PDF and returns a draft to review; nothing is persisted.
+        // Configuration: Ingestion__ApiKey, Ingestion__ProjectId, Ingestion__BaseUrl (EU by default).
         [HttpPost("Ingest")]
         [Consumes("multipart/form-data")]
-        [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB per spec §valid PDF
+        [RequestSizeLimit(20 * 1024 * 1024)]
         [ProducesResponseType(typeof(IngestPurchaseInvoiceResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status422UnprocessableEntity)]
@@ -150,47 +144,27 @@ namespace Api.Controllers.Purchase
             CancellationToken ct)
         {
             var pdfFile = pdfFiles.FirstOrDefault();
-            if (pdfFile is null || pdfFile.Length == 0
-                || !string.Equals(pdfFile.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+            if (pdfFile is null || pdfFile.Length == 0)
             {
                 return BadRequest(new GenericResponse(
-                    false,
-                    localizationService.GetLocalizedString("InvalidFileType")));
+                    false, localizationService.GetLocalizedString("InvoiceIngestionInvalidFile")));
             }
 
-            await using var stream = pdfFile.OpenReadStream();
             try
             {
-                var result = await ingestionService.IngestAsync(stream, pdfFile.FileName, ct);
-                return Ok(result);
-            }
-            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.ProviderNotConfigured)
-            {
-                return StatusCode(
-                    StatusCodes.Status503ServiceUnavailable,
-                    new GenericResponse(false, ex.Message));
-            }
-            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.UnknownTaxRate)
-            {
-                return UnprocessableEntity(
-                    new GenericResponse(false, ex.Message, ex.OffendingRates));
-            }
-            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.SurchargeUnsupported)
-            {
-                return UnprocessableEntity(
-                    new GenericResponse(false, ex.Message));
-            }
-            catch (IngestionException ex) when (ex.Kind == IngestionFailureKind.ProviderConfigError)
-            {
-                return StatusCode(
-                    StatusCodes.Status502BadGateway,
-                    new GenericResponse(false, ex.Message));
+                await using var stream = pdfFile.OpenReadStream();
+                return Ok(await ingestionService.IngestAsync(stream, pdfFile.FileName, ct));
             }
             catch (IngestionException ex)
             {
-                return StatusCode(
-                    StatusCodes.Status502BadGateway,
-                    new GenericResponse(false, ex.Message));
+                var status = ex.Kind switch
+                {
+                    IngestionFailureKind.InvalidFile => StatusCodes.Status400BadRequest,
+                    IngestionFailureKind.Unparseable => StatusCodes.Status422UnprocessableEntity,
+                    IngestionFailureKind.NotConfigured or IngestionFailureKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
+                    _ => StatusCodes.Status502BadGateway,
+                };
+                return StatusCode(status, new GenericResponse(false, ex.Message, errorCode: ex.Kind.ToString()));
             }
         }
 

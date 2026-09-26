@@ -125,33 +125,37 @@ export interface PurchaseInvoice {
   purchaseInvoiceImports: Array<PurchaseInvoiceImport>;
 }
 
-// Response from POST /api/PurchaseInvoice/Ingest.
-// TaxId is resolved server-side from the local Tax catalog (exact Percentatge match).
+// Response from POST /api/PurchaseInvoice/Ingest. Supplier and taxes are resolved
+// server-side; issues list the values the operator must review.
 export interface IngestPurchaseInvoiceResponse {
   supplierVatNumber?: string | null;
   supplierName?: string | null;
+  supplierId?: string | null;
   invoiceNumber?: string | null;
   issueDate?: string | null;
-  baseAmount?: number | null;
-  transportAmount?: number | null;
-  discountPercentage?: number | null;
   extraTaxPercentatge?: number | null;
+  totalAmount?: number | null;
   taxBreakdown: Array<TaxBreakdownRow>;
-  confidence: ConfidenceMap;
+  issues: Array<IngestionIssue>;
 }
 
 export interface TaxBreakdownRow {
   taxRate: number;
   baseAmount: number;
   taxAmount: number;
-  taxId: string;
-  confidence: number;
+  taxId?: string | null;
+  surchargeRate?: number | null;
+  surchargeAmount?: number | null;
 }
 
-export interface ConfidenceMap {
-  headers: Record<string, number>;
-  lines: Array<number>;
+// field uses the purchase invoice form field names; taxBreakdown issues carry rowIndex.
+export interface IngestionIssue {
+  field: string;
+  rowIndex?: number | null;
+  code: string;
+  message: string;
 }
+
 export type PurchaseInvoiceCalculatedValues = Pick<
   PurchaseInvoice,
   | "baseAmount"

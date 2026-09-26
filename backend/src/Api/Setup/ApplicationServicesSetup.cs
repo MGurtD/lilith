@@ -12,13 +12,13 @@ using Application.Services.Warehouse;
 using Application.Services.Transport;
 using Application.Services.Geolocalization;
 using Application.Services.GitHub;
-using Application.Ingestion;
 using Application.Contracts;
 using Application.Contracts.Ingestion;
 using Application.Contracts.Services.Geolocalization;
 using Application.Contracts.Services.GitHub;
 using Infrastructure.Persistance;
 using Microsoft.Extensions.Options;
+using Infrastructure.Ingestion;
 using Infrastructure.Reports;
 using QuestPDF.Infrastructure;
 
@@ -101,12 +101,12 @@ public static class ApplicationServicesSetup
         services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
         services.AddHttpClient<IGeoapifyService, GeoapifyService>();
         services.AddHttpClient<IGitHubProxyService, GitHubProxyService>();
-        services.AddScoped<LlamaParsePayloadMapper>();
-        services.AddHttpClient<IInvoiceIngestionService, LlamaParseInvoiceIngestionService>((sp, client) =>
+        services.AddScoped<IInvoiceIngestionService, InvoiceIngestionService>();
+        services.AddHttpClient<IInvoiceExtractor, LlamaCloudInvoiceExtractor>((sp, client) =>
         {
-            var settings = sp.GetRequiredService<IOptions<AppSettings>>().Value.Ingestion;
-            client.BaseAddress = new Uri(settings?.BaseUrl ?? "https://api.cloud.llamaindex.ai");
-            client.Timeout = TimeSpan.FromSeconds(settings?.TimeoutSeconds ?? 90);
+            var settings = sp.GetRequiredService<IOptions<AppSettings>>().Value.Ingestion ?? new IngestionSettings();
+            client.BaseAddress = new Uri(settings.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
