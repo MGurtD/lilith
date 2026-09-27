@@ -268,6 +268,20 @@ const nativeIdProp = (type: FormFieldType): string => {
   }
 };
 
+// Composite inputs size their inner <input> by content; `fluid` makes it fill
+// the grid cell so neighbouring controls never overlap.
+const fluidProps = (type: FormFieldType): Record<string, unknown> => {
+  switch (type) {
+    case FormFieldType.Password:
+    case FormFieldType.Number:
+    case FormFieldType.Currency:
+    case FormFieldType.Date:
+      return { fluid: true };
+    default:
+      return {};
+  }
+};
+
 const controlProps = (
   field: FormFieldConfig,
   state: FormFieldState,
@@ -278,17 +292,22 @@ const controlProps = (
   const widthClass =
     field.type === FormFieldType.Checkbox ? undefined : "w-full";
 
-  return mergeProps(formControlProps ?? {}, field.props ?? {}, {
-    [nativeIdProp(field.type)]: fieldId(field.name),
-    class: [widthClass, { "p-invalid": invalid }],
-    disabled: isFieldDisabled(field),
-    "aria-invalid": invalid ? "true" : undefined,
-    "aria-describedby": invalid
-      ? errorId(field.name)
-      : warned
-        ? warningId(field.name)
-        : undefined,
-  });
+  return mergeProps(
+    fluidProps(field.type),
+    formControlProps ?? {},
+    field.props ?? {},
+    {
+      [nativeIdProp(field.type)]: fieldId(field.name),
+      class: [widthClass, { "p-invalid": invalid }],
+      disabled: isFieldDisabled(field),
+      "aria-invalid": invalid ? "true" : undefined,
+      "aria-describedby": invalid
+        ? errorId(field.name)
+        : warned
+          ? warningId(field.name)
+          : undefined,
+    },
+  );
 };
 
 const checkboxProps = (

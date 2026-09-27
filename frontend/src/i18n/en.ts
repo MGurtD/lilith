@@ -2061,6 +2061,7 @@ const en = {
       messages: { created: "Invoice created from the PDF", attachError: "The invoice was created but the PDF could not be attached. Attach it from the Files tab." },
     },
     purchaseInvoiceImport: {
+      title: "VAT breakdown",
       fields: { baseAmount: "Base amount", tax: "VAT", taxAmount: "Tax amount" },
       columns: { base: "Base", tax: "% VAT", taxAmount: "VAT amount" },
       actions: { add: "Add", update: "Update", delete: "Delete" },

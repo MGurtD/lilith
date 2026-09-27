@@ -170,9 +170,6 @@
           @due-dates-change="onDueDatesChange"
         />
 
-        <h3 class="invoice-import__section-title">
-          {{ t("purchase.invoiceImport.review.taxBreakdown") }}
-        </h3>
         <TablePurchaseInvoiceImports
           :purchase-invoice-imports="purchaseInvoice.purchaseInvoiceImports"
           :row-warnings="rowWarnings"
@@ -191,9 +188,8 @@
         ? t('purchase.purchaseInvoice.dialogs.createAmount')
         : t('purchase.purchaseInvoice.dialogs.editAmount')
     "
-    position="bottom"
-    :style="{ width: '40rem' }"
-    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    modal
+    :style="{ width: '90vw', maxWidth: '40rem' }"
     @after-hide="selectedImport = undefined"
   >
     <FormPurchaseInvoiceImport
@@ -664,11 +660,6 @@ const attachPdf = async (invoiceId: string, file: File): Promise<boolean> => {
   gap: 0.35rem;
   margin-left: auto;
   font-weight: 600;
-}
-
-.invoice-import__section-title {
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
 }
 
 @media (min-width: 1200px) {

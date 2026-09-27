@@ -155,9 +155,8 @@
     :closable="true"
     v-model:visible="isDialogVisible"
     :header="dialogTitle"
-    position="bottom"
-    :style="{ width: '40rem' }"
-    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    modal
+    :style="{ width: '90vw', maxWidth: '40rem' }"
     @after-hide="afterDialogHide"
   >
     <FormPurchaseInvoiceImport

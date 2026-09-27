@@ -2028,6 +2028,7 @@ const es = {
       messages: { created: "Factura creada a partir del PDF", attachError: "La factura se ha creado, pero no se ha podido adjuntar el PDF. Adjúntalo desde la pestaña Archivos." },
     },
     purchaseInvoiceImport: {
+      title: "Desglose de IVA",
       fields: { baseAmount: "Importe base", tax: "IVA", taxAmount: "Importe del impuesto" },
       columns: { base: "Base", tax: "% IVA", taxAmount: "Cuota de IVA" },
       actions: { add: "Añadir", update: "Modificar", delete: "Eliminar" },

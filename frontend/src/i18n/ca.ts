@@ -2087,6 +2087,7 @@ const ca = {
       messages: { created: "Factura creada a partir del PDF", attachError: "La factura s'ha creat, però no s'ha pogut adjuntar el PDF. Adjunta'l des de la pestanya Fitxers." },
     },
     purchaseInvoiceImport: {
+      title: "Desglossament d'IVA",
       fields: { baseAmount: "Import base", tax: "IVA", taxAmount: "Import de l'impost" },
       columns: { base: "Base", tax: "% IVA", taxAmount: "Quota d'IVA" },
       actions: { add: "Afegir", update: "Modificar", delete: "Eliminar" },
