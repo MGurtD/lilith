@@ -31,6 +31,17 @@
         {{ formatCurrency(data.baseAmount ?? 0) }}
       </span>
     </template>
+    <template #body-taxId="{ data }">
+      <span
+        v-if="getTaxRate(data.taxId) == null && pendingTaxRates?.[data.id] != null"
+        v-tooltip.top="t('purchase.purchaseInvoiceImport.pendingTax')"
+        class="import-row-pending-tax"
+      >
+        {{ pendingTaxRates[data.id] }}
+        <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+      </span>
+      <template v-else>{{ getTaxRate(data.taxId) ?? "" }}</template>
+    </template>
   </Table>
 </template>
 
@@ -52,6 +63,8 @@ const props = defineProps<{
   purchaseInvoiceImports: Array<PurchaseInvoiceImport> | undefined;
   /** Review hints per import id, e.g. from a PDF import. */
   rowWarnings?: Record<string, string[]>;
+  /** VAT rate read from a document for lines still without a tax, per import id. */
+  pendingTaxRates?: Record<string, number>;
 }>();
 
 const emit = defineEmits<{
@@ -73,8 +86,6 @@ const columns = computed<Column[]>(() => [
     field: "baseAmount",
     header: t("purchase.purchaseInvoiceImport.columns.base"),
     columnType: ColumnType.Currency,
-    total: "sum",
-    totalFormat: formatCurrency,
     style: "width: 25%; text-align: right",
   },
   {
@@ -88,16 +99,12 @@ const columns = computed<Column[]>(() => [
     field: "taxAmount",
     header: t("purchase.purchaseInvoiceImport.columns.taxAmount"),
     columnType: ColumnType.Currency,
-    total: "sum",
-    totalFormat: formatCurrency,
     style: "width: 25%; text-align: right",
   },
   {
     field: "netAmount",
     header: t("common.total"),
     columnType: ColumnType.Currency,
-    total: "sum",
-    totalFormat: formatCurrency,
     style: "width: 22%; text-align: right",
   },
 ]);
@@ -139,6 +146,13 @@ const onAdd = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+.import-row-pending-tax {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--p-yellow-700);
 }
 
 .import-row-warning-icon {

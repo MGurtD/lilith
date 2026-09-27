@@ -2088,6 +2088,7 @@ const ca = {
     },
     purchaseInvoiceImport: {
       title: "Desglossament d'IVA",
+      pendingTax: "Tipus llegit del PDF. Tria l'impost de la línia",
       fields: { baseAmount: "Import base", tax: "IVA", taxAmount: "Import de l'impost" },
       columns: { base: "Base", tax: "% IVA", taxAmount: "Quota d'IVA" },
       actions: { add: "Afegir", update: "Modificar", delete: "Eliminar" },

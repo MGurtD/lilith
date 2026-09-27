@@ -2029,6 +2029,7 @@ const es = {
     },
     purchaseInvoiceImport: {
       title: "Desglose de IVA",
+      pendingTax: "Tipo leído del PDF. Elige el impuesto de la línea",
       fields: { baseAmount: "Importe base", tax: "IVA", taxAmount: "Importe del impuesto" },
       columns: { base: "Base", tax: "% IVA", taxAmount: "Cuota de IVA" },
       actions: { add: "Añadir", update: "Modificar", delete: "Eliminar" },

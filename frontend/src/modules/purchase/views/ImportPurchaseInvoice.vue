@@ -173,6 +173,7 @@
         <TablePurchaseInvoiceImports
           :purchase-invoice-imports="purchaseInvoice.purchaseInvoiceImports"
           :row-warnings="rowWarnings"
+          :pending-tax-rates="pendingTaxRates"
           @add="(row: PurchaseInvoiceImport) => openImportForm(FormActionMode.CREATE, row)"
           @edit="(row: PurchaseInvoiceImport) => openImportForm(FormActionMode.EDIT, row)"
           @delete="deleteImport"
@@ -392,6 +393,16 @@ const rowWarnings = computed<Record<string, string[]>>(() => {
   }
   return warnings;
 });
+
+// The rate read from the PDF, shown while a line still has no tax.
+const pendingTaxRates = computed<Record<string, number>>(() =>
+  Object.fromEntries(
+    (draft.value?.taxBreakdown ?? []).flatMap((row, index) => {
+      const id = importIdsByRow.value[index];
+      return id && !row.taxId ? [[id, row.taxRate]] : [];
+    }),
+  ),
+);
 
 const issueLabels = computed<Record<string, string>>(() => ({
   supplierId: t("purchase.fields.supplier"),

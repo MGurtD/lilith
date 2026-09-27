@@ -2062,6 +2062,7 @@ const en = {
     },
     purchaseInvoiceImport: {
       title: "VAT breakdown",
+      pendingTax: "Rate read from the PDF. Pick the line tax",
       fields: { baseAmount: "Base amount", tax: "VAT", taxAmount: "Tax amount" },
       columns: { base: "Base", tax: "% VAT", taxAmount: "VAT amount" },
       actions: { add: "Add", update: "Update", delete: "Delete" },
