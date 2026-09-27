@@ -203,9 +203,7 @@ import FormPurchaseInvoiceImport from "../components/FormPurchaseInvoiceImport.v
 import TablePurchaseInvoiceImports from "../components/TablePurchaseInvoiceImports.vue";
 import TableReceipts from "../components/TableReceipts.vue";
 import SelectorReceipts from "../components/SelectorReceipts.vue";
-import { usePurchaseMasterDataStore } from "../store/purchase";
 import { useToast } from "primevue/usetoast";
-import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReceiptsStore } from "../store/receipt";
 import { cloneDeep, round } from "lodash";
 import { useI18n } from "vue-i18n";
@@ -221,8 +219,6 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
-const lifecycleStore = useLifecyclesStore();
-const purchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
 const { t } = useI18n();
@@ -290,7 +286,7 @@ const loadView = async () => {
     purchaseInvoiceStore.setNewPurchaseInvoice(invoiceId);
     pageTitle = t("purchase.purchaseInvoice.pageTitles.create");
 
-    setDefaultValues();
+    purchaseInvoiceStore.applyNewInvoiceDefaults();
   } else {
     formMode.value = FormActionMode.EDIT;
     pageTitle = t("purchase.purchaseInvoice.pageTitles.edit", {
@@ -306,25 +302,6 @@ const loadView = async () => {
     backButtonVisible: true,
     title: pageTitle,
   });
-};
-
-const setDefaultValues = () => {
-  if (purchaseInvoice.value) {
-    const currentExercice = purchaseMasterDataStore.masterData.exercises?.find(
-      (e) => e.name === new Date().getFullYear().toString(),
-    );
-    if (currentExercice) purchaseInvoice.value.exerciceId = currentExercice.id;
-
-    const serie = purchaseMasterDataStore.masterData.series?.find(
-      (s) => s.name === "Nacional",
-    );
-    if (serie) purchaseInvoice.value.purchaseInvoiceSerieId = serie.id;
-
-    const status = lifecycleStore.lifecycle?.statuses?.find(
-      (s) => s.name === "Nova",
-    );
-    if (status) purchaseInvoice.value.statusId = status.id;
-  }
 };
 
 onMounted(async () => {

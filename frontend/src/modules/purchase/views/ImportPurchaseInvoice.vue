@@ -1,138 +1,331 @@
 <template>
-  <div class="import-purchase-invoice">
-    <div class="import-toolbar">
-      <Button
-        icon="pi pi-arrow-left"
-        label="Tornar"
-        severity="secondary"
-        text
-        size="small"
-        @click="onCancel"
-      />
-      <h2 class="import-title">Importar factura (PDF)</h2>
-    </div>
+  <PageActions v-if="draft && purchaseInvoice">
+    <Button
+      icon="pi pi-check"
+      :label="t('purchase.invoiceImport.actions.create')"
+      :loading="isSaving"
+      :disabled="isSaving"
+      @click="formRef?.submitForm()"
+    />
+  </PageActions>
 
-    <!-- Slim upload banner — collapses to a thin status row when there's a result -->
-    <div class="ingest-banner" :class="{ 'ingest-banner--has-result': result }">
-      <!-- Initial state: no file selected -->
-      <div v-if="!selectedFile && !isUploading" class="ingest-banner__initial">
-        <i class="pi pi-file-pdf"></i>
-        <span>Selecciona o arrossega un PDF</span>
-        <FileUpload
-          mode="basic"
-          :auto="true"
-          accept="application/pdf"
-          :chooseLabel="'Selecciona PDF'"
-          :showCancelButton="false"
-          :showUploadButton="false"
-          :customUpload="true"
-          @uploader="onUploader"
-          @select="onFileSelected"
-        />
-      </div>
+  <input
+    ref="fileInput"
+    type="file"
+    accept="application/pdf,.pdf"
+    class="invoice-import__file-input"
+    @change="onFileInputChange"
+  />
 
-      <!-- Uploading state: progress bar -->
-      <div v-else-if="isUploading" class="ingest-banner__uploading">
-        <i class="pi pi-spin pi-cloud-upload"></i>
-        <span class="ingest-banner__filename">{{ selectedFile?.name }}</span>
-        <span class="ingest-banner__size">{{ formatBytes(selectedFile?.size ?? 0) }}</span>
-        <ProgressBar
-          mode="indeterminate"
-          style="flex: 1; height: 6px; max-width: 240px"
-        />
-      </div>
+  <div
+    v-if="!pdfFile"
+    class="invoice-import__dropzone"
+    :class="{ 'invoice-import__dropzone--dragging': isDragging }"
+    @dragenter.prevent="isDragging = true"
+    @dragover.prevent="isDragging = true"
+    @dragleave.prevent="onDragLeave"
+    @drop.prevent="onDrop"
+  >
+    <i class="pi pi-file-pdf invoice-import__dropzone-icon" aria-hidden="true" />
+    <h2 class="invoice-import__dropzone-title">
+      {{
+        isDragging
+          ? t("purchase.invoiceImport.dropzone.release")
+          : t("purchase.invoiceImport.dropzone.title")
+      }}
+    </h2>
+    <p class="invoice-import__dropzone-hint">
+      {{ t("purchase.invoiceImport.dropzone.hint") }}
+    </p>
+    <Button
+      icon="pi pi-upload"
+      :label="t('purchase.invoiceImport.dropzone.choose')"
+      @click="openFilePicker"
+    />
+    <Message
+      v-if="fileError"
+      severity="error"
+      :closable="false"
+      class="invoice-import__dropzone-error"
+    >
+      {{ fileError }}
+    </Message>
+  </div>
 
-      <!-- Completed state: change file link -->
-      <div v-else-if="result" class="ingest-banner__completed">
-        <i class="pi pi-check-circle" style="color: var(--p-green-500)"></i>
-        <span class="ingest-banner__filename">{{ selectedFile?.name }}</span>
-        <span class="ingest-banner__size">{{ formatBytes(selectedFile?.size ?? 0) }}</span>
+  <div v-else class="invoice-import">
+    <section class="invoice-import__document">
+      <div class="invoice-import__document-header">
+        <i class="pi pi-file-pdf" aria-hidden="true" />
+        <span class="invoice-import__document-name">{{ pdfFile.name }}</span>
+        <span class="invoice-import__document-size">
+          {{ formatBytes(pdfFile.size) }}
+        </span>
         <Button
           icon="pi pi-refresh"
-          label="Canviar PDF"
+          :label="t('purchase.invoiceImport.document.change')"
           severity="secondary"
-          text
           size="small"
-          @click="onReset"
+          text
+          :disabled="isExtracting || isSaving"
+          @click="openFilePicker"
         />
       </div>
-
-      <!-- Error state -->
-      <Message
-        v-if="errorMessage"
-        severity="error"
-        class="ingest-banner__error"
-        :closable="true"
-        @close="errorMessage = null"
-      >
-        {{ errorMessage }}
+      <Message v-if="fileError" severity="error" :closable="false">
+        {{ fileError }}
       </Message>
-    </div>
-
-    <!-- Review form (unchanged shape, but no wrapping Card) -->
-    <div v-if="result" class="ingest-review">
-      <FormPurchaseInvoice
-        ref="formRef"
-        :purchaseInvoice="store.purchaseInvoice!"
-        @submit="onAccept"
-        @cancel="onCancel"
-      />
-      <div class="ingest-actions">
-        <Button
-          label="Acceptar i crear"
-          icon="pi pi-check"
-          :loading="isSaving"
-          :disabled="isSaving"
-          @click="onAcceptClick"
-        />
-        <Button
-          label="Cancel·lar"
-          icon="pi pi-times"
-          severity="secondary"
-          :disabled="isSaving"
-          @click="onCancel"
-        />
+      <div class="invoice-import__viewer">
+        <PdfViewer :file="null" :source="pdfFile" :source-name="pdfFile.name" />
       </div>
-    </div>
+    </section>
+
+    <section class="invoice-import__review">
+      <div v-if="isExtracting" class="invoice-import__state">
+        <ProgressSpinner style="width: 3rem; height: 3rem" stroke-width="4" />
+        <strong>{{ t("purchase.invoiceImport.extracting.title") }}</strong>
+        <span>{{ t("purchase.invoiceImport.extracting.detail") }}</span>
+      </div>
+
+      <Message
+        v-else-if="extractionError"
+        severity="error"
+        :closable="false"
+      >
+        <div class="invoice-import__error">
+          <strong>{{ t("purchase.invoiceImport.errors.title") }}</strong>
+          <span>{{ extractionError }}</span>
+          <Button
+            icon="pi pi-replay"
+            :label="t('purchase.invoiceImport.errors.retry')"
+            severity="danger"
+            size="small"
+            outlined
+            @click="extract(pdfFile)"
+          />
+        </div>
+      </Message>
+
+      <template v-else-if="draft && purchaseInvoice">
+        <Message
+          :severity="draft.issues.length ? 'warn' : 'success'"
+          :closable="false"
+        >
+          <div class="invoice-import__issues">
+            <strong>
+              {{
+                t("purchase.invoiceImport.review.issues", draft.issues.length)
+              }}
+            </strong>
+            <ul v-if="draft.issues.length">
+              <li v-for="(issue, index) in draft.issues" :key="index">
+                <span class="invoice-import__issue-field">
+                  {{ issueLabel(issue) }}:
+                </span>
+                {{ issue.message }}
+              </li>
+            </ul>
+          </div>
+        </Message>
+
+        <div
+          v-if="draft.totalAmount != null"
+          class="invoice-import__totals"
+          :class="
+            totalMatches
+              ? 'invoice-import__totals--ok'
+              : 'invoice-import__totals--mismatch'
+          "
+        >
+          <span>
+            {{ t("purchase.invoiceImport.totals.document") }}:
+            <strong>{{ formatCurrency(draft.totalAmount) }}</strong>
+          </span>
+          <span>
+            {{ t("purchase.invoiceImport.totals.computed") }}:
+            <strong>{{ formatCurrency(computedTotal) }}</strong>
+          </span>
+          <span class="invoice-import__totals-status">
+            <i
+              :class="
+                totalMatches ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'
+              "
+              aria-hidden="true"
+            />
+            {{
+              totalMatches
+                ? t("purchase.invoiceImport.totals.matches")
+                : t("purchase.invoiceImport.totals.difference", {
+                    amount: formatCurrency(computedTotal - draft.totalAmount),
+                  })
+            }}
+          </span>
+        </div>
+
+        <FormPurchaseInvoice
+          :key="purchaseInvoice.id"
+          ref="formRef"
+          :purchase-invoice="purchaseInvoice"
+          :field-warnings="fieldWarnings"
+          @submit="onSubmit"
+          @calculated="onCalculated"
+          @due-dates-change="onDueDatesChange"
+        />
+
+        <h3 class="invoice-import__section-title">
+          {{ t("purchase.invoiceImport.review.taxBreakdown") }}
+        </h3>
+        <TablePurchaseInvoiceImports
+          :purchase-invoice-imports="purchaseInvoice.purchaseInvoiceImports"
+          :row-warnings="rowWarnings"
+          @add="(row: PurchaseInvoiceImport) => openImportForm(FormActionMode.CREATE, row)"
+          @edit="(row: PurchaseInvoiceImport) => openImportForm(FormActionMode.EDIT, row)"
+          @delete="deleteImport"
+        />
+      </template>
+    </section>
   </div>
+
+  <Dialog
+    v-model:visible="isImportDialogVisible"
+    :header="
+      importFormMode === FormActionMode.CREATE
+        ? t('purchase.purchaseInvoice.dialogs.createAmount')
+        : t('purchase.purchaseInvoice.dialogs.editAmount')
+    "
+    position="bottom"
+    :style="{ width: '40rem' }"
+    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    @after-hide="selectedImport = undefined"
+  >
+    <FormPurchaseInvoiceImport
+      v-if="selectedImport"
+      :form-action="importFormMode"
+      :invoice-import="selectedImport"
+      @submit="onImportSubmit"
+    />
+  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
-import { useToast } from "primevue/usetoast";
-import { PrimeIcons } from "@primevue/core/api";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import Message from "primevue/message";
+import PageActions from "@/components/PageActions.vue";
+import PdfViewer from "@/components/PdfViewer.vue";
+import { FileService } from "@/services/file.service";
+import { useStore } from "@/store";
+import { FormActionMode } from "@/types/component";
 import {
   convertDateTimeToJSON,
+  formatCurrency,
   getNewUuid,
 } from "@/utils/functions";
-import {
-  usePurchaseInvoiceStore,
-} from "../store/purchaseInvoices";
-import { usePurchaseMasterDataStore } from "../store/purchase";
-import { useSuppliersStore } from "../store/suppliers";
-import PurchaseService from "../services";
+import { useLifecyclesStore } from "@/modules/shared/store/lifecycle";
+import { PrimeIcons } from "@primevue/core/api";
+import Message from "primevue/message";
+import ProgressSpinner from "primevue/progressspinner";
+import { storeToRefs } from "pinia";
+import { useToast } from "primevue/usetoast";
+import { computed, nextTick, onMounted, ref, shallowRef } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import FormPurchaseInvoice from "../components/FormPurchaseInvoice.vue";
-import { useStore } from "@/store";
-import type { PurchaseInvoice } from "../types";
+import FormPurchaseInvoiceImport from "../components/FormPurchaseInvoiceImport.vue";
+import TablePurchaseInvoiceImports from "../components/TablePurchaseInvoiceImports.vue";
+import PurchaseService from "../services";
+import { usePurchaseMasterDataStore } from "../store/purchase";
+import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
+import type {
+  IngestionIssue,
+  IngestPurchaseInvoiceResponse,
+  PurchaseInvoice,
+  PurchaseInvoiceCalculatedValues,
+  PurchaseInvoiceDueDate,
+  PurchaseInvoiceImport,
+} from "../types";
 
+// Matches the backend request size limit of the ingest endpoint.
+const MAX_PDF_BYTES = 20 * 1024 * 1024;
+// Same tolerance as the backend total check.
+const TOTAL_TOLERANCE = 0.05;
+
+const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
 const appStore = useStore();
-const store = usePurchaseInvoiceStore();
-const masterData = usePurchaseMasterDataStore();
-const supplierStore = useSuppliersStore();
+const invoiceStore = usePurchaseInvoiceStore();
+const masterDataStore = usePurchaseMasterDataStore();
+const lifecycleStore = useLifecyclesStore();
+const { purchaseInvoice } = storeToRefs(invoiceStore);
+const fileService = new FileService();
 
 const formRef = ref<InstanceType<typeof FormPurchaseInvoice> | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 
-const selectedFile = ref<File | null>(null);
-const isUploading = ref(false);
+const pdfFile = shallowRef<File | null>(null);
+const fileError = ref<string | null>(null);
+const isDragging = ref(false);
+const isExtracting = ref(false);
+const extractionError = ref<string | null>(null);
 const isSaving = ref(false);
-const errorMessage = ref<string | null>(null);
-const result = ref(false);
+
+const draft = ref<IngestPurchaseInvoiceResponse | null>(null);
+// Import ids in the order of draft.taxBreakdown, to follow rows after edits.
+const importIdsByRow = ref<string[]>([]);
+const reviewedImportIds = ref(new Set<string>());
+const computedTotal = ref(0);
+
+const isImportDialogVisible = ref(false);
+const importFormMode = ref(FormActionMode.EDIT);
+const selectedImport = ref<PurchaseInvoiceImport>();
+
+onMounted(async () => {
+  appStore.setMenuItem({
+    icon: PrimeIcons.FILE_PDF,
+    backButtonVisible: true,
+    title: t("purchase.invoiceImport.title"),
+  });
+  await Promise.all([
+    masterDataStore.fetchMasterData(),
+    lifecycleStore.fetchOneByName("PurchaseInvoice"),
+  ]);
+});
+
+// ---- File selection ----
+
+const openFilePicker = () => fileInput.value?.click();
+
+const onFileInputChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (file) selectFile(file);
+};
+
+const onDragLeave = (event: DragEvent) => {
+  const target = event.currentTarget as HTMLElement;
+  if (!target.contains(event.relatedTarget as Node | null)) {
+    isDragging.value = false;
+  }
+};
+
+const onDrop = (event: DragEvent) => {
+  isDragging.value = false;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) selectFile(file);
+};
+
+const selectFile = (file: File) => {
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdf) {
+    fileError.value = t("purchase.invoiceImport.errors.notPdf");
+    return;
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    fileError.value = t("purchase.invoiceImport.errors.tooLarge");
+    return;
+  }
+  fileError.value = null;
+  pdfFile.value = file;
+  void extract(file);
+};
 
 const formatBytes = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;
@@ -140,206 +333,357 @@ const formatBytes = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
-onMounted(async () => {
-  appStore.setMenuItem({
-    icon: PrimeIcons.FILE_PDF,
-    backButtonVisible: true,
-    title: "Importar factura (PDF)",
-  });
-  // Seed a fresh draft so the form has something to bind to before upload.
-  store.setNewPurchaseInvoice(getNewUuid());
-  await masterData.fetchMasterData();
-  // Preload the entity-specific supplier store so setFromIngestion can
-  // auto-resolve SupplierId by VatNumber at upload time.
-  await supplierStore.fetchSuppliers();
-});
+// ---- Extraction ----
 
-const onFileSelected = (event: { originalEvent?: Event; files: File[] | File | unknown }) => {
-  // PrimeVue v4 fires @select before the upload is attempted; we use it
-  // only to display the chosen filename in the banner during upload.
-  const files = Array.isArray(event.files)
-    ? event.files
-    : event.files
-      ? [event.files as File]
-      : [];
-  selectedFile.value = (files[0] as File) ?? null;
-  errorMessage.value = null;
-  result.value = false;
+const extract = async (file: File) => {
+  isExtracting.value = true;
+  extractionError.value = null;
+  draft.value = null;
+
+  const result = await PurchaseService.PurchaseInvoiceIngestion.ingest(file);
+  // A newer file may have been chosen while this one was being read.
+  if (pdfFile.value !== file) return;
+  isExtracting.value = false;
+
+  if (!result.ok) {
+    extractionError.value = result.error;
+    return;
+  }
+  void applyDraft(result.draft);
 };
 
-const onUploader = async (event: { files: File[] | File }) => {
-  // PrimeVue v4 fires @uploader when auto=true and a file is selected.
-  // The payload is { files: File | File[] }; normalize to File[].
-  const files = Array.isArray(event.files)
-    ? event.files
-    : event.files
-      ? [event.files]
-      : [];
-  const file = files[0];
-  if (!file) return;
+const applyDraft = async (response: IngestPurchaseInvoiceResponse) => {
+  const invoice = invoiceStore.setFromIngestion(response);
+  if (!invoice) return;
+  invoiceStore.applyNewInvoiceDefaults();
 
-  selectedFile.value = file;
-  isUploading.value = true;
-  errorMessage.value = null;
+  const supplier = masterDataStore.masterData.suppliers?.find(
+    (s) => s.id === invoice.supplierId,
+  );
+  if (supplier?.paymentMethodId) {
+    invoice.paymentMethodId = supplier.paymentMethodId;
+  }
 
-  try {
-    const payload = await PurchaseService.PurchaseInvoiceIngestion.ingest(file);
+  importIdsByRow.value = invoice.purchaseInvoiceImports.map((row) => row.id);
+  reviewedImportIds.value = new Set();
+  computedTotal.value = 0;
+  draft.value = response;
 
-    if (!payload) {
-      errorMessage.value =
-        "No s'ha pogut obtenir resposta del servidor d'ingesta.";
-      return;
-    }
+  // The form mounts with the draft; compute totals and due dates right away.
+  await nextTick();
+  await formRef.value?.calcAmountsNow();
+};
 
-    // Prefill the store from the provider response. setFromIngestion also
-    // auto-resolves SupplierId by VatNumber against useSuppliersStore. If
-    // no match, supplierId is left empty so the operator can pick manually.
-    store.setFromIngestion(payload);
+// ---- Review hints ----
 
-    // The form only mounts once result is true; wait for it, then recompute
-    // header totals without waiting for its mount delay.
-    result.value = true;
-    await nextTick();
-    await formRef.value?.calcAmountsNow();
+const fieldWarnings = computed<Record<string, string[]>>(() => {
+  const warnings: Record<string, string[]> = {};
+  for (const issue of draft.value?.issues ?? []) {
+    // Tax rows are flagged in the table; the total is compared live above the form.
+    if (issue.field === "taxBreakdown" || issue.field === "netAmount") continue;
+    (warnings[issue.field] ??= []).push(issue.message);
+  }
+  return warnings;
+});
 
-    toast.add({
-      severity: "success",
-      summary: "Dades extretes",
-      detail: "Revisa els camps i prem 'Acceptar i crear'.",
-      life: 4000,
-    });
-  } catch (err) {
-    // Surface network/parse errors without losing the selectedFile so the
-    // operator can see which file failed and retry by picking another.
-    const detail =
-      err instanceof Error ? err.message : "Error desconegut durant la ingesta.";
-    errorMessage.value = `Error processant el PDF: ${detail}`;
-    result.value = false;
-  } finally {
-    isUploading.value = false;
+const rowWarnings = computed<Record<string, string[]>>(() => {
+  const warnings: Record<string, string[]> = {};
+  for (const issue of draft.value?.issues ?? []) {
+    if (issue.field !== "taxBreakdown" || issue.rowIndex == null) continue;
+    const id = importIdsByRow.value[issue.rowIndex];
+    if (!id || reviewedImportIds.value.has(id)) continue;
+    (warnings[id] ??= []).push(issue.message);
+  }
+  return warnings;
+});
+
+const issueLabels = computed<Record<string, string>>(() => ({
+  supplierId: t("purchase.fields.supplier"),
+  supplierNumber: t("purchase.fields.supplierInvoiceNumber"),
+  purchaseInvoiceDate: t("purchase.fields.invoiceDate"),
+  extraTaxPercentatge: t("purchase.fields.withholdingTax"),
+  netAmount: t("purchase.invoiceImport.totals.document"),
+  taxBreakdown: t("purchase.invoiceImport.review.taxBreakdown"),
+}));
+
+const issueLabel = (issue: IngestionIssue): string =>
+  issue.field === "taxBreakdown" && issue.rowIndex != null
+    ? t("purchase.invoiceImport.review.taxRow", { row: issue.rowIndex + 1 })
+    : (issueLabels.value[issue.field] ?? issue.field);
+
+const totalMatches = computed(
+  () =>
+    draft.value?.totalAmount != null &&
+    Math.abs(computedTotal.value - draft.value.totalAmount) <= TOTAL_TOLERANCE,
+);
+
+const onCalculated = (values: Partial<PurchaseInvoiceCalculatedValues>) => {
+  if (values.netAmount !== undefined) computedTotal.value = values.netAmount;
+};
+
+const onDueDatesChange = (dueDates: PurchaseInvoiceDueDate[]) => {
+  if (purchaseInvoice.value) {
+    purchaseInvoice.value.purchaseInvoiceDueDates = dueDates;
   }
 };
 
-const onReset = () => {
-  selectedFile.value = null;
-  result.value = false;
-  errorMessage.value = null;
-  // Reset the form to a fresh draft so the operator can re-upload a new PDF
-  // and review a clean set of fields.
-  store.setNewPurchaseInvoice(getNewUuid());
+// ---- Tax breakdown rows (kept locally until the invoice is created) ----
+
+const openImportForm = (mode: FormActionMode, row: PurchaseInvoiceImport) => {
+  if (!purchaseInvoice.value) return;
+  selectedImport.value = {
+    ...row,
+    id: mode === FormActionMode.CREATE ? getNewUuid() : row.id,
+    purchaseInvoiceId: purchaseInvoice.value.id,
+  };
+  importFormMode.value = mode;
+  isImportDialogVisible.value = true;
 };
 
-const onAcceptClick = () => {
-  formRef.value?.submitForm();
+const onImportSubmit = (row: PurchaseInvoiceImport) => {
+  if (!purchaseInvoice.value) return;
+  const rows = purchaseInvoice.value.purchaseInvoiceImports;
+  const index = rows.findIndex((item) => item.id === row.id);
+  if (index >= 0) rows.splice(index, 1, row);
+  else rows.push(row);
+
+  reviewedImportIds.value = new Set(reviewedImportIds.value).add(row.id);
+  isImportDialogVisible.value = false;
+  formRef.value?.calcAmounts();
 };
 
-const onAccept = async (invoice: PurchaseInvoice) => {
+const deleteImport = (row: PurchaseInvoiceImport) => {
+  if (!purchaseInvoice.value) return;
+  purchaseInvoice.value.purchaseInvoiceImports =
+    purchaseInvoice.value.purchaseInvoiceImports.filter(
+      (item) => item.id !== row.id,
+    );
+  formRef.value?.calcAmounts();
+};
+
+// ---- Create ----
+
+const onSubmit = async (invoice: PurchaseInvoice) => {
+  if (!pdfFile.value || isSaving.value) return;
   isSaving.value = true;
   try {
-    // Normalize the date before the API call (matches existing flow).
-    invoice.purchaseInvoiceDate = convertDateTimeToJSON(
-      invoice.purchaseInvoiceDate,
-    );
-    const ok = await store.Create(invoice);
-    if (ok) {
-      toast.add({
-        severity: "success",
-        summary: "Factura creada",
-        life: 4000,
-      });
-      router.replace({ name: "PurchaseInvoice", params: { id: invoice.id } });
-    } else {
+    const created = await invoiceStore.Create({
+      ...invoice,
+      purchaseInvoiceDate: convertDateTimeToJSON(invoice.purchaseInvoiceDate),
+    });
+    if (!created) {
       toast.add({
         severity: "error",
-        summary: "Error al crear la factura",
+        summary: t("purchase.purchaseInvoice.messages.createError"),
         life: 6000,
       });
+      return;
     }
+
+    const attached = await attachPdf(invoice.id, pdfFile.value);
+    toast.add(
+      attached
+        ? {
+            severity: "success",
+            summary: t("purchase.invoiceImport.messages.created"),
+            life: 4000,
+          }
+        : {
+            severity: "warn",
+            summary: t("purchase.purchaseInvoice.messages.created"),
+            detail: t("purchase.invoiceImport.messages.attachError"),
+            life: 8000,
+          },
+    );
+    await router.replace({ name: "PurchaseInvoice", params: { id: invoice.id } });
   } finally {
     isSaving.value = false;
   }
 };
 
-const onCancel = () => {
-  router.push({ name: "PurchaseInvoices" });
+const attachPdf = async (invoiceId: string, file: File): Promise<boolean> => {
+  try {
+    return (
+      (await fileService.Upload(file, "PurchaseInvoice", invoiceId)) !==
+      undefined
+    );
+  } catch {
+    return false;
+  }
 };
 </script>
 
 <style scoped>
-.import-purchase-invoice {
+.invoice-import__file-input {
+  display: none;
+}
+
+.invoice-import__dropzone {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.import-toolbar {
-  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
+  min-height: 22rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--p-content-border-color);
+  border-radius: 12px;
+  background: var(--p-content-background);
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
-.import-title {
+.invoice-import__dropzone--dragging {
+  border-color: var(--p-primary-color);
+  background: color-mix(in srgb, var(--p-primary-color) 6%, transparent);
+}
+
+.invoice-import__dropzone-icon {
+  font-size: 3rem;
+  color: var(--p-primary-color);
+}
+
+.invoice-import__dropzone-title {
   margin: 0;
   font-size: 1.25rem;
-  font-weight: 600;
 }
 
-.ingest-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--p-surface-200, var(--surface-200));
-  border-radius: 0.5rem;
-  background: var(--p-surface-50, var(--surface-50));
-}
-
-.ingest-banner--has-result {
-  padding: 0.5rem 1rem;
-  background: var(--p-green-50, var(--green-50, #ecfdf5));
-  border-color: var(--p-green-200, var(--green-200, #a7f3d0));
-}
-
-.ingest-banner__initial,
-.ingest-banner__uploading,
-.ingest-banner__completed {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.ingest-banner__initial i,
-.ingest-banner__uploading i,
-.ingest-banner__completed i {
-  font-size: 1.1rem;
-}
-
-.ingest-banner__filename {
-  font-weight: 500;
-  flex: 0 1 auto;
-}
-
-.ingest-banner__size {
+.invoice-import__dropzone-hint {
+  margin: 0;
+  max-width: 32rem;
   color: var(--p-text-muted-color);
-  font-size: 0.85rem;
-  flex: 0 0 auto;
 }
 
-.ingest-banner__error {
-  margin-top: 0.25rem;
-}
-
-.ingest-review {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.invoice-import__dropzone-error {
   margin-top: 0.5rem;
 }
 
-.ingest-actions {
+.invoice-import {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.invoice-import__document,
+.invoice-import__review {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.invoice-import__document-header {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
-  justify-content: flex-end;
+  min-width: 0;
+}
+
+.invoice-import__document-header .pi-file-pdf {
+  color: var(--p-primary-color);
+}
+
+.invoice-import__document-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoice-import__document-size {
+  flex: 0 0 auto;
+  margin-right: auto;
+  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+}
+
+.invoice-import__viewer {
+  height: 60vh;
+  min-height: 24rem;
+}
+
+.invoice-import__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 16rem;
+  color: var(--p-text-muted-color);
+  text-align: center;
+}
+
+.invoice-import__state strong {
+  color: var(--p-text-color);
+}
+
+.invoice-import__error,
+.invoice-import__issues {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.invoice-import__issues ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.invoice-import__issue-field {
+  font-weight: 600;
+}
+
+.invoice-import__totals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+}
+
+.invoice-import__totals--ok .invoice-import__totals-status {
+  color: var(--p-green-600);
+}
+
+.invoice-import__totals--mismatch {
+  border-color: var(--p-yellow-500);
+}
+
+.invoice-import__totals--mismatch .invoice-import__totals-status {
+  color: var(--p-yellow-700);
+}
+
+.invoice-import__totals-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.invoice-import__section-title {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+}
+
+@media (min-width: 1200px) {
+  .invoice-import {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: start;
+  }
+
+  .invoice-import__document {
+    position: sticky;
+    top: 0;
+  }
+
+  .invoice-import__viewer {
+    height: calc(100vh - 12rem);
+  }
 }
 </style>

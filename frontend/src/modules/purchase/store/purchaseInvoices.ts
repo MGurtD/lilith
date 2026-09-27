@@ -8,6 +8,8 @@ import {
   PurchaseInvoiceDueDate,
 } from "../types";
 import { getNewUuid } from "@/utils/functions";
+import { useLifecyclesStore } from "@/modules/shared/store/lifecycle";
+import { usePurchaseMasterDataStore } from "./purchase";
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -42,6 +44,25 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceDueDates: [],
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
+    },
+    // Defaults of a new invoice: current exercise, "Nacional" series and the
+    // initial "Nova" status. Needs purchase master data and the PurchaseInvoice
+    // lifecycle loaded.
+    applyNewInvoiceDefaults() {
+      if (!this.purchaseInvoice) return;
+      const masterData = usePurchaseMasterDataStore().masterData;
+      const lifecycle = useLifecyclesStore().lifecycle;
+
+      const exercise = masterData.exercises?.find(
+        (e) => e.name === new Date().getFullYear().toString(),
+      );
+      if (exercise) this.purchaseInvoice.exerciceId = exercise.id;
+
+      const serie = masterData.series?.find((s) => s.name === "Nacional");
+      if (serie) this.purchaseInvoice.purchaseInvoiceSerieId = serie.id;
+
+      const status = lifecycle?.statuses?.find((s) => s.name === "Nova");
+      if (status) this.purchaseInvoice.statusId = status.id;
     },
     // Prefills a draft PurchaseInvoice from an ingestion result. Supplier and
     // taxes come resolved from the backend; unresolved ones stay empty.

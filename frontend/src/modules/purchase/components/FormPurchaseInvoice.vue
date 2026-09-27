@@ -32,6 +32,8 @@ type PurchaseInvoiceCalculationFormValues = PurchaseInvoiceCalculatedValues &
 
 const props = defineProps<{
   purchaseInvoice: PurchaseInvoice;
+  /** Review hints per form field, e.g. from a PDF import. */
+  fieldWarnings?: Record<string, string[]>;
 }>();
 
 const emit = defineEmits<{
@@ -254,6 +256,15 @@ const calculateAmounts = async (
       new Date(invoice.purchaseInvoiceDate),
     ),
   };
+  // Due dates need a supplier, a payment method and a tax on every amount line;
+  // a draft (e.g. read from a PDF) may still lack them.
+  if (
+    !dueDateInvoice.supplierId ||
+    !dueDateInvoice.paymentMethodId ||
+    dueDateInvoice.purchaseInvoiceImports.some((line) => !line.taxId)
+  ) {
+    return;
+  }
   const dueDates = await purchaseStore.GetDueDates(dueDateInvoice);
   if (requestSequence !== dueDateRequestSequence || !dueDates) return;
 
@@ -427,12 +438,19 @@ onUnmounted(() => {
 });
 
 const validateImports = (): boolean => {
-  if (props.purchaseInvoice.purchaseInvoiceImports.length > 0) return true;
+  const lines = props.purchaseInvoice.purchaseInvoiceImports;
+  const detail =
+    lines.length === 0
+      ? t("purchase.validation.invoiceImportsRequired")
+      : lines.some((line) => !line.taxId)
+        ? t("purchase.validation.invoiceImportTaxRequired")
+        : undefined;
+  if (!detail) return true;
 
   toast.add({
     severity: "warn",
     summary: t("purchase.messages.invalidForm"),
-    detail: t("purchase.validation.invoiceImportsRequired"),
+    detail,
     life: 5000,
   });
   return false;
@@ -471,6 +489,7 @@ defineExpose({ submitForm, calcAmounts, calcAmountsNow, getSupplierId });
     :initial-values="initialValues"
     :show-submit="false"
     :show-cancel="false"
+    :field-warnings="fieldWarnings"
     @submit="submit"
   >
     <template #field-statusId="{ value, setValue, disabled, inputId }">

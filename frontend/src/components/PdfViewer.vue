@@ -183,9 +183,16 @@ import ProgressSpinner from "primevue/progressspinner";
 
 interface Props {
   file: File | null;
+  /** Local PDF not stored on the server yet, e.g. before an upload. */
+  source?: Blob | null;
+  /** Download name for a local source. */
+  sourceName?: string;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  source: null,
+  sourceName: "document.pdf",
+});
 const { t } = useI18n();
 const toast = useToast();
 
@@ -306,7 +313,7 @@ const handleFullscreenChange = () => {
 
 // Load PDF
 const loadPdf = async () => {
-  if (!props.file) {
+  if (!props.file && !props.source) {
     pdfSource.value = null;
     pdfBlob.value = null;
     return;
@@ -317,7 +324,7 @@ const loadPdf = async () => {
   pdfSource.value = null;
 
   try {
-    const { blob } = await fileService.Download(props.file);
+    const blob = props.source ?? (await fileService.Download(props.file!)).blob;
 
     if (!blob) {
       throw new Error(t("pdfViewer.downloadErrorDetail"));
@@ -343,6 +350,10 @@ const loadPdf = async () => {
 
 // Download file
 const downloadFile = async () => {
+  if (props.source) {
+    createBlobAndDownloadFile(props.sourceName, props.source, props.source.type);
+    return;
+  }
   if (!props.file) return;
 
   try {
@@ -393,7 +404,7 @@ const onLoadingFailed = (err: any) => {
 
 // Watch for file changes
 watch(
-  () => props.file,
+  () => props.source ?? props.file,
   (newFile) => {
     if (newFile) {
       // Reset zoom when loading new file

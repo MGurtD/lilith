@@ -2,6 +2,7 @@
   <DataTable
     @row-click="onEditRow"
     :value="props.purchaseInvoiceImports"
+    :row-class="rowClass"
     tableStyle="min-width: 100%"
   >
     <Button
@@ -14,7 +15,15 @@
     />
 
     <Column field="baseAmount" :header="t('purchase.purchaseInvoiceImport.columns.base')" style="width: 25%">
-      <template #body="slotProps"> {{ slotProps.data.baseAmount }} € </template>
+      <template #body="slotProps">
+        <i
+          v-if="rowWarnings?.[slotProps.data.id]?.length"
+          v-tooltip.top="rowWarnings[slotProps.data.id].join(' · ')"
+          class="pi pi-exclamation-triangle import-row-warning-icon"
+          :aria-label="rowWarnings[slotProps.data.id].join('. ')"
+        />
+        {{ slotProps.data.baseAmount }} €
+      </template>
     </Column>
     <Column field="taxId" :header="t('purchase.purchaseInvoiceImport.columns.tax')" style="width: 25%">
       <template #body="slotProps">
@@ -51,6 +60,8 @@ import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   purchaseInvoiceImports: Array<PurchaseInvoiceImport> | undefined;
+  /** Review hints per import id, e.g. from a PDF import. */
+  rowWarnings?: Record<string, string[]>;
 }>();
 
 const emit = defineEmits<{
@@ -66,6 +77,9 @@ const getTaxNameById = (taxId: string) => {
   const tax = purchaseMasterData.masterData.taxes?.find((t) => t.id === taxId);
   if (tax) return tax.percentatge;
 };
+
+const rowClass = (row: PurchaseInvoiceImport) =>
+  props.rowWarnings?.[row.id]?.length ? "import-row-warning" : undefined;
 
 const onAdd = () => {
   const tax = purchaseMasterData.masterData.taxes?.find((t) =>
@@ -97,3 +111,14 @@ const onDeleteRow = (event: any, invoiceImport: PurchaseInvoiceImport) => {
   emit("delete", invoiceImport);
 };
 </script>
+
+<style scoped>
+:deep(.import-row-warning) {
+  background: color-mix(in srgb, var(--p-yellow-500) 10%, transparent);
+}
+
+.import-row-warning-icon {
+  color: var(--p-yellow-600);
+  margin-right: 0.35rem;
+}
+</style>
