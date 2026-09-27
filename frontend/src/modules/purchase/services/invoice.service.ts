@@ -11,35 +11,42 @@ import {
 
 export class PurchaseInvoiceSerieService extends BaseService<InvoiceSerie> {}
 
+type CreateErrorBody = {
+  errors?: string[];
+  errorCode?: string;
+  content?: unknown;
+};
+
 export type PurchaseInvoiceCreateResult =
   | { ok: true }
   | { ok: false; error: string; duplicateOfId?: string };
 
 export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
   // Like create(), but keeps the backend's reason so callers can link to the
-  // existing invoice when the supplier invoice number is a duplicate.
+  // existing invoice when the supplier invoice number is a duplicate. The API
+  // client resolves 4xx up to 404 (no global toast), so the status is checked here.
   async CreateChecked(
     invoice: PurchaseInvoice,
   ): Promise<PurchaseInvoiceCreateResult> {
+    let data: CreateErrorBody | undefined;
     try {
-      await apiClient.post(this.resource, invoice);
-      return { ok: true };
+      const response = await apiClient.post(this.resource, invoice);
+      if (response.status === 200 || response.status === 201) {
+        return { ok: true };
+      }
+      data = response.data as CreateErrorBody | undefined;
     } catch (error) {
-      const data = (error as AxiosError<{
-        errors?: string[];
-        errorCode?: string;
-        content?: unknown;
-      }>).response?.data;
-      return {
-        ok: false,
-        error: data?.errors?.[0] ?? "",
-        duplicateOfId:
-          data?.errorCode === "PurchaseInvoiceDuplicate" &&
-          typeof data.content === "string"
-            ? data.content
-            : undefined,
-      };
+      data = (error as AxiosError<CreateErrorBody>).response?.data;
     }
+    return {
+      ok: false,
+      error: data?.errors?.[0] ?? "",
+      duplicateOfId:
+        data?.errorCode === "PurchaseInvoiceDuplicate" &&
+        typeof data.content === "string"
+          ? data.content
+          : undefined,
+    };
   }
 
   async GetFiltered(

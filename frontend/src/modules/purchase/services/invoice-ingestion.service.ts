@@ -22,7 +22,10 @@ export class PurchaseInvoiceIngestionService {
           timeout: 120000,
         },
       );
-      return { ok: true, draft: response.data };
+      // The API client resolves 4xx up to 404, e.g. 400 for a file that is not a PDF.
+      if (response.status === 200) return { ok: true, draft: response.data };
+      const body = response.data as unknown as { errors?: string[] } | undefined;
+      return { ok: false, error: body?.errors?.[0] ?? "" };
     } catch (error) {
       const info = parseAxiosError(error as AxiosError);
       return { ok: false, error: info.errors[0] ?? info.message };

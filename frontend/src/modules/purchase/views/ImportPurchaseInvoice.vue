@@ -526,8 +526,11 @@ const onSupplierSubmit = async (supplier: Supplier) => {
   if (isCreatingSupplier.value) return;
   isCreatingSupplier.value = true;
   try {
-    // A rejected creation, e.g. an existing name, is already reported by the API client.
-    if (!(await suppliersStore.createSupplier(supplier))) return;
+    // A rejected creation (e.g. an existing name, 409) is reported by the API client.
+    const created = await suppliersStore
+      .createSupplier(supplier)
+      .catch(() => false);
+    if (!created) return;
 
     await masterDataStore.fetchMasterData();
     formRef.value?.setSupplier(supplier.id);
@@ -588,10 +591,16 @@ const onSubmit = async (invoice: PurchaseInvoice) => {
       ...invoice,
       purchaseInvoiceDate: convertDateTimeToJSON(invoice.purchaseInvoiceDate),
     });
-    // The API client already shows the backend reason; a duplicate also gets a link.
     if (!result.ok) {
       if (result.duplicateOfId) {
         duplicateOf.value = { id: result.duplicateOfId, message: result.error };
+      } else {
+        toast.add({
+          severity: "error",
+          summary: t("purchase.purchaseInvoice.messages.createError"),
+          detail: result.error || undefined,
+          life: 6000,
+        });
       }
       return;
     }

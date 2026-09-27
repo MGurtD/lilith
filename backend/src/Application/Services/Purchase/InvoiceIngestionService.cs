@@ -230,8 +230,20 @@ public class InvoiceIngestionService(
         }
     }
 
+    /// <summary>
+    /// Flags values the provider read with low confidence, except those the arithmetic
+    /// checks already confirmed: a matching total vouches for itself and the withholding,
+    /// and base x rate = tax vouches for a tax row.
+    /// </summary>
     private void FlagLowConfidence(ExtractedInvoice extracted, IngestPurchaseInvoiceResponse response)
     {
+        var totalVerified = extracted.TotalAmount is not null
+            && response.TaxBreakdown.Count > 0
+            && !response.Issues.Any(i => i.Code == IngestionIssueCodes.TotalMismatch);
+        var verifiedFields = totalVerified
+            ? new HashSet<string> { IngestionIssueFields.NetAmount, IngestionIssueFields.ExtraTaxPercentatge }
+            : [];
+
         var headerFields = new (string Source, string Target)[]
         {
             (ExtractedInvoiceFields.InvoiceNumber, IngestionIssueFields.SupplierNumber),
@@ -242,7 +254,7 @@ public class InvoiceIngestionService(
             (ExtractedInvoiceFields.TotalAmount, IngestionIssueFields.NetAmount),
         };
 
-        foreach (var group in headerFields.GroupBy(f => f.Target))
+        foreach (var group in headerFields.GroupBy(f => f.Target).Where(g => !verifiedFields.Contains(g.Key)))
         {
             var lowest = group
                 .Select(f => extracted.FieldConfidence.TryGetValue(f.Source, out var c) ? c : (decimal?)null)
@@ -255,6 +267,11 @@ public class InvoiceIngestionService(
         string[] rowFields = [ExtractedInvoiceFields.TaxRate, ExtractedInvoiceFields.BaseAmount, ExtractedInvoiceFields.TaxAmount];
         for (var index = 0; index < extracted.TaxRows.Count; index++)
         {
+            var row = extracted.TaxRows[index];
+            var rowVerified = row.BaseAmount is not null && row.TaxAmount is not null
+                && !response.Issues.Any(i => i.RowIndex == index && i.Code == IngestionIssueCodes.TaxAmountMismatch);
+            if (rowVerified) continue;
+
             var lowest = rowFields
                 .Select(f => extracted.FieldConfidence.TryGetValue(ExtractedInvoiceFields.TaxRow(index, f), out var c) ? c : (decimal?)null)
                 .Where(c => c.HasValue)

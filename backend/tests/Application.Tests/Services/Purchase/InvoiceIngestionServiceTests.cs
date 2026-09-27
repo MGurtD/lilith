@@ -226,24 +226,50 @@ public class InvoiceIngestionServiceTests
         {
             [ExtractedInvoiceFields.InvoiceNumber] = 0.95m,
             [ExtractedInvoiceFields.IssueDate] = 0.4m,
+        };
+        var context = BuildSut(invoice);
+
+        var response = await Ingest(context);
+
+        var issue = Assert.Single(response.Issues);
+        Assert.Equal(IngestionIssueFields.PurchaseInvoiceDate, issue.Field);
+        Assert.Equal(IngestionIssueCodes.LowConfidence, issue.Code);
+        Assert.Equal("InvoiceIngestionLowConfidence|40", issue.Message);
+    }
+
+    [Fact]
+    public async Task Low_confidence_is_not_flagged_on_values_the_arithmetic_confirms()
+    {
+        var invoice = CleanInvoice();
+        invoice.FieldConfidence = new()
+        {
+            [ExtractedInvoiceFields.TotalAmount] = 0.745m,
             [ExtractedInvoiceFields.TaxRow(0, ExtractedInvoiceFields.TaxAmount)] = 0.5m,
         };
         var context = BuildSut(invoice);
 
         var response = await Ingest(context);
 
-        Assert.Collection(response.Issues,
-            issue =>
-            {
-                Assert.Equal(IngestionIssueFields.PurchaseInvoiceDate, issue.Field);
-                Assert.Equal(IngestionIssueCodes.LowConfidence, issue.Code);
-                Assert.Equal("InvoiceIngestionLowConfidence|40", issue.Message);
-            },
-            issue =>
-            {
-                Assert.Equal(IngestionIssueFields.TaxBreakdown, issue.Field);
-                Assert.Equal(0, issue.RowIndex);
-            });
+        Assert.Empty(response.Issues);
+    }
+
+    [Fact]
+    public async Task Low_confidence_is_flagged_when_the_arithmetic_does_not_confirm_it()
+    {
+        var invoice = CleanInvoice();
+        invoice.TaxRows = [new ExtractedTaxRow { TaxRate = 21m, BaseAmount = 100m, TaxAmount = 12m }];
+        invoice.TotalAmount = 130m;
+        invoice.FieldConfidence = new()
+        {
+            [ExtractedInvoiceFields.TotalAmount] = 0.6m,
+            [ExtractedInvoiceFields.TaxRow(0, ExtractedInvoiceFields.TaxAmount)] = 0.5m,
+        };
+        var context = BuildSut(invoice);
+
+        var response = await Ingest(context);
+
+        Assert.Contains(response.Issues, i => i.Field == IngestionIssueFields.NetAmount && i.Code == IngestionIssueCodes.LowConfidence);
+        Assert.Contains(response.Issues, i => i.RowIndex == 0 && i.Code == IngestionIssueCodes.LowConfidence);
     }
 
     private static Task<IngestPurchaseInvoiceResponse> Ingest(TestContext context) =>
