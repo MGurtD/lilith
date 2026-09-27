@@ -90,8 +90,19 @@ export const usePurchaseInvoiceStore = defineStore({
 
       return this.purchaseInvoice;
     },
-    async CreateChecked(purchaseInvoice: PurchaseInvoice) {
-      return PurchaseService.PurchaseInvoice.CreateChecked(purchaseInvoice);
+    async CreateWithReceipts(purchaseInvoice: PurchaseInvoice, receiptIds: string[]) {
+      return PurchaseService.PurchaseInvoice.CreateWithReceipts(purchaseInvoice, receiptIds);
+    },
+    async GetReceiptCandidates(
+      supplierId: string,
+      deliveryNoteNumbers: string[],
+      taxableBase: number,
+    ) {
+      return PurchaseService.PurchaseInvoice.GetReceiptCandidates(
+        supplierId,
+        deliveryNoteNumbers,
+        taxableBase,
+      );
     },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =

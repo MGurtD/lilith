@@ -13,6 +13,7 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 - Canviar de PDF i tornar a llegir-lo
 - Crear el proveïdor quan el NIF de la factura no correspon a cap proveïdor, sense sortir de la pantalla
 - Obrir la factura existent quan el PDF ja està registrat
+- Triar els albarans pendents del proveïdor que cobreix la factura
 - Crear la factura des del botó de la capçalera
 
 ## Flux habitual
@@ -21,7 +22,8 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 2. Espera que el sistema llegeixi la factura. Pot trigar fins a un minut.
 3. Revisa la llista de valors a revisar i els camps marcats en groc, comparant-los amb el PDF.
 4. Comprova que el total calculat quadri amb el total del PDF.
-5. Prem "Crear factura". La factura es crea amb el PDF adjunt i s'obre la seva fitxa.
+5. Revisa els albarans suggerits i marca o desmarca els que cobreix la factura.
+6. Prem "Crear factura". La factura es crea amb el PDF adjunt i els albarans marcats, i s'obre la seva fitxa.
 
 ## Aspectes importants
 
@@ -33,6 +35,7 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 - El recàrrec d'equivalència no s'importa: queda marcat perquè l'introdueixis manualment.
 - Els ports i els descomptes no s'omplen, perquè a la factura ja formen part de la base imposable.
 - Un camp marcat deixa de mostrar l'avís quan el modifiques.
+- Es llisten els albarans del proveïdor pendents de facturar amb el seu import sense IVA. Es marquen automàticament els albarans el número dels quals apareix a la factura; si no n'hi ha cap, la combinació d'albarans que suma la base imposable. Si canvies de proveïdor, la llista es recarrega.
 - La nova factura es crea a l'exercici actual, la sèrie "Nacional" i l'estat inicial.
 
 ## Errors frequents

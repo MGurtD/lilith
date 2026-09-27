@@ -137,6 +137,19 @@ export interface IngestPurchaseInvoiceResponse {
   totalAmount?: number | null;
   taxBreakdown: Array<TaxBreakdownRow>;
   issues: Array<IngestionIssue>;
+  deliveryNoteNumbers: Array<string>;
+  receipts: Array<ReceiptCandidate>;
+}
+
+// Uninvoiced receipt of the invoice supplier, offered for linking.
+export interface ReceiptCandidate {
+  id: string;
+  number: string;
+  supplierNumber: string;
+  date: string;
+  amount: number;
+  suggested: boolean;
+  matchReason?: "DeliveryNoteNumber" | "Amount" | null;
 }
 
 export interface TaxBreakdownRow {

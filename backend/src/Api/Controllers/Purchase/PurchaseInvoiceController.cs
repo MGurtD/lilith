@@ -73,6 +73,27 @@ namespace Api.Controllers.Purchase
                 return BadRequest(response);
         }
 
+        // Creates the invoice and links the selected uninvoiced receipts in one transaction.
+        [HttpPost("WithReceipts")]
+        [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateWithReceipts([FromBody] CreatePurchaseInvoiceWithReceiptsRequest request)
+        {
+            var response = await service.CreateWithReceipts(request);
+            return response.Result ? Ok(response.Content) : BadRequest(response);
+        }
+
+        // Uninvoiced receipts of a supplier, pre-selecting those matching the invoice.
+        [HttpGet("ReceiptCandidates/{supplierId:guid}")]
+        [ProducesResponseType(typeof(List<ReceiptCandidate>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetReceiptCandidates(
+            Guid supplierId,
+            [FromQuery] string[]? deliveryNoteNumbers,
+            [FromQuery] decimal? taxableBase)
+        {
+            return Ok(await service.GetReceiptCandidates(supplierId, deliveryNoteNumbers ?? [], taxableBase));
+        }
+
         [HttpPost]
         [Route("UpdateStatuses")]
         [ProducesResponseType(StatusCodes.Status200OK)]

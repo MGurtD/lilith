@@ -2025,6 +2025,7 @@ const es = {
       review: { issues: "Ningún valor a revisar. Compruébalo con el PDF y crea la factura. | 1 valor a revisar | {count} valores a revisar", taxBreakdown: "Desglose de IVA", taxRow: "Línea de IVA {row}" },
       totals: { document: "Total del PDF", computed: "Total calculado", matches: "Cuadra con el PDF", difference: "Diferencia: {amount}" },
       actions: { create: "Crear factura", createSupplier: "Crear proveedor", openInvoice: "Abrir factura" },
+      receipts: { title: "Albaranes pendientes de facturar", empty: "El proveedor no tiene albaranes pendientes de facturar.", noSupplier: "Elige el proveedor para ver sus albaranes pendientes.", columns: { supplierNumber: "Albarán del proveedor", number: "N.º interno", date: "Fecha", amount: "Importe", match: "Sugerencia" }, match: { deliveryNoteNumber: "Número en la factura", amount: "Cuadra con la base" }, selected: "Albaranes seleccionados", base: "Base de la factura", matches: "Cuadra con la base" },
       supplierDialog: { title: "Nuevo proveedor" },
       duplicate: { title: "Factura duplicada" },
       messages: { supplierCreated: "Proveedor creado y asignado a la factura", supplierCreateError: "No se ha podido crear el proveedor", created: "Factura creada a partir del PDF", attachError: "La factura se ha creado, pero no se ha podido adjuntar el PDF. Adjúntalo desde la pestaña Archivos." },

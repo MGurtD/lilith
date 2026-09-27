@@ -2084,6 +2084,7 @@ const ca = {
       review: { issues: "Cap valor a revisar. Comprova-ho amb el PDF i crea la factura. | 1 valor a revisar | {count} valors a revisar", taxBreakdown: "Desglossament d'IVA", taxRow: "Línia d'IVA {row}" },
       totals: { document: "Total del PDF", computed: "Total calculat", matches: "Quadra amb el PDF", difference: "Diferència: {amount}" },
       actions: { create: "Crear factura", createSupplier: "Crear proveïdor", openInvoice: "Obrir factura" },
+      receipts: { title: "Albarans pendents de facturar", empty: "El proveïdor no té albarans pendents de facturar.", noSupplier: "Tria el proveïdor per veure els seus albarans pendents.", columns: { supplierNumber: "Albarà del proveïdor", number: "Núm. intern", date: "Data", amount: "Import", match: "Suggeriment" }, match: { deliveryNoteNumber: "Número a la factura", amount: "Quadra amb la base" }, selected: "Albarans seleccionats", base: "Base de la factura", matches: "Quadra amb la base" },
       supplierDialog: { title: "Nou proveïdor" },
       duplicate: { title: "Factura duplicada" },
       messages: { supplierCreated: "Proveïdor creat i assignat a la factura", supplierCreateError: "No s'ha pogut crear el proveïdor", created: "Factura creada a partir del PDF", attachError: "La factura s'ha creat, però no s'ha pogut adjuntar el PDF. Adjunta'l des de la pestanya Fitxers." },

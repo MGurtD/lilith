@@ -114,6 +114,7 @@
     "PurchaseOrderDetailNotFound": "Detall de la comanda {0} inexistent",
     "PurchaseInvoiceNotFound": "La factura amb ID {0} no existeix",
     "PurchaseInvoiceDuplicate": "La factura del proveïdor {0} ja està registrada com a factura {1}",
+    "PurchaseInvoiceReceiptNotInvoiceable": "Algun albarà seleccionat no és del proveïdor o ja està facturat",
     "SalesInvoiceNotFound": "La factura amb ID {0} no existeix",
     "SalesInvoiceDetailNotFound": "El detall de factura amb ID {0} no existeix",
     "SalesInvoiceNoExisteix": "La factura no existeix",

@@ -114,6 +114,7 @@
     "PurchaseOrderDetailNotFound": "Purchase order detail {0} not found",
     "PurchaseInvoiceNotFound": "Purchase invoice with ID {0} not found",
     "PurchaseInvoiceDuplicate": "The supplier invoice {0} is already registered as invoice {1}",
+    "PurchaseInvoiceReceiptNotInvoiceable": "A selected delivery note does not belong to the supplier or is already invoiced",
     "SalesInvoiceNotFound": "Sales invoice with ID {0} not found",
     "SalesInvoiceDetailNotFound": "Sales invoice detail with ID {0} not found",
     "SalesInvoiceNoExisteix": "The invoice does not exist",

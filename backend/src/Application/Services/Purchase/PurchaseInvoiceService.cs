@@ -1,4 +1,6 @@
+using System.Data;
 using Application.Contracts;
+using Application.Contracts.Ingestion;
 using Domain.Entities;
 using Domain.Entities.Purchase;
 
@@ -113,6 +115,63 @@ namespace Application.Services.Purchase
             await _unitOfWork.PurchaseInvoices.Add(purchaseInvoice);
 
             return new GenericResponse(true);
+        }
+
+        public async Task<GenericResponse> CreateWithReceipts(CreatePurchaseInvoiceWithReceiptsRequest request)
+        {
+            var invoice = request.Invoice;
+            var receiptIds = request.ReceiptIds.Distinct().ToList();
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
+            try
+            {
+                var created = await Create(invoice);
+                if (!created.Result)
+                {
+                    await transaction.RollbackAsync();
+                    return created;
+                }
+
+                List<Receipt> receipts = receiptIds.Count == 0
+                    ? []
+                    : await _unitOfWork.Receipts.FindAsync(r => receiptIds.Contains(r.Id));
+                var invalid = receiptIds
+                    .Where(id => receipts.FirstOrDefault(r => r.Id == id) is not { } receipt
+                        || receipt.SupplierId != invoice.SupplierId
+                        || receipt.PurchaseInvoiceId != null
+                        || receipt.Disabled)
+                    .ToList();
+                if (invalid.Count > 0)
+                {
+                    await transaction.RollbackAsync();
+                    return new GenericResponse(false,
+                        _localizationService.GetLocalizedString("PurchaseInvoiceReceiptNotInvoiceable"),
+                        invalid,
+                        "PurchaseInvoiceReceiptNotInvoiceable");
+                }
+
+                foreach (var receipt in receipts)
+                {
+                    receipt.PurchaseInvoiceId = invoice.Id;
+                    await _unitOfWork.Receipts.Update(receipt);
+                }
+
+                await transaction.CommitAsync();
+                return new GenericResponse(true, invoice.Id);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<ReceiptCandidate>> GetReceiptCandidates(
+            Guid supplierId, IEnumerable<string> deliveryNoteNumbers, decimal? taxableBase)
+        {
+            var candidates = await ReceiptCandidates.LoadAsync(_unitOfWork, supplierId);
+            ReceiptCandidates.Suggest(candidates, deliveryNoteNumbers, taxableBase);
+            return candidates;
         }
 
         public async Task<GenericResponse> Update(PurchaseInvoice purchaseInvoice)

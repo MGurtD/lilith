@@ -57,8 +57,21 @@ public class InvoiceIngestionService(
         ResolveWithholding(extracted, response);
         CheckTotal(extracted, response);
         FlagLowConfidence(extracted, response);
+        await SuggestReceipts(extracted, response);
 
         return response;
+    }
+
+    private async Task SuggestReceipts(ExtractedInvoice extracted, IngestPurchaseInvoiceResponse response)
+    {
+        response.DeliveryNoteNumbers = extracted.DeliveryNoteNumbers;
+        if (response.SupplierId is not { } supplierId) return;
+
+        response.Receipts = await ReceiptCandidates.LoadAsync(unitOfWork, supplierId);
+        ReceiptCandidates.Suggest(
+            response.Receipts,
+            extracted.DeliveryNoteNumbers,
+            response.TaxBreakdown.Sum(r => r.BaseAmount));
     }
 
     private static bool HasPdfSignature(MemoryStream buffer)

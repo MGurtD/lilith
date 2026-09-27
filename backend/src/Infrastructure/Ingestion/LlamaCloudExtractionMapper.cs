@@ -58,6 +58,12 @@ public static class LlamaCloudExtractionMapper
                 },
             },
             ["total_amount"] = new { type = "number", description = "Invoice total to pay (total factura)" },
+            ["delivery_note_numbers"] = new
+            {
+                type = "array",
+                description = "Supplier delivery note (albarán) numbers the invoice refers to, exactly as printed, without dates",
+                items = new { type = "string" },
+            },
         },
     };
 
@@ -97,6 +103,15 @@ public static class LlamaCloudExtractionMapper
         }
 
         invoice.TotalAmount = ReadDecimal(extractResult, "total_amount");
+        if (extractResult.TryGetProperty("delivery_note_numbers", out var notes) && notes.ValueKind == JsonValueKind.Array)
+        {
+            invoice.DeliveryNoteNumbers = notes.EnumerateArray()
+                .Select(n => n.ValueKind == JsonValueKind.String ? n.GetString()?.Trim() : null)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Select(n => n!)
+                .Distinct()
+                .ToList();
+        }
         invoice.FieldConfidence = MapConfidence(extractMetadata);
         return invoice;
     }

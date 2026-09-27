@@ -43,6 +43,16 @@ public class LlamaCloudExtractionMapperTests
     }
 
     [Fact]
+    public void Reads_delivery_note_numbers_trimmed_and_distinct()
+    {
+        var result = Json("""{ "delivery_note_numbers": [" A2025/4501 ", "A2025/4501", "", 7] }""");
+
+        var invoice = LlamaCloudExtractionMapper.Map(result, null);
+
+        Assert.Equal(["A2025/4501"], invoice.DeliveryNoteNumbers);
+    }
+
+    [Fact]
     public void Reads_numbers_and_dates_returned_as_localized_strings()
     {
         var result = Json("""

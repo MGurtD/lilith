@@ -18,4 +18,8 @@ public class IngestPurchaseInvoiceResponse
     public decimal? TotalAmount { get; set; }
     public List<TaxBreakdownRow> TaxBreakdown { get; set; } = [];
     public List<IngestionIssue> Issues { get; set; } = [];
+    /// <summary>Delivery-note numbers read from the PDF.</summary>
+    public List<string> DeliveryNoteNumbers { get; set; } = [];
+    /// <summary>Uninvoiced receipts of the resolved supplier, with suggestions.</summary>
+    public List<ReceiptCandidate> Receipts { get; set; } = [];
 }

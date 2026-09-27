@@ -2058,6 +2058,7 @@ const en = {
       review: { issues: "Nothing to review. Check it against the PDF and create the invoice. | 1 value to review | {count} values to review", taxBreakdown: "VAT breakdown", taxRow: "VAT line {row}" },
       totals: { document: "PDF total", computed: "Computed total", matches: "Matches the PDF", difference: "Difference: {amount}" },
       actions: { create: "Create invoice", createSupplier: "Create supplier", openInvoice: "Open invoice" },
+      receipts: { title: "Delivery notes to invoice", empty: "The supplier has no delivery notes left to invoice.", noSupplier: "Pick the supplier to see its delivery notes to invoice.", columns: { supplierNumber: "Supplier delivery note", number: "Internal no.", date: "Date", amount: "Amount", match: "Suggestion" }, match: { deliveryNoteNumber: "Number on the invoice", amount: "Matches the base" }, selected: "Selected delivery notes", base: "Invoice taxable base", matches: "Matches the base" },
       supplierDialog: { title: "New supplier" },
       duplicate: { title: "Duplicate invoice" },
       messages: { supplierCreated: "Supplier created and assigned to the invoice", supplierCreateError: "The supplier could not be created", created: "Invoice created from the PDF", attachError: "The invoice was created but the PDF could not be attached. Attach it from the Files tab." },

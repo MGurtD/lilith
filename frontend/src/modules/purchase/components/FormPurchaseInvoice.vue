@@ -43,6 +43,7 @@ const emit = defineEmits<{
     values: Partial<PurchaseInvoiceCalculatedValues>,
   ): void;
   (event: "due-dates-change", dueDates: PurchaseInvoiceDueDate[]): void;
+  (event: "supplier-change", supplierId: string): void;
 }>();
 
 const purchaseStore = usePurchaseInvoiceStore();
@@ -285,6 +286,7 @@ const updateSupplier = (
 ): void => {
   latestCalculationValues.value = { ...values };
   const supplierId = stringValue(values.supplierId, "");
+  emit("supplier-change", supplierId);
   const supplier = purchaseMasterData.masterData.suppliers?.find(
     (item) => item.id === supplierId,
   );

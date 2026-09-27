@@ -13,6 +13,7 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 - Cambiar de PDF y volver a leerlo
 - Crear el proveedor cuando el NIF de la factura no corresponde a ningún proveedor, sin salir de la pantalla
 - Abrir la factura existente cuando el PDF ya está registrado
+- Elegir los albaranes pendientes del proveedor que cubre la factura
 - Crear la factura desde el botón de la cabecera
 
 ## Flujo habitual
@@ -21,7 +22,8 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 2. Espera a que el sistema lea la factura. Puede tardar hasta un minuto.
 3. Revisa la lista de valores a revisar y los campos marcados en amarillo, comparándolos con el PDF.
 4. Comprueba que el total calculado cuadre con el total del PDF.
-5. Pulsa "Crear factura". La factura se crea con el PDF adjunto y se abre su ficha.
+5. Revisa los albaranes sugeridos y marca o desmarca los que cubre la factura.
+6. Pulsa "Crear factura". La factura se crea con el PDF adjunto y los albaranes marcados, y se abre su ficha.
 
 ## Aspectos importantes
 
@@ -33,6 +35,7 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 - El recargo de equivalencia no se importa: queda marcado para que lo introduzcas manualmente.
 - Los portes y los descuentos no se rellenan, porque en la factura ya forman parte de la base imponible.
 - Un campo marcado deja de mostrar el aviso cuando lo modificas.
+- Se listan los albaranes del proveedor pendientes de facturar con su importe sin IVA. Se marcan automáticamente los albaranes cuyo número aparece en la factura; si no hay ninguno, la combinación de albaranes que suma la base imponible. Si cambias de proveedor, la lista se recarga.
 - La nueva factura se crea en el ejercicio actual, la serie "Nacional" y el estado inicial.
 
 ## Errores frecuentes

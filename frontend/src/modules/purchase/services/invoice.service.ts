@@ -2,6 +2,7 @@ import type { AxiosError } from "axios";
 import apiClient, { logException } from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
 import {
+  ReceiptCandidate,
   PurchaseInvoiceDueDate,
   PurchaseInvoice,
   InvoiceSerie,
@@ -22,15 +23,33 @@ export type PurchaseInvoiceCreateResult =
   | { ok: false; error: string; duplicateOfId?: string };
 
 export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
-  // Like create(), but keeps the backend's reason so callers can link to the
-  // existing invoice when the supplier invoice number is a duplicate. The API
-  // client resolves 4xx up to 404 (no global toast), so the status is checked here.
-  async CreateChecked(
+  async GetReceiptCandidates(
+    supplierId: string,
+    deliveryNoteNumbers: string[],
+    taxableBase: number,
+  ): Promise<ReceiptCandidate[]> {
+    const params = new URLSearchParams();
+    deliveryNoteNumbers.forEach((n) => params.append("deliveryNoteNumbers", n));
+    params.append("taxableBase", String(taxableBase));
+    const response = await apiClient.get(
+      `${this.resource}/ReceiptCandidates/${supplierId}?${params.toString()}`,
+    );
+    return response.status === 200 ? (response.data as ReceiptCandidate[]) : [];
+  }
+
+  // Creates the invoice and links the given receipts in one transaction. Keeps the
+  // backend's reason so callers can link to the existing invoice on a duplicate.
+  // The API client resolves 4xx up to 404 (no global toast), so the status is checked.
+  async CreateWithReceipts(
     invoice: PurchaseInvoice,
+    receiptIds: string[],
   ): Promise<PurchaseInvoiceCreateResult> {
     let data: CreateErrorBody | undefined;
     try {
-      const response = await apiClient.post(this.resource, invoice);
+      const response = await apiClient.post(`${this.resource}/WithReceipts`, {
+        invoice,
+        receiptIds,
+      });
       if (response.status === 200 || response.status === 201) {
         return { ok: true };
       }

@@ -114,6 +114,7 @@
     "PurchaseOrderDetailNotFound": "Detalle del pedido {0} inexistente",
     "PurchaseInvoiceNotFound": "La factura con ID {0} no existe",
     "PurchaseInvoiceDuplicate": "La factura del proveedor {0} ya está registrada como factura {1}",
+    "PurchaseInvoiceReceiptNotInvoiceable": "Algún albarán seleccionado no es del proveedor o ya está facturado",
     "SalesInvoiceNotFound": "La factura con ID {0} no existe",
     "SalesInvoiceDetailNotFound": "El detalle de factura con ID {0} no existe",
     "SalesInvoiceNoExisteix": "La factura no existe",

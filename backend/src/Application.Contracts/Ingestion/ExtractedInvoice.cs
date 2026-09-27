@@ -13,6 +13,8 @@ public class ExtractedInvoice
     public decimal? WithholdingPercentage { get; set; }
     public decimal? WithholdingAmount { get; set; }
     public decimal? TotalAmount { get; set; }
+    /// <summary>Supplier delivery-note (albarán) numbers printed on the invoice.</summary>
+    public List<string> DeliveryNoteNumbers { get; set; } = [];
 
     /// <summary>
     /// Provider confidence (0-1) per field, keyed by <see cref="ExtractedInvoiceFields"/>.

@@ -7,6 +7,13 @@ namespace Application.Contracts
     public interface IPurchaseInvoiceService
     {
         Task<GenericResponse> Create(PurchaseInvoice purchaseInvoice);
+        Task<GenericResponse> CreateWithReceipts(CreatePurchaseInvoiceWithReceiptsRequest request);
+        /// <summary>
+        /// Uninvoiced receipts of a supplier with their amounts, pre-selecting those that match
+        /// the given delivery-note numbers or add up to the taxable base.
+        /// </summary>
+        Task<List<Application.Contracts.Ingestion.ReceiptCandidate>> GetReceiptCandidates(
+            Guid supplierId, IEnumerable<string> deliveryNoteNumbers, decimal? taxableBase);
 
         Task<PurchaseInvoice?> GetById(Guid id);
         IEnumerable<PurchaseInvoice> GetBetweenDates(DateTime startDate, DateTime endDate);

@@ -160,6 +160,24 @@ public class InvoiceIngestionServiceTests
     }
 
     [Fact]
+    public async Task Receipts_of_the_supplier_are_returned_with_the_delivery_note_on_the_pdf_suggested()
+    {
+        var supplier = new Supplier { ComercialName = "Acme", VatNumber = ValidCif };
+        var printed = new Receipt { SupplierId = supplier.Id, SupplierNumber = "A2025/4501", Details = [new ReceiptDetail { Amount = 100m }] };
+        var other = new Receipt { SupplierId = supplier.Id, SupplierNumber = "A2025/4400", Details = [new ReceiptDetail { Amount = 100m }] };
+        var invoice = CleanInvoice();
+        invoice.DeliveryNoteNumbers = ["A2025/4501"];
+        var context = BuildSut(invoice, suppliers: [supplier], receipts: [printed, other]);
+
+        var response = await Ingest(context);
+
+        Assert.Equal(["A2025/4501"], response.DeliveryNoteNumbers);
+        Assert.Equal(2, response.Receipts.Count);
+        var suggested = Assert.Single(response.Receipts, r => r.Suggested);
+        Assert.Equal(printed.Id, suggested.Id);
+    }
+
+    [Fact]
     public async Task Unknown_supplier_is_flagged_and_left_empty()
     {
         var context = BuildSut(CleanInvoice(), suppliers: []);
@@ -288,9 +306,11 @@ public class InvoiceIngestionServiceTests
     private static TestContext BuildSut(
         ExtractedInvoice extracted,
         List<Supplier>? suppliers = null,
-        List<PurchaseInvoice>? invoices = null)
+        List<PurchaseInvoice>? invoices = null,
+        List<Receipt>? receipts = null)
     {
         invoices ??= [];
+        receipts ??= [];
         suppliers ??= [new Supplier { ComercialName = "Acme", VatNumber = ValidCif }];
 
         var extractor = Substitute.For<IInvoiceExtractor>();
@@ -307,9 +327,15 @@ public class InvoiceIngestionServiceTests
             .FindAsync(Arg.Any<Expression<Func<PurchaseInvoice, bool>>>())
             .Returns(call => invoices.AsQueryable().Where(call.Arg<Expression<Func<PurchaseInvoice, bool>>>()).ToList());
 
+        var receiptRepository = Substitute.For<IReceiptRepository>();
+        receiptRepository
+            .FindAsyncWithQueryParams(Arg.Any<Expression<Func<Receipt, bool>>>(), Arg.Any<Func<IQueryable<Receipt>, IQueryable<Receipt>>?>())
+            .Returns(call => receipts.AsQueryable().Where(call.Arg<Expression<Func<Receipt, bool>>>()).ToList());
+
         var uow = Substitute.For<IUnitOfWork>();
         uow.Suppliers.Returns(supplierRepository);
         uow.PurchaseInvoices.Returns(invoiceRepository);
+        uow.Receipts.Returns(receiptRepository);
         uow.Taxes.Returns(new InMemoryRepository<Tax>([Vat21, Vat10, Exempt, ReverseCharge]));
 
         var settings = Options.Create(new AppSettings

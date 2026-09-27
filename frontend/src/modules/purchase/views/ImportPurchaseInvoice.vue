@@ -206,6 +206,7 @@
           @submit="onSubmit"
           @calculated="onCalculated"
           @due-dates-change="onDueDatesChange"
+          @supplier-change="onSupplierChange"
         />
 
         <TablePurchaseInvoiceImports
@@ -216,6 +217,50 @@
           @edit="(row: PurchaseInvoiceImport) => openImportForm(FormActionMode.EDIT, row)"
           @delete="deleteImport"
         />
+
+        <TableReceiptCandidates
+          v-if="purchaseInvoice.supplierId || receiptCandidates.length"
+          v-model:selection="selectedReceipts"
+          :candidates="receiptCandidates"
+        />
+        <Message v-else severity="secondary" :closable="false">
+          {{ t("purchase.invoiceImport.receipts.noSupplier") }}
+        </Message>
+        <div
+          v-if="selectedReceipts.length"
+          class="invoice-import__totals"
+          :class="
+            receiptsMatchBase
+              ? 'invoice-import__totals--ok'
+              : 'invoice-import__totals--mismatch'
+          "
+        >
+          <span>
+            {{ t("purchase.invoiceImport.receipts.selected") }}:
+            <strong>{{ formatCurrency(selectedReceiptsAmount) }}</strong>
+          </span>
+          <span>
+            {{ t("purchase.invoiceImport.receipts.base") }}:
+            <strong>{{ formatCurrency(taxableBase) }}</strong>
+          </span>
+          <span class="invoice-import__totals-status">
+            <i
+              :class="
+                receiptsMatchBase
+                  ? 'pi pi-check-circle'
+                  : 'pi pi-exclamation-triangle'
+              "
+              aria-hidden="true"
+            />
+            {{
+              receiptsMatchBase
+                ? t("purchase.invoiceImport.receipts.matches")
+                : t("purchase.invoiceImport.totals.difference", {
+                    amount: formatCurrency(selectedReceiptsAmount - taxableBase),
+                  })
+            }}
+          </span>
+        </div>
       </template>
     </section>
   </div>
@@ -280,6 +325,7 @@ import { useRouter } from "vue-router";
 import FormPurchaseInvoice from "../components/FormPurchaseInvoice.vue";
 import FormPurchaseInvoiceImport from "../components/FormPurchaseInvoiceImport.vue";
 import FormSupplier from "../components/FormSupplier.vue";
+import TableReceiptCandidates from "../components/TableReceiptCandidates.vue";
 import TablePurchaseInvoiceImports from "../components/TablePurchaseInvoiceImports.vue";
 import PurchaseService from "../services";
 import { usePurchaseMasterDataStore } from "../store/purchase";
@@ -292,6 +338,7 @@ import type {
   PurchaseInvoiceCalculatedValues,
   PurchaseInvoiceDueDate,
   PurchaseInvoiceImport,
+  ReceiptCandidate,
   Supplier,
 } from "../types";
 
@@ -330,6 +377,11 @@ const computedTotal = ref(0);
 // Fields whose review hint was resolved here, e.g. a supplier created from the draft.
 const dismissedFields = ref(new Set<string>());
 const duplicateOf = ref<{ id: string; message: string } | null>(null);
+
+const receiptCandidates = ref<ReceiptCandidate[]>([]);
+const selectedReceipts = ref<ReceiptCandidate[]>([]);
+// Guards against a slow reload overwriting the list of a newer supplier choice.
+let receiptRequestSequence = 0;
 
 const isSupplierDialogVisible = ref(false);
 const isCreatingSupplier = ref(false);
@@ -432,6 +484,9 @@ const applyDraft = async (response: IngestPurchaseInvoiceResponse) => {
   reviewedImportIds.value = new Set();
   dismissedFields.value = new Set();
   duplicateOf.value = null;
+  receiptRequestSequence += 1;
+  receiptCandidates.value = response.receipts ?? [];
+  selectedReceipts.value = receiptCandidates.value.filter((r) => r.suggested);
   computedTotal.value = 0;
   draft.value = response;
 
@@ -496,6 +551,36 @@ const totalMatches = computed(
 
 const onCalculated = (values: Partial<PurchaseInvoiceCalculatedValues>) => {
   if (values.netAmount !== undefined) computedTotal.value = values.netAmount;
+};
+
+const taxableBase = computed(() =>
+  (purchaseInvoice.value?.purchaseInvoiceImports ?? []).reduce(
+    (total, row) => total + (row.baseAmount ?? 0),
+    0,
+  ),
+);
+const selectedReceiptsAmount = computed(() =>
+  selectedReceipts.value.reduce((total, r) => total + r.amount, 0),
+);
+const receiptsMatchBase = computed(
+  () => Math.abs(selectedReceiptsAmount.value - taxableBase.value) <= TOTAL_TOLERANCE,
+);
+
+// A different supplier has different receipts: reload them with fresh suggestions.
+const onSupplierChange = async (supplierId: string) => {
+  const sequence = ++receiptRequestSequence;
+  receiptCandidates.value = [];
+  selectedReceipts.value = [];
+  if (!supplierId) return;
+
+  const candidates = await invoiceStore.GetReceiptCandidates(
+    supplierId,
+    draft.value?.deliveryNoteNumbers ?? [],
+    taxableBase.value,
+  );
+  if (sequence !== receiptRequestSequence) return;
+  receiptCandidates.value = candidates;
+  selectedReceipts.value = candidates.filter((r) => r.suggested);
 };
 
 const onDueDatesChange = (dueDates: PurchaseInvoiceDueDate[]) => {
@@ -587,10 +672,13 @@ const onSubmit = async (invoice: PurchaseInvoice) => {
   isSaving.value = true;
   try {
     duplicateOf.value = null;
-    const result = await invoiceStore.CreateChecked({
-      ...invoice,
-      purchaseInvoiceDate: convertDateTimeToJSON(invoice.purchaseInvoiceDate),
-    });
+    const result = await invoiceStore.CreateWithReceipts(
+      {
+        ...invoice,
+        purchaseInvoiceDate: convertDateTimeToJSON(invoice.purchaseInvoiceDate),
+      },
+      selectedReceipts.value.map((r) => r.id),
+    );
     if (!result.ok) {
       if (result.duplicateOfId) {
         duplicateOf.value = { id: result.duplicateOfId, message: result.error };
