@@ -1292,16 +1292,31 @@ const es = {
       main: {
         label: "Logotipo principal",
         empty: "No hay ningún logotipo principal configurado",
+        hint: "También se imprime en los documentos PDF.",
       },
       sidebar: {
         label: "Logotipo de la barra lateral",
         empty: "No hay ningún logotipo de barra lateral configurado",
       },
     },
+    documents: {
+      title: "Documentos PDF",
+      description: "Presupuestos, pedidos, albaranes, facturas y órdenes de fabricación usan el logotipo principal y la paleta de color.",
+      watermark: {
+        label: "Marca de agua",
+        enabled: "Mostrar la marca de agua",
+        hint: "Se imprime tal como se sube, encima del contenido: usa un PNG claro con fondo transparente.",
+        default: "Marca de agua por defecto",
+        custom: "Marca de agua personalizada",
+        restoreDefault: "Restaurar la predeterminada",
+      },
+    },
     toasts: {
       updated: "Branding actualizado correctamente",
       logoUpdated: "Logotipo actualizado correctamente",
       logoDeleted: "Logotipo eliminado correctamente",
+      watermarkUpdated: "Marca de agua actualizada correctamente",
+      watermarkRestored: "Se ha restaurado la marca de agua por defecto",
       noPermission: "No tienes permisos para modificar el Branding.",
       error: "No se ha podido actualizar el Branding.",
     },

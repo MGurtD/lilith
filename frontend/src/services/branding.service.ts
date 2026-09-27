@@ -1,6 +1,6 @@
 import apiClient from "@/api/api.client";
 
-export type BrandingLogoSlot = "main" | "sidebar";
+export type BrandingLogoSlot = "main" | "sidebar" | "watermark";
 
 export type BrandingPalette =
   | "black"
@@ -57,6 +57,9 @@ export interface BrandingResponse {
   version: string;
   mainLogoVersion?: string | null;
   sidebarLogoVersion?: string | null;
+  hasWatermark: boolean;
+  watermarkVersion?: string | null;
+  watermarkEnabled: boolean;
 }
 
 export interface BrandingUpdateRequest {
@@ -85,6 +88,17 @@ export class BrandingService {
     );
     if (response.status !== 200) {
       throw new Error("Branding update failed");
+    }
+    return response.data;
+  }
+
+  async updateCurrentWatermark(enabled: boolean): Promise<BrandingResponse> {
+    const response = await apiClient.put<BrandingResponse>(
+      "/Branding/current/watermark",
+      { enabled },
+    );
+    if (response.status !== 200) {
+      throw new Error("Watermark update failed");
     }
     return response.data;
   }

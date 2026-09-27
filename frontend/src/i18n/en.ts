@@ -1327,16 +1327,31 @@ const en = {
       main: {
         label: "Main logo",
         empty: "No main logo configured",
+        hint: "Also printed on PDF documents.",
       },
       sidebar: {
         label: "Sidebar logo",
         empty: "No sidebar logo configured",
       },
     },
+    documents: {
+      title: "PDF documents",
+      description: "Budgets, orders, delivery notes, invoices and work orders use the main logo and the color palette.",
+      watermark: {
+        label: "Watermark",
+        enabled: "Show the watermark",
+        hint: "It is printed as uploaded, over the content: use a light PNG with a transparent background.",
+        default: "Default watermark",
+        custom: "Custom watermark",
+        restoreDefault: "Restore default",
+      },
+    },
     toasts: {
       updated: "Branding updated successfully",
       logoUpdated: "Logo updated successfully",
       logoDeleted: "Logo deleted successfully",
+      watermarkUpdated: "Watermark updated successfully",
+      watermarkRestored: "Default watermark restored",
       noPermission: "You do not have permission to modify Branding.",
       error: "Could not update Branding.",
     },

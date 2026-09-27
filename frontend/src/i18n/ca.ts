@@ -1350,16 +1350,31 @@ const ca = {
       main: {
         label: "Logotip principal",
         empty: "No hi ha cap logotip principal configurat",
+        hint: "També s'imprimeix als documents PDF.",
       },
       sidebar: {
         label: "Logotip de la barra lateral",
         empty: "No hi ha cap logotip de barra lateral configurat",
       },
     },
+    documents: {
+      title: "Documents PDF",
+      description: "Pressupostos, comandes, albarans, factures i ordres de fabricació utilitzen el logotip principal i la paleta de color.",
+      watermark: {
+        label: "Marca d'aigua",
+        enabled: "Mostrar la marca d'aigua",
+        hint: "S'imprimeix tal com es puja, a sobre del contingut: utilitza un PNG clar amb fons transparent.",
+        default: "Marca d'aigua per defecte",
+        custom: "Marca d'aigua personalitzada",
+        restoreDefault: "Restaurar la predeterminada",
+      },
+    },
     toasts: {
       updated: "Branding actualitzat correctament",
       logoUpdated: "Logotip actualitzat correctament",
       logoDeleted: "Logotip eliminat correctament",
+      watermarkUpdated: "Marca d'aigua actualitzada correctament",
+      watermarkRestored: "S'ha restaurat la marca d'aigua per defecte",
       noPermission: "No tens permisos per modificar el Branding.",
       error: "No s'ha pogut actualitzar el Branding.",
     },
