@@ -37,6 +37,8 @@ controls that update several properties. See
 | `disabled` | `boolean` | `false` | Disables native fields and default actions. |
 | `showSubmit` | `boolean` | `true` | Shows the default Save action. |
 | `showCancel` | `boolean` | `true` | Shows the default Cancel action. |
+| `pageActions` | `boolean` | `false` | Renders the actions in the screen header through `PageActions`. |
+| `fieldWarnings` | `Record<string, string[]>` | `{}` | Review hints per field name; see [Review Hints](#review-hints). |
 
 `loading` does not disable fields. A custom field must implement the supplied
 `disabled` state itself.
@@ -335,6 +337,16 @@ const rows = computed<FormRowConfig[]>(() => [
   },
 ]);
 ```
+
+### Review Hints
+
+`fieldWarnings` marks fields whose values need a human check without making
+them invalid, for example values read automatically from a document. Each
+message renders under the field with a warning style. A field's hints disappear
+once the operator edits it through its control or custom slot `setValue`;
+programmatic updates through the exposed `setFieldValue`/`setValues` keep them.
+A visible validation error replaces the hints. Changing `initialValues` shows
+them again. Messages arrive translated; the form does not interpret them.
 
 ## Custom Fields
 

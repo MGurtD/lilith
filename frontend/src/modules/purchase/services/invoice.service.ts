@@ -1,6 +1,8 @@
+import type { AxiosError } from "axios";
 import apiClient, { logException } from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
 import {
+  ReceiptCandidate,
   PurchaseInvoiceDueDate,
   PurchaseInvoice,
   InvoiceSerie,
@@ -10,7 +12,76 @@ import {
 
 export class PurchaseInvoiceSerieService extends BaseService<InvoiceSerie> {}
 
+type CreateErrorBody = {
+  errors?: string[];
+  errorCode?: string;
+  content?: unknown;
+};
+
+export type PurchaseInvoiceCreateResult =
+  | { ok: true }
+  | { ok: false; error: string; duplicateOfId?: string };
+
 export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
+  async GetReceiptCandidates(
+    supplierId: string,
+    deliveryNoteNumbers: string[],
+    taxableBase: number,
+  ): Promise<ReceiptCandidate[]> {
+    const params = new URLSearchParams();
+    deliveryNoteNumbers.forEach((n) => params.append("deliveryNoteNumbers", n));
+    params.append("taxableBase", String(taxableBase));
+    const response = await apiClient.get(
+      `${this.resource}/ReceiptCandidates/${supplierId}?${params.toString()}`,
+    );
+    return response.status === 200 ? (response.data as ReceiptCandidate[]) : [];
+  }
+
+  // Creates the invoice and links the given receipts in one transaction. Keeps the
+  // backend's reason so callers can link to the existing invoice on a duplicate.
+  // The API client resolves 4xx up to 404 (no global toast), so the status is checked.
+  async CreateWithReceipts(
+    invoice: PurchaseInvoice,
+    receiptIds: string[],
+  ): Promise<PurchaseInvoiceCreateResult> {
+    return this.checked(() =>
+      apiClient.post(`${this.resource}/WithReceipts`, { invoice, receiptIds }),
+    );
+  }
+
+  // Like update(), but keeps the backend's reason (e.g. a duplicate supplier invoice number).
+  async UpdateChecked(
+    invoice: PurchaseInvoice,
+  ): Promise<PurchaseInvoiceCreateResult> {
+    return this.checked(() =>
+      apiClient.put(`${this.resource}/${invoice.id}`, invoice),
+    );
+  }
+
+  private async checked(
+    send: () => Promise<{ status: number; data: unknown }>,
+  ): Promise<PurchaseInvoiceCreateResult> {
+    let data: CreateErrorBody | undefined;
+    try {
+      const response = await send();
+      if (response.status === 200 || response.status === 201) {
+        return { ok: true };
+      }
+      data = response.data as CreateErrorBody | undefined;
+    } catch (error) {
+      data = (error as AxiosError<CreateErrorBody>).response?.data;
+    }
+    return {
+      ok: false,
+      error: data?.errors?.[0] ?? "",
+      duplicateOfId:
+        data?.errorCode === "PurchaseInvoiceDuplicate" &&
+        typeof data.content === "string"
+          ? data.content
+          : undefined,
+    };
+  }
+
   async GetFiltered(
     startTime: string,
     endTime: string,

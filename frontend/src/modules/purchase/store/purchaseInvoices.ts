@@ -1,11 +1,15 @@
 import { defineStore } from "pinia";
 import PurchaseService from "../services";
 import {
+  IngestPurchaseInvoiceResponse,
   PurchaseInvoice,
   PurchaseInvoiceImport,
   PurchaseInvoiceUpdateStatues,
   PurchaseInvoiceDueDate,
 } from "../types";
+import { getNewUuid } from "@/utils/functions";
+import { useLifecyclesStore } from "@/modules/shared/store/lifecycle";
+import { usePurchaseMasterDataStore } from "./purchase";
 
 export const usePurchaseInvoiceStore = defineStore({
   id: "purchaseInvoices",
@@ -40,6 +44,76 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceDueDates: [],
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
+    },
+    // Defaults of a new invoice: exercise of its date, "Nacional" series and the
+    // initial "Nova" status. Needs purchase master data and the PurchaseInvoice
+    // lifecycle loaded.
+    applyNewInvoiceDefaults(invoiceDate: Date = new Date()) {
+      if (!this.purchaseInvoice) return;
+      const masterData = usePurchaseMasterDataStore().masterData;
+      const lifecycle = useLifecyclesStore().lifecycle;
+
+      // The backend numbers the invoice in the exercise of its date.
+      const day = invoiceDate.getTime();
+      const exercise =
+        masterData.exercises?.find(
+          (e) =>
+            new Date(e.startDate).getTime() <= day &&
+            day <= new Date(e.endDate).getTime(),
+        ) ??
+        masterData.exercises?.find(
+          (e) => e.name === invoiceDate.getFullYear().toString(),
+        );
+      if (exercise) this.purchaseInvoice.exerciceId = exercise.id;
+
+      const serie = masterData.series?.find((s) => s.name === "Nacional");
+      if (serie) this.purchaseInvoice.purchaseInvoiceSerieId = serie.id;
+
+      const status = lifecycle?.statuses?.find((s) => s.name === "Nova");
+      if (status) this.purchaseInvoice.statusId = status.id;
+    },
+    // Prefills a draft PurchaseInvoice from an ingestion result. Supplier and
+    // taxes come resolved from the backend; unresolved ones stay empty.
+    setFromIngestion(payload: IngestPurchaseInvoiceResponse) {
+      const id = getNewUuid();
+      this.setNewPurchaseInvoice(id);
+      if (!this.purchaseInvoice) return undefined;
+
+      this.purchaseInvoice.supplierId = payload.supplierId ?? "";
+      this.purchaseInvoice.supplierNumber = payload.invoiceNumber ?? "--";
+      if (payload.issueDate) {
+        this.purchaseInvoice.purchaseInvoiceDate = new Date(payload.issueDate);
+      }
+      this.purchaseInvoice.extraTaxPercentatge = payload.extraTaxPercentatge ?? 0;
+      this.purchaseInvoice.purchaseInvoiceImports = payload.taxBreakdown.map(
+        (row): PurchaseInvoiceImport => ({
+          id: getNewUuid(),
+          taxId: row.taxId ?? "",
+          baseAmount: row.baseAmount,
+          taxAmount: row.taxAmount,
+          netAmount: row.baseAmount + row.taxAmount,
+          purchaseInvoiceId: id,
+        }),
+      );
+
+      return this.purchaseInvoice;
+    },
+    async CreateWithReceipts(purchaseInvoice: PurchaseInvoice, receiptIds: string[]) {
+      return PurchaseService.PurchaseInvoice.CreateWithReceipts(purchaseInvoice, receiptIds);
+    },
+    async UpdateChecked(purchaseInvoice: PurchaseInvoice) {
+      return PurchaseService.PurchaseInvoice.UpdateChecked(purchaseInvoice);
+    },
+    async GetReceiptCandidates(
+      supplierId: string,
+      deliveryNoteNumbers: string[],
+      taxableBase: number,
+    ) {
+      return PurchaseService.PurchaseInvoice.GetReceiptCandidates(
+        supplierId,
+        deliveryNoteNumbers,
+        taxableBase,
+      );
     },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =

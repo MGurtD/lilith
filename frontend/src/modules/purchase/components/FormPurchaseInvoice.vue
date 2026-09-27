@@ -14,7 +14,6 @@ import DropdownLifecycleStatusTransitions from "@/modules/shared/components/Drop
 import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
 import { computed, onMounted, onUnmounted, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useToast } from "primevue/usetoast";
 import * as Yup from "yup";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
@@ -32,6 +31,8 @@ type PurchaseInvoiceCalculationFormValues = PurchaseInvoiceCalculatedValues &
 
 const props = defineProps<{
   purchaseInvoice: PurchaseInvoice;
+  /** Review hints per form field, e.g. from a PDF import. */
+  fieldWarnings?: Record<string, string[]>;
 }>();
 
 const emit = defineEmits<{
@@ -41,11 +42,11 @@ const emit = defineEmits<{
     values: Partial<PurchaseInvoiceCalculatedValues>,
   ): void;
   (event: "due-dates-change", dueDates: PurchaseInvoiceDueDate[]): void;
+  (event: "supplier-change", supplierId: string): void;
 }>();
 
 const purchaseStore = usePurchaseInvoiceStore();
 const purchaseMasterData = usePurchaseMasterDataStore();
-const toast = useToast();
 const { t } = useI18n();
 const form = shallowRef<{
   submit: () => void;
@@ -202,6 +203,7 @@ const calculateAmounts = async (
   values: Readonly<FormValues> = latestCalculationValues.value,
 ): Promise<void> => {
   latestCalculationValues.value = { ...values };
+  importsError.value = null;
   if (!calculationsReady) return;
 
   const requestSequence = ++dueDateRequestSequence;
@@ -254,6 +256,15 @@ const calculateAmounts = async (
       new Date(invoice.purchaseInvoiceDate),
     ),
   };
+  // Due dates need a supplier, a payment method and a tax on every amount line;
+  // a draft (e.g. read from a PDF) may still lack them.
+  if (
+    !dueDateInvoice.supplierId ||
+    !dueDateInvoice.paymentMethodId ||
+    dueDateInvoice.purchaseInvoiceImports.some((line) => !line.taxId)
+  ) {
+    return;
+  }
   const dueDates = await purchaseStore.GetDueDates(dueDateInvoice);
   if (requestSequence !== dueDateRequestSequence || !dueDates) return;
 
@@ -274,6 +285,7 @@ const updateSupplier = (
 ): void => {
   latestCalculationValues.value = { ...values };
   const supplierId = stringValue(values.supplierId, "");
+  emit("supplier-change", supplierId);
   const supplier = purchaseMasterData.masterData.suppliers?.find(
     (item) => item.id === supplierId,
   );
@@ -426,16 +438,19 @@ onUnmounted(() => {
   dueDateRequestSequence += 1;
 });
 
-const validateImports = (): boolean => {
-  if (props.purchaseInvoice.purchaseInvoiceImports.length > 0) return true;
+// The amount lines live outside the form fields; their error shows inline
+// under the summary and clears on the next recalculation.
+const importsError = shallowRef<string | null>(null);
 
-  toast.add({
-    severity: "warn",
-    summary: t("purchase.messages.invalidForm"),
-    detail: t("purchase.validation.invoiceImportsRequired"),
-    life: 5000,
-  });
-  return false;
+const validateImports = (): boolean => {
+  const lines = props.purchaseInvoice.purchaseInvoiceImports;
+  importsError.value =
+    lines.length === 0
+      ? t("purchase.validation.invoiceImportsRequired")
+      : lines.some((line) => !line.taxId)
+        ? t("purchase.validation.invoiceImportTaxRequired")
+        : null;
+  return importsError.value === null;
 };
 
 const submit = (values: FormValues): void => {
@@ -453,7 +468,26 @@ const getSupplierId = (): string =>
     props.purchaseInvoice.supplierId,
   );
 
-defineExpose({ submitForm, calcAmounts, getSupplierId });
+// Skips the mount delay so importers can recompute totals right after
+// pre-filling purchaseInvoiceImports.
+const calcAmountsNow = (): Promise<void> => {
+  if (mountTimer !== undefined) clearTimeout(mountTimer);
+  calculationsReady = true;
+  return calculateAmounts();
+};
+
+// Selects a supplier as if the operator had picked it, so its payment method
+// and due dates follow.
+const setSupplier = (supplierId: string): void =>
+  form.value?.setFieldValue("supplierId", supplierId);
+
+defineExpose({
+  submitForm,
+  calcAmounts,
+  calcAmountsNow,
+  getSupplierId,
+  setSupplier,
+});
 </script>
 
 <template>
@@ -463,6 +497,7 @@ defineExpose({ submitForm, calcAmounts, getSupplierId });
     :initial-values="initialValues"
     :show-submit="false"
     :show-cancel="false"
+    :field-warnings="fieldWarnings"
     @submit="submit"
   >
     <template #field-statusId="{ value, setValue, disabled, inputId }">
@@ -527,11 +562,22 @@ defineExpose({ submitForm, calcAmounts, getSupplierId });
           </div>
         </div>
       </section>
+      <small v-if="importsError" class="imports-error" role="alert">
+        <i class="pi pi-exclamation-circle" aria-hidden="true" />
+        {{ importsError }}
+      </small>
     </template>
   </Form>
 </template>
 
 <style scoped>
+.imports-error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--p-orange-600);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -20,6 +20,8 @@ import type { Supplier } from "../types";
 
 const props = defineProps<{
   supplier: Supplier;
+  /** Inside a dialog: Cancel/Save footer instead of the screen header action. */
+  inDialog?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -233,7 +235,7 @@ const submit = (values: FormValues): void => {
 
 <template>
   <Form
-    page-actions
+    :page-actions="!inDialog"
     :rows="rows"
     :initial-values="supplier"
     @submit="submit"

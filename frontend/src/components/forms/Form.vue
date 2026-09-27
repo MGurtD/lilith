@@ -53,6 +53,11 @@ interface Props {
    * Cancel (the header has a back button). Leave off for dialogs.
    */
   pageActions?: boolean;
+  /**
+   * Review hints per field name, e.g. values read automatically from a
+   * document. Shown until the operator edits the field; errors take priority.
+   */
+  fieldWarnings?: Record<string, string[]>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -63,6 +68,7 @@ const props = withDefaults(defineProps<Props>(), {
   showSubmit: true,
   showCancel: true,
   pageActions: false,
+  fieldWarnings: () => ({}),
 });
 
 const emit = defineEmits<{
@@ -89,6 +95,8 @@ const { t } = useI18n();
 const formRef = ref<FormInstance | null>(null);
 const formRevision = ref(0);
 const invalidSubmitAttempted = ref(false);
+// Fields the operator has edited; their review hints are considered handled.
+const reviewedFields = ref(new Set<string>());
 
 const fields = computed(() => props.rows.flatMap((row) => row.fields));
 const fieldChangeHandlers = computed(
@@ -153,6 +161,7 @@ watch(
   () => {
     initialSnapshot.value = createInitialSnapshot();
     invalidSubmitAttempted.value = false;
+    reviewedFields.value = new Set();
     formRevision.value += 1;
   },
   { deep: true },
@@ -207,6 +216,10 @@ const instanceId = useId();
 const fieldId = (name: string): string =>
   `form-${instanceId}-${name.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 const errorId = (name: string): string => `${fieldId(name)}-error`;
+const warningId = (name: string): string => `${fieldId(name)}-warning`;
+
+const fieldWarningsFor = (name: string): string[] =>
+  reviewedFields.value.has(name) ? [] : (props.fieldWarnings[name] ?? []);
 
 const showFieldError = (state: FormFieldState): boolean =>
   invalidSubmitAttempted.value && state.invalid;
@@ -255,22 +268,46 @@ const nativeIdProp = (type: FormFieldType): string => {
   }
 };
 
+// Composite inputs size their inner <input> by content; `fluid` makes it fill
+// the grid cell so neighbouring controls never overlap.
+const fluidProps = (type: FormFieldType): Record<string, unknown> => {
+  switch (type) {
+    case FormFieldType.Password:
+    case FormFieldType.Number:
+    case FormFieldType.Currency:
+    case FormFieldType.Date:
+      return { fluid: true };
+    default:
+      return {};
+  }
+};
+
 const controlProps = (
   field: FormFieldConfig,
   state: FormFieldState,
   formControlProps?: Record<string, unknown>,
 ): Record<string, unknown> => {
   const invalid = showFieldError(state);
+  const warned = !invalid && fieldWarningsFor(field.name).length > 0;
   const widthClass =
     field.type === FormFieldType.Checkbox ? undefined : "w-full";
 
-  return mergeProps(formControlProps ?? {}, field.props ?? {}, {
-    [nativeIdProp(field.type)]: fieldId(field.name),
-    class: [widthClass, { "p-invalid": invalid }],
-    disabled: isFieldDisabled(field),
-    "aria-invalid": invalid ? "true" : undefined,
-    "aria-describedby": invalid ? errorId(field.name) : undefined,
-  });
+  return mergeProps(
+    fluidProps(field.type),
+    formControlProps ?? {},
+    field.props ?? {},
+    {
+      [nativeIdProp(field.type)]: fieldId(field.name),
+      class: [widthClass, { "p-invalid": invalid }],
+      disabled: isFieldDisabled(field),
+      "aria-invalid": invalid ? "true" : undefined,
+      "aria-describedby": invalid
+        ? errorId(field.name)
+        : warned
+          ? warningId(field.name)
+          : undefined,
+    },
+  );
 };
 
 const checkboxProps = (
@@ -308,10 +345,18 @@ const setValues = (values: FormValues): void => {
   });
 };
 
+// Operator edits, as opposed to programmatic updates through the exposed API.
+const updateFromControl = (name: string, value: unknown): void => {
+  if (props.fieldWarnings[name] && !reviewedFields.value.has(name)) {
+    reviewedFields.value = new Set(reviewedFields.value).add(name);
+  }
+  setFieldValue(name, value);
+};
+
 const fieldSetter =
   (name: string) =>
   (value: unknown): void => {
-    setFieldValue(name, value);
+    updateFromControl(name, value);
   };
 
 const submit = (): void => formRef.value?.submit();
@@ -392,7 +437,14 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
         :name="field.name"
         as-child
       >
-        <div class="generic-form__field" :style="fieldStyle(field)">
+        <div
+          class="generic-form__field"
+          :class="{
+            'generic-form__field--warning':
+              !showFieldError($field) && fieldWarningsFor(field.name).length,
+          }"
+          :style="fieldStyle(field)"
+        >
           <label
             v-if="field.type !== FormFieldType.Checkbox"
             class="generic-form__label"
@@ -416,43 +468,43 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
                 v-if="field.type === FormFieldType.Text"
                 :model-value="$field.value as string | undefined"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimePassword
                 v-else-if="field.type === FormFieldType.Password"
                 :model-value="$field.value as string | undefined"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimeInputNumber
                 v-else-if="field.type === FormFieldType.Number"
                 :model-value="$field.value as number | null | undefined"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimeInputNumber
                 v-else-if="field.type === FormFieldType.Currency"
                 :model-value="$field.value as number | null | undefined"
                 v-bind="currencyProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimeTextarea
                 v-else-if="field.type === FormFieldType.Textarea"
                 :model-value="$field.value as string | undefined"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimeSelect
                 v-else-if="field.type === FormFieldType.Select"
                 :model-value="$field.value"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <PrimeMultiSelect
                 v-else-if="field.type === FormFieldType.MultiSelect"
                 :model-value="$field.value"
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
               <div
                 v-else-if="field.type === FormFieldType.Checkbox"
@@ -461,7 +513,7 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
                 <PrimeCheckbox
                   :model-value="$field.value as boolean | undefined"
                   v-bind="checkboxProps(field, $field, $field.props)"
-                  @update:model-value="setFieldValue(field.name, $event)"
+                  @update:model-value="updateFromControl(field.name, $event)"
                 />
                 <label
                   class="generic-form__checkbox-label"
@@ -477,7 +529,7 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
                     Date | Date[] | (Date | null)[] | null | undefined
                 "
                 v-bind="controlProps(field, $field, $field.props)"
-                @update:model-value="setFieldValue(field.name, $event)"
+                @update:model-value="updateFromControl(field.name, $event)"
               />
             </slot>
           </FormControlScope>
@@ -490,6 +542,19 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
           >
             <i class="pi pi-exclamation-circle" aria-hidden="true" />
             <span>{{ errorMessage($field) }}</span>
+          </small>
+          <small
+            v-else-if="fieldWarningsFor(field.name).length"
+            :id="warningId(field.name)"
+            class="generic-form__warning"
+          >
+            <span
+              v-for="(warning, warningIndex) in fieldWarningsFor(field.name)"
+              :key="warningIndex"
+            >
+              <i class="pi pi-exclamation-triangle" aria-hidden="true" />
+              {{ warning }}
+            </span>
           </small>
         </div>
       </PrimeFormField>
@@ -595,6 +660,24 @@ defineExpose({ submit, reset, cancel, setFieldValue, setValues, getValues });
   color: var(--p-orange-600);
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+.generic-form__warning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+  color: var(--p-yellow-700);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.generic-form__field--warning :deep(.p-inputtext),
+.generic-form__field--warning :deep(.p-select),
+.generic-form__field--warning :deep(.p-multiselect),
+.generic-form__field--warning :deep(.p-textarea) {
+  border-color: var(--p-yellow-500);
+  background: color-mix(in srgb, var(--p-yellow-500) 10%, transparent);
 }
 
 .generic-form__error .pi {

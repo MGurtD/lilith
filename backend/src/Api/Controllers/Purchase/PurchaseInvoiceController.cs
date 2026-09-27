@@ -1,4 +1,5 @@
 ﻿using Application.Contracts;
+using Application.Contracts.Ingestion;
 using Domain.Entities.Purchase;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -7,7 +8,12 @@ namespace Api.Controllers.Purchase
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PurchaseInvoiceController(IPaymentMethodService paymentMethodService, IPurchaseInvoiceService service, IDueDateService dueDateService, ILocalizationService localizationService) : ControllerBase
+    public class PurchaseInvoiceController(
+        IPaymentMethodService paymentMethodService,
+        IPurchaseInvoiceService service,
+        IDueDateService dueDateService,
+        ILocalizationService localizationService,
+        IInvoiceIngestionService ingestionService) : ControllerBase
     {
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -64,7 +70,28 @@ namespace Api.Controllers.Purchase
             if (response.Result)
                 return Ok();
             else
-                return BadRequest(response.Errors);
+                return BadRequest(response);
+        }
+
+        // Creates the invoice and links the selected uninvoiced receipts in one transaction.
+        [HttpPost("WithReceipts")]
+        [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateWithReceipts([FromBody] CreatePurchaseInvoiceWithReceiptsRequest request)
+        {
+            var response = await service.CreateWithReceipts(request);
+            return response.Result ? Ok(response.Content) : BadRequest(response);
+        }
+
+        // Uninvoiced receipts of a supplier, pre-selecting those matching the invoice.
+        [HttpGet("ReceiptCandidates/{supplierId:guid}")]
+        [ProducesResponseType(typeof(List<ReceiptCandidate>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetReceiptCandidates(
+            Guid supplierId,
+            [FromQuery] string[]? deliveryNoteNumbers,
+            [FromQuery] decimal? taxableBase)
+        {
+            return Ok(await service.GetReceiptCandidates(supplierId, deliveryNoteNumbers ?? [], taxableBase));
         }
 
         [HttpPost]
@@ -108,7 +135,7 @@ namespace Api.Controllers.Purchase
             var response = await service.Update(purchaseInvoice);
 
             if (response.Result) return Ok();
-            else return BadRequest(response.Errors);
+            else return BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]
@@ -120,6 +147,54 @@ namespace Api.Controllers.Purchase
 
             if (response.Result) return Ok();
             else return BadRequest(response.Errors);
+        }
+
+        // POST /api/PurchaseInvoice/Ingest
+        // Feature flag for the PDF import: a LlamaCloud URL, project and a valid API key.
+        [HttpGet("Ingest/Status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> IngestStatus(CancellationToken ct)
+        {
+            return Ok(new { enabled = await ingestionService.IsAvailableAsync(ct) });
+        }
+
+        // Reads a supplier invoice PDF and returns a draft to review; nothing is persisted.
+        // Configuration: Ingestion__ApiKey, Ingestion__ProjectId, Ingestion__BaseUrl (EU by default).
+        [HttpPost("Ingest")]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [ProducesResponseType(typeof(IngestPurchaseInvoiceResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status422UnprocessableEntity)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(typeof(GenericResponse), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> Ingest(
+            [FromForm(Name = "pdfFile")] IFormFileCollection pdfFiles,
+            CancellationToken ct)
+        {
+            var pdfFile = pdfFiles.FirstOrDefault();
+            if (pdfFile is null || pdfFile.Length == 0)
+            {
+                return BadRequest(new GenericResponse(
+                    false, localizationService.GetLocalizedString("InvoiceIngestionInvalidFile")));
+            }
+
+            try
+            {
+                await using var stream = pdfFile.OpenReadStream();
+                return Ok(await ingestionService.IngestAsync(stream, pdfFile.FileName, ct));
+            }
+            catch (IngestionException ex)
+            {
+                var status = ex.Kind switch
+                {
+                    IngestionFailureKind.InvalidFile => StatusCodes.Status400BadRequest,
+                    IngestionFailureKind.Unparseable => StatusCodes.Status422UnprocessableEntity,
+                    IngestionFailureKind.NotConfigured or IngestionFailureKind.Unavailable => StatusCodes.Status503ServiceUnavailable,
+                    _ => StatusCodes.Status502BadGateway,
+                };
+                return StatusCode(status, new GenericResponse(false, ex.Message, errorCode: ex.Kind.ToString()));
+            }
         }
 
         #region Imports

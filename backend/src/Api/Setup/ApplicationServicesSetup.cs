@@ -13,9 +13,12 @@ using Application.Services.Transport;
 using Application.Services.Geolocalization;
 using Application.Services.GitHub;
 using Application.Contracts;
+using Application.Contracts.Ingestion;
 using Application.Contracts.Services.Geolocalization;
 using Application.Contracts.Services.GitHub;
 using Infrastructure.Persistance;
+using Microsoft.Extensions.Options;
+using Infrastructure.Ingestion;
 using Infrastructure.Reports;
 using QuestPDF.Infrastructure;
 
@@ -98,6 +101,14 @@ public static class ApplicationServicesSetup
         services.AddHttpClient<IGeolocalizationService, GeolocalizationService>();
         services.AddHttpClient<IGeoapifyService, GeoapifyService>();
         services.AddHttpClient<IGitHubProxyService, GitHubProxyService>();
+        services.AddScoped<IInvoiceIngestionService, InvoiceIngestionService>();
+        services.AddHttpClient<IInvoiceExtractor, LlamaCloudInvoiceExtractor>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<IOptions<AppSettings>>().Value.Ingestion ?? new IngestionSettings();
+            client.BaseAddress = new Uri(settings.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
         services.AddScoped<IExpenseTypeService, ExpenseTypeService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IInvoiceSerieService, InvoiceSerieService>();

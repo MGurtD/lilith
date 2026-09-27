@@ -29,6 +29,7 @@ Pantalla de gestión de la entidad.
 ## Errores frecuentes
 
 - Si los vencimientos no se calculan, comprueba que el proveedor tenga condiciones de pago definidas.
+- Si no se puede guardar porque la factura del proveedor ya está registrada, revisa el número de factura del proveedor: no se puede repetir para el mismo proveedor.
 - Si la factura no se puede contabilizar, revisa que todas las líneas tengan cuenta contable asignada.
 
 ## Proceso básico

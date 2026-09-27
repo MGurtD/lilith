@@ -155,9 +155,8 @@
     :closable="true"
     v-model:visible="isDialogVisible"
     :header="dialogTitle"
-    position="bottom"
-    :style="{ width: '40rem' }"
-    :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    modal
+    :style="{ width: '90vw', maxWidth: '40rem' }"
     @after-hide="afterDialogHide"
   >
     <FormPurchaseInvoiceImport
@@ -203,9 +202,7 @@ import FormPurchaseInvoiceImport from "../components/FormPurchaseInvoiceImport.v
 import TablePurchaseInvoiceImports from "../components/TablePurchaseInvoiceImports.vue";
 import TableReceipts from "../components/TableReceipts.vue";
 import SelectorReceipts from "../components/SelectorReceipts.vue";
-import { usePurchaseMasterDataStore } from "../store/purchase";
 import { useToast } from "primevue/usetoast";
-import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReceiptsStore } from "../store/receipt";
 import { cloneDeep, round } from "lodash";
 import { useI18n } from "vue-i18n";
@@ -221,8 +218,6 @@ const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const toast = useToast();
-const lifecycleStore = useLifecyclesStore();
-const purchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
 const { t } = useI18n();
@@ -290,7 +285,7 @@ const loadView = async () => {
     purchaseInvoiceStore.setNewPurchaseInvoice(invoiceId);
     pageTitle = t("purchase.purchaseInvoice.pageTitles.create");
 
-    setDefaultValues();
+    purchaseInvoiceStore.applyNewInvoiceDefaults();
   } else {
     formMode.value = FormActionMode.EDIT;
     pageTitle = t("purchase.purchaseInvoice.pageTitles.edit", {
@@ -306,25 +301,6 @@ const loadView = async () => {
     backButtonVisible: true,
     title: pageTitle,
   });
-};
-
-const setDefaultValues = () => {
-  if (purchaseInvoice.value) {
-    const currentExercice = purchaseMasterDataStore.masterData.exercises?.find(
-      (e) => e.name === new Date().getFullYear().toString(),
-    );
-    if (currentExercice) purchaseInvoice.value.exerciceId = currentExercice.id;
-
-    const serie = purchaseMasterDataStore.masterData.series?.find(
-      (s) => s.name === "Nacional",
-    );
-    if (serie) purchaseInvoice.value.purchaseInvoiceSerieId = serie.id;
-
-    const status = lifecycleStore.lifecycle?.statuses?.find(
-      (s) => s.name === "Nova",
-    );
-    if (status) purchaseInvoice.value.statusId = status.id;
-  }
 };
 
 onMounted(async () => {
@@ -363,29 +339,29 @@ const openInvoiceImportForm = (
 };
 
 const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
-  let result = false;
-  let message = "";
-
   invoice.purchaseInvoiceDate = convertDateTimeToJSON(
     invoice.purchaseInvoiceDate,
   );
 
-  if (formMode.value === FormActionMode.CREATE) {
-    result = await purchaseInvoiceStore.Create(invoice);
-    message = result
+  const creating = formMode.value === FormActionMode.CREATE;
+  // Checked calls keep the backend reason, e.g. a duplicate supplier invoice number.
+  const outcome = creating
+    ? await purchaseInvoiceStore.CreateWithReceipts(invoice, [])
+    : await purchaseInvoiceStore.UpdateChecked(invoice);
+  const result = outcome.ok;
+  const message = creating
+    ? result
       ? t("purchase.purchaseInvoice.messages.created")
-      : t("purchase.purchaseInvoice.messages.createError");
-  } else {
-    result = await purchaseInvoiceStore.Update(invoice);
-    message = result
+      : t("purchase.purchaseInvoice.messages.createError")
+    : result
       ? t("purchase.purchaseInvoice.messages.updated")
       : t("purchase.purchaseInvoice.messages.updateError");
-  }
 
   toast.add({
-    life: 5000,
+    life: result ? 5000 : 8000,
     severity: result ? "success" : "error",
     summary: message,
+    detail: outcome.ok ? undefined : outcome.error || undefined,
   });
 
   if (result) {
