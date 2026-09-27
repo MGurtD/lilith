@@ -21,7 +21,7 @@ internal static class ReceiptCandidates
             query => query.Include(r => r.Details).AsNoTracking());
 
         return receipts
-            .OrderBy(r => r.Date)
+            .OrderByDescending(r => r.Date)
             .Select(r => new ReceiptCandidate
             {
                 Id = r.Id,

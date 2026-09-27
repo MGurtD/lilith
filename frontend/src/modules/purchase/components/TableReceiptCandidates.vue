@@ -10,7 +10,7 @@
     :selection="selection"
     data-key="id"
     phone-layout="cards"
-    preset="read-only"
+    preset="detail-lines"
     tableStyle="min-width: 100%"
     show-selection-column
     @update:selection="(value: ReceiptCandidate[]) => emit('update:selection', value)"
@@ -76,6 +76,9 @@ const columns = computed<Column[]>(() => [
     field: "date",
     header: t("purchase.invoiceImport.receipts.columns.date"),
     columnType: ColumnType.Date,
+    // Legacy receipts without a date carry the minimum date (0001-01-01).
+    resolver: (value) =>
+      typeof value === "string" && !value.startsWith("0001-") ? value : undefined,
     style: "width: 17%",
   },
   {
