@@ -43,6 +43,7 @@ import {
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ReceiptCandidate } from "../types";
+import { receiptDate } from "./receipt-date";
 
 defineProps<{
   candidates: ReceiptCandidate[];
@@ -76,9 +77,7 @@ const columns = computed<Column[]>(() => [
     field: "date",
     header: t("purchase.invoiceImport.receipts.columns.date"),
     columnType: ColumnType.Date,
-    // Legacy receipts without a date carry the minimum date (0001-01-01).
-    resolver: (value) =>
-      typeof value === "string" && !value.startsWith("0001-") ? value : undefined,
+    resolver: receiptDate,
     style: "width: 17%",
   },
   {

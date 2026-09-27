@@ -1,68 +1,41 @@
 <template>
-  <DataTable
-    @row-click="onEditRow"
-    :value="props.receipts"
+  <Table
+    :items="receipts ?? []"
+    :columns="columns"
+    :filter-config="[]"
+    :filter-values="noFilters"
+    :show-filter-actions="false"
+    :card-layout="cardLayout"
+    phone-layout="cards"
+    preset="read-only"
     tableStyle="min-width: 100%"
-    class="p-datatable-sm"
+    show-delete-column
+    @create="emit('add')"
+    @delete="(receipt: Receipt) => emit('delete', receipt)"
+    @row-click="(event: DataTableRowClickEvent) => emit('edit', event.data)"
   >
-    <template #header>
-      <slot name="header">
-        <div
-          class="flex flex-wrap align-items-center justify-content-between gap-2"
-        >
-          <span class="text-l text-900 font-bold">{{ t("purchase.receipts.associated") }}</span>
-          <div>
-            <Button
-              :size="'small'"
-              :icon="PrimeIcons.PLUS"
-              :aria-label="t('purchase.receipts.actions.add')"
-              rounded
-              @click="onAddRow"
-            />
-          </div>
-        </div>
-      </slot>
+    <template #prepend>
+      <span class="text-900 font-bold">
+        {{ t("purchase.receipts.associated") }}
+      </span>
     </template>
-    <Column field="number" :header="t('purchase.receipts.columns.supplierNumber')" style="width: 15%" />
-    <Column
-      field="supplierNumber"
-      :header="t('purchase.receipts.columns.providerNumber')"
-      style="width: 15%"
-    />
-    <Column field="date" :header="t('purchase.receipts.columns.date')" style="width: 15%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-    <!-- <Column field="statusId" header="Estat" style="width: 15%">
-      <template #body="slotProps">
-        {{
-          lifecycleStore.getStatusNameById("Receipts", slotProps.data.statusId)
-        }}
-      </template>
-    </Column> -->
-    <Column style="width: 10%">
-      <template #body="slotProps">
-        <i
-          :class="PrimeIcons.TIMES"
-          :aria-label="t('purchase.receipts.actions.delete')"
-          class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
+  </Table>
 </template>
+
 <script setup lang="ts">
-import { PrimeIcons } from "@primevue/core/api";
-import { DataTableRowClickEvent } from "primevue/datatable";
+import Table from "@/components/tables/Table.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
+import type { DataTableRowClickEvent } from "primevue/datatable";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Receipt } from "../types";
-import { formatDate } from "../../../utils/functions";
+import type { Receipt } from "../types";
+import { receiptDate } from "./receipt-date";
 
-const { t } = useI18n();
-
-const props = defineProps<{
+defineProps<{
   receipts: Array<Receipt> | undefined;
 }>();
 
@@ -72,21 +45,32 @@ const emit = defineEmits<{
   (e: "delete", receipt: Receipt): void;
 }>();
 
-const onAddRow = () => {
-  emit("add");
-};
+const { t } = useI18n();
+const noFilters = {};
 
-const onEditRow = (row: DataTableRowClickEvent) => {
-  if (
-    !(row.originalEvent.target as any).className.includes(
-      "grid_delete_column_button"
-    )
-  ) {
-    emit("edit", row.data);
-  }
-};
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.receipts.columns.supplierNumber"),
+    style: "width: 30%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.receipts.columns.providerNumber"),
+    style: "width: 35%",
+  },
+  {
+    field: "date",
+    header: t("purchase.receipts.columns.date"),
+    columnType: ColumnType.Date,
+    resolver: receiptDate,
+    style: "width: 32%",
+  },
+]);
 
-const onDeleteRow = (event: any, receipt: Receipt) => {
-  emit("delete", receipt);
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierNumber",
+  trailing: "date",
 };
 </script>
