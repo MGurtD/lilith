@@ -204,6 +204,8 @@ import TableReceipts from "../components/TableReceipts.vue";
 import SelectorReceipts from "../components/SelectorReceipts.vue";
 import { useToast } from "primevue/usetoast";
 import { useReceiptsStore } from "../store/receipt";
+import { usePurchaseMasterDataStore } from "../store/purchase";
+import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { cloneDeep, round } from "lodash";
 import { useI18n } from "vue-i18n";
 
@@ -220,6 +222,8 @@ const store = useStore();
 const toast = useToast();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const receiptsStore = useReceiptsStore();
+const purchaseMasterDataStore = usePurchaseMasterDataStore();
+const lifecycleStore = useLifecyclesStore();
 const { t } = useI18n();
 const { purchaseInvoice } = storeToRefs(purchaseInvoiceStore);
 const calculatedValues = ref<Partial<PurchaseInvoiceCalculatedValues>>({});
@@ -304,6 +308,13 @@ const loadView = async () => {
 };
 
 onMounted(async () => {
+  // The screen can open without the list before it (a new tab from the PDF
+  // import's duplicate link, a reload or a shared URL), so it loads its own
+  // form options and the lifecycle used for new-invoice defaults.
+  await Promise.all([
+    purchaseMasterDataStore.fetchMasterData(),
+    lifecycleStore.fetchOneByName("PurchaseInvoice"),
+  ]);
   await loadView();
 });
 

@@ -1,90 +1,106 @@
 <template>
-  <DataTable
-    class="small-datatable"
-    tableStyle="min-width: 100%"
-    scrollable
-    scrollHeight="flex"
-    dataKey="id"
-    :value="filteredOrders"
+  <Table
+    v-model:filter-values="filter"
     v-model:selection="selectedReceipts"
-  >
-    <template #header>
-      <header class="selector-filter">
-        <div class="selector-filter-field">
-          <label for="" class="mr-2">{{ t("purchase.receiptSelector.search") }}</label>
-          <InputText
-            style="width: 150px; height: 35px"
-            v-model="selectedReceipt"
-            size="small"
-          />
-        </div>
-        <div class="selector-filter-button">
-          <Button
-            @click="onSelectedClick"
-            :size="'small'"
-            :icon="PrimeIcons.CHECK_SQUARE"
-            :aria-label="t('purchase.receiptSelector.actions.select')"
-          ></Button>
-        </div>
-      </header>
-    </template>
-
-    <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-    <Column :header="t('purchase.receiptSelector.columns.number')" field="number" style="width: 30%"></Column>
-    <Column
-      :header="t('purchase.receiptSelector.columns.supplierNumber')"
-      field="supplierNumber"
-      style="width: 30%"
-    ></Column>
-    <Column :header="t('purchase.receiptSelector.columns.date')" field="date" style="width: 30%">
-      <template #body="slotProps">
-        {{ formatDate(slotProps.data.date) }}
-      </template>
-    </Column>
-  </DataTable>
+    :items="filteredReceipts"
+    :columns="columns"
+    :filter-config="filterConfig"
+    :show-filter-actions="false"
+    :show-create="false"
+    :card-layout="cardLayout"
+    data-key="id"
+    phone-layout="cards"
+    preset="selector"
+    selection-mode="multiple"
+    tableStyle="min-width: 100%"
+    show-selection-column
+  />
+  <div class="receipt-selector__actions">
+    <Button
+      icon="pi pi-check"
+      :label="t('purchase.receiptSelector.actions.select')"
+      :disabled="selectedReceipts.length === 0"
+      @click="emit('selected', selectedReceipts)"
+    />
+  </div>
 </template>
+
 <script setup lang="ts">
+import Table from "@/components/tables/Table.vue";
+import type { FilterConfig } from "@/components/tables/TableFilter.vue";
+import {
+  ColumnType,
+  type CardLayout,
+  type Column,
+} from "@/components/tables/types";
 import { computed, ref } from "vue";
-import { Receipt } from "../types";
-import { PrimeIcons } from "@primevue/core/api";
 import { useI18n } from "vue-i18n";
-import { formatDate } from "../../../utils/functions";
-
-const { t } = useI18n();
-
-const selectedReceipts = ref([] as Array<Receipt>);
+import type { Receipt } from "../types";
+import { receiptDate } from "./receipt-date";
 
 const props = defineProps<{
   receipts: Array<Receipt> | undefined;
 }>();
-const emits = defineEmits<{
+
+const emit = defineEmits<{
   (e: "selected", receipts: Array<Receipt>): void;
 }>();
 
-const selectedReceipt = ref("");
-const filteredOrders = computed(() => {
-  var filtered = [] as Array<Receipt>;
+const { t } = useI18n();
+const selectedReceipts = ref<Receipt[]>([]);
+const filter = ref({ search: "" });
 
-  if (props.receipts) {
-    filtered = props.receipts.filter(
-      (o) =>
-        o.number.toString().includes(selectedReceipt.value) ||
-        o.supplierNumber.includes(selectedReceipt.value),
-    );
-  }
+const filterConfig = computed<FilterConfig[]>(() => [
+  {
+    key: "search",
+    label: t("purchase.receiptSelector.search"),
+    type: "text",
+    placeholder: t("purchase.receiptSelector.search"),
+    size: "md",
+  },
+]);
 
-  return filtered;
+const filteredReceipts = computed(() => {
+  const search = (filter.value.search ?? "").trim().toLocaleLowerCase();
+  return (props.receipts ?? []).filter(
+    (receipt) =>
+      !search ||
+      receipt.number.toString().toLocaleLowerCase().includes(search) ||
+      receipt.supplierNumber.toLocaleLowerCase().includes(search),
+  );
 });
 
-const onSelectedClick = () => {
-  if (selectedReceipts.value.length === 0) return;
+const columns = computed<Column[]>(() => [
+  {
+    field: "number",
+    header: t("purchase.receiptSelector.columns.number"),
+    style: "width: 32%",
+  },
+  {
+    field: "supplierNumber",
+    header: t("purchase.receiptSelector.columns.supplierNumber"),
+    style: "width: 32%",
+  },
+  {
+    field: "date",
+    header: t("purchase.receiptSelector.columns.date"),
+    columnType: ColumnType.Date,
+    resolver: receiptDate,
+    style: "width: 32%",
+  },
+]);
 
-  emits("selected", selectedReceipts.value);
+const cardLayout: CardLayout = {
+  title: "number",
+  subtitle: "supplierNumber",
+  trailing: "date",
 };
 </script>
+
 <style scoped>
-.selector-filter {
-  display: grid;
-  grid-template-columns: 1fr 0.1fr;
+.receipt-selector__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 </style>
