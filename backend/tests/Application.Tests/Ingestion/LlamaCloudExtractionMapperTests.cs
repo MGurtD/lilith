@@ -72,6 +72,19 @@ public class LlamaCloudExtractionMapperTests
         Assert.Equal(1493.82m, invoice.TotalAmount);
     }
 
+    [Theory]
+    [InlineData("1.234", 1234)]
+    [InlineData("1.234.567", 1234567)]
+    [InlineData("1,234", 1234)]
+    [InlineData("1234,5", 1234.5)]
+    [InlineData("12.50", 12.50)]
+    [InlineData("1.234,56", 1234.56)]
+    [InlineData("1,234.56", 1234.56)]
+    public void Amount_separators_are_read_as_thousands_or_decimals(string text, double expected)
+    {
+        Assert.Equal((decimal)expected, LlamaCloudExtractionMapper.ParseDecimal(text));
+    }
+
     [Fact]
     public void Missing_or_malformed_values_become_null()
     {

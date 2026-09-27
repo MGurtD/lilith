@@ -87,6 +87,32 @@ public class PurchaseInvoiceServiceDuplicateTests
         await context.Invoices.DidNotReceiveWithAnyArgs().Update(default!);
     }
 
+    [Fact]
+    public async Task Update_keeps_an_already_duplicated_invoice_editable_when_its_number_does_not_change()
+    {
+        var other = Invoice(SupplierId, "F-100", number: "PF-0001");
+        var edited = Invoice(SupplierId, "F-100");
+        edited.PurchaseInvoiceDueDates = [];
+        edited.PurchaseInvoiceImports = [];
+        var context = BuildSut(other, Invoice(SupplierId, "F-100", id: edited.Id));
+
+        var response = await context.Sut.Update(edited);
+
+        Assert.True(response.Result);
+        await context.Invoices.Received(1).Update(edited);
+    }
+
+    [Fact]
+    public async Task Create_files_the_invoice_under_the_exercise_that_numbered_it()
+    {
+        var context = BuildSut();
+        var invoice = Invoice(SupplierId, "F-1");
+
+        await context.Sut.Create(invoice);
+
+        Assert.Equal(context.DateExercise.Id, Assert.Single(context.Added).ExerciceId);
+    }
+
     private static PurchaseInvoice Invoice(Guid supplierId, string supplierNumber, string number = "", Guid? id = null) => new()
     {
         Id = id ?? Guid.NewGuid(),
@@ -117,17 +143,19 @@ public class PurchaseInvoiceServiceDuplicateTests
         var uow = Substitute.For<IUnitOfWork>();
         uow.PurchaseInvoices.Returns(invoices);
 
+        var dateExercise = new Exercise { Name = "2026" };
         var exercises = Substitute.For<IExerciseService>();
-        exercises.GetExerciceByDate(Arg.Any<DateTime>()).Returns(new Exercise { Name = "2026" });
+        exercises.GetExerciceByDate(Arg.Any<DateTime>()).Returns(dateExercise);
         exercises.GetNextCounter(Arg.Any<Guid>(), "purchaseinvoice").Returns(new GenericResponse(true, content: "0001"));
 
         var sut = new PurchaseInvoiceService(uow, exercises, new FormattingLocalizationService());
-        return new TestContext(sut, invoices, exercises, added);
+        return new TestContext(sut, invoices, exercises, added, dateExercise);
     }
 
     private sealed record TestContext(
         PurchaseInvoiceService Sut,
         IPurchaseInvoiceRepository Invoices,
         IExerciseService Exercises,
-        List<PurchaseInvoice> Added);
+        List<PurchaseInvoice> Added,
+        Exercise DateExercise);
 }

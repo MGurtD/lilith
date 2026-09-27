@@ -294,6 +294,7 @@
     "VerifactuSiteNotFound": "No s'ha trobat el lloc per enviar la factura",
     "VerifactuInvoiceAlreadyIntegrated": "La factura ja ha estat integrada amb Verifactu",
     "VerifactuInvoiceNotIntegrated": "La factura no ha estat integrada amb Verifactu",
+    "FileNotUploaded": "No s'ha pujat cap fitxer",
     "InvoiceIngestionInvalidFile": "El fitxer pujat no és un PDF vàlid",
     "InvoiceIngestionNotConfigured": "La lectura automàtica de factures no està configurada",
     "InvoiceIngestionAuthFailed": "El servei de lectura de factures ha rebutjat les credencials configurades",

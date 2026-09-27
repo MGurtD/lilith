@@ -20,7 +20,7 @@
     @delete="deletePurchaseInvoice"
     @row-click="editPurchaseInvoice"
   >
-    <template #action-prepend>
+    <template v-if="pdfImportEnabled" #action-prepend>
       <Button
         v-tooltip.bottom="t('purchase.purchaseInvoices.importPdf')"
         :aria-label="t('purchase.purchaseInvoices.importPdf')"
@@ -62,6 +62,7 @@ import { PurchaseInvoice } from "../types";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useUserFilterStore } from "../../../store/userfilter";
 import DropdownSupplier from "../components/DropdownSupplier.vue";
+import PurchaseService from "../services";
 import type {
   FilterBodyWidth,
   FilterConfig,
@@ -79,6 +80,7 @@ const puchaseMasterDataStore = usePurchaseMasterDataStore();
 const purchaseInvoiceStore = usePurchaseInvoiceStore();
 const suppliersStore = useSuppliersStore();
 const { t } = useI18n();
+const pdfImportEnabled = ref(false);
 
 const columns = computed<Column[]>(() => [
   {
@@ -197,6 +199,9 @@ onMounted(async () => {
     icon: PrimeIcons.MONEY_BILL,
     title: t("purchase.purchaseInvoices.title"),
   });
+  void PurchaseService.PurchaseInvoiceIngestion.isEnabled().then(
+    (enabled) => (pdfImportEnabled.value = enabled),
+  );
 
   await lifecycleStore.fetchOneByName(lifecycleName);
   await puchaseMasterDataStore.fetchMasterData();

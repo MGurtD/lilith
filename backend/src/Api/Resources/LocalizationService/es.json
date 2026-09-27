@@ -294,6 +294,7 @@
     "VerifactuSiteNotFound": "No se ha encontrado el sitio para enviar la factura",
     "VerifactuInvoiceAlreadyIntegrated": "La factura ya ha sido integrada con Verifactu",
     "VerifactuInvoiceNotIntegrated": "La factura no ha sido integrada con Verifactu",
+    "FileNotUploaded": "No se ha subido ningún fichero",
     "InvoiceIngestionInvalidFile": "El fichero subido no es un PDF válido",
     "InvoiceIngestionNotConfigured": "La lectura automática de facturas no está configurada",
     "InvoiceIngestionAuthFailed": "El servicio de lectura de facturas ha rechazado las credenciales configuradas",

@@ -42,7 +42,7 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 
 - "El fitxer ha de ser un PDF": el document no és un PDF. Exporta'l a PDF i torna-ho a provar.
 - "No s'han pogut llegir les dades de la factura": el PDF pot ser escanejat o estar protegit. Introdueix la factura manualment.
-- "La lectura automàtica de factures no està configurada": cal que l'administrador configuri el servei de lectura.
+- "La importació de factures des de PDF no està disponible": el servei de lectura no està configurat o la seva clau no és vàlida. Mentrestant, el botó d'importar no apareix al llistat; cal que l'administrador el configuri.
 - El total calculat no quadra: revisa les bases, les quotes i la retenció, i si hi ha recàrrec d'equivalència.
 - "Factura duplicada": la factura ja està registrada. Obre-la amb l'enllaç per revisar-la.
 - "La factura s'ha creat, però no s'ha pogut adjuntar el PDF": adjunta'l des de la pestanya Fitxers de la factura.

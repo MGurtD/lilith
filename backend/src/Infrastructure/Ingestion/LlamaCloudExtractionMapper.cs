@@ -217,9 +217,11 @@ public static class LlamaCloudExtractionMapper
     }
 
     /// <summary>
-    /// Parses "1234.56", "1,234.56", "1.234,56" and "1234,56"; the last separator is the decimal one.
+    /// Parses "1234.56", "1,234.56", "1.234,56" and "1234,56": with both separators the last one
+    /// is the decimal one. A single kind of separator followed by exactly three digits, or
+    /// repeated ("1.234", "1.234.567"), groups thousands, as amounts carry two decimals.
     /// </summary>
-    internal static decimal? ParseDecimal(string? text)
+    public static decimal? ParseDecimal(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
         var cleaned = new string(text.Where(c => char.IsDigit(c) || c is ',' or '.' or '-').ToArray());
@@ -227,6 +229,14 @@ public static class LlamaCloudExtractionMapper
 
         var lastComma = cleaned.LastIndexOf(',');
         var lastDot = cleaned.LastIndexOf('.');
+        if (lastComma < 0 ^ lastDot < 0)
+        {
+            var separator = lastComma >= 0 ? ',' : '.';
+            var last = Math.Max(lastComma, lastDot);
+            var groupsThousands = cleaned.Count(c => c == separator) > 1 || cleaned.Length - last - 1 == 3;
+            if (groupsThousands) cleaned = cleaned.Replace(separator.ToString(), string.Empty);
+        }
+
         if (lastComma > lastDot)
             cleaned = cleaned.Replace(".", string.Empty).Replace(',', '.');
         else

@@ -7,4 +7,10 @@ namespace Application.Contracts.Ingestion;
 public interface IInvoiceExtractor
 {
     Task<ExtractedInvoice> ExtractAsync(Stream pdfStream, string fileName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Whether the provider is configured and accepts the configured credentials. Drives the
+    /// invoice import feature flag; implementations may cache the answer.
+    /// </summary>
+    Task<bool> IsAvailableAsync(CancellationToken ct = default);
 }

@@ -17,8 +17,16 @@
     @change="onFileInputChange"
   />
 
+  <Message
+    v-if="importEnabled === false"
+    severity="warn"
+    :closable="false"
+  >
+    {{ t("purchase.invoiceImport.disabled") }}
+  </Message>
+
   <div
-    v-if="!pdfFile"
+    v-else-if="importEnabled && !pdfFile"
     class="invoice-import__dropzone"
     :class="{ 'invoice-import__dropzone--dragging': isDragging }"
     @dragenter.prevent="isDragging = true"
@@ -52,7 +60,7 @@
     </Message>
   </div>
 
-  <div v-else class="invoice-import">
+  <div v-else-if="importEnabled && pdfFile" class="invoice-import">
     <section class="invoice-import__document">
       <div class="invoice-import__document-header">
         <i class="pi pi-file-pdf" aria-hidden="true" />
@@ -180,6 +188,13 @@
           <span>
             {{ t("purchase.invoiceImport.totals.computed") }}:
             <strong>{{ formatCurrency(computedTotal) }}</strong>
+            <small v-if="surchargeAmount" class="invoice-import__totals-note">
+              {{
+                t("purchase.invoiceImport.totals.surcharge", {
+                  amount: formatCurrency(surchargeAmount),
+                })
+              }}
+            </small>
           </span>
           <span class="invoice-import__totals-status">
             <i
@@ -192,7 +207,9 @@
               totalMatches
                 ? t("purchase.invoiceImport.totals.matches")
                 : t("purchase.invoiceImport.totals.difference", {
-                    amount: formatCurrency(computedTotal - draft.totalAmount),
+                    amount: formatCurrency(
+                      computedTotal + surchargeAmount - draft.totalAmount,
+                    ),
                   })
             }}
           </span>
@@ -219,7 +236,7 @@
         />
 
         <TableReceiptCandidates
-          v-if="purchaseInvoice.supplierId || receiptCandidates.length"
+          v-if="currentSupplierId || receiptCandidates.length"
           v-model:selection="selectedReceipts"
           :candidates="receiptCandidates"
         />
@@ -368,7 +385,10 @@ const isExtracting = ref(false);
 const extractionError = ref<string | null>(null);
 const isSaving = ref(false);
 
+// Feature flag from the backend; null while it is being checked.
+const importEnabled = ref<boolean | null>(null);
 const draft = ref<IngestPurchaseInvoiceResponse | null>(null);
+const currentSupplierId = ref("");
 // Import ids in the order of draft.taxBreakdown, to follow rows after edits.
 const importIdsByRow = ref<string[]>([]);
 const reviewedImportIds = ref(new Set<string>());
@@ -397,10 +417,12 @@ onMounted(async () => {
     backButtonVisible: true,
     title: t("purchase.invoiceImport.title"),
   });
-  await Promise.all([
+  const [enabled] = await Promise.all([
+    PurchaseService.PurchaseInvoiceIngestion.isEnabled(),
     masterDataStore.fetchMasterData(),
     lifecycleStore.fetchOneByName("PurchaseInvoice"),
   ]);
+  importEnabled.value = enabled;
 });
 
 // ---- File selection ----
@@ -471,7 +493,8 @@ const extract = async (file: File) => {
 const applyDraft = async (response: IngestPurchaseInvoiceResponse) => {
   const invoice = invoiceStore.setFromIngestion(response);
   if (!invoice) return;
-  invoiceStore.applyNewInvoiceDefaults();
+  invoiceStore.applyNewInvoiceDefaults(new Date(invoice.purchaseInvoiceDate));
+  currentSupplierId.value = invoice.supplierId;
 
   const supplier = masterDataStore.masterData.suppliers?.find(
     (s) => s.id === invoice.supplierId,
@@ -543,10 +566,20 @@ const issueLabel = (issue: IngestionIssue): string =>
     ? t("purchase.invoiceImport.review.taxRow", { row: issue.rowIndex + 1 })
     : (issueLabels.value[issue.field] ?? issue.field);
 
+// The printed total includes the equivalence surcharge, which is not imported
+// (it has its own review hint), so it is added back to compare, as the backend does.
+const surchargeAmount = computed(() =>
+  (draft.value?.taxBreakdown ?? []).reduce(
+    (total, row) => total + (row.surchargeAmount ?? 0),
+    0,
+  ),
+);
 const totalMatches = computed(
   () =>
     draft.value?.totalAmount != null &&
-    Math.abs(computedTotal.value - draft.value.totalAmount) <= TOTAL_TOLERANCE,
+    Math.abs(
+      computedTotal.value + surchargeAmount.value - draft.value.totalAmount,
+    ) <= TOTAL_TOLERANCE,
 );
 
 const onCalculated = (values: Partial<PurchaseInvoiceCalculatedValues>) => {
@@ -568,6 +601,7 @@ const receiptsMatchBase = computed(
 
 // A different supplier has different receipts: reload them with fresh suggestions.
 const onSupplierChange = async (supplierId: string) => {
+  currentSupplierId.value = supplierId;
   const sequence = ++receiptRequestSequence;
   receiptCandidates.value = [];
   selectedReceipts.value = [];
@@ -883,6 +917,11 @@ const attachPdf = async (invoiceId: string, file: File): Promise<boolean> => {
 
 .invoice-import__totals--mismatch .invoice-import__totals-status {
   color: var(--p-yellow-700);
+}
+
+.invoice-import__totals-note {
+  margin-left: 0.35rem;
+  color: var(--p-text-muted-color);
 }
 
 .invoice-import__totals-status {

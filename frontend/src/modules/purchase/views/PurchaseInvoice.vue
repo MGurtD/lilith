@@ -339,29 +339,29 @@ const openInvoiceImportForm = (
 };
 
 const onInvoiceSubmit = async (invoice: PurchaseInvoice) => {
-  let result = false;
-  let message = "";
-
   invoice.purchaseInvoiceDate = convertDateTimeToJSON(
     invoice.purchaseInvoiceDate,
   );
 
-  if (formMode.value === FormActionMode.CREATE) {
-    result = await purchaseInvoiceStore.Create(invoice);
-    message = result
+  const creating = formMode.value === FormActionMode.CREATE;
+  // Checked calls keep the backend reason, e.g. a duplicate supplier invoice number.
+  const outcome = creating
+    ? await purchaseInvoiceStore.CreateWithReceipts(invoice, [])
+    : await purchaseInvoiceStore.UpdateChecked(invoice);
+  const result = outcome.ok;
+  const message = creating
+    ? result
       ? t("purchase.purchaseInvoice.messages.created")
-      : t("purchase.purchaseInvoice.messages.createError");
-  } else {
-    result = await purchaseInvoiceStore.Update(invoice);
-    message = result
+      : t("purchase.purchaseInvoice.messages.createError")
+    : result
       ? t("purchase.purchaseInvoice.messages.updated")
       : t("purchase.purchaseInvoice.messages.updateError");
-  }
 
   toast.add({
-    life: 5000,
+    life: result ? 5000 : 8000,
     severity: result ? "success" : "error",
     summary: message,
+    detail: outcome.ok ? undefined : outcome.error || undefined,
   });
 
   if (result) {

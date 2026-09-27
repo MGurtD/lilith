@@ -112,6 +112,8 @@ namespace Application.Services.Purchase
             }
 
             purchaseInvoice.Number = counterObj.Content.ToString()!;
+            // The number comes from the exercise of the invoice date; file it under the same one.
+            purchaseInvoice.ExerciceId = exercise.Id;
             await _unitOfWork.PurchaseInvoices.Add(purchaseInvoice);
 
             return new GenericResponse(true);
@@ -176,8 +178,17 @@ namespace Application.Services.Purchase
 
         public async Task<GenericResponse> Update(PurchaseInvoice purchaseInvoice)
         {
-            var duplicate = await CheckDuplicate(purchaseInvoice);
-            if (duplicate != null) return duplicate;
+            // Only a change of supplier or supplier invoice number can create a duplicate, so
+            // invoices that were already duplicated before the rule existed stay editable.
+            var stored = (await _unitOfWork.PurchaseInvoices.FindAsync(p => p.Id == purchaseInvoice.Id)).FirstOrDefault();
+            var identityChanged = stored == null
+                || stored.SupplierId != purchaseInvoice.SupplierId
+                || !string.Equals(stored.SupplierNumber.Trim(), purchaseInvoice.SupplierNumber.Trim(), StringComparison.OrdinalIgnoreCase);
+            if (identityChanged)
+            {
+                var duplicate = await CheckDuplicate(purchaseInvoice);
+                if (duplicate != null) return duplicate;
+            }
 
             await RecreateDueDates(purchaseInvoice);
             purchaseInvoice.PurchaseInvoiceDueDates!.Clear();

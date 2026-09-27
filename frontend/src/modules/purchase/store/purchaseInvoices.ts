@@ -45,17 +45,25 @@ export const usePurchaseInvoiceStore = defineStore({
         purchaseInvoiceImports: [],
       } as PurchaseInvoice;
     },
-    // Defaults of a new invoice: current exercise, "Nacional" series and the
+    // Defaults of a new invoice: exercise of its date, "Nacional" series and the
     // initial "Nova" status. Needs purchase master data and the PurchaseInvoice
     // lifecycle loaded.
-    applyNewInvoiceDefaults() {
+    applyNewInvoiceDefaults(invoiceDate: Date = new Date()) {
       if (!this.purchaseInvoice) return;
       const masterData = usePurchaseMasterDataStore().masterData;
       const lifecycle = useLifecyclesStore().lifecycle;
 
-      const exercise = masterData.exercises?.find(
-        (e) => e.name === new Date().getFullYear().toString(),
-      );
+      // The backend numbers the invoice in the exercise of its date.
+      const day = invoiceDate.getTime();
+      const exercise =
+        masterData.exercises?.find(
+          (e) =>
+            new Date(e.startDate).getTime() <= day &&
+            day <= new Date(e.endDate).getTime(),
+        ) ??
+        masterData.exercises?.find(
+          (e) => e.name === invoiceDate.getFullYear().toString(),
+        );
       if (exercise) this.purchaseInvoice.exerciceId = exercise.id;
 
       const serie = masterData.series?.find((s) => s.name === "Nacional");
@@ -92,6 +100,9 @@ export const usePurchaseInvoiceStore = defineStore({
     },
     async CreateWithReceipts(purchaseInvoice: PurchaseInvoice, receiptIds: string[]) {
       return PurchaseService.PurchaseInvoice.CreateWithReceipts(purchaseInvoice, receiptIds);
+    },
+    async UpdateChecked(purchaseInvoice: PurchaseInvoice) {
+      return PurchaseService.PurchaseInvoice.UpdateChecked(purchaseInvoice);
     },
     async GetReceiptCandidates(
       supplierId: string,

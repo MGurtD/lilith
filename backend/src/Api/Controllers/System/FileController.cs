@@ -5,7 +5,7 @@ namespace Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FileController(IFileService fileService) : ControllerBase
+    public class FileController(IFileService fileService, ILocalizationService localizationService) : ControllerBase
     {
         [HttpGet]
         public IActionResult GetEntityFiles(string entity, Guid entityId)
@@ -73,7 +73,7 @@ namespace Api.Controllers
             var file = files.FirstOrDefault();
             if (file is null)
             {
-                return BadRequest(new[] { "No file uploaded" });
+                return BadRequest(new[] { localizationService.GetLocalizedString("FileNotUploaded") });
             }
             var response = await fileService.UploadFile(file, entity, Guid.Parse(id));
             return response.Result ? Ok(response.Content) : BadRequest(response.Errors);

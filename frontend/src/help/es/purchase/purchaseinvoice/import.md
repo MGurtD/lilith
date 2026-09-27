@@ -42,7 +42,7 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 
 - "El fichero debe ser un PDF": el documento no es un PDF. Expórtalo a PDF y vuelve a intentarlo.
 - "No se han podido leer los datos de la factura": el PDF puede estar escaneado o protegido. Introduce la factura manualmente.
-- "La lectura automática de facturas no está configurada": el administrador debe configurar el servicio de lectura.
+- "La importación de facturas desde PDF no está disponible": el servicio de lectura no está configurado o su clave no es válida. Mientras tanto, el botón de importar no aparece en el listado; el administrador debe configurarlo.
 - El total calculado no cuadra: revisa las bases, las cuotas y la retención, y si hay recargo de equivalencia.
 - "Factura duplicada": la factura ya está registrada. Ábrela con el enlace para revisarla.
 - "La factura se ha creado, pero no se ha podido adjuntar el PDF": adjúntalo desde la pestaña Archivos de la factura.

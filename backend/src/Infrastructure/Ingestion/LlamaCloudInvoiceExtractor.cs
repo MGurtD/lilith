@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -26,6 +29,48 @@ public class LlamaCloudInvoiceExtractor(
     ILogger<LlamaCloudInvoiceExtractor> logger) : IInvoiceExtractor
 {
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan AvailabilityTtl = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan UnreachableTtl = TimeSpan.FromMinutes(1);
+    // Availability per base URL + key fingerprint; the key itself is never stored.
+    private static readonly ConcurrentDictionary<string, (bool Available, DateTimeOffset Expires)> Availability = new();
+
+    public async Task<bool> IsAvailableAsync(CancellationToken ct = default)
+    {
+        var settings = options.Value.Ingestion;
+        if (settings is null
+            || string.IsNullOrWhiteSpace(settings.ApiKey)
+            || string.IsNullOrWhiteSpace(settings.ProjectId)
+            || string.IsNullOrWhiteSpace(settings.BaseUrl))
+        {
+            return false;
+        }
+
+        var cacheKey = $"{settings.BaseUrl}|{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(settings.ApiKey)))}";
+        if (Availability.TryGetValue(cacheKey, out var cached) && cached.Expires > DateTimeOffset.UtcNow)
+            return cached.Available;
+
+        bool available;
+        TimeSpan ttl;
+        try
+        {
+            // Keys are region-specific: a key from another region is rejected here.
+            using var request = Request(settings, HttpMethod.Get, "/api/v1/projects");
+            using var response = await httpClient.SendAsync(request, ct);
+            available = response.IsSuccessStatusCode;
+            ttl = AvailabilityTtl;
+            if (!available)
+                logger.LogWarning("LlamaCloud rejected the configured credentials ({Status}); invoice import is disabled.", (int)response.StatusCode);
+        }
+        catch (Exception ex) when (ex is HttpRequestException || (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        {
+            logger.LogWarning(ex, "LlamaCloud is unreachable; invoice import is disabled for now.");
+            available = false;
+            ttl = UnreachableTtl;
+        }
+
+        Availability[cacheKey] = (available, DateTimeOffset.UtcNow.Add(ttl));
+        return available;
+    }
     private const int MaxLoggedErrorLength = 500;
 
     public async Task<ExtractedInvoice> ExtractAsync(Stream pdfStream, string fileName, CancellationToken ct = default)
@@ -116,6 +161,7 @@ public class LlamaCloudInvoiceExtractor(
                     return job;
                 case "FAILED":
                 case "CANCELLED":
+                case "ERROR":
                     throw Unparseable($"job {jobId} finished with status {job.Status}");
             }
 

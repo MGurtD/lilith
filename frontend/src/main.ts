@@ -61,7 +61,6 @@ import Select from "primevue/select";
 import DatePicker from "primevue/datepicker";
 import Popover from "primevue/popover";
 import Drawer from "primevue/drawer";
-import FileUpload from "primevue/fileupload";
 import Tabs from "primevue/tabs";
 import TabList from "primevue/tablist";
 import Tab from "primevue/tab";
@@ -123,7 +122,6 @@ app
   .component("DatePicker", DatePicker)
   .component("Popover", Popover)
   .component("Drawer", Drawer)
-  .component("FileUpload", FileUpload)
   // PrimeVue v4 new Tabs components
   .component("Tabs", Tabs)
   .component("TabList", TabList)

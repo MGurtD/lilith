@@ -13,12 +13,10 @@ public class IngestionSettings
     /// <summary>Fields whose provider confidence is below this value are flagged for review.</summary>
     public decimal LowConfidenceThreshold { get; set; } = 0.8m;
 
+    // A missing ApiKey or ProjectId does not stop the API: invoice import answers
+    // "not configured" at request time instead.
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(ApiKey))
-            throw new ArgumentException("Ingestion:ApiKey configuration key is required");
-        if (string.IsNullOrWhiteSpace(ProjectId))
-            throw new ArgumentException("Ingestion:ProjectId configuration key is required");
         if (TimeoutSeconds <= 0)
             throw new ArgumentException("Ingestion:TimeoutSeconds must be greater than zero");
         if (LowConfidenceThreshold is < 0 or > 1)

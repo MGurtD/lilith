@@ -62,6 +62,8 @@ public class InvoiceIngestionService(
         return response;
     }
 
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => extractor.IsAvailableAsync(ct);
+
     private async Task SuggestReceipts(ExtractedInvoice extracted, IngestPurchaseInvoiceResponse response)
     {
         response.DeliveryNoteNumbers = extracted.DeliveryNoteNumbers;
@@ -108,7 +110,12 @@ public class InvoiceIngestionService(
                 args: extracted.SupplierVatNumber!);
         }
 
-        var suppliers = await unitOfWork.Suppliers.FindAsync(s => !s.Disabled);
+        // Narrow in SQL by the last digits (stored numbers may carry separators or a prefix),
+        // then compare normalized values in memory.
+        var tail = new string(vatNumber.Where(char.IsDigit).TakeLast(3).ToArray());
+        var suppliers = tail.Length == 3
+            ? await unitOfWork.Suppliers.FindAsync(s => !s.Disabled && s.VatNumber.Contains(tail))
+            : await unitOfWork.Suppliers.FindAsync(s => !s.Disabled);
         var matches = suppliers
             .Where(s => NormalizeVatNumber(s.VatNumber) == vatNumber)
             .ToList();

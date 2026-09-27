@@ -14,7 +14,6 @@ import DropdownLifecycleStatusTransitions from "@/modules/shared/components/Drop
 import { convertDateTimeToJSON, formatCurrency } from "@/utils/functions";
 import { computed, onMounted, onUnmounted, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useToast } from "primevue/usetoast";
 import * as Yup from "yup";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
@@ -48,7 +47,6 @@ const emit = defineEmits<{
 
 const purchaseStore = usePurchaseInvoiceStore();
 const purchaseMasterData = usePurchaseMasterDataStore();
-const toast = useToast();
 const { t } = useI18n();
 const form = shallowRef<{
   submit: () => void;
@@ -205,6 +203,7 @@ const calculateAmounts = async (
   values: Readonly<FormValues> = latestCalculationValues.value,
 ): Promise<void> => {
   latestCalculationValues.value = { ...values };
+  importsError.value = null;
   if (!calculationsReady) return;
 
   const requestSequence = ++dueDateRequestSequence;
@@ -439,23 +438,19 @@ onUnmounted(() => {
   dueDateRequestSequence += 1;
 });
 
+// The amount lines live outside the form fields; their error shows inline
+// under the summary and clears on the next recalculation.
+const importsError = shallowRef<string | null>(null);
+
 const validateImports = (): boolean => {
   const lines = props.purchaseInvoice.purchaseInvoiceImports;
-  const detail =
+  importsError.value =
     lines.length === 0
       ? t("purchase.validation.invoiceImportsRequired")
       : lines.some((line) => !line.taxId)
         ? t("purchase.validation.invoiceImportTaxRequired")
-        : undefined;
-  if (!detail) return true;
-
-  toast.add({
-    severity: "warn",
-    summary: t("purchase.messages.invalidForm"),
-    detail,
-    life: 5000,
-  });
-  return false;
+        : null;
+  return importsError.value === null;
 };
 
 const submit = (values: FormValues): void => {
@@ -567,11 +562,22 @@ defineExpose({
           </div>
         </div>
       </section>
+      <small v-if="importsError" class="imports-error" role="alert">
+        <i class="pi pi-exclamation-circle" aria-hidden="true" />
+        {{ importsError }}
+      </small>
     </template>
   </Form>
 </template>
 
 <style scoped>
+.imports-error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--p-orange-600);
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

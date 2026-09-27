@@ -294,6 +294,7 @@
     "VerifactuSiteNotFound": "Site not found to send invoice",
     "VerifactuInvoiceAlreadyIntegrated": "Invoice has already been integrated with Verifactu",
     "VerifactuInvoiceNotIntegrated": "Invoice has not been integrated with Verifactu",
+    "FileNotUploaded": "No file was uploaded",
     "InvoiceIngestionInvalidFile": "The uploaded file is not a valid PDF",
     "InvoiceIngestionNotConfigured": "Automatic invoice reading is not configured",
     "InvoiceIngestionAuthFailed": "The invoice reading service rejected the configured credentials",

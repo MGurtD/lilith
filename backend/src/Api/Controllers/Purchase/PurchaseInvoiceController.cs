@@ -150,6 +150,14 @@ namespace Api.Controllers.Purchase
         }
 
         // POST /api/PurchaseInvoice/Ingest
+        // Feature flag for the PDF import: a LlamaCloud URL, project and a valid API key.
+        [HttpGet("Ingest/Status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> IngestStatus(CancellationToken ct)
+        {
+            return Ok(new { enabled = await ingestionService.IsAvailableAsync(ct) });
+        }
+
         // Reads a supplier invoice PDF and returns a draft to review; nothing is persisted.
         // Configuration: Ingestion__ApiKey, Ingestion__ProjectId, Ingestion__BaseUrl (EU by default).
         [HttpPost("Ingest")]

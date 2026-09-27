@@ -44,12 +44,26 @@ export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
     invoice: PurchaseInvoice,
     receiptIds: string[],
   ): Promise<PurchaseInvoiceCreateResult> {
+    return this.checked(() =>
+      apiClient.post(`${this.resource}/WithReceipts`, { invoice, receiptIds }),
+    );
+  }
+
+  // Like update(), but keeps the backend's reason (e.g. a duplicate supplier invoice number).
+  async UpdateChecked(
+    invoice: PurchaseInvoice,
+  ): Promise<PurchaseInvoiceCreateResult> {
+    return this.checked(() =>
+      apiClient.put(`${this.resource}/${invoice.id}`, invoice),
+    );
+  }
+
+  private async checked(
+    send: () => Promise<{ status: number; data: unknown }>,
+  ): Promise<PurchaseInvoiceCreateResult> {
     let data: CreateErrorBody | undefined;
     try {
-      const response = await apiClient.post(`${this.resource}/WithReceipts`, {
-        invoice,
-        receiptIds,
-      });
+      const response = await send();
       if (response.status === 200 || response.status === 201) {
         return { ok: true };
       }
