@@ -11,6 +11,8 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 - Revisar i corregir les dades de capçalera de la factura
 - Afegir, editar i eliminar línies del desglossament d'IVA
 - Canviar de PDF i tornar a llegir-lo
+- Crear el proveïdor quan el NIF de la factura no correspon a cap proveïdor, sense sortir de la pantalla
+- Obrir la factura existent quan el PDF ja està registrat
 - Crear la factura des del botó de la capçalera
 
 ## Flux habitual
@@ -24,7 +26,8 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 ## Aspectes importants
 
 - Només es llegeixen PDF digitals de fins a 20 MB. Els documents escanejats poden no llegir-se bé.
-- El proveïdor s'assigna automàticament si hi ha un únic proveïdor actiu amb el NIF de la factura.
+- El proveïdor s'assigna automàticament si hi ha un únic proveïdor actiu amb el NIF de la factura. Si no n'hi ha cap, "Crear proveïdor" obre l'alta amb el nom i el NIF ja omplerts; en desar-lo queda assignat a la factura.
+- No es pot crear una factura amb el mateix proveïdor i el mateix número de factura del proveïdor que una altra. La pantalla ho avisa i enllaça la factura existent.
 - Cada tipus d'IVA es relaciona amb l'impost del mateix percentatge. Si no n'hi ha cap, la línia queda sense impost i l'has de triar.
 - La retenció d'IRPF s'omple al camp "% IRPF".
 - El recàrrec d'equivalència no s'importa: queda marcat perquè l'introdueixis manualment.
@@ -38,6 +41,7 @@ Crea una factura de compra a partir del PDF que t'ha enviat el proveïdor. El si
 - "No s'han pogut llegir les dades de la factura": el PDF pot ser escanejat o estar protegit. Introdueix la factura manualment.
 - "La lectura automàtica de factures no està configurada": cal que l'administrador configuri el servei de lectura.
 - El total calculat no quadra: revisa les bases, les quotes i la retenció, i si hi ha recàrrec d'equivalència.
+- "Factura duplicada": la factura ja està registrada. Obre-la amb l'enllaç per revisar-la.
 - "La factura s'ha creat, però no s'ha pogut adjuntar el PDF": adjunta'l des de la pestanya Fitxers de la factura.
 
 ## Proces basic

@@ -144,6 +144,22 @@ public class InvoiceIngestionServiceTests
     }
 
     [Fact]
+    public async Task Invoice_already_registered_for_the_supplier_is_flagged_with_its_id()
+    {
+        var supplier = new Supplier { ComercialName = "Acme", VatNumber = ValidCif };
+        var existing = new PurchaseInvoice { SupplierId = supplier.Id, SupplierNumber = "F-2026/0042", Number = "PF-0007" };
+        var context = BuildSut(CleanInvoice(), suppliers: [supplier], invoices: [existing]);
+
+        var response = await Ingest(context);
+
+        var issue = Assert.Single(response.Issues);
+        Assert.Equal(IngestionIssueCodes.DuplicateInvoice, issue.Code);
+        Assert.Equal(IngestionIssueFields.SupplierNumber, issue.Field);
+        Assert.Equal(existing.Id, issue.RelatedId);
+        Assert.Equal("InvoiceIngestionDuplicateInvoice|F-2026/0042|PF-0007", issue.Message);
+    }
+
+    [Fact]
     public async Task Unknown_supplier_is_flagged_and_left_empty()
     {
         var context = BuildSut(CleanInvoice(), suppliers: []);
@@ -243,8 +259,12 @@ public class InvoiceIngestionServiceTests
         TotalAmount = 121m,
     };
 
-    private static TestContext BuildSut(ExtractedInvoice extracted, List<Supplier>? suppliers = null)
+    private static TestContext BuildSut(
+        ExtractedInvoice extracted,
+        List<Supplier>? suppliers = null,
+        List<PurchaseInvoice>? invoices = null)
     {
+        invoices ??= [];
         suppliers ??= [new Supplier { ComercialName = "Acme", VatNumber = ValidCif }];
 
         var extractor = Substitute.For<IInvoiceExtractor>();
@@ -256,8 +276,14 @@ public class InvoiceIngestionServiceTests
             .FindAsync(Arg.Any<Expression<Func<Supplier, bool>>>())
             .Returns(call => suppliers.AsQueryable().Where(call.Arg<Expression<Func<Supplier, bool>>>()).ToList());
 
+        var invoiceRepository = Substitute.For<IPurchaseInvoiceRepository>();
+        invoiceRepository
+            .FindAsync(Arg.Any<Expression<Func<PurchaseInvoice, bool>>>())
+            .Returns(call => invoices.AsQueryable().Where(call.Arg<Expression<Func<PurchaseInvoice, bool>>>()).ToList());
+
         var uow = Substitute.For<IUnitOfWork>();
         uow.Suppliers.Returns(supplierRepository);
+        uow.PurchaseInvoices.Returns(invoiceRepository);
         uow.Taxes.Returns(new InMemoryRepository<Tax>([Vat21, Vat10, Exempt, ReverseCharge]));
 
         var settings = Options.Create(new AppSettings
@@ -271,18 +297,4 @@ public class InvoiceIngestionServiceTests
     }
 
     private sealed record TestContext(InvoiceIngestionService Sut, IInvoiceExtractor Extractor);
-
-    /// <summary>Returns "Key|arg1|arg2" so tests can assert the arguments passed to each message.</summary>
-    private sealed class FormattingLocalizationService : ILocalizationService
-    {
-        public string GetLocalizedString(string key, params object[] arguments) =>
-            string.Join('|', new object[] { key }.Concat(arguments));
-
-        public string GetLocalizedStringForCulture(string key, string culture, params object[] arguments) =>
-            GetLocalizedString(key, arguments);
-
-        public Dictionary<string, string> GetAllTranslations() => [];
-        public Dictionary<string, string> GetAllTranslationsForCulture(string culture) => [];
-        public string[] GetSupportedCultures() => ["ca", "es", "en"];
-    }
 }

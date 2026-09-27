@@ -90,6 +90,9 @@ export const usePurchaseInvoiceStore = defineStore({
 
       return this.purchaseInvoice;
     },
+    async CreateChecked(purchaseInvoice: PurchaseInvoice) {
+      return PurchaseService.PurchaseInvoice.CreateChecked(purchaseInvoice);
+    },
     async Create(purchaseInvoice: PurchaseInvoice) {
       const created =
         await PurchaseService.PurchaseInvoice.create(purchaseInvoice);

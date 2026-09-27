@@ -85,41 +85,69 @@ namespace Application.Services.Purchase
             return invoices;
         }
 
-        // TODO > Test creació de factura!!
         public async Task<GenericResponse> Create(PurchaseInvoice purchaseInvoice)
         {
-            // Incrementar el comptador de factures de l'exercici
-            if (purchaseInvoice.ExerciceId.HasValue)
+            if (!purchaseInvoice.ExerciceId.HasValue)
             {
-                var exercise = _exerciseService.GetExerciceByDate(purchaseInvoice.PurchaseInvoiceDate);
-                if (exercise == null || exercise.Disabled)
-                {
-                    return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseInvalid"));
-                }
-
-                var counterObj = await _exerciseService.GetNextCounter(exercise.Id, "purchaseinvoice");
-                if (counterObj != null && counterObj.Content != null)
-                {
-                    purchaseInvoice.Number = counterObj.Content.ToString()!;
-                    await _unitOfWork.PurchaseInvoices.Add(purchaseInvoice);
-                } 
-                else {
-                    return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseCounterError"));
-                }
-
+                return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseInvalid"));
             }
+
+            // Checked before taking a number from the exercise counter.
+            var duplicate = await CheckDuplicate(purchaseInvoice);
+            if (duplicate != null) return duplicate;
+
+            // Incrementar el comptador de factures de l'exercici
+            var exercise = _exerciseService.GetExerciceByDate(purchaseInvoice.PurchaseInvoiceDate);
+            if (exercise == null || exercise.Disabled)
+            {
+                return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseInvalid"));
+            }
+
+            var counterObj = await _exerciseService.GetNextCounter(exercise.Id, "purchaseinvoice");
+            if (counterObj?.Content == null)
+            {
+                return new GenericResponse(false, _localizationService.GetLocalizedString("ExerciseCounterError"));
+            }
+
+            purchaseInvoice.Number = counterObj.Content.ToString()!;
+            await _unitOfWork.PurchaseInvoices.Add(purchaseInvoice);
 
             return new GenericResponse(true);
         }
 
         public async Task<GenericResponse> Update(PurchaseInvoice purchaseInvoice)
         {
+            var duplicate = await CheckDuplicate(purchaseInvoice);
+            if (duplicate != null) return duplicate;
+
             await RecreateDueDates(purchaseInvoice);
             purchaseInvoice.PurchaseInvoiceDueDates!.Clear();
             purchaseInvoice.PurchaseInvoiceImports!.Clear();
             await _unitOfWork.PurchaseInvoices.Update(purchaseInvoice);
 
             return new GenericResponse(true);
+        }
+
+        /// <summary>
+        /// Rejects an invoice whose supplier already has another invoice with the same
+        /// supplier invoice number. The response content is the existing invoice id.
+        /// </summary>
+        private async Task<GenericResponse?> CheckDuplicate(PurchaseInvoice purchaseInvoice)
+        {
+            if (!PurchaseInvoiceDuplicateRule.Applies(purchaseInvoice.SupplierId, purchaseInvoice.SupplierNumber))
+                return null;
+
+            var existing = (await _unitOfWork.PurchaseInvoices.FindAsync(
+                PurchaseInvoiceDuplicateRule.SameSupplierAndNumber(
+                    purchaseInvoice.SupplierId, purchaseInvoice.SupplierNumber, purchaseInvoice.Id)))
+                .FirstOrDefault();
+            if (existing == null) return null;
+
+            return new GenericResponse(
+                false,
+                _localizationService.GetLocalizedString("PurchaseInvoiceDuplicate", purchaseInvoice.SupplierNumber.Trim(), existing.Number),
+                existing.Id,
+                "PurchaseInvoiceDuplicate");
         }
 
         public async Task<GenericResponse> RecreateDueDates(PurchaseInvoice requestInvoice)

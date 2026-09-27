@@ -29,6 +29,7 @@ Pantalla de gestió de l'entitat.
 ## Errors frequents
 
 - Si els venciments no es calculen, comprova que el proveïdor tingui condicions de pagament definides.
+- Si no es pot desar perquè la factura del proveïdor ja està registrada, revisa el número de factura del proveïdor: no es pot repetir per al mateix proveïdor.
 - Si la factura no es pot comptabilitzar, revisa que totes les línies tinguin compte comptable assignat.
 
 ## Proces basic

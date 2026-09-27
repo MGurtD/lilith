@@ -11,6 +11,8 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 - Revisar y corregir los datos de cabecera de la factura
 - Añadir, editar y eliminar líneas del desglose de IVA
 - Cambiar de PDF y volver a leerlo
+- Crear el proveedor cuando el NIF de la factura no corresponde a ningún proveedor, sin salir de la pantalla
+- Abrir la factura existente cuando el PDF ya está registrado
 - Crear la factura desde el botón de la cabecera
 
 ## Flujo habitual
@@ -24,7 +26,8 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 ## Aspectos importantes
 
 - Solo se leen PDF digitales de hasta 20 MB. Los documentos escaneados pueden no leerse bien.
-- El proveedor se asigna automáticamente si hay un único proveedor activo con el NIF de la factura.
+- El proveedor se asigna automáticamente si hay un único proveedor activo con el NIF de la factura. Si no hay ninguno, "Crear proveedor" abre el alta con el nombre y el NIF ya rellenados; al guardarlo queda asignado a la factura.
+- No se puede crear una factura con el mismo proveedor y el mismo número de factura del proveedor que otra. La pantalla lo avisa y enlaza la factura existente.
 - Cada tipo de IVA se relaciona con el impuesto del mismo porcentaje. Si no hay ninguno, la línea queda sin impuesto y debes elegirlo.
 - La retención de IRPF se rellena en el campo "% IRPF".
 - El recargo de equivalencia no se importa: queda marcado para que lo introduzcas manualmente.
@@ -38,6 +41,7 @@ Crea una factura de compra a partir del PDF que te ha enviado el proveedor. El s
 - "No se han podido leer los datos de la factura": el PDF puede estar escaneado o protegido. Introduce la factura manualmente.
 - "La lectura automática de facturas no está configurada": el administrador debe configurar el servicio de lectura.
 - El total calculado no cuadra: revisa las bases, las cuotas y la retención, y si hay recargo de equivalencia.
+- "Factura duplicada": la factura ya está registrada. Ábrela con el enlace para revisarla.
 - "La factura se ha creado, pero no se ha podido adjuntar el PDF": adjúntalo desde la pestaña Archivos de la factura.
 
 ## Proceso básico

@@ -2057,8 +2057,10 @@ const en = {
       errors: { title: "The invoice could not be read", retry: "Try again", notPdf: "The file must be a PDF", tooLarge: "The PDF is larger than 20 MB" },
       review: { issues: "Nothing to review. Check it against the PDF and create the invoice. | 1 value to review | {count} values to review", taxBreakdown: "VAT breakdown", taxRow: "VAT line {row}" },
       totals: { document: "PDF total", computed: "Computed total", matches: "Matches the PDF", difference: "Difference: {amount}" },
-      actions: { create: "Create invoice" },
-      messages: { created: "Invoice created from the PDF", attachError: "The invoice was created but the PDF could not be attached. Attach it from the Files tab." },
+      actions: { create: "Create invoice", createSupplier: "Create supplier", openInvoice: "Open invoice" },
+      supplierDialog: { title: "New supplier" },
+      duplicate: { title: "Duplicate invoice" },
+      messages: { supplierCreated: "Supplier created and assigned to the invoice", supplierCreateError: "The supplier could not be created", created: "Invoice created from the PDF", attachError: "The invoice was created but the PDF could not be attached. Attach it from the Files tab." },
     },
     purchaseInvoiceImport: {
       title: "VAT breakdown",

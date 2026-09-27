@@ -70,7 +70,7 @@ namespace Api.Controllers.Purchase
             if (response.Result)
                 return Ok();
             else
-                return BadRequest(response.Errors);
+                return BadRequest(response);
         }
 
         [HttpPost]
@@ -114,7 +114,7 @@ namespace Api.Controllers.Purchase
             var response = await service.Update(purchaseInvoice);
 
             if (response.Result) return Ok();
-            else return BadRequest(response.Errors);
+            else return BadRequest(response);
         }
 
         [HttpDelete("{id:guid}")]

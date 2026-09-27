@@ -121,8 +121,46 @@
                   {{ issueLabel(issue) }}:
                 </span>
                 {{ issue.message }}
+                <Button
+                  v-if="
+                    issue.code === 'SupplierNotFound' &&
+                    !dismissedFields.has('supplierId')
+                  "
+                  icon="pi pi-plus"
+                  :label="t('purchase.invoiceImport.actions.createSupplier')"
+                  size="small"
+                  text
+                  class="invoice-import__issue-action"
+                  @click="openSupplierDialog"
+                />
+                <a
+                  v-else-if="issue.code === 'DuplicateInvoice' && issue.relatedId"
+                  :href="invoiceHref(issue.relatedId)"
+                  target="_blank"
+                  rel="noopener"
+                  class="invoice-import__issue-link"
+                >
+                  {{ t("purchase.invoiceImport.actions.openInvoice") }}
+                  <i class="pi pi-external-link" aria-hidden="true" />
+                </a>
               </li>
             </ul>
+          </div>
+        </Message>
+
+        <Message v-if="duplicateOf" severity="error" :closable="false">
+          <div class="invoice-import__error">
+            <strong>{{ t("purchase.invoiceImport.duplicate.title") }}</strong>
+            <span>{{ duplicateOf.message }}</span>
+            <a
+              :href="invoiceHref(duplicateOf.id)"
+              target="_blank"
+              rel="noopener"
+              class="invoice-import__issue-link"
+            >
+              {{ t("purchase.invoiceImport.actions.openInvoice") }}
+              <i class="pi pi-external-link" aria-hidden="true" />
+            </a>
           </div>
         </Message>
 
@@ -200,6 +238,23 @@
       @submit="onImportSubmit"
     />
   </Dialog>
+
+  <Dialog
+    v-model:visible="isSupplierDialogVisible"
+    :header="t('purchase.invoiceImport.supplierDialog.title')"
+    :closable="!isCreatingSupplier"
+    modal
+    :style="{ width: '90vw', maxWidth: '64rem' }"
+    @after-hide="supplierDraft = undefined"
+  >
+    <FormSupplier
+      v-if="supplierDraft"
+      in-dialog
+      :supplier="supplierDraft"
+      @submit="onSupplierSubmit"
+      @cancel="isSupplierDialogVisible = false"
+    />
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -224,10 +279,12 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import FormPurchaseInvoice from "../components/FormPurchaseInvoice.vue";
 import FormPurchaseInvoiceImport from "../components/FormPurchaseInvoiceImport.vue";
+import FormSupplier from "../components/FormSupplier.vue";
 import TablePurchaseInvoiceImports from "../components/TablePurchaseInvoiceImports.vue";
 import PurchaseService from "../services";
 import { usePurchaseMasterDataStore } from "../store/purchase";
 import { usePurchaseInvoiceStore } from "../store/purchaseInvoices";
+import { buildNewSupplier, useSuppliersStore } from "../store/suppliers";
 import type {
   IngestionIssue,
   IngestPurchaseInvoiceResponse,
@@ -235,6 +292,7 @@ import type {
   PurchaseInvoiceCalculatedValues,
   PurchaseInvoiceDueDate,
   PurchaseInvoiceImport,
+  Supplier,
 } from "../types";
 
 // Matches the backend request size limit of the ingest endpoint.
@@ -249,6 +307,7 @@ const appStore = useStore();
 const invoiceStore = usePurchaseInvoiceStore();
 const masterDataStore = usePurchaseMasterDataStore();
 const lifecycleStore = useLifecyclesStore();
+const suppliersStore = useSuppliersStore();
 const { purchaseInvoice } = storeToRefs(invoiceStore);
 const fileService = new FileService();
 
@@ -267,6 +326,14 @@ const draft = ref<IngestPurchaseInvoiceResponse | null>(null);
 const importIdsByRow = ref<string[]>([]);
 const reviewedImportIds = ref(new Set<string>());
 const computedTotal = ref(0);
+
+// Fields whose review hint was resolved here, e.g. a supplier created from the draft.
+const dismissedFields = ref(new Set<string>());
+const duplicateOf = ref<{ id: string; message: string } | null>(null);
+
+const isSupplierDialogVisible = ref(false);
+const isCreatingSupplier = ref(false);
+const supplierDraft = ref<Supplier>();
 
 const isImportDialogVisible = ref(false);
 const importFormMode = ref(FormActionMode.EDIT);
@@ -363,6 +430,8 @@ const applyDraft = async (response: IngestPurchaseInvoiceResponse) => {
 
   importIdsByRow.value = invoice.purchaseInvoiceImports.map((row) => row.id);
   reviewedImportIds.value = new Set();
+  dismissedFields.value = new Set();
+  duplicateOf.value = null;
   computedTotal.value = 0;
   draft.value = response;
 
@@ -378,6 +447,7 @@ const fieldWarnings = computed<Record<string, string[]>>(() => {
   for (const issue of draft.value?.issues ?? []) {
     // Tax rows are flagged in the table; the total is compared live above the form.
     if (issue.field === "taxBreakdown" || issue.field === "netAmount") continue;
+    if (dismissedFields.value.has(issue.field)) continue;
     (warnings[issue.field] ??= []).push(issue.message);
   }
   return warnings;
@@ -434,6 +504,45 @@ const onDueDatesChange = (dueDates: PurchaseInvoiceDueDate[]) => {
   }
 };
 
+// Opens in a new tab so the draft and the dropped PDF are kept.
+const invoiceHref = (id: string): string =>
+  router.resolve({ name: "PurchaseInvoice", params: { id } }).href;
+
+// ---- Supplier quick creation ----
+
+const openSupplierDialog = async () => {
+  await suppliersStore.fetchSupplierTypes();
+  const name = draft.value?.supplierName ?? "";
+  supplierDraft.value = {
+    ...buildNewSupplier(getNewUuid()),
+    comercialName: name,
+    taxName: name,
+    vatNumber: draft.value?.supplierVatNumber ?? "",
+  };
+  isSupplierDialogVisible.value = true;
+};
+
+const onSupplierSubmit = async (supplier: Supplier) => {
+  if (isCreatingSupplier.value) return;
+  isCreatingSupplier.value = true;
+  try {
+    // A rejected creation, e.g. an existing name, is already reported by the API client.
+    if (!(await suppliersStore.createSupplier(supplier))) return;
+
+    await masterDataStore.fetchMasterData();
+    formRef.value?.setSupplier(supplier.id);
+    dismissedFields.value = new Set(dismissedFields.value).add("supplierId");
+    isSupplierDialogVisible.value = false;
+    toast.add({
+      severity: "success",
+      summary: t("purchase.invoiceImport.messages.supplierCreated"),
+      life: 4000,
+    });
+  } finally {
+    isCreatingSupplier.value = false;
+  }
+};
+
 // ---- Tax breakdown rows (kept locally until the invoice is created) ----
 
 const openImportForm = (mode: FormActionMode, row: PurchaseInvoiceImport) => {
@@ -474,16 +583,16 @@ const onSubmit = async (invoice: PurchaseInvoice) => {
   if (!pdfFile.value || isSaving.value) return;
   isSaving.value = true;
   try {
-    const created = await invoiceStore.Create({
+    duplicateOf.value = null;
+    const result = await invoiceStore.CreateChecked({
       ...invoice,
       purchaseInvoiceDate: convertDateTimeToJSON(invoice.purchaseInvoiceDate),
     });
-    if (!created) {
-      toast.add({
-        severity: "error",
-        summary: t("purchase.purchaseInvoice.messages.createError"),
-        life: 6000,
-      });
+    // The API client already shows the backend reason; a duplicate also gets a link.
+    if (!result.ok) {
+      if (result.duplicateOfId) {
+        duplicateOf.value = { id: result.duplicateOfId, message: result.error };
+      }
       return;
     }
 
@@ -640,6 +749,20 @@ const attachPdf = async (invoiceId: string, file: File): Promise<boolean> => {
 }
 
 .invoice-import__issue-field {
+  font-weight: 600;
+}
+
+.invoice-import__issue-action {
+  margin-left: 0.25rem;
+  padding-block: 0;
+}
+
+.invoice-import__issue-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  color: var(--p-primary-color);
   font-weight: 600;
 }
 

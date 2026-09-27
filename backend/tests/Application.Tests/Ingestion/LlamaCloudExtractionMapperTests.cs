@@ -112,5 +112,154 @@ public class LlamaCloudExtractionMapperTests
         Assert.Equal(0.55m, invoice.FieldConfidence[ExtractedInvoiceFields.TotalAmount]);
     }
 
+    [Fact]
+    public void Maps_a_real_LlamaCloud_EU_job_response()
+    {
+        // extract_result and extract_metadata of a real job (tier agentic, version 2026-03-31)
+        // run on the synthetic demo invoice; confidence lives under field_metadata.document_metadata.
+        var job = Json(""""
+        {
+          "extract_result": {
+            "invoice_number": "F-2026/0042",
+            "issue_date": "2026-06-15",
+            "supplier": {
+              "vat_number": "B12345674",
+              "name": "Acme SL"
+            },
+            "tax_breakdown": [
+              {
+                "tax_rate": 21.0,
+                "base_amount": 700.0,
+                "tax_amount": 147.0,
+                "surcharge_rate": null,
+                "surcharge_amount": null
+              },
+              {
+                "tax_rate": 10.0,
+                "base_amount": 300.0,
+                "tax_amount": 30.0,
+                "surcharge_rate": null,
+                "surcharge_amount": null
+              }
+            ],
+            "withholding": {
+              "percentage": 15.0,
+              "amount": 150.0
+            },
+            "total_amount": 1020.0
+          },
+          "extract_metadata": {
+            "field_metadata": {
+              "document_metadata": {
+                "invoice_number": {
+                  "reasoning": "VERBATIM EXTRACTION.",
+                  "parsing_confidence": 1.0,
+                  "extraction_confidence": 0.9999999212537674,
+                  "confidence": 0.9999999212537674
+                },
+                "issue_date": {
+                  "reasoning": "Converted from '15/06/2026' to ISO format YYYY-MM-DD.",
+                  "parsing_confidence": 1.0,
+                  "extraction_confidence": 1.0,
+                  "confidence": 1.0
+                },
+                "supplier": {
+                  "vat_number": {
+                    "parsing_confidence": 1.0,
+                    "extraction_confidence": 1.0,
+                    "confidence": 1.0
+                  },
+                  "name": {
+                    "parsing_confidence": 1.0,
+                    "extraction_confidence": 1.0,
+                    "confidence": 1.0
+                  },
+                  "reasoning": "VERBATIM EXTRACTION."
+                },
+                "tax_breakdown": [
+                  {
+                    "tax_rate": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "base_amount": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "tax_amount": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "reasoning": "VERBATIM EXTRACTION. No surcharge data present."
+                  },
+                  {
+                    "tax_rate": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "base_amount": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "tax_amount": {
+                      "parsing_confidence": 1.0,
+                      "extraction_confidence": 1.0,
+                      "confidence": 1.0
+                    },
+                    "reasoning": "VERBATIM EXTRACTION. No surcharge data present."
+                  }
+                ],
+                "withholding": {
+                  "percentage": {
+                    "parsing_confidence": 1.0,
+                    "extraction_confidence": 1.0,
+                    "confidence": 1.0
+                  },
+                  "amount": {
+                    "parsing_confidence": 1.0,
+                    "extraction_confidence": 1.0,
+                    "confidence": 1.0
+                  },
+                  "reasoning": "Withholding percentage and amount are explicitly stated. Amount is given as negative in the text but should be positive in the schema."
+                },
+                "total_amount": {
+                  "reasoning": "VERBATIM EXTRACTION. Comma replaced with decimal point for number.",
+                  "parsing_confidence": 1.0,
+                  "extraction_confidence": 1.0,
+                  "confidence": 1.0
+                }
+              },
+              "page_metadata": null,
+              "row_metadata": null
+            },
+            "parse_job_id": "pjb-j670fpdp9zgiaxzl4cmc11lia9rp",
+            "parse_tier": "agentic"
+          }
+        }
+        """");
+
+        var invoice = LlamaCloudExtractionMapper.Map(
+            job.GetProperty("extract_result"), job.GetProperty("extract_metadata"));
+
+        Assert.Equal("F-2026/0042", invoice.InvoiceNumber);
+        Assert.Equal(new DateTime(2026, 6, 15), invoice.IssueDate);
+        Assert.Equal("B12345674", invoice.SupplierVatNumber);
+        Assert.Equal(2, invoice.TaxRows.Count);
+        Assert.Equal(30m, invoice.TaxRows[1].TaxAmount);
+        Assert.Null(invoice.TaxRows[0].SurchargeRate);
+        Assert.Equal(15m, invoice.WithholdingPercentage);
+        Assert.Equal(150m, invoice.WithholdingAmount);
+        Assert.Equal(1020m, invoice.TotalAmount);
+        Assert.Equal(1m, invoice.FieldConfidence[ExtractedInvoiceFields.IssueDate]);
+        Assert.True(invoice.FieldConfidence[ExtractedInvoiceFields.InvoiceNumber] > 0.99m);
+        Assert.Equal(1m, invoice.FieldConfidence[ExtractedInvoiceFields.TaxRow(1, ExtractedInvoiceFields.TaxAmount)]);
+        Assert.Equal(1m, invoice.FieldConfidence[ExtractedInvoiceFields.WithholdingAmount]);
+    }
+
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement;
 }

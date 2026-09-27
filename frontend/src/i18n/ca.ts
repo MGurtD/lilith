@@ -2083,8 +2083,10 @@ const ca = {
       errors: { title: "No s'ha pogut llegir la factura", retry: "Tornar-ho a provar", notPdf: "El fitxer ha de ser un PDF", tooLarge: "El PDF supera els 20 MB" },
       review: { issues: "Cap valor a revisar. Comprova-ho amb el PDF i crea la factura. | 1 valor a revisar | {count} valors a revisar", taxBreakdown: "Desglossament d'IVA", taxRow: "Línia d'IVA {row}" },
       totals: { document: "Total del PDF", computed: "Total calculat", matches: "Quadra amb el PDF", difference: "Diferència: {amount}" },
-      actions: { create: "Crear factura" },
-      messages: { created: "Factura creada a partir del PDF", attachError: "La factura s'ha creat, però no s'ha pogut adjuntar el PDF. Adjunta'l des de la pestanya Fitxers." },
+      actions: { create: "Crear factura", createSupplier: "Crear proveïdor", openInvoice: "Obrir factura" },
+      supplierDialog: { title: "Nou proveïdor" },
+      duplicate: { title: "Factura duplicada" },
+      messages: { supplierCreated: "Proveïdor creat i assignat a la factura", supplierCreateError: "No s'ha pogut crear el proveïdor", created: "Factura creada a partir del PDF", attachError: "La factura s'ha creat, però no s'ha pogut adjuntar el PDF. Adjunta'l des de la pestanya Fitxers." },
     },
     purchaseInvoiceImport: {
       title: "Desglossament d'IVA",

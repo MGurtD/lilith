@@ -104,6 +104,7 @@ public class InvoiceIngestionService(
         {
             case 1:
                 response.SupplierId = matches[0].Id;
+                await CheckDuplicate(matches[0].Id, extracted.InvoiceNumber, response);
                 break;
             case 0:
                 AddIssue(response, IngestionIssueFields.SupplierId, IngestionIssueCodes.SupplierNotFound,
@@ -114,6 +115,20 @@ public class InvoiceIngestionService(
                     args: [extracted.SupplierVatNumber!, matches.Count]);
                 break;
         }
+    }
+
+    private async Task CheckDuplicate(Guid supplierId, string? invoiceNumber, IngestPurchaseInvoiceResponse response)
+    {
+        if (!PurchaseInvoiceDuplicateRule.Applies(supplierId, invoiceNumber)) return;
+
+        var existing = (await unitOfWork.PurchaseInvoices.FindAsync(
+            PurchaseInvoiceDuplicateRule.SameSupplierAndNumber(supplierId, invoiceNumber!)))
+            .FirstOrDefault();
+        if (existing == null) return;
+
+        AddIssue(response, IngestionIssueFields.SupplierNumber, IngestionIssueCodes.DuplicateInvoice,
+            args: [invoiceNumber!.Trim(), existing.Number]);
+        response.Issues[^1].RelatedId = existing.Id;
     }
 
     private async Task ResolveTaxRows(ExtractedInvoice extracted, IngestPurchaseInvoiceResponse response)

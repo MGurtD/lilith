@@ -13,6 +13,30 @@ import {
 const service = new SupplierService("/supplier");
 const typeService = new SupplierTypeService("/suppliertype");
 
+// Defaults of a new supplier, shared by the supplier screen and quick creation dialogs.
+export const buildNewSupplier = (id: string): Supplier => ({
+  id,
+  comercialName: "",
+  taxName: "",
+  address: "",
+  vatNumber: "",
+  city: "",
+  country: "ES",
+  disabled: false,
+  observations: "",
+  notes: "",
+  phone: "",
+  postalCode: "",
+  region: "",
+  accountNumber: "",
+  supplierTypeId: "",
+  paymentMethodId: "",
+  contacts: [],
+  distanceFromSite: 0,
+  latitude: 0,
+  longitude: 0,
+});
+
 export const useSuppliersStore = defineStore({
   id: "suppliers",
   state: () => ({
@@ -36,28 +60,7 @@ export const useSuppliersStore = defineStore({
   },
   actions: {
     setNewSupplier(id: string) {
-      this.supplier = {
-        id: id,
-        comercialName: "",
-        taxName: "",
-        address: "",
-        vatNumber: "",
-        city: "",
-        country: "ES",
-        disabled: false,
-        observations: "",
-        notes: "",
-        phone: "",
-        postalCode: "",
-        region: "",
-        accountNumber: "",
-        supplierTypeId: "",
-        paymentMethodId: "",
-        contacts: [],
-        distanceFromSite: 0,
-        latitude: 0,
-        longitude: 0,
-      };
+      this.supplier = buildNewSupplier(id);
     },
     async fetchSuppliers() {
       this.suppliers = await service.getAll();

@@ -154,6 +154,8 @@ export interface IngestionIssue {
   rowIndex?: number | null;
   code: string;
   message: string;
+  // Entity the issue points to, e.g. the existing invoice of a duplicate.
+  relatedId?: string | null;
 }
 
 export type PurchaseInvoiceCalculatedValues = Pick<

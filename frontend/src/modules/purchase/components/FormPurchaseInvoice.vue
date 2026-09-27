@@ -479,7 +479,18 @@ const calcAmountsNow = (): Promise<void> => {
   return calculateAmounts();
 };
 
-defineExpose({ submitForm, calcAmounts, calcAmountsNow, getSupplierId });
+// Selects a supplier as if the operator had picked it, so its payment method
+// and due dates follow.
+const setSupplier = (supplierId: string): void =>
+  form.value?.setFieldValue("supplierId", supplierId);
+
+defineExpose({
+  submitForm,
+  calcAmounts,
+  calcAmountsNow,
+  getSupplierId,
+  setSupplier,
+});
 </script>
 
 <template>

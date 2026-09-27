@@ -1,3 +1,4 @@
+import type { AxiosError } from "axios";
 import apiClient, { logException } from "../../../api/api.client";
 import BaseService from "../../../api/base.service";
 import {
@@ -10,7 +11,37 @@ import {
 
 export class PurchaseInvoiceSerieService extends BaseService<InvoiceSerie> {}
 
+export type PurchaseInvoiceCreateResult =
+  | { ok: true }
+  | { ok: false; error: string; duplicateOfId?: string };
+
 export class PurchaseInvoiceService extends BaseService<PurchaseInvoice> {
+  // Like create(), but keeps the backend's reason so callers can link to the
+  // existing invoice when the supplier invoice number is a duplicate.
+  async CreateChecked(
+    invoice: PurchaseInvoice,
+  ): Promise<PurchaseInvoiceCreateResult> {
+    try {
+      await apiClient.post(this.resource, invoice);
+      return { ok: true };
+    } catch (error) {
+      const data = (error as AxiosError<{
+        errors?: string[];
+        errorCode?: string;
+        content?: unknown;
+      }>).response?.data;
+      return {
+        ok: false,
+        error: data?.errors?.[0] ?? "",
+        duplicateOfId:
+          data?.errorCode === "PurchaseInvoiceDuplicate" &&
+          typeof data.content === "string"
+            ? data.content
+            : undefined,
+      };
+    }
+  }
+
   async GetFiltered(
     startTime: string,
     endTime: string,

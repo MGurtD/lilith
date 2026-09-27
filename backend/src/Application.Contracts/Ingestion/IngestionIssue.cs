@@ -10,6 +10,8 @@ public class IngestionIssue
     public int? RowIndex { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    /// <summary>Entity the issue points to, e.g. the existing invoice of a duplicate.</summary>
+    public Guid? RelatedId { get; set; }
 }
 
 public static class IngestionIssueFields
@@ -34,4 +36,5 @@ public static class IngestionIssueCodes
     public const string TaxAmountMismatch = "TaxAmountMismatch";
     public const string SurchargeNotImported = "SurchargeNotImported";
     public const string TotalMismatch = "TotalMismatch";
+    public const string DuplicateInvoice = "DuplicateInvoice";
 }
