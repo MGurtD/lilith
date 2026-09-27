@@ -2,5 +2,5 @@ namespace Application.Contracts;
 
 public interface IPurchaseOrderPdfService
 {
-    byte[] Generate(PurchaseOrderReportResponse report);
+    Task<byte[]> Generate(PurchaseOrderReportResponse report, CancellationToken cancellationToken = default);
 }

@@ -23,7 +23,7 @@ namespace Api.Controllers.Purchase
         public async Task<IActionResult> GetPdf(Guid id)
         {
             var report = await reportService.GetReportById(id);
-            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"comanda-compra-{report.Order.Number}.pdf");
+            return report is null ? NotFound() : File(await pdfService.Generate(report, HttpContext.RequestAborted), "application/pdf", $"comanda-compra-{report.Order.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]

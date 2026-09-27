@@ -43,6 +43,14 @@ public class BrandingController(IBrandingService brandingService) : ControllerBa
         return response.Result ? Ok(response.Content) : BadRequest(response);
     }
 
+    [HttpPut("current/watermark")]
+    [Authorize(Policy = AuthorizationPolicies.BrandingWrite)]
+    public async Task<IActionResult> UpdateCurrentWatermark(BrandingWatermarkRequest request)
+    {
+        var response = await brandingService.UpdateCurrentWatermark(request);
+        return response.Result ? Ok(response.Content) : BadRequest(response);
+    }
+
     [HttpPut("current/logo/{slot}")]
     [Authorize(Policy = AuthorizationPolicies.BrandingWrite)]
     [RequestSizeLimit((2 * 1024 * 1024) + (64 * 1024))]
@@ -100,6 +108,12 @@ public class BrandingController(IBrandingService brandingService) : ControllerBa
         if (string.Equals(value, "sidebar", StringComparison.OrdinalIgnoreCase))
         {
             slot = BrandingLogoSlot.Sidebar;
+            return true;
+        }
+
+        if (string.Equals(value, "watermark", StringComparison.OrdinalIgnoreCase))
+        {
+            slot = BrandingLogoSlot.Watermark;
             return true;
         }
 

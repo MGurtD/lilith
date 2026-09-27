@@ -161,7 +161,7 @@ namespace Api.Controllers.Production
             var reportData = await reportService.GetReportById(id);
             return reportData is null
                 ? NotFound()
-                : File(pdfService.Generate(reportData), "application/pdf", $"OrdreFabricacio_{reportData.Order.Code}.pdf");
+                : File(await pdfService.Generate(reportData, HttpContext.RequestAborted), "application/pdf", $"OrdreFabricacio_{reportData.Order.Code}.pdf");
         }
 
         [HttpGet("{id:guid}")]

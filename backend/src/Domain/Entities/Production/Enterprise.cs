@@ -10,6 +10,8 @@
         public string? PrimaryColor { get; set; }
         public Guid? LogoMainFileId { get; set; }
         public Guid? LogoSidebarFileId { get; set; }
+        public Guid? LogoWatermarkFileId { get; set; }
+        public bool ReportWatermarkEnabled { get; set; } = true;
         public ICollection<Site> Sites { get; } = [];
 
     }

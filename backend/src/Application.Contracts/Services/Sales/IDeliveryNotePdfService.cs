@@ -2,5 +2,5 @@ namespace Application.Contracts;
 
 public interface IDeliveryNotePdfService
 {
-    byte[] Generate(DeliveryNoteReportResponse report);
+    Task<byte[]> Generate(DeliveryNoteReportResponse report, CancellationToken cancellationToken = default);
 }

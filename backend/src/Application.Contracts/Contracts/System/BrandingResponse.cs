@@ -7,7 +7,10 @@ public sealed record BrandingResponse(
     bool HasSidebarLogo,
     string Version,
     string? MainLogoVersion,
-    string? SidebarLogoVersion)
+    string? SidebarLogoVersion,
+    bool HasWatermark,
+    string? WatermarkVersion,
+    bool WatermarkEnabled)
 {
     public static BrandingResponse Default { get; } = new(
         "Temges",
@@ -16,13 +19,17 @@ public sealed record BrandingResponse(
         false,
         "default",
         null,
-        null);
+        null,
+        false,
+        null,
+        true);
 }
 
 public enum BrandingLogoSlot
 {
     Main,
-    Sidebar
+    Sidebar,
+    Watermark
 }
 
 public sealed record BrandingLogoContent(

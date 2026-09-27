@@ -25,7 +25,7 @@ namespace Api.Controllers.Sales
         public async Task<IActionResult> GetPdf(Guid id)
         {
             var report = await reportService.GetReportById(id);
-            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"pressupost-{report.Budget!.Number}.pdf");
+            return report is null ? NotFound() : File(await pdfService.Generate(report, HttpContext.RequestAborted), "application/pdf", $"pressupost-{report.Budget!.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]

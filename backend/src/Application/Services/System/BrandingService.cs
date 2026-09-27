@@ -16,6 +16,7 @@ public class BrandingService(
     private const string LegacyBrandingEntity = "EnterpriseBranding";
     private const string MainBrandingEntity = "EnterpriseBranding:main";
     private const string SidebarBrandingEntity = "EnterpriseBranding:sidebar";
+    private const string WatermarkBrandingEntity = "EnterpriseBranding:watermark";
 
     public async Task<BrandingResponse> GetCurrent()
     {
@@ -25,15 +26,19 @@ public class BrandingService(
 
         var mainLogo = await GetValidLogoFile(enterprise, enterprise.LogoMainFileId, BrandingLogoSlot.Main);
         var sidebarLogo = await GetValidLogoFile(enterprise, enterprise.LogoSidebarFileId, BrandingLogoSlot.Sidebar);
+        var watermark = await GetValidLogoFile(enterprise, enterprise.LogoWatermarkFileId, BrandingLogoSlot.Watermark);
 
         return new BrandingResponse(
-            string.IsNullOrWhiteSpace(enterprise.BrandName) ? "Temges" : enterprise.BrandName.Trim(),
+            string.IsNullOrWhiteSpace(enterprise.BrandName) ? BrandingResponse.Default.BrandName : enterprise.BrandName.Trim(),
             BrandingPalette.NormalizeOrDefault(enterprise.PrimaryColor),
             mainLogo is not null,
             sidebarLogo is not null,
             GetVersion(enterprise),
             mainLogo?.Id.ToString("N"),
-            sidebarLogo?.Id.ToString("N"));
+            sidebarLogo?.Id.ToString("N"),
+            watermark is not null,
+            watermark?.Id.ToString("N"),
+            enterprise.ReportWatermarkEnabled);
     }
 
     public async Task<BrandingLogoContent?> GetCurrentLogo(BrandingLogoSlot slot)
@@ -68,6 +73,18 @@ public class BrandingService(
 
         enterprise.BrandName = brandName;
         enterprise.PrimaryColor = primaryColor;
+        await unitOfWork.Enterprises.Update(enterprise);
+
+        return new GenericResponse(true, await GetCurrent());
+    }
+
+    public async Task<GenericResponse> UpdateCurrentWatermark(BrandingWatermarkRequest request)
+    {
+        var enterprise = await GetCurrentEnterprise();
+        if (enterprise is null)
+            return BrandingEnterpriseUnavailable();
+
+        enterprise.ReportWatermarkEnabled = request.Enabled;
         await unitOfWork.Enterprises.Update(enterprise);
 
         return new GenericResponse(true, await GetCurrent());
@@ -193,7 +210,8 @@ public class BrandingService(
             file.EntityId == enterpriseId &&
             (file.Entity == LegacyBrandingEntity ||
              file.Entity == MainBrandingEntity ||
-             file.Entity == SidebarBrandingEntity));
+             file.Entity == SidebarBrandingEntity ||
+             file.Entity == WatermarkBrandingEntity));
 
         foreach (var file in files)
             await RemoveStoredFileBestEffort(file.Id);
@@ -317,10 +335,22 @@ public class BrandingService(
     }
 
     private static Guid? GetLogoFileId(Enterprise enterprise, BrandingLogoSlot slot) =>
-        slot == BrandingLogoSlot.Main ? enterprise.LogoMainFileId : enterprise.LogoSidebarFileId;
+        slot switch
+        {
+            BrandingLogoSlot.Main => enterprise.LogoMainFileId,
+            BrandingLogoSlot.Sidebar => enterprise.LogoSidebarFileId,
+            BrandingLogoSlot.Watermark => enterprise.LogoWatermarkFileId,
+            _ => throw new ArgumentOutOfRangeException(nameof(slot), slot, null)
+        };
 
     private static string GetBrandingEntity(BrandingLogoSlot slot) =>
-        slot == BrandingLogoSlot.Main ? MainBrandingEntity : SidebarBrandingEntity;
+        slot switch
+        {
+            BrandingLogoSlot.Main => MainBrandingEntity,
+            BrandingLogoSlot.Sidebar => SidebarBrandingEntity,
+            BrandingLogoSlot.Watermark => WatermarkBrandingEntity,
+            _ => throw new ArgumentOutOfRangeException(nameof(slot), slot, null)
+        };
 
     private static bool IsBrandingFile(
         Domain.Entities.File file,
@@ -338,10 +368,20 @@ public class BrandingService(
 
     private static void SetLogoFileId(Enterprise enterprise, BrandingLogoSlot slot, Guid? fileId)
     {
-        if (slot == BrandingLogoSlot.Main)
-            enterprise.LogoMainFileId = fileId;
-        else
-            enterprise.LogoSidebarFileId = fileId;
+        switch (slot)
+        {
+            case BrandingLogoSlot.Main:
+                enterprise.LogoMainFileId = fileId;
+                break;
+            case BrandingLogoSlot.Sidebar:
+                enterprise.LogoSidebarFileId = fileId;
+                break;
+            case BrandingLogoSlot.Watermark:
+                enterprise.LogoWatermarkFileId = fileId;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(slot), slot, null);
+        }
     }
 
     private static string GetVersion(Enterprise enterprise)

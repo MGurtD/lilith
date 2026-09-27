@@ -2,5 +2,5 @@ namespace Application.Contracts;
 
 public interface IBudgetPdfService
 {
-    byte[] Generate(BudgetReportResponse report);
+    Task<byte[]> Generate(BudgetReportResponse report, CancellationToken cancellationToken = default);
 }

@@ -61,6 +61,8 @@ namespace Application.Services.Production
             enterprise.PrimaryColor = existing.PrimaryColor;
             enterprise.LogoMainFileId = existing.LogoMainFileId;
             enterprise.LogoSidebarFileId = existing.LogoSidebarFileId;
+            enterprise.LogoWatermarkFileId = existing.LogoWatermarkFileId;
+            enterprise.ReportWatermarkEnabled = existing.ReportWatermarkEnabled;
 
             if (!enterprise.Disabled && unitOfWork.Enterprises.Find(e => !e.Disabled && e.Id != enterprise.Id).Any())
             {

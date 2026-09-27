@@ -1,9 +1,14 @@
 using Application.Contracts;
+using Infrastructure.Reports.Common;
 using QuestPDF.Fluent;
 
 namespace Infrastructure.Reports;
 
-public sealed class DeliveryNotePdfService : IDeliveryNotePdfService
+public sealed class DeliveryNotePdfService(IReportBrandingProvider brandingProvider) : IDeliveryNotePdfService
 {
-    public byte[] Generate(DeliveryNoteReportResponse report) => new DeliveryNoteDocument(report).GeneratePdf();
+    public async Task<byte[]> Generate(DeliveryNoteReportResponse report, CancellationToken cancellationToken = default)
+    {
+        var style = ReportStyle.From(await brandingProvider.GetCurrent(cancellationToken));
+        return new DeliveryNoteDocument(report, style).GeneratePdf();
+    }
 }

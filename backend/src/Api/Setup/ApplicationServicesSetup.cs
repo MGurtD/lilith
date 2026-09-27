@@ -32,11 +32,13 @@ public static class ApplicationServicesSetup
         QuestPDF.Settings.EnableDebugging = enableQuestPdfDebugging;
 
         services.AddSingleton<IQrCodeService, QrCodeService>();
-        services.AddSingleton<ISalesInvoicePdfService, SalesInvoicePdfService>();
-        services.AddSingleton<IBudgetPdfService, BudgetPdfService>();
-        services.AddSingleton<ISalesOrderPdfService, SalesOrderPdfService>();
-        services.AddSingleton<IDeliveryNotePdfService, DeliveryNotePdfService>();
-        services.AddSingleton<IPurchaseOrderPdfService, PurchaseOrderPdfService>();
+        services.AddMemoryCache();
+        services.AddScoped<IReportBrandingProvider, ReportBrandingProvider>();
+        services.AddScoped<ISalesInvoicePdfService, SalesInvoicePdfService>();
+        services.AddScoped<IBudgetPdfService, BudgetPdfService>();
+        services.AddScoped<ISalesOrderPdfService, SalesOrderPdfService>();
+        services.AddScoped<IDeliveryNotePdfService, DeliveryNotePdfService>();
+        services.AddScoped<IPurchaseOrderPdfService, PurchaseOrderPdfService>();
         services.AddScoped<IWorkOrderPdfService, WorkOrderPdfService>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();

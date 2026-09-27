@@ -14,5 +14,5 @@ public interface ISalesInvoiceReportService
 /// </summary>
 public interface ISalesInvoicePdfService
 {
-    byte[] Generate(InvoiceReportDto invoice);
+    Task<byte[]> Generate(InvoiceReportDto invoice, CancellationToken cancellationToken = default);
 }

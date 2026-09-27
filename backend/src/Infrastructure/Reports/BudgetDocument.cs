@@ -6,7 +6,7 @@ using QuestPDF.Infrastructure;
 
 namespace Infrastructure.Reports;
 
-public sealed class BudgetDocument(BudgetReportResponse report) : StandardReportDocument(CreateHeader(report), report.Site?.VatNumber ?? string.Empty)
+public sealed class BudgetDocument(BudgetReportResponse report, ReportStyle style) : StandardReportDocument(CreateHeader(report), report.Site?.VatNumber ?? string.Empty, style)
 {
     private static ReportHeaderData CreateHeader(BudgetReportResponse report)
     {
@@ -23,7 +23,7 @@ public sealed class BudgetDocument(BudgetReportResponse report) : StandardReport
         column.Item().PaddingTop(6).Table(table =>
         {
             table.ColumnsDefinition(c => { c.ConstantColumn(60); c.RelativeColumn(); c.ConstantColumn(75); c.ConstantColumn(75); });
-            table.Header(h => { h.Cell().Element(c => ReportTable.HeaderCell(c, report.TableQuantity)); h.Cell().Element(c => ReportTable.HeaderCell(c, report.TableConcept)); h.Cell().Element(c => ReportTable.HeaderCell(c, report.TableUnitPrice)); h.Cell().Element(c => ReportTable.HeaderCell(c, report.TableAmount)); });
+            table.Header(h => { h.Cell().Element(c => Table.HeaderCell(c, report.TableQuantity)); h.Cell().Element(c => Table.HeaderCell(c, report.TableConcept)); h.Cell().Element(c => Table.HeaderCell(c, report.TableUnitPrice)); h.Cell().Element(c => Table.HeaderCell(c, report.TableAmount)); });
             foreach (var detail in budget.Details)
             {
                 table.Cell().Element(c => ReportTable.BodyCell(c, ReportFormatters.Quantity(detail.Quantity, Culture), true));

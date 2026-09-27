@@ -1,6 +1,7 @@
 using System.Globalization;
 using Application.Contracts;
 using Infrastructure.Reports.Common;
+using Infrastructure.Reports.Common.Components;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -46,15 +47,12 @@ internal sealed class WorkOrderReportLabels
 
 internal sealed class WorkOrderDocument(
     WorkOrderReportResponse report,
-    WorkOrderReportLabels labels) : IDocument
+    WorkOrderReportLabels labels,
+    ReportStyle style) : IDocument
 {
     private readonly CultureInfo culture = ReportFormatters.Culture(report.LanguageCode);
 
-    public DocumentMetadata GetMetadata() => new()
-    {
-        Title = $"{labels.Title} {report.Order.Code}",
-        Author = report.Enterprise.Name
-    };
+    public DocumentMetadata GetMetadata() => style.Metadata($"{labels.Title} {report.Order.Code}");
 
     public void Compose(IDocumentContainer container)
     {
@@ -86,27 +84,27 @@ internal sealed class WorkOrderDocument(
         });
     }
 
-    private static void ConfigurePage(PageDescriptor page)
-    {
-        page.Size(PageSizes.A4);
-        page.Margin(20);
-        page.DefaultTextStyle(style => style.FontSize(8));
-    }
+    private void ConfigurePage(PageDescriptor page) =>
+        ReportPage.Configure(page, style, ReportPageOptions.Dense);
 
     private void ComposeHeader(IContainer container)
     {
-        container.Height(48).Row(row =>
+        container.Column(column =>
         {
-            row.ConstantItem(145).AlignMiddle().Image(ReportAssets.Logo).FitArea();
-            row.RelativeItem().AlignMiddle().AlignCenter().Text(labels.Title).FontSize(16).Bold();
+            column.Item().Height(48).Row(row =>
+            {
+                row.ConstantItem(145).AlignMiddle().Element(logo => ReportPage.Logo(logo, style));
+                row.RelativeItem().AlignMiddle().AlignCenter().Text(labels.Title).FontSize(16).Bold().FontColor(style.Primary);
+            });
+            column.Item().PaddingTop(4).Element(rule => ReportPage.BrandRule(rule, style));
         });
     }
 
     private void ComposeCompactHeader(IContainer container)
     {
-        container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingBottom(4).Row(row =>
+        container.BorderBottom(0.75f).BorderColor(style.Primary).PaddingBottom(4).Row(row =>
         {
-            row.ConstantItem(92).Height(28).AlignMiddle().Image(ReportAssets.Logo).FitArea();
+            row.ConstantItem(92).Height(28).AlignMiddle().Element(logo => ReportPage.Logo(logo, style));
             row.RelativeItem().PaddingLeft(8).AlignMiddle().Text($"{labels.Title} · {report.Order.Code}").FontSize(10).Bold();
         });
     }
@@ -291,20 +289,14 @@ internal sealed class WorkOrderDocument(
         });
     }
 
-    private void ComposeFooter(IContainer container)
-    {
-        container.BorderTop(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingTop(3).Row(row =>
-        {
-            row.RelativeItem().Text($"{labels.WorkOrder}: {report.Order.Code} · NIF: {report.Site.VatNumber}");
-            row.ConstantItem(75).AlignRight().Text(text =>
-            {
-                text.Span($"{labels.Page} ");
-                text.CurrentPageNumber();
-                text.Span(" / ");
-                text.TotalPages();
-            });
-        });
-    }
+    private void ComposeFooter(IContainer container) =>
+        ReportPage.Footer(
+            container,
+            style,
+            $"{labels.WorkOrder}: {report.Order.Code} · NIF: {report.Site.VatNumber}",
+            $"{labels.Page} ",
+            " / ",
+            75);
 
     private static void SummaryCell(IContainer container, string label, string value)
     {
@@ -315,8 +307,8 @@ internal sealed class WorkOrderDocument(
         });
     }
 
-    private static void HeaderCell(IContainer container, string value) =>
-        container.Background(ReportTheme.TableHeader)
+    private void HeaderCell(IContainer container, string value) =>
+        container.Background(style.TableHeaderFill)
             .Border(0.5f)
             .BorderColor(Colors.Grey.Medium)
             .PaddingVertical(3)
