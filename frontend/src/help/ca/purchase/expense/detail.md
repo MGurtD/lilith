@@ -23,17 +23,17 @@
 
 - «Tipus», «Data d'alta», «Data de pagament» i «Import» són obligatoris. Els tipus es mantenen a «Gestió de tipus de despesa».
 - La «Data de pagament» és la que compta a la llista i al «Tauler de despeses».
-- En crear una despesa recurrent, l'aplicació genera un pagament nou per cada període de la «Freqüència», amb el mateix tipus, import i descripció, fins a arribar a la «Data de fi». L'últim pagament pot caure en la data de fi o just després.
-- Posa com a «Dia de pagament» el mateix dia del mes que la «Data de pagament». Si són diferents, cada pagament generat es desplaça uns dies més que l'anterior.
-- Compte en modificar una despesa recurrent: en desar, s'esborra tota la sèrie, inclosa la despesa que edites, i només es tornen a generar els pagaments posteriors a la seva data de pagament. Revisa la llista després de desar; si has de canviar l'import o les dates de tota la sèrie, sovint és més net eliminar-la i crear-la de nou.
+- En crear una despesa recurrent, l'aplicació genera un pagament nou per cada període de la «Freqüència», amb el mateix tipus, import i descripció, fins a la «Data de fi», inclosa. Cap pagament generat no passa de la data de fi.
+- Els pagaments generats cauen sempre el «Dia de pagament» de cada mes. Si el mes té menys dies (per exemple, el dia 31 al febrer), es fa servir l'últim dia del mes.
+- En modificar una despesa recurrent, es desa la despesa que edites i es tornen a generar, amb les dades noves, els pagaments posteriors a la seva data de pagament. Els pagaments anteriors no canvien. Per canviar tota la sèrie, edita el primer pagament.
 - Eliminar una despesa recurrent, des de la llista, elimina tota la sèrie.
 
 ## Errors frequents
 
 - Si «Guardar» no fa res, revisa els missatges en vermell: falta el tipus, alguna data o l'import.
 - Si el desplegable «Tipus» surt buit, torna a «Gestió de despeses» i obre la despesa des de la llista, que és la que carrega els tipus.
-- Si has marcat «Recurrent», informa sempre la «Freqüència» i la «Data de fi»: el formulari no les exigeix, però sense elles els pagaments no es generen correctament.
-- Si després de modificar una despesa recurrent falten pagaments a la llista, és l'efecte de regenerar la sèrie: torna-la a crear amb les dates correctes.
+- Si has marcat «Recurrent», el formulari exigeix la «Freqüència», un «Dia de pagament» entre 1 i 31 i una «Data de fi» posterior a la «Data de pagament». Revisa els missatges en vermell d'aquests camps.
+- Si després de modificar una despesa recurrent els pagaments anteriors no han canviat, és el comportament esperat: només es regeneren els posteriors. Edita el primer pagament de la sèrie per canviar-los tots.
 
 ## Proces basic
 

@@ -23,17 +23,17 @@ This is the form of a general expense: a payment the company records outside pur
 
 - "Type", "Creation date", "Payment date" and "Amount" are required. Types are maintained in "Expense type management".
 - The "Payment date" is the one that counts in the list and on the "Expense dashboard".
-- When you create a recurring expense, the application generates a new payment for each "Frequency" period, with the same type, amount and description, until it reaches the "End date". The last payment may fall on the end date or just after it.
-- Set the "Payment day" to the same day of the month as the "Payment date". If they differ, each generated payment shifts a few more days than the previous one.
-- Be careful when editing a recurring expense: on saving, the whole series is deleted, including the expense you are editing, and only the payments after its payment date are generated again. Check the list after saving; if you need to change the amount or dates of the whole series, it is usually cleaner to delete it and create it again.
+- When you create a recurring expense, the application generates a new payment for each "Frequency" period, with the same type, amount and description, up to and including the "End date". No generated payment goes past the end date.
+- Generated payments always fall on the "Payment day" of each month. If the month is shorter (for example, day 31 in February), the last day of the month is used.
+- When you edit a recurring expense, the expense you edit is saved and the payments after its payment date are generated again with the new data. Earlier payments do not change. To change the whole series, edit its first payment.
 - Deleting a recurring expense from the list deletes the whole series.
 
 ## Common errors
 
 - If "Save" does nothing, check the red messages: the type, a date or the amount is missing.
 - If the "Type" dropdown is empty, go back to "Expense management" and open the expense from the list, which is what loads the types.
-- If you ticked "Recurring", always fill in the "Frequency" and the "End date": the form does not require them, but without them the payments are not generated correctly.
-- If payments are missing from the list after editing a recurring expense, that is the effect of regenerating the series: create it again with the correct dates.
+- If you ticked "Recurring", the form requires the "Frequency", a "Payment day" between 1 and 31, and an "End date" after the "Payment date". Check the red messages on those fields.
+- If earlier payments did not change after editing a recurring expense, that is expected: only the following ones are regenerated. Edit the first payment of the series to change them all.
 
 ## Basic process
 
