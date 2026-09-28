@@ -1,39 +1,47 @@
-# Sèrie de factura
+# Sèrie de facturació
 
 ## Per a que serveix aquesta pantalla
 
-Pantalla de gestió de l'entitat.
+És la fitxa d'una sèrie de factures de compra. Aquí defineixes el nom amb què la triaràs al camp «Sèrie» de la factura de compra, una descripció i si està activa. S'obre en crear una sèrie des de «Sèries de factures de compra» («Alta de sèrie de facturació») o en obrir-ne una d'existent.
 
 ## Accions disponibles
 
-- Guardar la configuració de la sèrie
-- Modificar el prefix o el comptador
-- Activar o desactivar la sèrie
+- Informar el «Nom de la sèrie» i la «Descripció».
+- Marcar o desmarcar «Desactivada».
+- Informar «Prefix», «Sufix», «Número següent» i «Longitud».
+- Desar amb «Guardar», a la capçalera de la pantalla.
 
 ## Flux habitual
 
-1. Revisa les dades generals de la fitxa.
-2. Gestiona les línies o els elements associats segons calgui.
-3. Guarda els canvis quan hagueu acabat.
-4. Si la fitxa té un cicle de vida, mou l'estat segons correspongui.
+1. Des de «Sèries de factures de compra», prem «+» o obre una sèrie existent.
+2. Escriu el «Nom de la sèrie», que és el que veuràs al desplegable de la factura.
+3. Escriu una «Descripció» que expliqui quan s'ha de fer servir.
+4. Deixa «Desactivada» sense marcar si la sèrie s'ha de poder triar.
+5. Prem «Guardar»: surt el missatge de confirmació i tornes a la llista.
 
 ## Aspectes importants
 
-- El comportament concret de cada acció depèn de l'estat del cicle de vida de l'entitat.
-- Les accions de creació, modificació i eliminació poden estar blocades segons l'estat.
-- Alguns camps són de només lectura quan l'entitat ja forma part d'un document comercial vinculat.
+- «Nom de la sèrie» i «Descripció» són obligatoris. El nom admet fins a 50 caràcters i ha de ser únic; la descripció, fins a 250.
+- «Prefix», «Sufix», «Número següent» i «Longitud» es desen amb la sèrie, però actualment no s'utilitzen per numerar les factures de compra. El número intern de la factura el dona el comptador «Factures de compra» de l'exercici (pantalla «Exercicis»).
+- El formulari exigeix igualment que «Número següent» sigui un enter positiu i que «Longitud» sigui un enter entre 1 i 20. «Prefix» i «Sufix» admeten fins a 10 caràcters.
+- Si marques «Desactivada», la sèrie ja no es podrà triar a les factures de compra, però les factures que ja la tenen assignada no canvien.
+- Si la sèrie es diu «Nacional», les factures de compra noves la proposaran per defecte. Canviar-li el nom fa que deixin de proposar-la.
 
 ## Errors frequents
 
-- Si no es mostren dades, comprova que el filtre estigui ben informat.
-- Si l'operació falla, revisa que totes les dades obligatòries estiguin informades.
+- Si «Guardar» no fa res, revisa els missatges en vermell sota els camps: normalment falta el nom o la descripció.
+- Si surt «L'entitat ja existeix», ja hi ha una altra sèrie amb el mateix nom.
+- Si la «Longitud» no s'accepta, ha de ser un número enter entre 1 i 20.
+- Si la sèrie no apareix a la factura de compra després de desar, comprova que «Desactivada» no estigui marcada.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Obrir fitxa] --> B[Revisar dades generals]
-    B --> C[Gestionar línies o elements]
-    C --> D[Guardar canvis]
-    D --> E[Moure estat si cal]
+    A[Obrir o crear la sèrie] --> B[Informar nom i descripció]
+    B --> C{Ha d'estar activa?}
+    C -->|Sí| D[Deixar Desactivada sense marcar]
+    C -->|No| E[Marcar Desactivada]
+    D --> F[Guardar]
+    E --> F
 ```

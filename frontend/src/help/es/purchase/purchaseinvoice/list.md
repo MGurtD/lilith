@@ -2,39 +2,51 @@
 
 ## Para qué sirve esta pantalla
 
-La pantalla de facturas de compra permite consultar las facturas recibidas de proveedores. Puedes filtrar por proveedor, estado, serie, fechas o período contable, y acceder al detalle para revisar el contenido, las fechas de vencimiento y su estado.
+Lista las facturas recibidas de los proveedores. Sirve para encontrarlas por fecha, proveedor, forma de pago, cuenta bancaria o vencimiento, crear una nueva a mano o a partir del PDF del proveedor, y abrir su ficha. La factura cierra el circuito de compra: `pedido de compra -> albarán de recepción -> factura de compra -> vencimientos`.
 
 ## Acciones disponibles
 
-- Filtrar por proveedor, estado, serie o período
-- Crear una factura manual
-- Abrir el detalle de una factura
-- Importar facturas
+- Filtrar por «Período», «Proveedor», «Método de pago», «Número de cuenta» y «Vencimiento», y aplicar el filtro con «Filtrar».
+- Limpiar los filtros con «Limpiar filtros»: el período vuelve al año en curso.
+- Crear una factura a mano con el botón «+» («Crear nuevo»).
+- Importar una factura desde el PDF del proveedor con el botón de PDF («Importar factura (PDF)»).
+- Abrir una factura haciendo clic en la fila.
+- Eliminar una factura con la cruz de la fila, solo mientras está en el estado inicial.
 
 ## Flujo habitual
 
-1. Selecciona el período o ejercicio que quieres consultar.
-2. Aplica los filtros que necesites para reducir el volumen de resultados.
-3. Revisa la lista y selecciona el elemento que quieras abrir.
-4. Accede al detalle para hacer las modificaciones o el seguimiento que corresponda.
+1. Abre «Facturas de compra». Se muestran las facturas del año en curso o los últimos filtros que aplicaste.
+2. Ajusta el «Período» y, si hace falta, el proveedor o el vencimiento, y pulsa «Filtrar».
+3. Revisa el total de la columna «Importe» al pie de la tabla.
+4. Para registrar una factura en PDF, pulsa el botón de PDF; si la tienes que introducir a mano, pulsa «+».
+5. Haz clic en una fila para revisarla o modificarla.
 
 ## Aspectos importantes
 
-- El comportamiento concreto de cada acción depende del estado del ciclo de vida de la entidad.
-- Las acciones de creación, modificación y eliminación pueden estar bloqueadas según el estado.
-- Algunos campos son de solo lectura cuando la entidad ya forma parte de un documento comercial vinculado.
+- El «Período» filtra por la fecha de factura y es obligatorio.
+- La columna «Vencimiento» muestra el último vencimiento de la factura, o la fecha de factura si no tiene. El filtro «Vencimiento» usa esta misma fecha.
+- El filtro «Número de cuenta» busca por el número de cuenta bancaria del proveedor.
+- La columna «Importe» es el total de la factura, y el pie de la tabla muestra su suma.
+- La pantalla recuerda los últimos filtros que has aplicado.
+- El botón de importar desde PDF solo aparece cuando el servicio de lectura de facturas está configurado.
+- La cruz de eliminar solo aparece en las facturas que están en el estado inicial del ciclo de vida de las facturas de compra. La eliminación es definitiva.
 
 ## Errores frecuentes
 
-- Si no se muestran facturas, comprueba que el filtro de período esté correctamente informado.
-- Si la importación falla, revisa que el formato del archivo sea el esperado.
+- Si aparece «Filtro inválido» con «Selecciona un período», elige una fecha de inicio y una de fin en el «Período».
+- Si no encuentras una factura que sabes que existe, revisa que su fecha de factura esté dentro del período y que no tengas filtros guardados de proveedor, forma de pago o vencimiento.
+- Si no ves el botón de importar PDF, el servicio de lectura no está configurado; debe revisarlo el administrador.
+- Si no puedes eliminar una factura, comprueba que siga en el estado inicial.
 
 ## Proceso básico
 
 ```mermaid
 flowchart TD
-    A[Seleccionar período] --> B[Aplicar filtros]
-    B --> C[Revisar lista]
-    C --> D[Abrir detalle]
-    D --> E[Modificar o hacer seguimiento]
+    A[Abrir Facturas de compra] --> B[Filtrar por período y otros criterios]
+    B --> C{Nueva factura?}
+    C -->|Con PDF| D[Importar factura PDF]
+    C -->|A mano| E[Crear factura]
+    C -->|No| F[Abrir la factura de la lista]
+    D --> F
+    E --> F
 ```

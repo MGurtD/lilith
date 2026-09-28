@@ -1,45 +1,58 @@
-# Fitxa de client
+# Client
 
 ## Per a que serveix aquesta pantalla
 
-La fitxa de client serveix per mantenir les dades comercials i fiscals del client, aixi com els seus contactes, adreces i un resum d'activitat comercial. Es la pantalla central per consolidar tota la informacio operativa del client.
+És la fitxa d'un client: hi mantens les dades comercials i fiscals, els contactes, les adreces i un resum de l'activitat de l'any. Aquestes dades es copien als pressupostos, comandes, albarans i factures, i les dades fiscals es validen abans de poder facturar.
+
+Quan s'entra des del botó «+» de «Clients», la pantalla surt amb el títol «Alta de client» i només mostra la pestanya de dades generals.
 
 ## Accions disponibles
 
-- Crear o editar les dades generals del client.
-- Guardar els canvis de la fitxa.
-- Afegir, modificar i eliminar contactes.
-- Afegir, modificar i eliminar adreces.
-- Consultar les estadistiques del client.
+- Omplir o modificar les dades generals a la pestanya «Clients» i desar-les amb «Guardar», a la capçalera.
+- Gestionar les persones de contacte a la pestanya «Contactes»: afegir-ne amb «+», editar-ne fent clic a la fila i eliminar-ne amb la paperera.
+- Gestionar les adreces a la pestanya «Adreces»: afegir, editar, marcar-ne una com a «Principal» o «Desactivada» i eliminar-ne.
+- Consultar l'activitat de l'any a la pestanya «Estadístiques».
 
 ## Flux habitual
 
-1. Revisa o completa les dades generals del client.
-2. Desa la fitxa si es tracta d'un client nou.
-3. Gestiona contactes i adreces a les pestanyes corresponents.
-4. Consulta les estadistiques per obtenir context comercial del client.
+1. Omple «Nom comercial», «Nom fiscal», «Tipus Client», «NIF/CIF» i «Número de compte».
+2. Tria l'«Idioma» dels documents del client i, si cal, la «Forma de pagament».
+3. Prem «Guardar».
+4. A «Adreces», prem «+», informa «Nom», «País», «Direcció», «Ciutat», «Província» i «Codi postal», i prem «Guardar».
+5. A «Contactes», afegeix les persones de contacte amb «Nom», «Cognoms», «Correu electrònic» i «Telèfon».
+6. Consulta «Estadístiques» per veure pressupostos i facturació de l'any.
 
 ## Aspectes importants
 
-- Quan s'entra amb un identificador nou, la pantalla funciona en mode alta fins que es desa el client.
-- Les pestanyes de contactes, adreces i estadistiques tenen sentit un cop el client ja existeix com a registre guardat.
-- Aquesta fitxa concentra informacio comercial, fiscal i de relacio, per tant convé revisar amb atencio els camps clau abans de desar.
-- Les estadistiques ofereixen context comercial, pero no substitueixen l'analisi detallada de tots els documents historics.
+- Camps obligatoris del formulari: «Nom comercial», «Nom fiscal», «Tipus Client», «NIF/CIF» i «Número de compte».
+- En desar, el sistema valida les dades fiscals: el «NIF/CIF» ha de ser un NIF o CIF espanyol vàlid i el client ha de tenir una adreça principal amb país, codi postal, ciutat i direcció informats. Si alguna condició falla, no es desa res.
+- No es poden tenir dos clients amb el mateix nom comercial.
+- Les pestanyes «Contactes», «Adreces» i «Estadístiques» només apareixen quan el client ja existeix.
+- L'«Idioma» del client és l'idioma en què es generen els seus documents: pressupost, comanda, albarà i factura.
+- La primera adreça activa que afegeixes queda marcada com a principal automàticament. Si cap adreça està marcada com a principal, s'utilitza la primera adreça activa.
+- En desar una adreça, el sistema en calcula les coordenades i la distància des del centre de l'empresa. Aquesta distància s'utilitza per proposar tarifes de transport als pressupostos.
+- A «Contactes», la casella «Predeterminat» marca el contacte principal del client.
+- «Estadístiques» mostra dades de l'any natural en curs: nombre de pressupostos, acceptats i rebutjats, nombre de factures, total facturat sense impostos i un gràfic de facturació mensual. «Rebutjats» compta tots els pressupostos sense data d'acceptació, també els que encara estan pendents.
+- Eliminar un contacte o una adreça és definitiu; per deixar de fer servir una adreça sense perdre-la, marca-la com a «Desactivada».
 
 ## Errors frequents
 
-- Si un client nou no es desa, revisa els camps obligatoris de la capcalera.
-- Si no apareixen contactes o adreces, comprova que el client s'hagi creat correctament.
-- Si les estadistiques no es carreguen, valida que existeixin dades comercials relacionades.
-- Si una dada sembla desactualitzada, torna a obrir la fitxa per refrescar el context.
+- Si apareix «CIF/NIF invàlid», revisa el format del «NIF/CIF».
+- Si apareix «El client no té direccions donades d'alta. Si us plau, crei una direcció.», el client no té cap adreça activa. En un client existent, afegeix-ne una a «Adreces» i torna a desar. En una alta nova, la pestanya «Adreces» encara no és visible; si l'alta queda bloquejada per aquest missatge, consulta l'administrador.
+- Si apareix «La direcció fiscal principal del client és incompleta...», completa país, codi postal, ciutat i direcció de l'adreça principal.
+- Si apareix «El client no és vàlid per a crear una factura...», revisa «Nom fiscal», «Número de compte» i «NIF/CIF».
+- Si l'alta falla perquè el client ja existeix, ja hi ha un client amb aquest nom comercial: cerca'l a «Clients».
+- Si una adreça no es desa, revisa els camps obligatoris: nom, país, direcció, ciutat, província i codi postal.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Obrir fitxa de client] --> B[Editar dades generals]
-    B --> C[Guardar client]
-    C --> D[Gestionar contactes]
-    C --> E[Gestionar adreces]
-    C --> F[Consultar estadistiques]
+    A[Obrir la fitxa del client] --> B[Omplir dades generals]
+    B --> C[Guardar]
+    C --> D{Validació fiscal correcta?}
+    D -->|No| E[Corregir NIF o adreça principal]
+    E --> C
+    D -->|Sí| F[Gestionar adreces i contactes]
+    F --> G[Consultar estadístiques]
 ```

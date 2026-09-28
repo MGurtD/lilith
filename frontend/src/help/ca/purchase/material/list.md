@@ -1,41 +1,48 @@
-# Materials
+# Referències de compra
 
 ## Per a que serveix aquesta pantalla
 
-La pantalla de materials permet consultar el catàleg de materials utilitzats en el procés productiu. Des d'aquí pots filtrar per tipus, cercar per codi o descripció, i accedir al detall de cada material per gestionar les seves dades logístiques.
+És el catàleg de les referències que es compren: materials, eines i serveis. Aquestes referències són les que es trien a les línies de les comandes de compra i dels albarans de recepció. Des d'aquí les cerques per categoria, obres la fitxa de cadascuna, en crees de noves o elimines les que no s'han fet servir.
 
 ## Accions disponibles
 
-- Filtrar per tipus de material
-- Cercar per codi o descripció
-- Crear un material nou
-- Obrir el detall d'un material existent
-- Eliminar un material
+- Triar la «Categoria» (Material, Eina o Servei) per veure'n les referències.
+- Cercar per «Codi» i, en la categoria Material, filtrar per «Tipus» de material.
+- Netejar el codi i el tipus amb «Netejar».
+- Crear una referència de la categoria seleccionada amb el botó «+» («Crear nou»).
+- Obrir la fitxa d'una referència fent clic a la fila.
+- Eliminar una referència amb la «X» de la fila, després de confirmar-ho.
 
 ## Flux habitual
 
-1. Selecciona el periode o exercici que vols consultar.
-2. Aplica els filtres que necessitis per reduir el volum de resultats.
-3. Revisa la llista i selecciona l'element que vulguis obrir.
-4. Accedeix al detall per fer les modificacions o el seguiment que calgui.
+1. Obre la pantalla «Referències de compra».
+2. Tria la «Categoria» que vols consultar.
+3. Escriu part del codi a «Codi» o, si són materials, tria un «Tipus».
+4. Fes clic a la fila per obrir la fitxa i revisar-la o modificar-la.
+5. Si la referència no existeix, prem «+» i omple la fitxa nova.
 
 ## Aspectes importants
 
-- El comportament concret de cada acció depèn de l'estat del cicle de vida de l'entitat.
-- Les accions de creació, modificació i eliminació poden estar blocades segons l'estat.
-- Alguns camps són de només lectura quan l'entitat ja forma part d'un document comercial vinculat.
+- Sense una categoria triada, la llista surt buida.
+- El filtre «Tipus» només s'activa per a la categoria Material.
+- Les columnes canvien segons la categoria: els materials mostren «Tipus», «Format» i «Densitat (mm)»; els serveis, «Preu» i «Transport»; les eines, l'«Àrea».
+- El botó «+» crea una referència de la categoria que tens seleccionada. Tria-la abans de crear.
+- En tornar a la pantalla es recuperen els últims filtres que havies fet servir.
+- L'eliminació és definitiva. Abans d'eliminar, l'aplicació comprova si la referència té dependències, per exemple albarans de recepció, moviments de magatzem, una ruta de fabricació o si forma part d'una llista de materials. Si en té, no s'elimina.
 
 ## Errors frequents
 
-- Si no es mostren materials, comprova que el filtre de tipus no estigui buit o que hi hagi materials creats.
-- Si no es pot eliminar un material, revisa si està utilitzat en alguna comanda o recepta.
+- Si la llista surt buida, comprova que hagis triat una «Categoria» i que el filtre «Codi» no sigui massa restrictiu.
+- Si no pots triar un «Tipus», canvia la categoria a Material.
+- Si en eliminar surt «Referència amb dependències:», llegeix els motius que s'hi detallen: la referència ja s'ha fet servir i s'ha de conservar.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Seleccionar periode] --> B[Aplicar filtres]
-    B --> C[Revisar llista]
-    C --> D[Obrir detall]
-    D --> E[Modificar o fer seguiment]
+    A[Obrir Referències de compra] --> B[Triar la categoria]
+    B --> C[Filtrar per codi o tipus]
+    C --> D{Existeix?}
+    D -->|Sí| E[Obrir la fitxa]
+    D -->|No| F[Crear amb el botó +]
 ```

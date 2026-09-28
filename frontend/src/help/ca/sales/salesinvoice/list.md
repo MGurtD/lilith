@@ -2,47 +2,52 @@
 
 ## Per a que serveix aquesta pantalla
 
-La pantalla de factures de venda permet consultar les factures emeses en un periode, filtrar-les per client i crear factures noves. Es la llista operativa de facturacio, diferent de la pantalla de comptabilitzacio massiva per periode.
+És la llista de les factures de venda. Hi cerques les factures d'un període, les filtres per client, n'obres una o en crees una de nova. La factura és l'últim document del circuit de venda: `pressupost -> comanda -> albarà -> factura`. Per marcar moltes factures com a gestionades alhora, fes servir «Comptabilització de factures de venda».
 
 ## Accions disponibles
 
-- Seleccionar un periode de treball.
-- Filtrar per client.
-- Netejar els filtres actius.
-- Crear una factura nova.
-- Obrir una factura existent.
-- Eliminar una factura des de la llista quan el sistema ho permet.
+- Filtrar per «Període» i «Client», i aplicar el filtre amb «Filtrar».
+- Restablir els filtres amb «Netejar»: treu el client i torna el període a l'any en curs. Després prem «Filtrar» per recarregar la llista.
+- Crear una factura amb «Nou»: s'obre el diàleg «Crear factura», on tries el «Client», l'«Exercici» i la «Data».
+- Obrir una factura fent clic a la fila.
+- Eliminar una factura amb la icona de la paperera («Eliminar»), després de confirmar-ho.
+
+La taula mostra el «Número», la «Data», el «Client», l'«Estat», el «Venciment» (l'últim venciment de la factura) i l'«Import» total.
 
 ## Flux habitual
 
-1. Selecciona el periode que vols revisar.
-2. Si cal, filtra per client.
-3. Prem el boto de filtre per carregar els resultats.
-4. Obre una factura existent o crea'n una de nova.
-5. Si crees una factura, informa primer les dades basiques al dialeg inicial i continua des de la fitxa.
+1. Obre «Factures de venda». Es carreguen les factures de l'any en curs, o els últims filtres que vas fer servir.
+2. Ajusta el període o el client i prem «Filtrar».
+3. Per facturar entregues, prem «Nou», tria el client, revisa l'exercici i la data de factura i confirma.
+4. En crear-la s'obre la fitxa de la factura, on hi afegeixes els albarans entregats o línies lliures.
+5. Per revisar o descarregar una factura existent, fes clic a la seva fila.
 
 ## Aspectes importants
 
-- Aquesta pantalla es fa servir per a la gestio habitual de factures. La pantalla `Comptabilitzacio de factures de venda` esta orientada a canvis massius d'estat per periode.
-- La creacio de la factura passa per un dialeg inicial on s'informa client, exercici i data.
-- La pantalla conserva els filtres de l'usuari mentre canvies de vista, fet que ajuda a reprendre la feina en el mateix punt.
-- Despres de netejar filtres, pot quedar sense periode seleccionat fins que en tornis a indicar un.
+- El període filtra per la data de la factura. La pantalla recorda el període i el client quan en surts.
+- La «Data» del diàleg és la data de la factura. L'exercici proposat és el que té com a nom l'any en curs, i el número de factura el posa el sistema amb el comptador d'aquest exercici.
+- En crear la factura es copien les dades fiscals del client (nom, NIF, número de compte i adreça principal) i la seva forma de pagament. Canvis posteriors a la fitxa del client no modifiquen la factura.
+- La factura nova neix a l'estat inicial del seu cicle de vida («Cicles de vida») i amb l'estat Verifactu inicial, pendent d'enviar.
+- El client ha de tenir el nom fiscal, el NIF i el número de compte informats i almenys una adreça activa, i la seu per defecte de l'empresa ha de tenir les dades de facturació completes.
+- La paperera només surt a les factures que són a l'estat inicial del cicle de vida. Eliminar una factura l'esborra definitivament i allibera els seus albarans, que es poden tornar a facturar.
 
 ## Errors frequents
 
-- Si no apareixen factures, comprova el periode seleccionat.
-- Si no trobes una factura concreta, revisa el filtre de client.
-- Si la creacio falla, valida les dades del dialeg inicial i revisa el missatge retornat pel sistema.
-- Si no pots eliminar un registre, pot estar bloquejat pel seu estat o per processos ja executats.
+- Si no surt cap factura, comprova que el període tingui data d'inici i de fi i que el filtre de client sigui el correcte.
+- Si en crear la factura surt «El client no és vàlid per a crear una factura», completa el nom fiscal, el NIF i el número de compte del client a «Clients».
+- Si surt «El client no té direccions donades d'alta», afegeix una adreça al client.
+- Si la creació falla amb un error del servidor, comprova que el client tingui una forma de pagament assignada.
+- Si surt que la seu no és vàlida, revisa les dades de facturació de la seu per defecte de l'empresa.
+- Si no veus la paperera en una factura, és que ja no és a l'estat inicial.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Seleccionar periode] --> B[Aplicar filtre]
-    B --> C[Revisar factures]
-    C --> D[Obrir factura]
-    C --> E[Crear factura nova]
-    E --> F[Informar dades inicials]
-    F --> D
+    A[Obrir Factures de venda] --> B[Filtrar per període o client]
+    B --> C{Factura nova?}
+    C -->|Sí| D[Nou: client, exercici i data]
+    D --> E[Fitxa de la factura]
+    C -->|No| F[Obrir la factura de la llista]
+    F --> E
 ```
