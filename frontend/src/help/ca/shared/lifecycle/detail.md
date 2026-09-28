@@ -31,12 +31,13 @@ Configura un cicle de vida: els estats per on passa un tipus de document, les tr
 - **«Color»**: és el color amb què l'estat surt a les llistes de documents. Tria'l pel significat: «En curs», «Cal actuar», «Fet», «Problema», «Tancat», «Neutre» o «Sense color».
 - **Etiquetes amb significat especial** al cicle de vida de les OF: les OF en estats amb l'etiqueta `Available` són les que es poden planificar i compten per a la càrrega de les màquines (si cap estat la té, només es planifiquen les OF en l'estat inicial); `Plant` fa que les fases de l'OF surtin a les màquines de planta per carregar-les; `ExternalService` fa que les fases externes de l'OF surtin a «Generació de comandes de compra». El nom de l'etiqueta ha de coincidir exactament.
 - Les etiquetes són de cada cicle de vida i no es poden repetir dins del mateix cicle de vida. El selector «Etiquetes» del diàleg d'estat només apareix quan el cicle de vida té etiquetes.
-- **Eliminacions**: esborrar estats, transicions i etiquetes és definitiu i no demana confirmació. Eliminar una etiqueta la treu de tots els estats que la tenien. No eliminis mai un estat que tingui documents: la base de dades pot rebutjar l'eliminació o eliminar també els documents que hi són.
+- **Eliminacions**: esborrar estats, transicions i etiquetes és definitiu i demana confirmació. Eliminar una etiqueta la treu de tots els estats que la tenien. No es pot eliminar un estat que facin servir documents, transicions o cicles de vida (com a estat inicial o final).
 - En un cicle de vida nou, primer desa les dades generals amb «Guardar»: fins llavors no es poden afegir estats ni transicions.
 
 ## Errors frequents
 
 - Si no pots eliminar un estat i surt «L'estat ... forma part d'una transició», elimina primer les transicions on apareix. Pensa-hi bé: potser el que convé és marcar-lo com a «Deshabilitat».
+- Si surt «No s'ha pogut eliminar l'estat ...», algun document el fa servir. Marca'l com a «Deshabilitat» en lloc d'eliminar-lo.
 - Si en desar una transició surt «Els estats d'origen i destí han de ser diferents», revisa l'«Origen» i el «Destí».
 - Si un usuari no troba un estat al desplegable d'un document, comprova que hi hagi una transició des de l'estat actual del document i que l'estat de destí no estigui «Deshabilitat».
 - Si en desar una etiqueta surt que ja existeix una etiqueta amb aquest nom, tria'n un altre o edita l'existent.

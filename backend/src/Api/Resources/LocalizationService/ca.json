@@ -371,6 +371,7 @@
     "ApiKey.NotFoundOrDisabled": "Clau API no vàlida o desactivada",
     "ApiKey.Expired": "Clau API caducada",
     "TaxInUse": "No es pot eliminar l'impost perquè està en ús a referències o factures",
+    "StatusInUse": "No es pot eliminar l'estat {0} perquè hi ha documents, transicions o cicles de vida que el fan servir",
     "SalesOrderNotFound": "No s'ha trobat la comanda de venda",
     "SalesOrderAlreadyInThisNote": "La comanda ja està afegida a aquest albarà",
     "SalesOrderAlreadyAssigned": "La comanda ja està assignada a un altre albarà",

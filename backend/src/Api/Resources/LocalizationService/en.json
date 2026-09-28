@@ -371,6 +371,7 @@
     "ApiKey.NotFoundOrDisabled": "API key not found or disabled",
     "ApiKey.Expired": "API key has expired",
     "TaxInUse": "Cannot delete the tax because it is in use by references or invoices",
+    "StatusInUse": "Cannot delete the status {0} because documents, transitions or lifecycles use it",
     "SalesOrderNotFound": "Sales order not found",
     "SalesOrderAlreadyInThisNote": "The order is already added to this delivery note",
     "SalesOrderAlreadyAssigned": "The order is already assigned to another delivery note",

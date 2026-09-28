@@ -27,7 +27,7 @@ Llista els cicles de vida de l'aplicació. Cada cicle de vida defineix els estat
 
 ## Errors frequents
 
-- Si en eliminar surt «El cicle de vida ... té dependencies», el cicle de vida encara té estats o transicions. Normalment vol dir que és en ús: no l'eliminis.
+- Si en eliminar surt «El cicle de vida ... té dependències», el cicle de vida encara té estats o transicions. Normalment vol dir que és en ús: no l'eliminis.
 - Si en crear un cicle de vida surt que l'entitat ja existeix, ja n'hi ha un amb el mateix nom.
 - Si en crear un document surt que el cicle de vida no té un estat inicial, obre aquell cicle de vida i informa l'«Estat inicial».
 
