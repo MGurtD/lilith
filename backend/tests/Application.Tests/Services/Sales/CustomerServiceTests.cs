@@ -78,7 +78,40 @@ public class CustomerServiceTests
         Assert.Contains(customer, context.AddedCustomers);
     }
 
+    [Fact]
+    public async Task CreateCustomer_succeeds_without_addresses()
+    {
+        // The UI can only add addresses once the customer exists (#159).
+        var context = BuildSut();
+        var customer = CustomerBuilder.Valid();
+        customer.Address.Clear();
+
+        var response = await context.Sut.CreateCustomer(customer);
+
+        Assert.True(response.Result);
+        Assert.Contains(customer, context.AddedCustomers);
+    }
+
     // -------- Update --------
+
+    [Fact]
+    public async Task UpdateCustomer_blocks_when_customer_has_no_addresses()
+    {
+        var existing = CustomerBuilder.Valid();
+        var context = BuildSut(existing);
+
+        var modified = CustomerBuilder.Valid();
+        modified.Id = existing.Id;
+        modified.Address.Clear();
+
+        var response = await context.Sut.UpdateCustomer(modified);
+
+        Assert.False(response.Result);
+        Assert.Equal(
+            "El client no té direccions donades d'alta. Si us plau, crei una direcció.",
+            Assert.Single(response.Errors));
+        Assert.Empty(context.UpdatedCustomers);
+    }
 
     [Fact]
     public async Task UpdateCustomer_blocks_when_vatNumber_is_invalid()

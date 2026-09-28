@@ -38,7 +38,10 @@ public class CustomerService(
                 localizationService.GetLocalizedString("CustomerAlreadyExists"));
         }
 
-        var fiscalValidation = ValidateCustomerFiscalData(customer);
+        // A new customer cannot have addresses yet: they are added once the
+        // customer exists. Delivery notes and invoices still require a main
+        // fiscal address, and so does every later update.
+        var fiscalValidation = ValidateCustomerFiscalData(customer, requireFiscalAddress: false);
         if (fiscalValidation != null) return fiscalValidation;
 
         await unitOfWork.Customers.Add(customer);
@@ -47,9 +50,10 @@ public class CustomerService(
 
     /// <summary>
     /// Updates a Customer, blocking on fiscal-data validation issues.
-    /// If the customer's CIF/NIF is malformed or its main fiscal address is
-    /// incomplete, the call returns a failed <see cref="GenericResponse"/> and
-    /// does not persist — same behaviour as <see cref="CreateCustomer"/>.
+    /// If the customer's CIF/NIF is malformed, or it has no main fiscal address
+    /// or that address is incomplete, the call returns a failed
+    /// <see cref="GenericResponse"/> and does not persist. Unlike
+    /// <see cref="CreateCustomer"/>, the address is mandatory here.
     /// Issue #69 follow-up.
     /// </summary>
     public async Task<GenericResponse> UpdateCustomer(Customer customer)
@@ -192,7 +196,11 @@ public class CustomerService(
         return new GenericResponse(true, address);
     }
 
-    private GenericResponse? ValidateCustomerFiscalData(Customer customer)
+    /// <param name="requireFiscalAddress">
+    /// When false, a customer without any address passes, but an address that
+    /// is present must still be a complete fiscal address.
+    /// </param>
+    private GenericResponse? ValidateCustomerFiscalData(Customer customer, bool requireFiscalAddress = true)
     {
         if (!customer.IsValidForSales())
         {
@@ -209,8 +217,9 @@ public class CustomerService(
         var mainAddress = customer.MainAddress();
         if (mainAddress == null)
         {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("CustomerNoAddresses"));
+            return requireFiscalAddress
+                ? new GenericResponse(false, localizationService.GetLocalizedString("CustomerNoAddresses"))
+                : null;
         }
 
         if (string.IsNullOrWhiteSpace(mainAddress.Country)

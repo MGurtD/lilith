@@ -25,7 +25,8 @@ When you arrive from the "+" button in "Customers", the screen shows the title "
 ## Important notes
 
 - Required form fields: "Commercial name", "Legal name", "Customer type", "VAT number" and "Account number".
-- On save, the system validates the tax data: the "VAT number" must be a valid Spanish NIF or CIF, and the customer must have a main address with country, postal code, city and address filled in. If any check fails, nothing is saved.
+- On save, the system validates the tax data: the "VAT number" must be a valid Spanish NIF or CIF, and the tax name and account number must be filled in. A new customer has no addresses yet; from then on, every save requires a main address with country, postal code, city and address filled in. If any check fails, nothing is saved.
+- A customer without a main address cannot be used on delivery notes or invoices: add it in "Addresses" right after creating the customer.
 - Two customers cannot share the same commercial name.
 - The "Contacts", "Addresses" and "Statistics" tabs only appear once the customer exists.
 - The customer's "Language" is the language its documents are generated in: quotation, sales order, delivery note and invoice.
@@ -38,7 +39,7 @@ When you arrive from the "+" button in "Customers", the screen shows the title "
 ## Common errors
 
 - If "Invalid CIF/NIF" appears, check the format of the "VAT number".
-- If "Customer has no addresses registered. Please create an address." appears, the customer has no active address. For an existing customer, add one in "Addresses" and save again. For a new customer, the "Addresses" tab is not visible yet; if creation is blocked by this message, contact your administrator.
+- If "Customer has no addresses registered. Please create an address." appears, the customer has no active address. Add one in "Addresses" and save again.
 - If "The main fiscal address of the customer is incomplete..." appears, fill in the country, postal code, city and address of the main address.
 - If "Customer is not valid for creating an invoice..." appears, check "Legal name", "Account number" and "VAT number".
 - If creation fails because the customer already exists, there is already a customer with that commercial name: look it up in "Customers".

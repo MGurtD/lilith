@@ -25,7 +25,8 @@ Quan s'entra des del botó «+» de «Clients», la pantalla surt amb el títol 
 ## Aspectes importants
 
 - Camps obligatoris del formulari: «Nom comercial», «Nom fiscal», «Tipus Client», «NIF/CIF» i «Número de compte».
-- En desar, el sistema valida les dades fiscals: el «NIF/CIF» ha de ser un NIF o CIF espanyol vàlid i el client ha de tenir una adreça principal amb país, codi postal, ciutat i direcció informats. Si alguna condició falla, no es desa res.
+- En desar, el sistema valida les dades fiscals: el «NIF/CIF» ha de ser un NIF o CIF espanyol vàlid, i el nom fiscal i el número de compte han d'estar informats. En l'alta el client encara no té adreces; a partir de llavors, cada vegada que desis el client ha de tenir una adreça principal amb país, codi postal, ciutat i direcció informats. Si alguna condició falla, no es desa res.
+- Un client sense adreça principal no es pot fer servir en albarans ni en factures: afegeix-la a «Adreces» just després de l'alta.
 - No es poden tenir dos clients amb el mateix nom comercial.
 - Les pestanyes «Contactes», «Adreces» i «Estadístiques» només apareixen quan el client ja existeix.
 - L'«Idioma» del client és l'idioma en què es generen els seus documents: pressupost, comanda, albarà i factura.
@@ -38,7 +39,7 @@ Quan s'entra des del botó «+» de «Clients», la pantalla surt amb el títol 
 ## Errors frequents
 
 - Si apareix «CIF/NIF invàlid», revisa el format del «NIF/CIF».
-- Si apareix «El client no té direccions donades d'alta. Si us plau, crei una direcció.», el client no té cap adreça activa. En un client existent, afegeix-ne una a «Adreces» i torna a desar. En una alta nova, la pestanya «Adreces» encara no és visible; si l'alta queda bloquejada per aquest missatge, consulta l'administrador.
+- Si apareix «El client no té direccions donades d'alta. Si us plau, crei una direcció.», el client no té cap adreça activa. Afegeix-ne una a «Adreces» i torna a desar.
 - Si apareix «La direcció fiscal principal del client és incompleta...», completa país, codi postal, ciutat i direcció de l'adreça principal.
 - Si apareix «El client no és vàlid per a crear una factura...», revisa «Nom fiscal», «Número de compte» i «NIF/CIF».
 - Si l'alta falla perquè el client ja existeix, ja hi ha un client amb aquest nom comercial: cerca'l a «Clients».
