@@ -336,7 +336,7 @@ public class InvoiceIngestionServiceTests
         uow.Suppliers.Returns(supplierRepository);
         uow.PurchaseInvoices.Returns(invoiceRepository);
         uow.Receipts.Returns(receiptRepository);
-        uow.Taxes.Returns(new InMemoryRepository<Tax>([Vat21, Vat10, Exempt, ReverseCharge]));
+        uow.Taxes.Returns(new InMemoryTaxRepository([Vat21, Vat10, Exempt, ReverseCharge]));
 
         var settings = Options.Create(new AppSettings
         {

@@ -30,7 +30,7 @@ namespace Application.Contracts
         IRepository<Domain.Entities.File, Guid> Files { get; }
         IRepository<Parameter, Guid> Parameters { get; }
         IRepository<Exercise, Guid> Exercices { get; }
-        IRepository<Tax, Guid> Taxes { get; }
+        ITaxRepository Taxes { get; }
         IRepository<PaymentMethod, Guid> PaymentMethods { get; }
         ILifecycleRepository Lifecycles { get; }
         ILifecycleTagRepository LifecycleTags { get; }

@@ -39,7 +39,7 @@ namespace Infrastructure.Persistance
         public IRepository<Domain.Entities.File, Guid> Files { get; private set; } = new Repository<Domain.Entities.File, Guid>(context);
         public IRepository<Parameter, Guid> Parameters { get; private set; } = new Repository<Parameter, Guid>(context);
         public IRepository<Exercise, Guid> Exercices { get; private set; } = new Repository<Exercise, Guid>(context);
-        public IRepository<Tax, Guid> Taxes { get; private set; } = new Repository<Tax, Guid>(context);
+        public ITaxRepository Taxes { get; private set; } = new TaxRepository(context);
         public IRepository<PaymentMethod, Guid> PaymentMethods { get; private set; } = new Repository<PaymentMethod, Guid>(context);
         public ILifecycleRepository Lifecycles { get; private set; } = new LifecycleRepository(context);
         public ILifecycleTagRepository LifecycleTags { get; private set; } = new LifecycleTagRepository(context);

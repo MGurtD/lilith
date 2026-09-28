@@ -8,7 +8,7 @@ namespace Application.Tests.TestSupport;
 /// Generic in-memory IRepository implementation for tests that genuinely
 /// need to assert state (items in the store, add/update tracking, queries).
 /// </summary>
-public sealed class InMemoryRepository<TEntity>(IEnumerable<TEntity>? seed = null)
+public class InMemoryRepository<TEntity>(IEnumerable<TEntity>? seed = null)
     : IRepository<TEntity, Guid>
     where TEntity : Entity
 {
