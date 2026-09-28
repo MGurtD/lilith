@@ -1,44 +1,26 @@
-# Modul d'ajuda contextual
+# Contextual help module
 
-## Objectiu
+## Purpose
 
-Aquest modul implementa una ajuda contextual global al frontend de Lilith sense dependencies del backend. La resolucio del contingut es fa a partir de la ruta actual i del camp `route.meta.helpKey`.
+Lilith ships end-user contextual help for every screen. It is frontend-only: no backend or analytics are involved. The content is versioned Markdown resolved from the current route's `route.meta.helpKey`.
 
-## Abast actual
+Users open it with the `?` button in the page header or with `Alt + H`.
 
-- Implementat nomes al frontend.
-- Contingut inicial en catala a `src/help/ca`.
-- Cobertura completa del modul `sales` per a les pantalles operatives principals.
-- El `Drawer` global esta muntat a l'aplicacio, pero el boto del header s'ha retirat temporalment.
-- L'obertura continua disponible via shortcut global `Alt + H`.
-- Si el drawer esta obert i l'usuari navega, l'ajuda es resincronitza amb la nova ruta.
-- El drawer nomes es munta dins del bloc autenticat.
+## Current scope
 
-### Rutes de `sales` actualment cobertes
+- Every authenticated screen route declares a `meta.helpKey`, and each key has a Markdown file in `ca`, `es` and `en`.
+- Routes without their own help, on purpose:
+  - `Login` is public, and the drawer is only mounted for authenticated users.
+  - `Home` (`/`) and `MainPlant` (`/plant`) are a landing page and a redirect.
+  - `CustomerType` (`/customer-types/:id`) is explained inside `sales/customers/list`, because customer types are managed from the second tab of the customers screen.
+- Supplier types follow the same pattern: they are edited in a dialog inside the suppliers screen and are explained in `purchase/supplier/list`.
+- `pnpm run help:check` enforces coverage, locale parity, headings and Mermaid syntax. Run it after any change to help files or to a route's `helpKey`.
 
-- `Customers` -> `sales/customers/list`
-- `Customer` -> `sales/customers/detail`
-- `Budgets` -> `sales/budget/list`
-- `Budget` -> `sales/budget/detail`
-- `SalesOrders` -> `sales/salesorder/list`
-- `SalesOrder` -> `sales/salesorder/detail`
-- `DeliveryNotes` -> `sales/deliverynote/list`
-- `DeliveryNote` -> `sales/deliverynote/detail`
-- `SalesInvoices` -> `sales/salesinvoice/list`
-- `SalesInvoice` -> `sales/salesinvoice/detail`
-- `SalesInvoicesByDates` -> `sales/salesinvoice/by-period`
-- `References` -> `sales/reference/list`
-- `Reference` -> `sales/reference/detail`
+## Main pieces
 
-### Cas especial
+### 1. Route metadata
 
-- `CustomerType` no te `helpKey` propi. La seva explicacio funcional viu dins l'ajuda de `Customers`, perque la gestio real d'aquest cataleg es fa des de la segona pestanya d'aquella pantalla.
-
-## Peces principals
-
-### 1. Metadades de ruta
-
-Tipatge ampliat a `src/types/vue-router.d.ts`:
+The typing is extended in `src/types/vue-router.d.ts`:
 
 ```ts
 interface RouteMeta {
@@ -48,197 +30,100 @@ interface RouteMeta {
 }
 ```
 
-Cada pantalla amb ajuda ha d'afegir un `meta.helpKey` a la seva definicio de ruta.
+Each screen declares its key in its module's `routes.ts`. Several routes may share a key only when they render the same screen with the same behaviour.
 
-### 2. Store global
+### 2. Store
 
-Fitxer: `src/store/help.ts`
+`src/store/help.ts` controls the drawer state, loads the Markdown for the route and locale, and handles missing or failing content. Only the latest request wins when loads overlap.
 
-Responsabilitats:
+Resolution order for a key:
 
-- Controlar l'estat del drawer.
-- Carregar el Markdown segons ruta i idioma.
-- Fer fallback a `ca` si no existeix el fitxer de l'idioma actual.
-- Gestionar missatges d'error o absencia de documentacio.
-- Evitar sobrescriptures d'estat si hi ha carregues consecutives.
+1. `src/help/<current locale>/<helpKey>.md`
+2. `src/help/ca/<helpKey>.md` (fallback to the source culture)
+3. The "no help available" message
 
-Estat principal:
+A route without `helpKey` shows the "this screen has no help key" message.
 
-- `visible`
-- `loading`
-- `key`
-- `markdown`
-- `error`
+### 3. Drawer and entry points
 
-Accions principals:
+- `src/components/help/HelpDrawer.vue` is rendered once in `src/App.vue`, only for an authenticated user, so help never stays visible over the login screen after a logout.
+- `src/components/TheHeader.vue` and `src/modules/plant/components/PlantHeader.vue` show the help button only when the route declares a `helpKey`. A declared key without a file therefore shows a button that leads to "not available"; `help:check` prevents that.
+- `Alt + H` toggles the drawer from `src/App.vue`. The shortcut is ignored while the focus is in an `input`, `textarea`, `select` or editable content.
+- If the drawer is open and the route changes, it reloads the help for the new route.
 
-- `openForRoute(helpKey?: string)`
-- `toggleForRoute(helpKey?: string)`
-- `close()`
-- `reset()`
+### 4. Markdown and Mermaid rendering
 
-### 3. Drawer global
+`src/components/help/MarkdownRenderer.vue` uses `markdown-it` to parse, `DOMPurify` to sanitize the generated HTML, and `mermaid` to render diagrams on the client.
 
-Fitxer: `src/components/help/HelpDrawer.vue`
+1. The Markdown is parsed.
+2. `mermaid` code blocks are replaced by placeholders.
+3. The HTML is sanitized with `DOMPurify`.
+4. Mermaid renders each SVG into its placeholder.
 
-Es renderitza una sola vegada a `src/App.vue` i mostra:
+The Mermaid SVG is not sanitized again: Mermaid renders some labels as HTML inside `foreignObject`, and sanitizing removed them. Security relies on Mermaid's `securityLevel: "strict"` and on the help files being reviewed, versioned repository content.
 
-- estat de carrega
-- error amable
-- contingut Markdown renderitzat
-
-El component es munta nomes quan hi ha usuari autenticat. Aixo evita que l'ajuda quedi visible sobre la pantalla de login despres d'un logout.
-
-### 4. Renderitzat Markdown + Mermaid
-
-Fitxer: `src/components/help/MarkdownRenderer.vue`
-
-Decisions tecnologiques:
-
-- `markdown-it` per parsejar Markdown
-- `DOMPurify` per sanejar l'HTML generat a partir del Markdown
-- `mermaid` per renderitzar diagrames en client
-
-Flux de renderitzat:
-
-1. Es parseja el Markdown.
-2. Els blocs ```mermaid``` es substitueixen per placeholders.
-3. L'HTML general es saneja amb `DOMPurify`.
-4. Mermaid genera l'SVG al client i s'injecta directament al placeholder.
-
-Nota: es va provar de sanejar l'SVG de Mermaid amb `DOMPurify`, pero els labels interns deixaven de veure's. La causa es que Mermaid utilitza parts d'HTML incrustat dins l'SVG, especialment en `foreignObject`, per renderitzar alguns textos. Per aquest motiu, el sistema saneja el Markdown d'entrada pero no torna a sanejar l'SVG que genera Mermaid. La seguretat es recolza en dos punts: `securityLevel: "strict"` de Mermaid i el fet que els fitxers d'ajuda son contingut versionat dins del repo.
-
-### 5. Shortcut global
-
-Implementat a `src/App.vue` amb listener global de `keydown`.
-
-Regles actuals:
-
-- Obre o tanca l'ajuda amb `Alt + H`
-- Ignora la combinacio si el focus es en `input`, `textarea`, `select` o contingut editable
-- Usa la ruta actual per resoldre `meta.helpKey`
-- Si el drawer ja esta obert i canvia la ruta, es recarrega el contingut contextual
-
-## Estructura de contingut
-
-Els fitxers d'ajuda viuen a:
+## Content layout
 
 ```text
 src/help/<locale>/<helpKey>.md
 ```
 
-Exemples actuals:
+Keys follow `<module>/<entity>/<list|detail>`, with explicit names for special screens, for example `sales/salesinvoice/by-period`, `purchase/purchaseinvoice/import`, `production/workorder/phase` and `analytics/abc/customers`.
 
-```text
-src/help/ca/sales/customers/list.md
-src/help/ca/sales/budget/detail.md
-src/help/ca/sales/salesorder/detail.md
-src/help/ca/sales/deliverynote/list.md
-src/help/ca/sales/salesinvoice/by-period.md
-src/help/ca/sales/reference/detail.md
-```
+## Adding or changing help
 
-## Com afegir ajuda a una pantalla nova
+1. Analyse the real screen before writing: the view, its owned components, dialogs and tabs, the store actions, the service calls and the backend service behind them (validations, lifecycle restrictions and returned error messages).
+2. Add `meta.helpKey` to the route if it has none.
+3. Write `ca` from that evidence, then `es` and `en` as adaptations that use each locale's own UI labels from `src/i18n/<locale>.ts`.
+4. Run `pnpm run help:check`.
+5. Open the screen, press `Alt + H` and check that the right document renders, including the diagram.
+6. Review sibling files in the module for consistent terminology and depth.
 
-1. Analitzar la vista real i els seus components abans d'escriure el Markdown.
-2. Afegir `meta.helpKey` a la ruta, si la pantalla necessita ajuda propia.
-3. Escollir un `helpKey` estable i coherent amb l'estructura existent.
-4. Crear el fitxer Markdown a `src/help/ca/...`.
-5. Si cal, afegir versions futures a `src/help/es/...` o `src/help/en/...`.
-6. Validar que `Alt + H` obre el drawer a la pantalla correcta.
-7. Revisar que el to, la terminologia i l'estructura siguin consistents amb la resta del modul.
+The `contextual-help` skill in `.claude/skills/` holds the step-by-step procedure for agents.
 
-## Regles de llenguatge i forma
+## Writing rules
 
-Aquestes regles deixen de ser recomanacions i passen a ser el criteri base per a qualsevol ajuda nova o modificada.
+### Language and tone
 
-### 1. Llengua base
+- `ca` is the source culture. `es` and `en` carry the same content, phrased naturally rather than translated word for word.
+- Write for end users: direct, professional, short to medium sentences that are easy to scan.
+- Explain what the screen is for and how to work with it, not a superficial tour of the interface.
+- Never mention components, stores, endpoints, database tables or other implementation details.
+- Quote visible labels exactly as the UI shows them in that locale: «…» in `ca` and `es`, "…" in `en`.
+- Use correct orthography in the body: Catalan accents and `l·l`, Spanish accents and `ñ`.
 
-- L'ajuda inicial s'escriu en catala.
-- El llenguatge ha de ser funcional, clar i orientat a usuari final.
-- S'han d'evitar textos tecnics interns, noms de stores, components o detalls d'implementacio que no aportin valor a l'usuari.
+### Mandatory structure
 
-### 2. To
+Every file has exactly one H1 title followed by these H2 sections, in this order:
 
-- To directe i professional.
-- Frases curtes o mitjanes, faciles d'escanejar.
-- Explicar per a que serveix la pantalla i com es fa servir, no descriure la interfície de forma superficial.
-- Prioritzar accions, restriccions, bloquejos i errors habituals.
+| # | `ca` | `es` | `en` |
+|---|---|---|---|
+| 1 | `Per a que serveix aquesta pantalla` | `Para qué sirve esta pantalla` | `What this screen is for` |
+| 2 | `Accions disponibles` | `Acciones disponibles` | `Available actions` |
+| 3 | `Flux habitual` | `Flujo habitual` | `Usual flow` |
+| 4 | `Aspectes importants` | `Aspectos importantes` | `Important notes` |
+| 5 | `Errors frequents` | `Errores frecuentes` | `Common errors` |
+| 6 | `Proces basic` | `Proceso básico` | `Basic process` |
 
-### 3. Estructura obligatoria
+The Catalan headings keep their historical unaccented spelling because `help:check` matches them literally.
 
-Tot fitxer d'ajuda ha de seguir aquest esquelet, en aquest ordre:
+### What each section must contain
 
-1. `# <Titol>`
-2. `## Per a que serveix aquesta pantalla`
-3. `## Accions disponibles`
-4. `## Flux habitual`
-5. `## Aspectes importants`
-6. `## Errors frequents`
-7. `## Proces basic`
+- **Purpose**: what the user achieves and where the screen sits in the business flow, for example `pressupost -> comanda -> albarà -> factura` or `ruta de fabricació -> ordre de fabricació -> fases -> declaració de peces`.
+- **Available actions**: one bullet per real action, starting with a verb and naming the button or tab, including row actions and what each tab is for.
+- **Usual flow**: four to seven numbered steps of a realistic task.
+- **Important notes**: the most valuable section. Cover actions blocked by status, fields that become read-only, what is generated or updated automatically (numbering, stock, costs, linked documents), what delete really does, dependencies on configuration screens, the difference between direct creation and creation from a dialog, and cases where a sub-screen is explained inside another screen's help.
+- **Common errors**: actionable items ("if X happens, check Y first") taken from real validations and backend messages. No generic "an error occurred".
+- **Basic process**: one simple Mermaid `flowchart` with four to eight nodes that summarises the main process rather than every rule. Node labels avoid parentheses, quotes, colons and semicolons.
 
-### 4. Longitud i profunditat
+### Evidence over templates
 
-- Evitar documentacio massa breu que nomes repliqui el nom de la pantalla.
-- Cada ajuda ha d'explicar el flux real de treball.
-- Si una pantalla te bloquejos per estat, dependencias amb altres documents o passos previs, s'han d'explicar explicitament.
-- Si una pantalla es de proces massiu o te un comportament especial, s'ha de diferenciar clarament de la resta.
+- Document only behaviour confirmed in the current source. Never infer filters, statuses, permissions or workflows from a route name or from a sibling screen.
+- Keep business terms consistent across modules and use the term the UI uses.
+- Keep documents of the same level at a similar depth. When a new document clearly raises the bar, review its module siblings.
+- Screens reserved for administrators (`meta.roles: ["Admin"]`) say so.
 
-### 5. Terminologia funcional
+## Known limitations
 
-- Mantenir terminologia constant a tot el modul.
-- Fer servir els noms funcionals habituals del negoci: `pressupost`, `comanda`, `albara`, `factura`, `client`, `referencia`.
-- Si una pantalla participa en un flux, cal contextualitzar-la dins del recorregut general quan aporti valor:
-
-```text
-pressupost -> comanda -> albara -> factura
-```
-
-- No canviar el mateix concepte entre fitxers amb sinonims arbitraris.
-
-### 6. Contingut minim de qualitat
-
-Cada document ha d'incloure, com a minim:
-
-- objectiu funcional clar
-- llista d'accions que realment pot fer l'usuari
-- flux habitual realista
-- aspectes importants o restriccions del comportament
-- errors o dubtes habituals
-- diagrama Mermaid senzill quan ajudi a entendre el proces
-
-### 7. Criteris per a `Aspectes importants`
-
-En aquesta seccio s'han de prioritzar:
-
-- accions bloquejades per estat
-- relacions amb altres documents
-- diferencies entre creacio directa i creacio des de dialeg
-- diferencies entre llistes operatives i pantalles de proces massiu
-- casos especials on l'ajuda d'una subpantalla viu integrada dins una altra pantalla
-
-### 8. Criteris per a `Errors frequents`
-
-- Els errors han de ser accionables.
-- Han d'indicar a l'usuari que comprovar primer.
-- S'ha d'evitar redactar errors massa generics del tipus `hi ha hagut un error`.
-- Si hi ha un bloqueig funcional habitual, s'ha de convertir en un punt explicit d'aquesta seccio.
-
-### 9. Mermaid
-
-- Fer servir diagrames senzills.
-- Prioritzar fluxos lineals o amb poques branques.
-- El diagrama ha de resumir el proces principal, no intentar representar tota la logica de negoci.
-
-### 10. Consistencia editorial
-
-- Reutilitzar els mateixos noms de seccio a tots els fitxers.
-- Mantenir una longitud semblant entre documents del mateix nivell.
-- Si una ajuda nova millora clarament el nivell de qualitat, s'ha de revisar la resta del modul per evitar que quedin documents antics amb un format inferior.
-
-## Limitacions conegudes
-
-- No hi ha backend ni analytics associats a l'ajuda en aquesta fase.
-- El boto visible al header s'ha tret temporalment per no exposar la funcionalitat a usuari final.
-- El multiidioma esta preparat a nivell d'arquitectura, pero el contingut inicial nomes existeix en `ca`.
-- El sistema assumeix que els fitxers Markdown d'ajuda son contingut versionat i revisat dins del repo.
+- There is no backend storage, search or analytics for help content.
+- Help is one document per route key. Tabs and dialogs are explained inside their screen's document, not as separate entries.

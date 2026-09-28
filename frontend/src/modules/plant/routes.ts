@@ -55,6 +55,7 @@ export default [
         name: "OperatorClockIn",
         component: OperatorClockIn,
         beforeEnter: checkOperatorAuth,
+        meta: { helpKey: "plant/clockin" },
       },
       {
         path: "areas",
