@@ -2,47 +2,53 @@
 
 ## Per a que serveix aquesta pantalla
 
-La pantalla d'albarans d'entrega permet consultar els albarans del periode seleccionat, filtrar-los per client i crear albarans nous. Es el punt de control previ a la facturacio dels lliuraments.
+És la llista dels albarans d'entrega als clients. Hi cerques els albarans d'un període, els filtres per client, n'obres un o en crees un de nou. L'albarà és el document que registra l'entrega de les comandes i el que després es factura: `pressupost -> comanda -> albarà -> factura`.
 
 ## Accions disponibles
 
-- Seleccionar un periode de treball.
-- Filtrar per client.
-- Netejar els filtres actius.
-- Crear un albara nou.
-- Obrir un albara existent.
-- Eliminar un albara si encara es troba en l'estat inicial.
+- Filtrar per «Període» i «Client», i aplicar el filtre amb «Filtrar».
+- Restablir els filtres amb «Netejar»: treu el client i torna el període a l'any en curs. Després prem «Filtrar» per recarregar la llista.
+- Crear un albarà buit amb «Nou»: s'obre el diàleg «Crear albarà», on tries el «Client», l'«Exercici» i la «Data».
+- Obrir un albarà fent clic a la fila.
+- Eliminar un albarà amb la icona de la paperera («Eliminar»), després de confirmar-ho.
+
+La taula mostra el «Número», la «Data de creació», la «Data d'entrega», el «Client» i l'«Estat».
 
 ## Flux habitual
 
-1. Selecciona el periode que vols revisar.
-2. Aplica el filtre de client si el necessites.
-3. Prem el boto de filtre per carregar els albarans.
-4. Obre un albara existent o crea'n un de nou des del boto `+`.
-5. Si el crees des de la llista, informa primer les dades basiques al dialeg inicial.
+1. Obre «Albarans d'entrega». Es carreguen els albarans creats durant l'any en curs.
+2. Ajusta el període o el client i prem «Filtrar».
+3. Obre l'albarà que vols revisar, entregar o descarregar.
+4. Si has de crear un albarà a mà, prem «Nou», tria el client, revisa l'exercici i la data i confirma.
+5. A la fitxa que s'obre, afegeix-hi les comandes del client que s'entreguen.
 
 ## Aspectes importants
 
-- La pantalla recorda els filtres de l'usuari, de manera que en tornar pots recuperar el mateix context.
-- La creacio manual d'un albara conviu amb la generacio d'albarans des de comandes.
-- La icona d'eliminar nomes es mostra quan l'albara es troba a l'estat inicial del seu cicle de vida.
-- L'albara es una baula intermedia entre la comanda i la factura, per tant les seves modificacions poden quedar condicionades per processos posteriors.
+- El període filtra per la data de creació de l'albarà, no per la data d'entrega. Sense un període complet la llista no es carrega i surt l'avís «Selecciona un període».
+- Aquesta llista no recorda els filtres: cada vegada que hi entres torna a l'any en curs sense client.
+- La manera habitual de crear un albarà és des de la fitxa de la comanda, amb «Crear albarà». Des d'aquí es crea buit i les comandes s'hi afegeixen després.
+- El número de l'albarà el posa el sistema amb el comptador de l'exercici triat, i l'albarà neix a l'estat inicial del seu cicle de vida («Cicles de vida»).
+- El client ha de tenir el nom fiscal, el NIF, el número de compte i almenys una adreça activa, i la seu per defecte de l'empresa ha de tenir les dades de facturació completes.
+- La paperera només surt als albarans que són a l'estat inicial i no estan facturats. A més, no es pot eliminar un albarà entregat ni un que encara tingui comandes: primer cal treure-les des de la seva fitxa.
+- Eliminar un albarà l'esborra definitivament.
 
 ## Errors frequents
 
-- Si no es mostren dades, comprova que hi hagi un periode seleccionat.
-- Si no trobes un albara, revisa el filtre de client.
-- Si no es pot crear, valida les dades minimes del dialeg inicial.
-- Si no es pot eliminar, pot ser que l'albara ja hagi avancat d'estat o tingui processos associats.
+- Si surt «Selecciona un període», indica una data d'inici i una de fi i torna a prémer «Filtrar».
+- Si en eliminar surt «No es pot eliminar un albarà amb comandes associades», obre l'albarà, treu-ne les comandes amb la creu de cada grup i torna-ho a provar.
+- Si surt «No es pot eliminar un albarà entregat» o «No es pot eliminar un albarà facturat», l'albarà ja forma part del circuit d'entrega o de facturació i no s'ha d'esborrar.
+- Si en crear l'albarà surt «El client no és vàlid per a crear una factura», completa el nom fiscal, el NIF i el número de compte del client a «Clients».
+- Si surt «El client no té direccions donades d'alta», afegeix una adreça al client.
+- Si no trobes un albarà, recorda que el període es compara amb la data de creació.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Seleccionar periode] --> B[Aplicar filtre]
-    B --> C[Revisar albarans]
-    C --> D[Obrir albara]
-    C --> E[Crear albara nou]
-    E --> F[Informar dades inicials]
-    F --> D
+    A[Obrir Albarans d'entrega] --> B[Filtrar per període o client]
+    B --> C{Albarà nou?}
+    C -->|Sí| D[Nou: client, exercici i data]
+    D --> E[Fitxa de l'albarà]
+    C -->|No| F[Obrir l'albarà de la llista]
+    F --> E
 ```

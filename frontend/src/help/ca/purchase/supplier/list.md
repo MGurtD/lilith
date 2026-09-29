@@ -2,40 +2,51 @@
 
 ## Per a que serveix aquesta pantalla
 
-La pantalla de proveïdors permet consultar el directori de proveïdors actius. Pots filtrar per tipus de proveïdor, cercar per nom o NIF, i accedir a la fitxa de cada proveïdor per gestionar contactes, adreces, condicions comercials i tarifes.
+És el directori de proveïdors de l'empresa i, a la mateixa pantalla, el catàleg de tipus de proveïdor. Des d'aquí localitzes un proveïdor per obrir-ne la fitxa, en dones d'alta un de nou o mantens la classificació per tipus. El proveïdor és la base de tot el circuit de compres: comanda de compra -> albarà de recepció -> factura de compra.
 
 ## Accions disponibles
 
-- Filtrar per tipus de proveïdor
-- Cercar per nom o NIF
-- Crear un proveïdor nou
-- Obrir el detall d'un proveïdor
-- Eliminar un proveïdor
+- Cercar proveïdors amb els filtres «Nom» (busca dins del nom comercial) i «Tipus». La llista es filtra a mesura que escrius o tries.
+- Obrir la fitxa d'un proveïdor fent clic a la fila.
+- Crear un proveïdor amb el botó «+» («Crear nou») de la pestanya «Proveïdors».
+- Eliminar un proveïdor amb la «X» de la fila, després de confirmar-ho.
+- Canviar a la pestanya «Tipus de proveïdor» per veure el catàleg de tipus.
+- Crear un tipus amb el botó «+» d'aquesta pestanya, o editar-lo fent clic a la fila: s'obre un diàleg amb «Nom» i «Descripció» i el botó «Guardar».
+- Eliminar un tipus de proveïdor amb la «X» de la fila, després de confirmar-ho.
 
 ## Flux habitual
 
-1. Selecciona el periode o exercici que vols consultar.
-2. Aplica els filtres que necessitis per reduir el volum de resultats.
-3. Revisa la llista i selecciona l'element que vulguis obrir.
-4. Accedeix al detall per fer les modificacions o el seguiment que calgui.
+1. Obre la pantalla «Proveïdors».
+2. Escriu part del nom comercial a «Nom» o tria un «Tipus» per reduir la llista.
+3. Fes clic a la fila per obrir la fitxa del proveïdor.
+4. Si no existeix, prem «+» i omple la fitxa del proveïdor nou.
+5. Si falta una classificació, ves a «Tipus de proveïdor», prem «+», omple «Nom» i «Descripció» i prem «Guardar».
 
 ## Aspectes importants
 
-- El comportament concret de cada acció depèn de l'estat del cicle de vida de l'entitat.
-- Les accions de creació, modificació i eliminació poden estar blocades segons l'estat.
-- Alguns camps són de només lectura quan l'entitat ja forma part d'un document comercial vinculat.
+- El botó «+» crea un proveïdor o un tipus de proveïdor segons la pestanya activa.
+- La llista mostra «Nom comercial», «Nom fiscal», el CIF, «Telèfon» i «Tipus».
+- Cada proveïdor ha de tenir un tipus: el camp «Tipus de proveïdor» de la fitxa és obligatori. Crea els tipus abans de donar d'alta proveïdors.
+- El tipus anomenat exactament «Logistica» té un ús especial: els proveïdors d'aquest tipus mostren la pestanya «Tarifes de transport» a la seva fitxa i són els que es poden triar com a transportistes als pressupostos i a les comandes de venda. No canviïs el nom d'aquest tipus.
+- Al diàleg de tipus, «Nom» i «Descripció» són obligatoris i admeten fins a 250 caràcters.
+- Eliminar un proveïdor o un tipus és definitiu. L'aplicació no comprova abans si el proveïdor té comandes, albarans o factures, ni si el tipus té proveïdors assignats. Elimina només registres que no s'hagin fet servir; si un tipus té proveïdors, canvia'ls primer de tipus.
 
 ## Errors frequents
 
-- Si no es mostren proveïdors, comprova que el filtre de tipus no estigui buit.
-- Si no es pot eliminar un proveïdor, revisa si té comandes, rebuts o factures associades.
+- Si no trobes un proveïdor, comprova que el filtre «Tipus» estigui buit i que busques pel nom comercial, no pel nom fiscal.
+- Si en crear un tipus surt «L'entitat ja existeix», ja hi ha un tipus amb aquest nom.
+- Si el diàleg de tipus no es desa, revisa que «Nom» i «Descripció» estiguin informats.
+- Si un proveïdor de transport no surt als pressupostos o a les comandes de venda, comprova que el seu tipus sigui «Logistica».
+- Si el botó «+» obre una pantalla que no esperaves, revisa quina pestanya tens activa.
 
 ## Proces basic
 
 ```mermaid
 flowchart TD
-    A[Seleccionar periode] --> B[Aplicar filtres]
-    B --> C[Revisar llista]
-    C --> D[Obrir detall]
-    D --> E[Modificar o fer seguiment]
+    A[Obrir Proveïdors] --> B{Què vols mantenir?}
+    B -->|Proveïdors| C[Filtrar per nom o tipus]
+    C --> D[Obrir o crear la fitxa]
+    B -->|Tipus| E[Pestanya Tipus de proveïdor]
+    E --> F[Crear o editar el tipus]
+    F --> G[Guardar]
 ```

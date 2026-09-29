@@ -9,6 +9,7 @@
     "i18n:check": "node ./scripts/audit-i18n.mjs --strict --scope frontend/src/i18n",
     "i18n:audit": "node ./scripts/audit-i18n.mjs",
     "i18n:audit:test": "node ./scripts/audit-i18n.test.mjs",
+    "help:check": "node ./scripts/audit-help.mjs",
     "typecheck": "vue-tsc --noEmit",
     "build": "pnpm run typecheck && vite build",
     "build:versioned": "VITE_APP_VERSION=%npm_package_version% pnpm run build",
