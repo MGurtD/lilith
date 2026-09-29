@@ -34,6 +34,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Reports\Assets\temges-logo.jpg" />
     <EmbeddedResource Include="Reports\Assets\temges-watermark.png" />
+    <EmbeddedResource Include="Reports\Assets\Fonts\*.ttf" />
   </ItemGroup>
 
   <ItemGroup>

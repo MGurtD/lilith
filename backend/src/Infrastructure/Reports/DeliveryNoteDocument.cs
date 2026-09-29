@@ -7,8 +7,8 @@ using QuestPDF.Infrastructure;
 
 namespace Infrastructure.Reports;
 
-public sealed class DeliveryNoteDocument(DeliveryNoteReportResponse report)
-    : StandardReportDocument(CreateHeader(report), report.Site?.VatNumber ?? string.Empty)
+public sealed class DeliveryNoteDocument(DeliveryNoteReportResponse report, ReportStyle style)
+    : StandardReportDocument(CreateHeader(report), report.Site?.VatNumber ?? string.Empty, style)
 {
     private static ReportHeaderData CreateHeader(DeliveryNoteReportResponse report)
     {
@@ -58,16 +58,13 @@ public sealed class DeliveryNoteDocument(DeliveryNoteReportResponse report)
             table.Header(header =>
             {
                 header.Cell().ColumnSpan(report.ShowPrices ? 4u : 2u)
-                    .Background(ReportTheme.Accent)
-                    .Padding(4)
-                    .Text($"{report.TableCustomerOrder}: {order.CustomerNumber} ({order.Number})")
-                    .SemiBold();
-                header.Cell().Element(cell => ReportTable.HeaderCell(cell, report.TableQuantity));
-                header.Cell().Element(cell => ReportTable.HeaderCell(cell, report.TableConcept));
+                    .Element(cell => Table.CaptionCell(cell, $"{report.TableCustomerOrder}: {order.CustomerNumber} ({order.Number})"));
+                header.Cell().Element(cell => Table.HeaderCell(cell, report.TableQuantity));
+                header.Cell().Element(cell => Table.HeaderCell(cell, report.TableConcept));
                 if (report.ShowPrices)
                 {
-                    header.Cell().Element(cell => ReportTable.HeaderCell(cell, report.TableUnitPrice));
-                    header.Cell().Element(cell => ReportTable.HeaderCell(cell, report.TableImport));
+                    header.Cell().Element(cell => Table.HeaderCell(cell, report.TableUnitPrice));
+                    header.Cell().Element(cell => Table.HeaderCell(cell, report.TableImport));
                 }
             });
 

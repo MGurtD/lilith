@@ -33,7 +33,7 @@ namespace Api.Controllers.Sales
         public async Task<IActionResult> GetPdf(Guid id, bool showPrices = true)
         {
             var report = await reportService.GetReportById(id, showPrices);
-            return report is null ? NotFound() : File(pdfService.Generate(report), "application/pdf", $"comanda-{report.Order!.Number}.pdf");
+            return report is null ? NotFound() : File(await pdfService.Generate(report, HttpContext.RequestAborted), "application/pdf", $"comanda-{report.Order!.Number}.pdf");
         }
 
         [HttpGet("Report/{id:guid}")]

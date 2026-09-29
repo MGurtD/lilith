@@ -3,6 +3,7 @@ import { palette, updatePreset, updatePrimaryPalette } from "@primeuix/themes";
 import {
   DEFAULT_BRAND_NAME,
   DEFAULT_MAIN_LOGO,
+  DEFAULT_REPORT_WATERMARK,
   DEFAULT_SIDEBAR_LOGO,
   getBrandMonogram,
 } from "@/config/branding";
@@ -27,6 +28,9 @@ export const useBrandingStore = defineStore("branding", {
     version: "default",
     mainLogoVersion: null as string | null,
     sidebarLogoVersion: null as string | null,
+    hasWatermark: false,
+    watermarkVersion: null as string | null,
+    watermarkEnabled: true,
     initialized: false,
   }),
   getters: {
@@ -52,6 +56,13 @@ export const useBrandingStore = defineStore("branding", {
       }
       return DEFAULT_SIDEBAR_LOGO;
     },
+    watermarkUrl: (state): string =>
+      state.hasWatermark
+        ? brandingService.getCurrentLogoUrl(
+          "watermark",
+          state.watermarkVersion || state.version,
+        )
+        : DEFAULT_REPORT_WATERMARK,
     monogram: (state): string => getBrandMonogram(state.brandName),
   },
   actions: {
@@ -75,6 +86,9 @@ export const useBrandingStore = defineStore("branding", {
       this.version = response.version || "default";
       this.mainLogoVersion = response.mainLogoVersion || response.version || null;
       this.sidebarLogoVersion = response.sidebarLogoVersion || response.version || null;
+      this.hasWatermark = response.hasWatermark;
+      this.watermarkVersion = response.watermarkVersion || response.version || null;
+      this.watermarkEnabled = response.watermarkEnabled;
     },
     resetToDefault() {
       this.brandName = DEFAULT_BRAND_NAME;
@@ -84,6 +98,9 @@ export const useBrandingStore = defineStore("branding", {
       this.version = "default";
       this.mainLogoVersion = null;
       this.sidebarLogoVersion = null;
+      this.hasWatermark = false;
+      this.watermarkVersion = null;
+      this.watermarkEnabled = true;
     },
     applyTheme() {
       const primaryPalette = palette(BRANDING_PALETTE_TOKENS[this.primaryColor]) as

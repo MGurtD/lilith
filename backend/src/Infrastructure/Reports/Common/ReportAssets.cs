@@ -1,12 +1,15 @@
 namespace Infrastructure.Reports.Common;
 
+/// <summary>
+/// Bundled fallbacks used when the tenant has not uploaded its own logo or watermark.
+/// </summary>
 public static class ReportAssets
 {
-    private static readonly Lazy<byte[]> CompanyLogo = new(() => LoadResource("temges-logo.jpg"));
-    private static readonly Lazy<byte[]> WatermarkLogo = new(() => LoadResource("temges-watermark.png"));
+    private static readonly Lazy<byte[]> DefaultLogo = new(() => LoadResource("temges-logo.jpg"));
+    private static readonly Lazy<byte[]> DefaultWatermark = new(() => LoadResource("temges-watermark.png"));
 
-    public static byte[] Logo => CompanyLogo.Value;
-    public static byte[] Watermark => WatermarkLogo.Value;
+    public static byte[] Logo => DefaultLogo.Value;
+    public static byte[] Watermark => DefaultWatermark.Value;
 
     private static byte[] LoadResource(string resourceSuffix)
     {

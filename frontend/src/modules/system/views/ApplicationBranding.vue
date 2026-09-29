@@ -18,6 +18,7 @@
       <div class="branding-logos mt-4">
         <div class="branding-logo-card">
           <label class="block text-900 mb-2">{{ t("branding.logos.main.label") }}</label>
+          <small class="branding-hint">{{ t("branding.logos.main.hint") }}</small>
           <img
             v-if="brandingStore.hasMainLogo"
             :src="brandingStore.mainLogoUrl"
@@ -84,6 +85,62 @@
           </div>
         </div>
       </div>
+
+      <!-- Like the logos, the watermark switch and image save as soon as they change. -->
+      <section class="branding-documents mt-5">
+        <h3 class="branding-section-title">{{ t("branding.documents.title") }}</h3>
+        <p class="branding-hint">{{ t("branding.documents.description") }}</p>
+
+        <div class="branding-logo-card mt-3">
+          <div class="flex align-items-center gap-2">
+            <Checkbox
+              v-model="watermarkEnabled"
+              input-id="branding-watermark-enabled"
+              binary
+              :disabled="!canEdit || processingSlot !== null || savingWatermark"
+              @update:model-value="saveWatermarkEnabled"
+            />
+            <label for="branding-watermark-enabled" class="text-900">
+              {{ t("branding.documents.watermark.enabled") }}
+            </label>
+          </div>
+          <small class="branding-hint">{{ t("branding.documents.watermark.hint") }}</small>
+          <img
+            :src="brandingStore.watermarkUrl"
+            :alt="t('branding.documents.watermark.label')"
+            class="branding-preview branding-preview--watermark"
+            :class="{ 'branding-preview--muted': !brandingStore.watermarkEnabled }"
+          />
+          <small class="branding-hint">
+            {{
+              brandingStore.hasWatermark
+                ? t("branding.documents.watermark.custom")
+                : t("branding.documents.watermark.default")
+            }}
+          </small>
+          <div class="branding-logo-actions">
+            <FileUpload
+              mode="basic"
+              custom-upload
+              auto
+              :choose-label="t('branding.logos.select')"
+              accept="image/png,image/webp"
+              :max-file-size="MAX_LOGO_SIZE"
+              :invalid-file-size-message="t('branding.logos.fileSizeError')"
+              :choose-button-props="{ loading: processingSlot === 'watermark' }"
+              :disabled="!canEdit || processingSlot !== null || !brandingStore.watermarkEnabled"
+              @select="uploadLogo('watermark', $event)"
+            />
+            <Button
+              :label="t('branding.documents.watermark.restoreDefault')"
+              severity="secondary"
+              text
+              :disabled="!canEdit || processingSlot !== null || !brandingStore.hasWatermark"
+              @click="removeLogo('watermark')"
+            />
+          </div>
+        </div>
+      </section>
     </template>
   </div>
 </template>
@@ -101,6 +158,7 @@ import ProgressSpinner from "primevue/progressspinner";
 
 import FormApplicationBranding from "../components/FormApplicationBranding.vue";
 import {
+  BrandingRequestError,
   brandingService,
   type BrandingLogoSlot,
   type BrandingUpdateRequest,
@@ -116,6 +174,8 @@ const brandingStore = useBrandingStore();
 const appStore = useStore();
 const loading = ref(true);
 const saving = ref(false);
+const savingWatermark = ref(false);
+const watermarkEnabled = ref(true);
 const processingSlot = ref<BrandingLogoSlot | null>(null);
 const canEdit = computed(() => appStore.role?.toLowerCase() === "admin");
 
@@ -127,10 +187,12 @@ const brandingFromStore = (): BrandingUpdateRequest => ({
   primaryColor: brandingStore.primaryColor,
 });
 
-const errorMessage = (error: unknown): string =>
-  isAxiosError(error) && error.response?.status === 403
-    ? t("branding.toasts.noPermission")
-    : t("branding.toasts.error");
+const errorMessage = (error: unknown): string => {
+  if (isAxiosError(error) && error.response?.status === 403) return t("branding.toasts.noPermission");
+  // The API explains refused uploads (format, size, watermark without transparency).
+  if (error instanceof BrandingRequestError && error.apiMessage) return error.apiMessage;
+  return t("branding.toasts.error");
+};
 
 const saveBranding = async (request: BrandingUpdateRequest) => {
   if (!canEdit.value || saving.value) return;
@@ -148,6 +210,22 @@ const saveBranding = async (request: BrandingUpdateRequest) => {
   }
 };
 
+const saveWatermarkEnabled = async (enabled: boolean) => {
+  if (!canEdit.value) return;
+
+  savingWatermark.value = true;
+  try {
+    await brandingService.updateCurrentWatermark(enabled);
+    await brandingStore.initialize();
+    toast.add({ severity: "success", summary: t("branding.toasts.updated"), life: 5000 });
+  } catch (error: unknown) {
+    toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
+  } finally {
+    watermarkEnabled.value = brandingStore.watermarkEnabled;
+    savingWatermark.value = false;
+  }
+};
+
 const uploadLogo = async (slot: BrandingLogoSlot, event: FileUploadSelectEvent) => {
   const file = (event.files as File[])[0];
   if (!file || !canEdit.value) return;
@@ -161,7 +239,11 @@ const uploadLogo = async (slot: BrandingLogoSlot, event: FileUploadSelectEvent) 
   try {
     await brandingService.uploadCurrentLogo(slot, file);
     await brandingStore.initialize();
-    toast.add({ severity: "success", summary: t("branding.toasts.logoUpdated"), life: 5000 });
+    toast.add({
+      severity: "success",
+      summary: t(slot === "watermark" ? "branding.toasts.watermarkUpdated" : "branding.toasts.logoUpdated"),
+      life: 5000,
+    });
   } catch (error: unknown) {
     toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
   } finally {
@@ -176,7 +258,11 @@ const removeLogo = async (slot: BrandingLogoSlot) => {
   try {
     await brandingService.removeCurrentLogo(slot);
     await brandingStore.initialize();
-    toast.add({ severity: "success", summary: t("branding.toasts.logoDeleted"), life: 5000 });
+    toast.add({
+      severity: "success",
+      summary: t(slot === "watermark" ? "branding.toasts.watermarkRestored" : "branding.toasts.logoDeleted"),
+      life: 5000,
+    });
   } catch (error: unknown) {
     toast.add({ severity: "error", summary: errorMessage(error), life: 5000 });
   } finally {
@@ -192,6 +278,7 @@ onMounted(async () => {
   });
   await brandingStore.initialize();
   branding.value = brandingFromStore();
+  watermarkEnabled.value = brandingStore.watermarkEnabled;
   loading.value = false;
 });
 </script>
@@ -234,6 +321,28 @@ onMounted(async () => {
 
 .branding-preview--dark {
   background: var(--p-primary-900);
+}
+
+.branding-preview--watermark {
+  max-width: 14rem;
+  height: 12rem;
+  background: #fff;
+}
+
+.branding-preview--muted {
+  opacity: 0.35;
+}
+
+.branding-section-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.branding-hint {
+  display: block;
+  margin: 0;
+  color: var(--p-text-muted-color);
 }
 
 @media (max-width: 768px) {

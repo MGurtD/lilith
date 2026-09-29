@@ -71,7 +71,7 @@ namespace Api.Controllers.Sales
             var invoiceDto = await reportService.GetReportById(id);
             if (invoiceDto is null) return NotFound();
 
-            var pdf = pdfService.Generate(invoiceDto);
+            var pdf = await pdfService.Generate(invoiceDto, HttpContext.RequestAborted);
             return File(pdf, "application/pdf", $"factura-{invoiceDto.Number}.pdf");
         }
 

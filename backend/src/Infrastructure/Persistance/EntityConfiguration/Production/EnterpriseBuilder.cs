@@ -28,6 +28,9 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                 .Property(b => b.PrimaryColor)
                 .HasColumnType("varchar")
                 .HasMaxLength(7);
+            builder
+                .Property(b => b.ReportWatermarkEnabled)
+                .IsRequired();
 
             // Default site (optional)
             builder
@@ -50,6 +53,12 @@ namespace Infrastructure.Persistance.EntityConfiguration.Production
                 .HasOne<Domain.Entities.File>()
                 .WithMany()
                 .HasForeignKey(b => b.LogoSidebarFileId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder
+                .HasOne<Domain.Entities.File>()
+                .WithMany()
+                .HasForeignKey(b => b.LogoWatermarkFileId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder

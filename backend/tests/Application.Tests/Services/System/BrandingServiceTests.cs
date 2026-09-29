@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Services.Production;
 using Application.Services.System;
 using Application.Tests.TestData;
@@ -20,6 +20,40 @@ namespace Application.Tests.Services.System;
 public class BrandingServiceTests
 {
     private static readonly byte[] PngHeader = [137, 80, 78, 71, 13, 10, 26, 10];
+
+    // PNG signature plus an IHDR chunk (1x1, 8-bit) with the given colour type:
+    // 2 = RGB (opaque), 6 = RGBA.
+    private static byte[] PngWithColourType(byte colourType) =>
+        [.. PngHeader, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R', 0, 0, 0, 1, 0, 0, 0, 1, 8, colourType, 0, 0, 0, 0, 0, 0, 0];
+
+    private static readonly byte[] JpegHeader = [0xFF, 0xD8, 0xFF, 0xE0, 0, 16, (byte)'J', (byte)'F', (byte)'I', (byte)'F', 0, 1];
+
+    [Theory]
+    [InlineData("jpeg")]
+    [InlineData("opaque-png")]
+    public async Task Watermark_upload_refuses_an_image_without_transparency(string kind)
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
+            var sut = BuildSut(uow, root);
+            var file = kind == "jpeg"
+                ? NewFormFile(new MemoryStream(JpegHeader), "watermark.jpg", "image/jpeg")
+                : NewFormFile(new MemoryStream(PngWithColourType(2)), "watermark.png", "image/png");
+
+            var upload = await sut.UploadCurrentLogo(BrandingLogoSlot.Watermark, file);
+
+            Assert.False(upload.Result);
+            Assert.Null(enterprise.LogoWatermarkFileId);
+            Assert.Empty(uow.FilesStore.Store);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
 
     [Fact]
     public async Task GetCurrent_returns_branding_from_the_single_enabled_enterprise()
@@ -203,6 +237,71 @@ public class BrandingServiceTests
     }
 
     [Fact]
+    public async Task Watermark_slot_is_stored_and_reported_separately()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
+            var sut = BuildSut(uow, root);
+
+            var upload = await sut.UploadCurrentLogo(BrandingLogoSlot.Watermark, NewFormFile(new MemoryStream(PngWithColourType(6)), "watermark.png", "image/png"));
+            var response = await sut.GetCurrent();
+
+            Assert.True(upload.Result);
+            var file = Assert.Single(uow.FilesStore.Store);
+            Assert.Equal("EnterpriseBranding:watermark", file.Entity);
+            Assert.Equal(file.Id, enterprise.LogoWatermarkFileId);
+            Assert.True(response.HasWatermark);
+            Assert.Equal(file.Id.ToString("N"), response.WatermarkVersion);
+            Assert.False(response.HasMainLogo);
+
+            var remove = await sut.RemoveCurrentLogo(BrandingLogoSlot.Watermark);
+
+            Assert.True(remove.Result);
+            Assert.Null(enterprise.LogoWatermarkFileId);
+            Assert.True(enterprise.ReportWatermarkEnabled);
+            Assert.Empty(uow.FilesStore.Store);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateCurrentWatermark_toggles_the_flag_without_touching_branding()
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = EnterpriseBuilder.Default();
+            var sut = BuildSut(new BrandingTestContext(enterprise), root);
+
+            Assert.True((await sut.GetCurrent()).WatermarkEnabled);
+
+            var disabled = await sut.UpdateCurrentWatermark(new BrandingWatermarkRequest(false));
+
+            Assert.True(disabled.Result);
+            Assert.False(enterprise.ReportWatermarkEnabled);
+            Assert.Null(enterprise.BrandName);
+            Assert.Null(enterprise.PrimaryColor);
+            Assert.False((await sut.GetCurrent()).WatermarkEnabled);
+
+            await sut.UpdateCurrent(new BrandingUpdateRequest("Acme", "blue"));
+            Assert.False(enterprise.ReportWatermarkEnabled);
+
+            await sut.UpdateCurrentWatermark(new BrandingWatermarkRequest(true));
+            Assert.True(enterprise.ReportWatermarkEnabled);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
+
+    [Fact]
     public async Task Legacy_branding_file_is_valid_only_for_the_main_slot()
     {
         var root = CreateTempDirectory();
@@ -306,6 +405,8 @@ public class BrandingServiceTests
         enterprise.PrimaryColor       = "#123456";
         enterprise.LogoMainFileId     = Guid.NewGuid();
         enterprise.LogoSidebarFileId  = Guid.NewGuid();
+        enterprise.LogoWatermarkFileId = Guid.NewGuid();
+        enterprise.ReportWatermarkEnabled = false;
 
         var request = EnterpriseBuilder.Default();
         request.Id               = enterprise.Id;
@@ -314,6 +415,8 @@ public class BrandingServiceTests
         request.PrimaryColor     = "#FFFFFF";
         request.LogoMainFileId   = Guid.NewGuid();
         request.LogoSidebarFileId = Guid.NewGuid();
+        request.LogoWatermarkFileId = Guid.NewGuid();
+        request.ReportWatermarkEnabled = true;
 
         var service = new EnterpriseService(
             new BrandingTestContext(enterprise).UnitOfWork,
@@ -327,6 +430,8 @@ public class BrandingServiceTests
         Assert.Equal("#123456",        request.PrimaryColor);
         Assert.Equal(enterprise.LogoMainFileId,    request.LogoMainFileId);
         Assert.Equal(enterprise.LogoSidebarFileId, request.LogoSidebarFileId);
+        Assert.Equal(enterprise.LogoWatermarkFileId, request.LogoWatermarkFileId);
+        Assert.False(request.ReportWatermarkEnabled);
     }
 
     [Fact]
@@ -441,10 +546,12 @@ public class BrandingServiceTests
             var referencedPath = Path.Combine(root, "EnterpriseBranding", "referenced.png");
             var orphanedPath   = Path.Combine(root, "EnterpriseBranding", "orphaned.png");
             var sidebarPath    = Path.Combine(root, "EnterpriseBranding", "sidebar.png");
+            var watermarkPath  = Path.Combine(root, "EnterpriseBranding", "watermark.png");
             Directory.CreateDirectory(Path.GetDirectoryName(referencedPath)!);
             await SystemFile.WriteAllBytesAsync(referencedPath, PngHeader);
             await SystemFile.WriteAllBytesAsync(orphanedPath,   PngHeader);
             await SystemFile.WriteAllBytesAsync(sidebarPath,    PngHeader);
+            await SystemFile.WriteAllBytesAsync(watermarkPath,  PngHeader);
 
             var uow = new BrandingTestContext(enterprise);
             uow.FilesStore.Store.AddRange(
@@ -452,6 +559,7 @@ public class BrandingServiceTests
                 NewBrandingFile(enterprise.Id, referencedPath),
                 NewBrandingFile(enterprise.Id, orphanedPath),
                 NewBrandingFile(enterprise.Id, sidebarPath, "EnterpriseBranding:sidebar"),
+                NewBrandingFile(enterprise.Id, watermarkPath, "EnterpriseBranding:watermark"),
             ]);
             var sut = BuildSut(uow, root);
 
@@ -462,6 +570,7 @@ public class BrandingServiceTests
             Assert.False(SystemFile.Exists(referencedPath));
             Assert.False(SystemFile.Exists(orphanedPath));
             Assert.False(SystemFile.Exists(sidebarPath));
+            Assert.False(SystemFile.Exists(watermarkPath));
         }
         finally
         {

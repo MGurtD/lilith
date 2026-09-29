@@ -1,11 +1,12 @@
 using Application.Contracts;
+using Infrastructure.Reports.Common;
 using QuestPDF.Fluent;
 
 namespace Infrastructure.Reports;
 
-public sealed class WorkOrderPdfService(ILocalizationService localizationService) : IWorkOrderPdfService
+public sealed class WorkOrderPdfService(ILocalizationService localizationService, IReportBrandingProvider brandingProvider) : IWorkOrderPdfService
 {
-    public byte[] Generate(WorkOrderReportResponse report)
+    public async Task<byte[]> Generate(WorkOrderReportResponse report, CancellationToken cancellationToken = default)
     {
         string Localize(string key) => localizationService.GetLocalizedStringForCulture(key, report.LanguageCode);
 
@@ -46,6 +47,7 @@ public sealed class WorkOrderPdfService(ILocalizationService localizationService
             Page = Localize("Report.WorkOrder.Page")
         };
 
-        return new WorkOrderDocument(report, labels).GeneratePdf();
+        var style = ReportStyle.From(await brandingProvider.GetCurrent(cancellationToken));
+        return new WorkOrderDocument(report, labels, style).GeneratePdf();
     }
 }

@@ -1,41 +1,28 @@
 using System.Globalization;
 using Application.Contracts;
+using Infrastructure.Reports.Common;
 using Infrastructure.Reports.Common.Components;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
 namespace Infrastructure.Reports;
 
 /// <summary>
-/// Native QuestPDF rendering of the richest transactional report. It is isolated
-/// alongside the existing JSON/FastReport services.
+/// Native QuestPDF rendering of the richest transactional report. It uses the shared page
+/// scaffold and adds the VERI*FACTU QR block to the first-page header.
 /// </summary>
-public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCodePng) : IDocument
+public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCodePng, ReportStyle style) : IDocument
 {
-    private const string DeliveryNoteHeaderColor = "D9E2F3";
-    private const string TableHeaderColor = "EBF0F9";
-    private const string CompanyLogoResource = "Infrastructure.Reports.Assets.temges-logo.jpg";
-
-    private static readonly Lazy<byte[]> CompanyLogo = new(LoadCompanyLogo);
     private readonly CultureInfo culture = CultureInfo.GetCultureInfo(invoice.LanguageCode);
+    private readonly ReportTable cells = new(style);
 
-    public DocumentMetadata GetMetadata() => new()
-    {
-        Title = $"{invoice.Title} {invoice.Number}",
-        Author = "Rawcraft Zenith",
-        Subject = "Rawcraft Zenith Sales Invoice Report"
-    };
+    public DocumentMetadata GetMetadata() => style.Metadata($"{invoice.Title} {invoice.Number}");
 
     public void Compose(IDocumentContainer container)
     {
         container.Page(page =>
         {
-            page.Size(PageSizes.A4);
-            page.MarginHorizontal(28);
-            page.MarginVertical(28);
-            page.DefaultTextStyle(style => style.FontSize(9));
-            page.Foreground().Element(ReportWatermark.Compose);
+            ReportPage.Configure(page, style, ReportPageOptions.Standard);
             page.Header().Element(ComposeHeader);
             page.Content().PaddingTop(4).Column(ComposeContent);
             page.Footer().Element(ComposeFooter);
@@ -44,11 +31,14 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
 
     private void ComposeHeader(IContainer container)
     {
-        container.Column(column =>
-        {
-            column.Item().ShowOnce().Element(ComposeFirstPageHeader);
-            column.Item().SkipOnce().Element(ComposeCompactHeader);
-        });
+        ReportPage.Header(
+            container,
+            ComposeFirstPageHeader,
+            compact => ReportPage.CompactHeader(
+                compact,
+                style,
+                $"{invoice.Title}: {invoice.Number} - {invoice.HeaderDate}: {FormatDate(invoice.Date)}",
+                $"NIF: {invoice.Site.VatNumber} - {invoice.Customer.TaxName}"));
     }
 
     private void ComposeFirstPageHeader(IContainer container)
@@ -57,7 +47,7 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
         {
             column.Item().Height(92).Row(row =>
             {
-                row.ConstantItem(145).PaddingTop(16).Height(42).AlignCenter().Image(CompanyLogo.Value).FitArea();
+                row.ConstantItem(145).PaddingTop(16).Height(42).AlignCenter().Element(logo => ReportPage.Logo(logo, style));
                 row.RelativeItem().Row(qrRow =>
                 {
                     qrRow.RelativeItem();
@@ -78,7 +68,7 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
                 });
                 row.ConstantItem(195).Column(metadata =>
                 {
-                    metadata.Item().PaddingLeft(50).PaddingTop(4).Text(invoice.Title).FontSize(14).Bold();
+                    metadata.Item().PaddingLeft(50).PaddingTop(4).Text(invoice.Title).FontSize(14).Bold().FontColor(style.Primary);
                     metadata.Item().PaddingTop(14).Table(table =>
                     {
                         table.ColumnsDefinition(columns =>
@@ -104,26 +94,7 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
                 row.RelativeItem().Element(ComposeIssuer);
                 row.ConstantItem(230).Element(ComposeCustomer);
             });
-        });
-    }
-
-    private void ComposeCompactHeader(IContainer container)
-    {
-        container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingBottom(4).Row(row =>
-        {
-            row.ConstantItem(85).Height(28).AlignCenter().Image(CompanyLogo.Value).FitArea();
-            row.RelativeItem().PaddingLeft(8).Column(details =>
-            {
-                details.Item().Text($"{invoice.Title}: {invoice.Number} - {invoice.HeaderDate}: {FormatDate(invoice.Date)}").Bold();
-                details.Item().Text($"NIF: {invoice.Site.VatNumber} - {invoice.Customer.TaxName}");
-            });
-            row.ConstantItem(82).AlignRight().Text(text =>
-            {
-                text.Span("Página ");
-                text.CurrentPageNumber();
-                text.Span(" de ");
-                text.TotalPages();
-            });
+            column.Item().PaddingTop(6).Element(rule => ReportPage.BrandRule(rule, style));
         });
     }
     private void ComposeContent(ColumnDescriptor column)
@@ -187,7 +158,7 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
 
             table.Header(header =>
             {
-                header.Cell().ColumnSpan(4).Background(DeliveryNoteHeaderColor).PaddingVertical(4).PaddingHorizontal(6)
+                header.Cell().ColumnSpan(4).Background(style.AccentFill).PaddingVertical(4).PaddingHorizontal(6)
                     .Text(deliveryNote.Header).FontSize(11).SemiBold();
                 header.Cell().Element(cell => HeaderCell(cell, invoice.TableQuantity));
                 header.Cell().Element(cell => HeaderCell(cell, invoice.TableConcept));
@@ -261,35 +232,16 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
         });
     }
 
-    private void ComposeFooter(IContainer container)
-    {
-        container.BorderTop(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingTop(3).Row(row =>
-        {
-            row.RelativeItem().Text($"{invoice.HeaderNumber}: {invoice.Number} - NIF: {invoice.Site.VatNumber}");
-            row.ConstantItem(82).AlignRight().Text(text =>
-            {
-                text.Span("Página ");
-                text.CurrentPageNumber();
-                text.Span(" de ");
-                text.TotalPages();
-            });
-        });
-    }
-    private static void HeaderCell(IContainer container, string value) =>
-        container.Background(TableHeaderColor).BorderBottom(0.5f).BorderColor(Colors.Grey.Medium).PaddingVertical(3).PaddingHorizontal(4).Text(value).SemiBold();
+    private void ComposeFooter(IContainer container) =>
+        ReportPage.Footer(container, style, $"{invoice.HeaderNumber}: {invoice.Number} - NIF: {invoice.Site.VatNumber}");
 
-    private static void MetadataCell(IContainer container, string value) =>
-        container.Background(DeliveryNoteHeaderColor).Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).Text(value).SemiBold();
+    private void HeaderCell(IContainer container, string value) => cells.HeaderCell(container, value);
 
-    private static void MetadataValueCell(IContainer container, string value) =>
-        container.Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(4).AlignCenter().Text(value);
+    private void MetadataCell(IContainer container, string value) => cells.MetadataCell(container, value);
 
-    private static void BodyCell(IContainer container, string value, bool rightAligned = false)
-    {
-        container = container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).PaddingVertical(3).PaddingHorizontal(4);
-        if (rightAligned) container = container.AlignRight();
-        container.Text(value);
-    }
+    private static void MetadataValueCell(IContainer container, string value) => ReportTable.MetadataValueCell(container, value);
+
+    private static void BodyCell(IContainer container, string value, bool rightAligned = false) => ReportTable.BodyCell(container, value, rightAligned);
 
     private string FormatDate(DateTime date) => date.ToString("d", culture);
 
@@ -301,19 +253,6 @@ public sealed class SalesInvoiceDocument(InvoiceReportDto invoice, string? qrCod
     {
         var locality = string.Join(" – ", (new[] { postalCode, city }).Where(value => !string.IsNullOrWhiteSpace(value)));
         return string.IsNullOrWhiteSpace(region) ? locality : $"{locality} ({region})";
-    }
-
-    private static byte[] LoadCompanyLogo()
-    {
-        var assembly = typeof(SalesInvoiceDocument).Assembly;
-        var resourceName = assembly.GetManifestResourceNames()
-            .SingleOrDefault(name => name.EndsWith(".temges-logo.jpg", StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException($"Embedded report resource not found: {CompanyLogoResource}");
-        using var stream = assembly.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded report resource cannot be read: {resourceName}");
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return buffer.ToArray();
     }
 
     private static byte[] DecodeDataUri(string dataUri)

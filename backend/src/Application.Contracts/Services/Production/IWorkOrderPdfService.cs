@@ -2,5 +2,5 @@ namespace Application.Contracts;
 
 public interface IWorkOrderPdfService
 {
-    byte[] Generate(WorkOrderReportResponse report);
+    Task<byte[]> Generate(WorkOrderReportResponse report, CancellationToken cancellationToken = default);
 }
