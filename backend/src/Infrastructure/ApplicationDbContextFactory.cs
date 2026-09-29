@@ -18,7 +18,7 @@ namespace Infrastructure
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
             optionsBuilder.UseNpgsql(
-                connectionString,
+                Persistance.DatabaseConnectionString.WithSessionTimeZone(connectionString),
                 options => options.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
             optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             

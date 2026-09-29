@@ -149,7 +149,7 @@ namespace Application.Services.System
         public async Task<int> PurgeExpiredRefreshTokens()
         {
             var expired = await unitOfWork.UserRefreshTokens.FindAsync(
-                t => t.ExpiryDate < DateTime.UtcNow || t.Used || t.Revoked);
+                t => t.ExpiryDate < DateTime.Now || t.Used || t.Revoked);
 
             if (expired.Count == 0)
                 return 0;
@@ -200,7 +200,7 @@ namespace Application.Services.System
             {
                 JwtId = Guid.Parse(token.Id),
                 Token = refreshToken,
-                ExpiryDate = DateTime.UtcNow.AddMonths(6),
+                ExpiryDate = DateTime.Now.AddMonths(6),
                 Used = false,
                 Revoked = false,
                 UserId = user.Id
@@ -295,7 +295,7 @@ namespace Application.Services.System
                     };
                 }
 
-                if (storedToken.ExpiryDate < DateTime.UtcNow)
+                if (storedToken.ExpiryDate < DateTime.Now)
                 {
                     return new AuthResponse()
                     {

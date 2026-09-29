@@ -46,14 +46,14 @@ public class ApiKeyAuthenticationHandler(
         if (apiKey is null)
             return AuthenticateResult.Fail(localization.GetLocalizedString("ApiKey.NotFoundOrDisabled"));
 
-        if (apiKey.ExpiresOn.HasValue && apiKey.ExpiresOn.Value < DateTime.UtcNow)
+        if (apiKey.ExpiresOn.HasValue && apiKey.ExpiresOn.Value < DateTime.Now)
             return AuthenticateResult.Fail(localization.GetLocalizedString("ApiKey.Expired"));
 
         if (!string.Equals(apiKey.KeyHash, keyHash, StringComparison.OrdinalIgnoreCase))
             return AuthenticateResult.Fail(localization.GetLocalizedString("ApiKey.NotFoundOrDisabled"));
 
         // Update LastUsedOn (fire-and-forget, non-critical)
-        apiKey.LastUsedOn = DateTime.UtcNow;
+        apiKey.LastUsedOn = DateTime.Now;
         await unitOfWork.ApiKeys.Update(apiKey);
 
         var claims = new List<Claim>

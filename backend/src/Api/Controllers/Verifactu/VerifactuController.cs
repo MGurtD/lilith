@@ -60,7 +60,7 @@ public class VerifactuController(
         if (Month < 1 || Month > 12)
             return BadRequest(localizationService.GetLocalizedString("VerifactuInvalidMonth"));
 
-        int currentYear = DateTime.UtcNow.Year;
+        int currentYear = DateTime.Now.Year;
         if (Year < 2024 || Year > currentYear)
             return BadRequest(localizationService.GetLocalizedString("VerifactuInvalidYear", currentYear));
 
