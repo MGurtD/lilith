@@ -26,8 +26,11 @@ Run backend commands from `backend/`:
 dotnet build
 dotnet test
 dotnet test tests/Application.Tests/Application.Tests.csproj --filter "FullyQualifiedName~TypeOrMethod"
+dotnet ef migrations has-pending-model-changes --project src/Infrastructure
 dotnet run --project src/Api
 ```
+
+`has-pending-model-changes` compares the EF model with the migrations snapshot. It needs `ConnectionStrings:Default` configured (user secrets `Lilith.Backend` or an environment variable) but does not connect to the database.
 
 Run frontend commands from `frontend/`:
 
@@ -61,6 +64,16 @@ Local launch-profile Swagger is `https://localhost:7284/swagger`. Docker exposes
 - Deletion behavior is entity-specific. Inspect the analogous service and repository before choosing physical deletion, `Disabled`, or another lifecycle transition.
 - Most entities use `CreatedOn`, `UpdatedOn`, and `Disabled`, but not every entity uses the standard timestamp configuration.
 - Lifecycle identifiers and persisted statuses are domain values, not frontend translation strings.
+
+## Dates and Time
+
+Every date is stored in Europe/Madrid local time. Mixing conventions stores the same date as different instants per environment, and the model then drifts from its migrations so that `dotnet ef database update` refuses to run.
+
+- Every date column is `timestamp without time zone` holding Europe/Madrid wall-clock time. Never add `timestamp with time zone` (timestamptz) columns, `HasColumnType("timestamp with time zone")`, or `DateTimeOffset` properties on entities.
+- Use `DateTime` and `DateTime.Now` for any value stored in or compared with the database. Keep `DateTime.UtcNow` for values that never reach the database, such as JWT expiry, log timestamps and caches.
+- The API runs with `TZ=Europe/Madrid`, and every connection sets `Timezone=Europe/Madrid` through `DatabaseConnectionString.WithSessionTimeZone`. Connect only through it, and do not remove it or the `Npgsql.EnableLegacyTimestampBehavior` switch from `DatabaseSetup` or `ApplicationDbContextFactory`. `dotnet ef` builds the model through that factory.
+- After any change to entities or EF configuration, run `dotnet ef migrations has-pending-model-changes --project src/Infrastructure` from `backend/`. It must report no changes, or a migration for those changes must exist. If it reports changes you did not intend, stop and report them instead of generating a migration.
+- Never apply a scaffolded migration that changes the type of an existing date column. Converting between timestamp types needs a hand-written migration that uses `USING "<Column>" AT TIME ZONE 'Europe/Madrid'` and drops and recreates the views that read the column (PostgreSQL refuses to alter a column used by a view). See `UnifyDateColumnsToMadridLocalTime`.
 
 ## Localization
 

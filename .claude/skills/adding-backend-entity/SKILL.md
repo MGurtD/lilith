@@ -32,11 +32,14 @@ Build from current source, not copied templates.
 - Inspect the analogous entity before choosing physical deletion, `Disabled`, or a lifecycle transition.
 - Read the live `StatusConstants.cs`; never reproduce its values in the skill or new documentation.
 - Define cascade behavior deliberately for each relationship.
+- Date properties are `DateTime` in Europe/Madrid local time, stored as `timestamp without time zone`, and set with `DateTime.Now`. Never use `DateTimeOffset` or `timestamp with time zone` (see Dates and Time in `AGENTS.md`).
 - Do not add backward compatibility unless a persisted or external consumer requires it.
 
 ## Migrations
 
 Create or remove an EF migration only when the user explicitly requests it. Review generated `Up` and `Down` code before any database update. Never run `database update` without explicit approval.
+
+A scaffolded migration must contain only the changes you made. If it also alters columns you did not touch, especially date column types, the model had already drifted: stop and report it instead of keeping those operations.
 
 ## Verify
 
@@ -45,6 +48,9 @@ From `backend/` run:
 ```bash
 dotnet build
 dotnet test
+dotnet ef migrations has-pending-model-changes --project src/Infrastructure
 ```
+
+The last command must report no changes, or a migration for those changes must exist.
 
 Add focused tests for business rules when the existing test project can exercise them. Report separately if runtime or database verification was not requested.
