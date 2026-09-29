@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { v4 as uuidv4 } from "uuid";
 import {
   Customer,
   CustomerContact,
@@ -44,6 +45,25 @@ export const useCustomersStore = defineStore({
         web: "",
         disabled: false,
         customerTypeId: "",
+        contacts: [] as CustomerContact[],
+        // L'alta exigeix una adreça fiscal principal, que s'envia amb el client
+        address: [
+          {
+            id: uuidv4(),
+            customerId: id,
+            name: "Adreça fiscal",
+            country: "",
+            region: "",
+            city: "",
+            postalCode: "",
+            address: "",
+            main: true,
+            disabled: false,
+            observations: "",
+            latitude: 0,
+            longitude: 0,
+          } as CustomerAddress,
+        ],
       } as Customer;
     },
     async fetchCustomers() {

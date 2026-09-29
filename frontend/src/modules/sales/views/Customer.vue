@@ -20,7 +20,10 @@
     </TabList>
     <TabPanels>
       <TabPanel value="0">
-        <FormCustomer @submit="submitForm" />
+        <FormCustomer
+          :show-fiscal-address="formMode === FormActionMode.CREATE"
+          @submit="submitForm"
+        />
       </TabPanel>
       <TabPanel value="1" v-if="formMode === FormActionMode.EDIT">
         <CustomerContacts
