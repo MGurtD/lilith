@@ -339,12 +339,12 @@ namespace Application.Services.Sales
                 return new GenericResponse(false, localizationService.GetLocalizedString("StatusNotFound", "Pendent d'acceptar/Rebutjat"));
             }
 
-            var budgets = await unitOfWork.Budgets.FindAsync(b => b.StatusId == status.Id && b.Date.AddDays(30) <= DateTime.UtcNow);
+            var budgets = await unitOfWork.Budgets.FindAsync(b => b.StatusId == status.Id && b.Date.AddDays(30) <= DateTime.Now);
             foreach (var budget in budgets)
             {
                 budget.StatusId = rejectedstatus.Id;
-                budget.AutoRejectedDate = DateTime.UtcNow;
-                budget.Notes = localizationService.GetLocalizedString("BudgetAutomaticRejection", DateTime.UtcNow.ToString());
+                budget.AutoRejectedDate = DateTime.Now;
+                budget.Notes = localizationService.GetLocalizedString("BudgetAutomaticRejection", DateTime.Now.ToString());
                 await unitOfWork.Budgets.Update(budget);
 
             }
