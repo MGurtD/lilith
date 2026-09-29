@@ -1,6 +1,7 @@
 using Application.Contracts;
 using Application.Services.System;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -68,6 +69,19 @@ public class ReportBrandingProviderTests
         await brandingService.Received(1).GetCurrentLogo(BrandingLogoSlot.Watermark);
     }
 
+    [Fact]
+    public async Task GetCurrent_falls_back_to_the_default_when_an_image_file_cannot_be_read()
+    {
+        var sut = BuildSut(BrandingWith(mainLogoVersion: "logo-v1", watermarkVersion: "wm-v1", watermarkEnabled: true), out var brandingService);
+        brandingService.GetCurrentLogo(BrandingLogoSlot.Main)
+            .Returns<Task<BrandingLogoContent?>>(_ => throw new UnauthorizedAccessException("denied"));
+
+        var result = await sut.GetCurrent();
+
+        Assert.Null(result.Logo);
+        Assert.Equal(WatermarkBytes, result.Watermark);
+    }
+
     // -------- helpers --------
 
     private static ReportBrandingProvider BuildSut(BrandingResponse branding, out IBrandingService brandingService)
@@ -77,7 +91,10 @@ public class ReportBrandingProviderTests
         brandingService.GetCurrentLogo(BrandingLogoSlot.Main).Returns(_ => Content(LogoBytes));
         brandingService.GetCurrentLogo(BrandingLogoSlot.Watermark).Returns(_ => Content(WatermarkBytes));
 
-        return new ReportBrandingProvider(brandingService, new MemoryCache(new MemoryCacheOptions()));
+        return new ReportBrandingProvider(
+            brandingService,
+            new MemoryCache(new MemoryCacheOptions()),
+            NullLogger<ReportBrandingProvider>.Instance);
     }
 
     private static BrandingLogoContent Content(byte[] bytes) =>

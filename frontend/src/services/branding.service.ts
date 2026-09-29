@@ -1,5 +1,21 @@
 import apiClient from "@/api/api.client";
 
+/** A branding request the API refused, carrying its localized message when there is one. */
+export class BrandingRequestError extends Error {
+  constructor(
+    message: string,
+    readonly apiMessage: string | null,
+  ) {
+    super(message);
+  }
+}
+
+const refusal = (data: unknown, fallback: string): BrandingRequestError => {
+  const errors = (data as { errors?: unknown } | null)?.errors;
+  const message = Array.isArray(errors) && typeof errors[0] === "string" ? errors[0] : "";
+  return new BrandingRequestError(message || fallback, message || null);
+};
+
 export type BrandingLogoSlot = "main" | "sidebar" | "watermark";
 
 export type BrandingPalette =
@@ -87,7 +103,7 @@ export class BrandingService {
       request,
     );
     if (response.status !== 200) {
-      throw new Error("Branding update failed");
+      throw refusal(response.data, "Branding update failed");
     }
     return response.data;
   }
@@ -98,7 +114,7 @@ export class BrandingService {
       { enabled },
     );
     if (response.status !== 200) {
-      throw new Error("Watermark update failed");
+      throw refusal(response.data, "Watermark update failed");
     }
     return response.data;
   }
@@ -116,14 +132,14 @@ export class BrandingService {
       { headers: { "Content-Type": "multipart/form-data" } },
     );
     if (response.status !== 200) {
-      throw new Error("Logo upload failed");
+      throw refusal(response.data, "Logo upload failed");
     }
   }
 
   async removeCurrentLogo(slot: BrandingLogoSlot): Promise<void> {
     const response = await apiClient.delete("/Branding/current/logo/" + slot);
     if (response.status !== 200) {
-      throw new Error("Logo removal failed");
+      throw refusal(response.data, "Logo removal failed");
     }
   }
 

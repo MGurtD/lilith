@@ -1305,7 +1305,7 @@ const es = {
       watermark: {
         label: "Marca de agua",
         enabled: "Mostrar la marca de agua",
-        hint: "Se imprime tal como se sube, encima del contenido: usa un PNG claro con fondo transparente.",
+        hint: "Se imprime tal como se sube, encima del contenido: debe ser un PNG o WebP claro con fondo transparente.",
         default: "Marca de agua por defecto",
         custom: "Marca de agua personalizada",
         restoreDefault: "Restaurar la predeterminada",

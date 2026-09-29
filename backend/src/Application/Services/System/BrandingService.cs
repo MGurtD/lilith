@@ -119,6 +119,10 @@ public class BrandingService(
         if (!validation.IsValid)
             return new GenericResponse(false, localizationService.GetLocalizedString(validation.ErrorKey!));
 
+        // The watermark is drawn over the document content, so an opaque image would hide it.
+        if (slot == BrandingLogoSlot.Watermark && !await HasTransparency(file, validation.Extension!))
+            return new GenericResponse(false, localizationService.GetLocalizedString("BrandingWatermarkNeedsTransparency"));
+
         var directory = Path.Combine(settings.Value.FileManagment.UploadPath, LegacyBrandingEntity);
         Directory.CreateDirectory(directory);
 
@@ -250,6 +254,50 @@ public class BrandingService(
                global::System.IO.File.Exists(file.Path)
             ? file
             : null;
+    }
+
+    // True when the image can carry transparency: a PNG with an alpha channel or a tRNS
+    // chunk, or a WebP with its alpha flag. JPEG has no transparency at all.
+    private static async Task<bool> HasTransparency(IFormFile file, string extension)
+    {
+        if (extension == ".jpg")
+            return false;
+
+        await using var input = file.OpenReadStream();
+        using var buffer = new MemoryStream();
+        await input.CopyToAsync(buffer);
+        var data = buffer.ToArray();
+
+        if (extension == ".png")
+        {
+            // IHDR is the first chunk; its colour type is byte 25 (4 = grey + alpha, 6 = RGBA).
+            if (data.Length > 25 && data[25] is 4 or 6)
+                return true;
+
+            var offset = 8;
+            while (offset + 8 <= data.Length)
+            {
+                var length = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+                var type = global::System.Text.Encoding.ASCII.GetString(data, offset + 4, 4);
+                if (type == "tRNS")
+                    return true;
+                if (type is "IDAT" or "IEND" || length < 0)
+                    return false;
+                offset += 12 + length;
+            }
+            return false;
+        }
+
+        if (extension == ".webp" && data.Length >= 25)
+        {
+            var chunk = global::System.Text.Encoding.ASCII.GetString(data, 12, 4);
+            if (chunk == "VP8X")
+                return (data[20] & 0x10) != 0;
+            if (chunk == "VP8L")
+                return (data[24] & 0x10) != 0;
+        }
+
+        return false;
     }
 
     private async Task<(bool IsValid, string? Extension, string? ErrorKey)> ValidateLogo(IFormFile file)

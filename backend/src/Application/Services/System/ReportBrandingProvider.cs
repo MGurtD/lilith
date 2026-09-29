@@ -1,5 +1,6 @@
 using Application.Contracts;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services.System;
 
@@ -7,7 +8,10 @@ namespace Application.Services.System;
 /// Resolves the branding printed on PDF reports from the same Enterprise branding the UI uses.
 /// Image bytes are cached by file id: every upload creates a new file, so entries never go stale.
 /// </summary>
-public class ReportBrandingProvider(IBrandingService brandingService, IMemoryCache cache) : IReportBrandingProvider
+public class ReportBrandingProvider(
+    IBrandingService brandingService,
+    IMemoryCache cache,
+    ILogger<ReportBrandingProvider> logger) : IReportBrandingProvider
 {
     private static readonly TimeSpan ImageCacheDuration = TimeSpan.FromHours(12);
 
@@ -37,14 +41,24 @@ public class ReportBrandingProvider(IBrandingService brandingService, IMemoryCac
         if (cache.TryGetValue(cacheKey, out byte[]? cached))
             return cached;
 
-        var content = await brandingService.GetCurrentLogo(slot);
-        if (content is null)
-            return null;
+        byte[] bytes;
+        try
+        {
+            var content = await brandingService.GetCurrentLogo(slot);
+            if (content is null)
+                return null;
 
-        await using var stream = content.Content;
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken);
-        var bytes = buffer.ToArray();
+            await using var stream = content.Content;
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            bytes = buffer.ToArray();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable upload must not break every PDF: the report falls back to the default image.
+            logger.LogWarning(ex, "Unable to read the {Slot} branding image; using the default", slot);
+            return null;
+        }
 
         cache.Set(cacheKey, bytes, ImageCacheDuration);
         return bytes;

@@ -1340,7 +1340,7 @@ const en = {
       watermark: {
         label: "Watermark",
         enabled: "Show the watermark",
-        hint: "It is printed as uploaded, over the content: use a light PNG with a transparent background.",
+        hint: "It is printed as uploaded, over the content: it must be a light PNG or WebP with a transparent background.",
         default: "Default watermark",
         custom: "Custom watermark",
         restoreDefault: "Restore default",

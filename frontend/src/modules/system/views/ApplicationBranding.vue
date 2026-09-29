@@ -124,7 +124,7 @@
               custom-upload
               auto
               :choose-label="t('branding.logos.select')"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/webp"
               :max-file-size="MAX_LOGO_SIZE"
               :invalid-file-size-message="t('branding.logos.fileSizeError')"
               :choose-button-props="{ loading: processingSlot === 'watermark' }"
@@ -158,6 +158,7 @@ import ProgressSpinner from "primevue/progressspinner";
 
 import FormApplicationBranding from "../components/FormApplicationBranding.vue";
 import {
+  BrandingRequestError,
   brandingService,
   type BrandingLogoSlot,
   type BrandingUpdateRequest,
@@ -186,10 +187,12 @@ const brandingFromStore = (): BrandingUpdateRequest => ({
   primaryColor: brandingStore.primaryColor,
 });
 
-const errorMessage = (error: unknown): string =>
-  isAxiosError(error) && error.response?.status === 403
-    ? t("branding.toasts.noPermission")
-    : t("branding.toasts.error");
+const errorMessage = (error: unknown): string => {
+  if (isAxiosError(error) && error.response?.status === 403) return t("branding.toasts.noPermission");
+  // The API explains refused uploads (format, size, watermark without transparency).
+  if (error instanceof BrandingRequestError && error.apiMessage) return error.apiMessage;
+  return t("branding.toasts.error");
+};
 
 const saveBranding = async (request: BrandingUpdateRequest) => {
   if (!canEdit.value || saving.value) return;

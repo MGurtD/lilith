@@ -1363,7 +1363,7 @@ const ca = {
       watermark: {
         label: "Marca d'aigua",
         enabled: "Mostrar la marca d'aigua",
-        hint: "S'imprimeix tal com es puja, a sobre del contingut: utilitza un PNG clar amb fons transparent.",
+        hint: "S'imprimeix tal com es puja, a sobre del contingut: ha de ser un PNG o WebP clar amb fons transparent.",
         default: "Marca d'aigua per defecte",
         custom: "Marca d'aigua personalitzada",
         restoreDefault: "Restaurar la predeterminada",

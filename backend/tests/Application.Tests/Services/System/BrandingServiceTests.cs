@@ -21,6 +21,40 @@ public class BrandingServiceTests
 {
     private static readonly byte[] PngHeader = [137, 80, 78, 71, 13, 10, 26, 10];
 
+    // PNG signature plus an IHDR chunk (1x1, 8-bit) with the given colour type:
+    // 2 = RGB (opaque), 6 = RGBA.
+    private static byte[] PngWithColourType(byte colourType) =>
+        [.. PngHeader, 0, 0, 0, 13, (byte)'I', (byte)'H', (byte)'D', (byte)'R', 0, 0, 0, 1, 0, 0, 0, 1, 8, colourType, 0, 0, 0, 0, 0, 0, 0];
+
+    private static readonly byte[] JpegHeader = [0xFF, 0xD8, 0xFF, 0xE0, 0, 16, (byte)'J', (byte)'F', (byte)'I', (byte)'F', 0, 1];
+
+    [Theory]
+    [InlineData("jpeg")]
+    [InlineData("opaque-png")]
+    public async Task Watermark_upload_refuses_an_image_without_transparency(string kind)
+    {
+        var root = CreateTempDirectory();
+        try
+        {
+            var enterprise = EnterpriseBuilder.Default();
+            var uow = new BrandingTestContext(enterprise);
+            var sut = BuildSut(uow, root);
+            var file = kind == "jpeg"
+                ? NewFormFile(new MemoryStream(JpegHeader), "watermark.jpg", "image/jpeg")
+                : NewFormFile(new MemoryStream(PngWithColourType(2)), "watermark.png", "image/png");
+
+            var upload = await sut.UploadCurrentLogo(BrandingLogoSlot.Watermark, file);
+
+            Assert.False(upload.Result);
+            Assert.Null(enterprise.LogoWatermarkFileId);
+            Assert.Empty(uow.FilesStore.Store);
+        }
+        finally
+        {
+            DeleteDirectory(root);
+        }
+    }
+
     [Fact]
     public async Task GetCurrent_returns_branding_from_the_single_enabled_enterprise()
     {
@@ -212,7 +246,7 @@ public class BrandingServiceTests
             var uow = new BrandingTestContext(enterprise);
             var sut = BuildSut(uow, root);
 
-            var upload = await sut.UploadCurrentLogo(BrandingLogoSlot.Watermark, NewFormFile(new MemoryStream(PngHeader), "watermark.png", "image/png"));
+            var upload = await sut.UploadCurrentLogo(BrandingLogoSlot.Watermark, NewFormFile(new MemoryStream(PngWithColourType(6)), "watermark.png", "image/png"));
             var response = await sut.GetCurrent();
 
             Assert.True(upload.Result);
