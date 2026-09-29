@@ -24,12 +24,12 @@ Aquí es configura la imatge de l'empresa a l'aplicació i als documents PDF: el
 ## Aspectes importants
 
 - Els logotips i la marca d'aigua es desen al moment de triar el fitxer, i la casella «Mostrar la marca d'aigua» es desa en marcar-la o desmarcar-la. Només el nom comercial i la paleta necessiten «Guardar».
-- Formats admesos: PNG, JPG/JPEG i WebP, de 2 MB com a màxim. L'extensió del fitxer ha de correspondre al seu contingut real.
+- Formats admesos: PNG, JPG/JPEG i WebP, de 2 MB com a màxim. L'extensió del fitxer ha de correspondre al seu contingut real. La marca d'aigua només admet PNG o WebP amb fons transparent.
 - El «Nom comercial» pot tenir fins a 60 caràcters. Si el deixes buit, es fa servir el nom per defecte. Surt a la barra lateral, a la pestanya del navegador, a les pantalles d'inici de sessió i d'inici, i com a autor dels PDF.
 - La paleta canvia el color principal de tota l'aplicació (botons i elements destacats) i els detalls de color dels PDF (títol, línies i capçaleres de taula). Tu ho veus a l'instant; la resta d'usuaris, quan tornin a carregar l'aplicació.
 - El «Logotip principal» surt a la pantalla d'inici de sessió, a la pantalla d'inici i a tots els PDF. Sense logotip propi es fa servir el de fàbrica.
 - El «Logotip de la barra lateral» es mostra sobre fons fosc. Si no n'hi ha, la barra lateral fa servir el logotip principal i, si tampoc n'hi ha, el de fàbrica.
-- La marca d'aigua s'imprimeix al centre de la pàgina, per sobre del contingut, als pressupostos, comandes de venda, albarans, factures de venda i comandes de compra. Les ordres de fabricació no en porten. Fes servir un PNG clar amb fons transparent perquè no tapi el text.
+- La marca d'aigua s'imprimeix al centre de la pàgina, per sobre del contingut, als pressupostos, comandes de venda, albarans, factures de venda i comandes de compra. Les ordres de fabricació no en porten. Per això ha de tenir fons transparent: una imatge opaca (per exemple, un JPG) es rebutja perquè taparia el text.
 - Amb «Mostrar la marca d'aigua» desmarcada, els PDF no porten cap marca d'aigua i no se'n pot pujar cap de nova. Marcada i sense imatge pròpia, s'imprimeix la «Marca d'aigua per defecte».
 - En substituir o eliminar un logotip o la marca d'aigua, el fitxer anterior s'esborra del servidor i no es pot recuperar. Guarda'n una còpia abans si el vols conservar.
 - La configuració és de l'empresa activa. Si a «Empreses» n'hi ha més d'una d'activa, l'aplicació mostra la imatge per defecte i els canvis no es poden desar.
@@ -38,7 +38,7 @@ Aquí es configura la imatge de l'empresa a l'aplicació i als documents PDF: el
 
 - Si surt «No tens permisos per modificar el Branding.», cal un usuari administrador per fer canvis.
 - Si surt «El logotip no pot superar els 2 MB», redueix la mida de la imatge; passa també amb la marca d'aigua.
-- Si en pujar una imatge surt «No s'ha pogut actualitzar el Branding.», comprova primer que sigui PNG, JPG o WebP i que l'extensió coincideixi amb el format real (per exemple, un PNG reanomenat a .jpg es rebutja).
+- Si en pujar una imatge es rebutja, el missatge n'explica el motiu: comprova que sigui PNG, JPG o WebP, que l'extensió coincideixi amb el format real (per exemple, un PNG reanomenat a .jpg es rebutja) i, per a la marca d'aigua, que tingui fons transparent.
 - Si en desar també surt «No s'ha pogut actualitzar el Branding.», comprova a «Empreses» que només n'hi hagi una d'activa.
 - Si no pots triar una marca d'aigua, marca abans «Mostrar la marca d'aigua».
 - Si un altre usuari encara veu els colors antics, ha de tornar a carregar l'aplicació.
