@@ -31,12 +31,13 @@ Configura un ciclo de vida: los estados por los que pasa un tipo de documento, l
 - **«Color»**: es el color con el que el estado aparece en las listas de documentos. Elígelo por su significado: «En curso», «Requiere acción», «Hecho», «Problema», «Cerrado», «Neutro» o «Sin color».
 - **Etiquetas con significado especial** en el ciclo de vida de las OF: las OF en estados con la etiqueta `Available` son las que se pueden planificar y cuentan para la carga de las máquinas (si ningún estado la tiene, solo se planifican las OF en el estado inicial); `Plant` hace que las fases de la OF aparezcan en las máquinas de planta para cargarlas; `ExternalService` hace que las fases externas de la OF aparezcan en «Generación de pedidos de compra». El nombre de la etiqueta debe coincidir exactamente.
 - Las etiquetas son de cada ciclo de vida y no se pueden repetir dentro del mismo ciclo de vida. El selector «Etiquetas» del diálogo de estado solo aparece cuando el ciclo de vida tiene etiquetas.
-- **Eliminaciones**: borrar estados, transiciones y etiquetas es definitivo y no pide confirmación. Eliminar una etiqueta la quita de todos los estados que la tenían. No elimines nunca un estado que tenga documentos: la base de datos puede rechazar la eliminación o eliminar también los documentos que están en él.
+- **Eliminaciones**: borrar estados, transiciones y etiquetas es definitivo y pide confirmación. Eliminar una etiqueta la quita de todos los estados que la tenían. No se puede eliminar un estado que usen documentos, transiciones o ciclos de vida (como estado inicial o final).
 - En un ciclo de vida nuevo, primero guarda los datos generales con «Guardar»: hasta entonces no se pueden añadir estados ni transiciones.
 
 ## Errores frecuentes
 
 - Si no puedes eliminar un estado y aparece «El estado ... forma parte de una transición», elimina primero las transiciones donde aparece. Piénsalo bien: quizá lo que conviene es marcarlo como «Deshabilitado».
+- Si aparece «No se ha podido eliminar el estado ...», algún documento lo usa. Márcalo como «Deshabilitado» en lugar de eliminarlo.
 - Si al guardar una transición aparece «Los estados de origen y destino deben ser diferentes», revisa el «Origen» y el «Destino».
 - Si un usuario no encuentra un estado en el desplegable de un documento, comprueba que haya una transición desde el estado actual del documento y que el estado de destino no esté «Deshabilitado».
 - Si al guardar una etiqueta aparece que ya existe una etiqueta con ese nombre, elige otro o edita la existente.

@@ -24,10 +24,11 @@ Llista els magatzems de l'empresa. Cada magatzem pertany a un centre i té ubica
 - La «Ubicació per defecte» és on el sistema deixa les entrades i sortides automàtiques quan no s'indica cap altra ubicació: recepcions de compra, albarans de venda, producció de les ordres de fabricació i retalls que tornen de les màquines. El sistema la pren d'un magatzem actiu (no desactivat).
 - Un magatzem desactivat es continua veient en aquesta llista, però el seu estoc deixa de sortir a «Estocs» i a «Inventari» i les seves ubicacions no apareixen als desplegables d'ubicació.
 - Quan es crea una màquina, el sistema crea automàticament una ubicació de tipus «Subministrament» anomenada «APR-» més el nom de la màquina en un magatzem actiu. És on va el material que s'aprovisiona a la màquina.
-- L'eliminació és definitiva i també elimina les ubicacions del magatzem, i amb elles l'estoc que hi pugui haver. Si el magatzem ja s'ha fet servir, marca'l com a «Desactivat» en lloc d'eliminar-lo.
+- L'eliminació és definitiva i també elimina les ubicacions del magatzem. No es pot eliminar un magatzem si alguna ubicació té estoc o moviments de magatzem; en aquest cas, marca'l com a «Desactivat».
 
 ## Errors frequents
 
+- Si surt «No s'ha pogut eliminar el magatzem ...», alguna ubicació té estoc o moviments: marca'l com a «Desactivat».
 - Si una recepció, un albarà o el final d'una ordre de fabricació falla amb «No hi ha una ubicació per defecte definida al projecte», obre el magatzem actiu i tria-hi una «Ubicació per defecte».
 - Si després de crear un magatzem no surt el missatge «Magatzem creat correctament», comprova primer que no n'hi hagi cap altre amb el mateix nom.
 - Si l'estoc d'un magatzem ha desaparegut d'«Estocs», comprova que el magatzem o la ubicació no estiguin marcats com a «Desactivat».

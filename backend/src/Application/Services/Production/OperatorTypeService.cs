@@ -48,6 +48,13 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
+            // Operators cascade from their type, so a type in use is never deleted.
+            if (await unitOfWork.OperatorTypes.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("OperatorTypeInUse", operatorType.Name));
+            }
+
             await unitOfWork.OperatorTypes.Remove(operatorType);
             return new GenericResponse(true, operatorType);
         }

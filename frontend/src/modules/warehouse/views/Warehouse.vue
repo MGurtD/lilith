@@ -104,7 +104,7 @@ const onAddLocation = (location: Location): void => {
 const onEditLocation = (location: Location): void => {
   warehouseStore.updateLocation(location.id, location);
 };
-const onDeleteLocation = (location: Location): void => {
+const onDeleteLocation = async (location: Location): Promise<void> => {
   if (warehouse.value && location.id === warehouse.value.defaultLocationId) {
     toast.add({
       severity: "warn",
@@ -115,6 +115,14 @@ const onDeleteLocation = (location: Location): void => {
     return;
   }
 
-  warehouseStore.deleteLocation(location.id);
+  const deleted = await warehouseStore.deleteLocation(location.id);
+  if (!deleted) {
+    toast.add({
+      severity: "warn",
+      summary: t("warehouse.messages.locationHasDependencies"),
+      detail: t("warehouse.messages.locationDeleteErrorDetail"),
+      life: 6000,
+    });
+  }
 };
 </script>

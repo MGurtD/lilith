@@ -110,6 +110,13 @@ const deleteButton = (area: Area) => {
           life: 3000,
         });
         await plantmodelStore.fetchAreas();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.areaDeleteError", { name: area.name }),
+          detail: t("production.messages.areaDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

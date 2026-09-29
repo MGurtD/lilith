@@ -7,7 +7,7 @@ namespace Application.Tests.TestSupport;
 public sealed class BrandingTestContext
 {
     public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
-    public StagingRepository<Enterprise> EnterprisesStore { get; } = new();
+    public StagingEnterpriseRepository EnterprisesStore { get; } = new();
     public StagingRepository<Domain.Entities.File> FilesStore { get; } = new();
     public Exception? CommitException { get; init; }
     public Action? AfterCommit { get; set; }

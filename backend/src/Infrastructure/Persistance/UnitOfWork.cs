@@ -38,21 +38,21 @@ namespace Infrastructure.Persistance
         // Shared
         public IRepository<Domain.Entities.File, Guid> Files { get; private set; } = new Repository<Domain.Entities.File, Guid>(context);
         public IRepository<Parameter, Guid> Parameters { get; private set; } = new Repository<Parameter, Guid>(context);
-        public IRepository<Exercise, Guid> Exercices { get; private set; } = new Repository<Exercise, Guid>(context);
-        public IRepository<Tax, Guid> Taxes { get; private set; } = new Repository<Tax, Guid>(context);
-        public IRepository<PaymentMethod, Guid> PaymentMethods { get; private set; } = new Repository<PaymentMethod, Guid>(context);
+        public IExerciseRepository Exercices { get; private set; } = new ExerciseRepository(context);
+        public ITaxRepository Taxes { get; private set; } = new TaxRepository(context);
+        public IPaymentMethodRepository PaymentMethods { get; private set; } = new PaymentMethodRepository(context);
         public ILifecycleRepository Lifecycles { get; private set; } = new LifecycleRepository(context);
         public ILifecycleTagRepository LifecycleTags { get; private set; } = new LifecycleTagRepository(context);
         public IRepository<StatusLifecycleTag, Guid> StatusLifecycleTags { get; private set; } = new Repository<StatusLifecycleTag, Guid>(context);
 
         // Purchase
-        public IRepository<SupplierType, Guid> SupplierTypes { get; private set; } = new Repository<SupplierType, Guid>(context);
+        public ISupplierTypeRepository SupplierTypes { get; private set; } = new SupplierTypeRepository(context);
         public ISupplierRepository Suppliers { get; private set; } = new SupplierRepository(context);
         public IPurchaseOrderRepository PurchaseOrders { get; private set; } = new PurchaseOrderRepository(context);
         public IPurchaseInvoiceRepository PurchaseInvoices { get; private set; } = new PurchaseInvoiceRepository(context);
         public IRepository<PurchaseInvoiceDueDate, Guid> PurchaseInvoiceDueDates { get; private set; } = new Repository<PurchaseInvoiceDueDate, Guid>(context);
         public IRepository<InvoiceSerie, Guid> InvoiceSeries { get; private set; } = new Repository<InvoiceSerie, Guid>(context);
-        public IRepository<ExpenseType, Guid> ExpenseTypes { get; private set; } = new Repository<ExpenseType, Guid>(context);
+        public IExpenseTypeRepository ExpenseTypes { get; private set; } = new ExpenseTypeRepository(context);
         public IExpenseRepository Expenses { get; private set; } = new ExpenseRepository(context);
         public IRepository<ReferenceFormat, Guid> ReferenceFormats { get; private set; } = new Repository<ReferenceFormat, Guid>(context);
         public IContractReader<ConsolidatedExpense> ConsolidatedExpenses { get; private set; } = new ContractReader<ConsolidatedExpense>(context);
@@ -62,9 +62,9 @@ namespace Infrastructure.Persistance
         public IRepository<PurchaseRateDetail, Guid> PurchaseRateDetails { get; private set; } = new Repository<PurchaseRateDetail, Guid>(context);
 
         // Sales
-        public IRepository<CustomerType, Guid> CustomerTypes { get; private set; } = new Repository<CustomerType, Guid>(context);
+        public ICustomerTypeRepository CustomerTypes { get; private set; } = new CustomerTypeRepository(context);
         public ICustomerRepository Customers { get; private set; } = new CustomerRepository(context);
-        public IRepository<Reference, Guid> References { get; private set; } = new Repository<Reference, Guid>(context);
+        public IReferenceRepository References { get; private set; } = new ReferenceRepository(context);
         public ISalesOrderHeaderRepository SalesOrderHeaders { get; private set; } = new SalesOrderHeaderRepository(context, new SalesOrderDetailRepository(context));
         public ISalesOrderDetailRepository SalesOrderDetails { get; private set; } = new SalesOrderDetailRepository(context);
         public ISalesInvoiceRepository SalesInvoices { get; private set; } = new SalesInvoiceRepository(context);
@@ -75,14 +75,14 @@ namespace Infrastructure.Persistance
         public IContractReader<ConsolidatedIncomes> ConsolidatedIncomes { get; private set; } = new ContractReader<ConsolidatedIncomes>(context);
 
         // Production
-        public IRepository<Enterprise, Guid> Enterprises { get; private set; } = new Repository<Enterprise, Guid>(context);
-        public IRepository<Site, Guid> Sites { get; private set; } = new Repository<Site, Guid>(context);
+        public IEnterpriseRepository Enterprises { get; private set; } = new EnterpriseRepository(context);
+        public ISiteRepository Sites { get; private set; } = new SiteRepository(context);
         public IAreaRepository Areas { get; private set; } = new AreaRepository(context);
-        public IRepository<WorkcenterType, Guid> WorkcenterTypes { get; private set; } = new Repository<WorkcenterType, Guid>(context);
+        public IWorkcenterTypeRepository WorkcenterTypes { get; private set; } = new WorkcenterTypeRepository(context);
         public IWorkcenterRepository Workcenters { get; private set; } = new WorkcenterRepository(context);
         public IRepository<WorkcenterCost, Guid> WorkcenterCosts { get; private set; } = new Repository<WorkcenterCost, Guid>(context);
         public IRepository<Operator, Guid> Operators { get; private set; } = new Repository<Operator, Guid>(context);
-        public IRepository<OperatorType, Guid> OperatorTypes { get; private set; } = new Repository<OperatorType, Guid>(context);
+        public IOperatorTypeRepository OperatorTypes { get; private set; } = new OperatorTypeRepository(context);
         public IRepository<RejectionReason, Guid> RejectionReasons { get; private set; } = new Repository<RejectionReason, Guid>(context);
         public IRepository<WorkOrderPhaseRejection, Guid> WorkOrderPhaseRejections { get; private set; } = new Repository<WorkOrderPhaseRejection, Guid>(context);
         public IMachineStatusRepository MachineStatuses { get; private set; } = new MachineStatusRepository(context);

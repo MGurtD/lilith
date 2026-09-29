@@ -24,12 +24,12 @@ Aquí es gestionen els centres de l'empresa, el segon nivell de l'estructura de 
 - La llista no té filtres: mostra tots els centres, també els desactivats, ordenats per nom.
 - Els camps obligatoris i les dades que necessiten els documents de venda s'expliquen a l'ajuda de la fitxa del centre.
 - El centre per defecte de l'empresa activa és el que s'assigna a les comandes, albarans i factures de venda noves.
-- Eliminar un centre és definitiu i pot arrossegar les dades que en depenen, com les seves àrees i màquines, els magatzems o els albarans. Si el centre ja s'ha fet servir en documents, l'eliminació pot fallar. Si ja no el fas servir, marca'l com a «Desactivat» en lloc d'eliminar-lo.
+- Eliminar un centre és definitiu, i no es pot eliminar un centre que tingui àrees, magatzems, comandes, albarans o factures. Si ja no el fas servir, marca'l com a «Desactivat» en lloc d'eliminar-lo.
 - Si elimines el centre per defecte d'una empresa, l'empresa es queda sense centre per defecte i no es poden crear documents de venda fins que no en triïs un altre.
 
 ## Errors frequents
 
-- Si en eliminar un centre surt un error, el centre ja està en ús: desactiva'l en lloc d'eliminar-lo.
+- Si surt «No s'ha pogut eliminar el centre ...», el centre ja està en ús: desactiva'l en lloc d'eliminar-lo.
 - Si en crear una comanda, un albarà o una factura de venda surt que la seu no és vàlida, obre el centre per defecte de l'empresa i completa la direcció, la ciutat, la província, el codi postal, el país i el CIF.
 - Si un centre no surt per triar-lo com a «Seu per defecte» d'una empresa, obre'l i comprova que al camp «Empresa» hi hagi aquesta empresa.
 

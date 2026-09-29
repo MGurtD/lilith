@@ -48,6 +48,13 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
+            // Workcenters cascade from their type, so a type in use is never deleted.
+            if (await unitOfWork.WorkcenterTypes.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("WorkcenterTypeInUse", workcenterType.Name));
+            }
+
             await unitOfWork.WorkcenterTypes.Remove(workcenterType);
             return new GenericResponse(true, workcenterType);
         }

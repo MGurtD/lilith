@@ -25,7 +25,8 @@ Cuando se entra desde el botón «+» de «Clientes», la pantalla aparece con e
 ## Aspectos importantes
 
 - Campos obligatorios del formulario: «Nombre comercial», «Nombre fiscal», «Tipo de cliente», «NIF/CIF» y «Número de cuenta».
-- Al guardar, el sistema valida los datos fiscales: el «NIF/CIF» debe ser un NIF o CIF español válido y el cliente debe tener una dirección principal con país, código postal, ciudad y dirección informados. Si alguna condición falla, no se guarda nada.
+- Al guardar, el sistema valida los datos fiscales: el «NIF/CIF» debe ser un NIF o CIF español válido, y el nombre fiscal y el número de cuenta deben estar informados. En el alta el cliente todavía no tiene direcciones; a partir de entonces, cada vez que guardes el cliente debe tener una dirección principal con país, código postal, ciudad y dirección informados. Si alguna condición falla, no se guarda nada.
+- Un cliente sin dirección principal no se puede usar en albaranes ni en facturas: añádela en «Direcciones» justo después del alta.
 - No puede haber dos clientes con el mismo nombre comercial.
 - Las pestañas «Contactos», «Direcciones» y «Estadísticas» solo aparecen cuando el cliente ya existe.
 - El «Idioma» del cliente es el idioma en que se generan sus documentos: presupuesto, pedido, albarán y factura.
@@ -38,7 +39,7 @@ Cuando se entra desde el botón «+» de «Clientes», la pantalla aparece con e
 ## Errores frecuentes
 
 - Si aparece «CIF/NIF inválido», revisa el formato del «NIF/CIF».
-- Si aparece «El cliente no tiene direcciones dadas de alta. Por favor, cree una dirección.», el cliente no tiene ninguna dirección activa. En un cliente existente, añade una en «Direcciones» y vuelve a guardar. En un alta nueva, la pestaña «Direcciones» todavía no es visible; si el alta queda bloqueada por este mensaje, consulta al administrador.
+- Si aparece «El cliente no tiene direcciones dadas de alta. Por favor, cree una dirección.», el cliente no tiene ninguna dirección activa. Añade una en «Direcciones» y vuelve a guardar.
 - Si aparece «La dirección fiscal principal del cliente está incompleta...», completa país, código postal, ciudad y dirección de la dirección principal.
 - Si aparece «El cliente no es válido para crear una factura...», revisa «Nombre fiscal», «Número de cuenta» y «NIF/CIF».
 - Si el alta falla porque el cliente ya existe, ya hay un cliente con ese nombre comercial: búscalo en «Clientes».

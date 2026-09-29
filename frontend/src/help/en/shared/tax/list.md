@@ -21,8 +21,7 @@ Lists the taxes (for example, 21% VAT) applied to sales invoice lines, purchase 
 
 ## Important notes
 
-- Deleting is permanent. A tax assigned to any reference cannot be deleted.
-- If the tax has already been used on invoices, do not delete it: mark it "Disabled". Invoices store which tax each line uses.
+- Deleting is permanent. A tax assigned to any reference, or already used on sales or purchase invoices, cannot be deleted: to stop using it, mark it "Disabled".
 - Disabled taxes are not offered on sales invoice lines or purchase invoice amounts, but they still appear in the "Tax" selector of the reference record.
 - When a delivery note is invoiced, each line takes the tax of its reference. If the reference has none, the 21% tax is applied, so one must exist.
 - When a purchase invoice is imported from a PDF, taxes are matched by percentage. Avoid having two taxes with the same percentage; if two share a percentage and one is a reverse charge tax, the other one is chosen.
@@ -30,7 +29,7 @@ Lists the taxes (for example, 21% VAT) applied to sales invoice lines, purchase 
 
 ## Common errors
 
-- If deleting shows "The tax could not be deleted", check whether any reference uses it as its tax and change it there first, or disable the tax instead.
+- If deleting shows "The tax could not be deleted", the tax is in use by a reference or an invoice: disable it instead of deleting it.
 - If invoicing a delivery note shows "VAT 21% tax not found", create a tax with percentage 21.
 - If a tax does not appear on an invoice, check that it is not marked "Disabled".
 

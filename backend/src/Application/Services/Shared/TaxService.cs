@@ -51,8 +51,8 @@ public class TaxService(IUnitOfWork unitOfWork, ILocalizationService localizatio
             return new GenericResponse(false, message);
         }
 
-        var isInUse = unitOfWork.References.Find(r => r.TaxId.HasValue && r.TaxId.Value == id).Any();
-        if (isInUse)
+        // Invoice tax breakdowns cascade from the tax, so a tax in use is never deleted.
+        if (await unitOfWork.Taxes.IsInUse(id))
         {
             var message = localizationService.GetLocalizedString("TaxInUse");
             return new GenericResponse(false, message);

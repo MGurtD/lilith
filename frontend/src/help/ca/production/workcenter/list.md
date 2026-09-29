@@ -27,12 +27,12 @@ Llista totes les màquines de la planta amb el seu tipus i la seva àrea. Des d'
 - Els filtres només ofereixen tipus i àrees actius. A la taula, la columna «Tipus» o «Àrea» surt buida si la màquina té assignat un tipus o una àrea desactivats.
 - La llista inclou les màquines desactivades. Una màquina desactivada no apareix a la planta ni es pot triar com a «Màquina preferida» a les fases.
 - A la planta només hi surten les màquines actives d'àrees que tenen marcat «Visible planta» a «Gestió d'àrees».
-- L'eliminació és definitiva i també esborra les dades que depenen de la màquina, com els costos per estat, els percentatges de benefici i la ubicació d'aprovisionament que se li va crear. Si la màquina ja ha treballat, desactiva-la en lloc d'eliminar-la.
+- L'eliminació és definitiva i també esborra les dades que depenen de la màquina, com els costos per estat, els percentatges de benefici i la ubicació d'aprovisionament que se li va crear (si no té estoc ni moviments). No es pot eliminar una màquina que ja ha treballat (parts de producció o historial de torns) ni la «Màquina preferida» d'alguna fase: desactiva-la.
 - Els camps i les pestanyes de la fitxa s'expliquen a l'ajuda de la pantalla «Màquina».
 
 ## Errors frequents
 
-- Si no pots eliminar una màquina, comprova si és la «Màquina preferida» d'alguna fase d'una ruta o d'una ordre de fabricació; en aquest cas, desactiva-la.
+- Si surt «No s'ha pogut eliminar la màquina ...», la màquina ja ha treballat o és la «Màquina preferida» d'alguna fase d'una ruta o d'una ordre de fabricació: desactiva-la.
 - Si no trobes una màquina, revisa els filtres «Tipus» i «Àrea» i buida'ls amb «Netejar filtres».
 - Si una màquina no surt a la planta, comprova que no estigui desactivada i que la seva àrea tingui marcat «Visible planta».
 

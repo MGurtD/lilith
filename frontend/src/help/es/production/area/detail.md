@@ -29,7 +29,7 @@ Es la ficha de un área: el nombre, la descripción, el centro al que pertenece 
 - Si el área tiene «Visible en planta» y no está desactivada, aparece en la pantalla de áreas de planta con sus máquinas activas. Esa pantalla muestra las áreas visibles de todos los centros.
 - Desmarcar «Visible en planta» o marcar «Desactivado» oculta el área y sus máquinas en la pantalla de planta, pero las máquinas siguen existiendo y se gestionan en «Gestión de máquinas».
 - Las máquinas no se añaden desde aquí: cada máquina elige su área en su propia ficha.
-- Para eliminar un área, hazlo desde la lista; consulta antes su ayuda, porque la eliminación es definitiva y puede borrar las máquinas del área.
+- Para eliminar un área, hazlo desde la lista; consulta antes su ayuda: la eliminación es definitiva y no se puede eliminar un área que tenga máquinas.
 
 ## Errores frecuentes
 

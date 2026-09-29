@@ -135,6 +135,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { storeToRefs } from "pinia";
 import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
 import { useLifecyclesStore } from "../store/lifecycle";
 import { PrimeIcons } from "@primevue/core/api";
 import { FormActionMode, DialogOptions } from "../../../types/component";
@@ -213,7 +214,24 @@ const deleteStatus = async (status: Status) => {
     return;
   }
 
-  await lifecycleStore.deleteStatus(status.id);
+  confirm.require({
+    message: t("shared.lifecycle.messages.confirmDeleteStatus", { name: status.name }),
+    icon: "pi pi-question-circle",
+    acceptIcon: "pi pi-check",
+    rejectIcon: "pi pi-times",
+    accept: async () => {
+      // The backend refuses a status used by documents, which cascade from it.
+      const deleted = await lifecycleStore.deleteStatus(status.id);
+      if (!deleted) {
+        toast.add({
+          severity: "warn",
+          summary: t("shared.lifecycle.messages.statusDeleteError", { name: status.name }),
+          detail: t("shared.lifecycle.messages.statusDeleteErrorDetail"),
+          life: 6000,
+        });
+      }
+    },
+  });
 };
 
 const onStatusSubmit = async (
@@ -261,8 +279,16 @@ const openStatusTransition = (
   dialogOptions.title = t("shared.lifecycle.dialogAddTransition");
 };
 
-const deleteStatusTransition = async (transition: StatusTransition) =>
-  await lifecycleStore.deleteTransition(transition.id);
+const deleteStatusTransition = (transition: StatusTransition) =>
+  confirm.require({
+    message: t("shared.lifecycle.messages.confirmDeleteTransition", { name: transition.name }),
+    icon: "pi pi-question-circle",
+    acceptIcon: "pi pi-check",
+    rejectIcon: "pi pi-times",
+    accept: async () => {
+      await lifecycleStore.deleteTransition(transition.id);
+    },
+  });
 
 const onStatusTransitionSubmit = async (transition: StatusTransition) => {
   let asyncAction;
@@ -294,17 +320,24 @@ const openTag = (action: FormActionMode, tag: LifecycleTag) => {
     action === FormActionMode.CREATE ? t("shared.lifecycle.dialogNewTag") : t("shared.lifecycle.dialogEditTag");
 };
 
-const deleteTag = async (tag: LifecycleTag) => {
-  const result = await lifecycleStore.deleteTag(tag.id);
-  if (result) {
-    toast.add({
-      severity: "success",
-      summary: t("shared.lifecycle.messages.tagDeleted"),
-      life: 4000,
-    });
-    await loadView();
-  }
-};
+const deleteTag = (tag: LifecycleTag) =>
+  confirm.require({
+    message: t("shared.lifecycle.messages.confirmDeleteTag", { name: tag.name }),
+    icon: "pi pi-question-circle",
+    acceptIcon: "pi pi-check",
+    rejectIcon: "pi pi-times",
+    accept: async () => {
+      const result = await lifecycleStore.deleteTag(tag.id);
+      if (result) {
+        toast.add({
+          severity: "success",
+          summary: t("shared.lifecycle.messages.tagDeleted"),
+          life: 4000,
+        });
+        await loadView();
+      }
+    },
+  });
 
 const onTagSubmit = async (tag: LifecycleTag) => {
   let result;
@@ -339,6 +372,7 @@ const onTagSubmit = async (tag: LifecycleTag) => {
 
 // Lifecycle submit
 const toast = useToast();
+const confirm = useConfirm();
 const submitForm = async (data: Lifecycle) => {
   let result = false;
   let message = "";

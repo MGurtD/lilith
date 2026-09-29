@@ -1,5 +1,6 @@
 ﻿using Application.Contracts;
 using Domain.Entities.Sales;
+using Domain.Entities.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistance.Repositories.Sales
@@ -60,6 +61,18 @@ namespace Infrastructure.Persistance.Repositories.Sales
         public async Task UpdateAddress(CustomerAddress address)
         {
             await _customerAddressRepository.Update(address);
+        }
+
+        // Delivery notes reference the customer with a cascading foreign key, so
+        // deleting a customer in use would silently delete them; the other documents
+        // and references would block the delete.
+        public async Task<bool> IsInUse(Guid customerId)
+        {
+            return await context.Set<Budget>().AnyAsync(e => e.CustomerId == customerId)
+                || await context.Set<SalesOrderHeader>().AnyAsync(e => e.CustomerId == customerId)
+                || await context.Set<DeliveryNote>().AnyAsync(e => e.CustomerId == customerId)
+                || await context.Set<SalesInvoice>().AnyAsync(e => e.CustomerId == customerId)
+                || await context.Set<Reference>().AnyAsync(e => e.CustomerId == customerId);
         }
     }
 }

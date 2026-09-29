@@ -29,10 +29,11 @@ Es el directorio de proveedores de la empresa y, en la misma pantalla, el catál
 - Cada proveedor debe tener un tipo: el campo «Tipo de proveedor» de la ficha es obligatorio. Crea los tipos antes de dar de alta proveedores.
 - El tipo llamado exactamente «Logistica» tiene un uso especial: los proveedores de ese tipo muestran la pestaña «Tarifas de transporte» en su ficha y son los que se pueden elegir como transportistas en los presupuestos y en los pedidos de venta. No cambies el nombre de ese tipo.
 - En el diálogo de tipo, «Nombre» y «Descripción» son obligatorios y admiten hasta 250 caracteres.
-- Eliminar un proveedor o un tipo es definitivo. La aplicación no comprueba antes si el proveedor tiene pedidos, albaranes o facturas, ni si el tipo tiene proveedores asignados. Elimina solo registros que no se hayan usado; si un tipo tiene proveedores, cámbialos antes de tipo.
+- Eliminar un proveedor o un tipo es definitivo, y la aplicación no lo permite si ya se han usado: un proveedor con pedidos, albaranes, facturas, tarifas o servicios externos, o un tipo con proveedores asignados, no se elimina y aparece un aviso. Si un tipo tiene proveedores, cámbialos antes de tipo.
 
 ## Errores frecuentes
 
+- Si aparece «No se ha podido eliminar el proveedor ...» o «No se ha podido eliminar el tipo de proveedor ...», el proveedor ya se ha usado y debe conservarse, o el tipo tiene proveedores que hay que cambiar antes de tipo.
 - Si no encuentras un proveedor, comprueba que el filtro «Tipo» esté vacío y que busques por el nombre comercial, no por el nombre fiscal.
 - Si al crear un tipo aparece «La entidad ya existe», ya hay un tipo con ese nombre.
 - Si el diálogo de tipo no se guarda, revisa que «Nombre» y «Descripción» estén informados.

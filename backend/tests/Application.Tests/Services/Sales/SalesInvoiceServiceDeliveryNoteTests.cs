@@ -237,9 +237,9 @@ public class SalesInvoiceServiceDeliveryNoteTests
         var deliveryNoteDetailsRepository = Substitute.For<IRepository<DeliveryNoteDetail, Guid>>();
         var salesOrdersRepository = Substitute.For<ISalesOrderHeaderRepository>();
         var lifecycles = Substitute.For<ILifecycleRepository>();
-        var taxes = Substitute.For<IRepository<Tax, Guid>>();
-        var references = Substitute.For<IRepository<Reference, Guid>>();
-        var paymentMethods = Substitute.For<IRepository<PaymentMethod, Guid>>();
+        var taxes = Substitute.For<ITaxRepository>();
+        var references = Substitute.For<IReferenceRepository>();
+        var paymentMethods = Substitute.For<IPaymentMethodRepository>();
         var dueDateService = Substitute.For<IDueDateService>();
 
         var customerId = Guid.NewGuid();
@@ -470,7 +470,7 @@ public class SalesInvoiceServiceDeliveryNoteTests
         Status ServedOrderStatus,
         Status PendingOrderStatus,
         IDeliveryNoteRepository DeliveryNotesRepository,
-        IRepository<Reference, Guid> ReferencesRepository,
+        IReferenceRepository ReferencesRepository,
         IRepository<DeliveryNoteDetail, Guid> DeliveryNoteDetailsRepository,
         ISalesOrderHeaderRepository SalesOrdersRepository)
     {

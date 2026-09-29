@@ -25,11 +25,11 @@ Aquí es dona d'alta l'empresa que treballa amb l'ERP. És el primer nivell de l
 - Si no hi ha cap empresa activa, o l'empresa activa no té centre per defecte, no es poden crear comandes, albarans ni factures de venda.
 - La llista no té filtres: mostra totes les empreses, també les desactivades, ordenades per nom.
 - El detall de cada camp s'explica a l'ajuda de la fitxa de l'empresa.
-- Eliminar una empresa és definitiu. També s'esborren els seus logotips de «Branding» i pot arrossegar les dades que en depenen, com els centres i, amb ells, les àrees i les màquines. Si alguna d'aquestes dades ja s'ha fet servir, l'eliminació pot fallar. Si ja no la fas servir, marca-la com a «Desactivat» en lloc d'eliminar-la.
+- Eliminar una empresa és definitiu i també esborra els seus logotips de «Branding». No es pot eliminar una empresa que tingui centres. Si ja no la fas servir, marca-la com a «Desactivat» en lloc d'eliminar-la.
 
 ## Errors frequents
 
-- Si en eliminar una empresa surt un error, és que ella o els seus centres ja tenen dades vinculades: desactiva-la en lloc d'eliminar-la.
+- Si surt «No s'ha pogut eliminar l'empresa ...», l'empresa té centres: desactiva-la en lloc d'eliminar-la.
 - Si en crear una comanda, un albarà o una factura de venda surt que la seu no existeix, comprova aquí que hi hagi exactament una empresa activa i que tingui «Centre per defecte».
 - Si la columna «Centre per defecte» surt buida, obre l'empresa i tria el centre a «Seu per defecte».
 

@@ -103,6 +103,13 @@ public class LifecycleService(IUnitOfWork unitOfWork, ILocalizationService local
             return new GenericResponse(false, message);
         }
 
+        // Several documents cascade from their status, so a status in use is never deleted.
+        if (await unitOfWork.Lifecycles.StatusRepository.IsInUse(id))
+        {
+            var message = localizationService.GetLocalizedString("StatusInUse", status.Name);
+            return new GenericResponse(false, message);
+        }
+
         await unitOfWork.Lifecycles.StatusRepository.Remove(status);
         return new GenericResponse(true, status);
     }

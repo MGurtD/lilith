@@ -698,6 +698,13 @@ const deleteButton = (workmaster: WorkMaster) => {
           life: 3000,
         });
         await workmasterStore.fetchAll();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.workmasterDeleteError", { name: workmaster.reference?.description }),
+          detail: t("production.messages.workmasterDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

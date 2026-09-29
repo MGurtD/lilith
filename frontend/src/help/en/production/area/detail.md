@@ -29,7 +29,7 @@ This is an area's form: its name, description, the site it belongs to and whethe
 - If the area has "Visible in plant" and is not disabled, it appears on the plant areas screen with its active machines. That screen shows the visible areas of every site.
 - Unchecking "Visible in plant" or checking "Disabled" hides the area and its machines on the plant screen, but the machines still exist and are managed in "Machine management".
 - Machines are not added from here: each machine picks its area on its own form.
-- To delete an area, do it from the list; read its help first, because deletion is permanent and can delete the area's machines.
+- To delete an area, do it from the list; read its help first: deletion is permanent and an area that has machines cannot be deleted.
 
 ## Common errors
 

@@ -28,7 +28,7 @@ This is the catalogue of references you sell: the parts or services that appear 
 - The "Cost" column shows the theoretical manufacturing cost, calculated from the reference's manufacturing route.
 - A reference with a "Customer" only appears on the lines of that customer's quotations. References without a customer appear for every customer.
 - "Creation date" filters by the date the reference was created.
-- A reference that is already in use cannot be deleted: the system blocks it if it has sales orders, receipt delivery notes, warehouse movements or a manufacturing route, or if it is part of a bill of materials. When deletion is allowed, it is permanent.
+- A reference that is already in use cannot be deleted: the system blocks it if it has sales or purchase orders, delivery notes, budgets, receipt delivery notes, stock or lots, warehouse movements, a manufacturing route or work orders, if it is part of a bill of materials or a purchase rate, or if it is the external service of a phase. When deletion is allowed, it is permanent.
 
 ## Common errors
 

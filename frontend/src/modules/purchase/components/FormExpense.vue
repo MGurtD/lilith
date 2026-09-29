@@ -104,6 +104,16 @@ const rows = computed<FormRowConfig[]>(() => [
           optionLabel: "name",
         },
         disabled: recurringFieldDisabled,
+        validation: Yup.number()
+          .nullable()
+          .when("recurring", {
+            is: true,
+            then: (schema) =>
+              schema
+                .typeError(t("purchase.validation.frequencyRequired"))
+                .required(t("purchase.validation.frequencyRequired"))
+                .min(1, t("purchase.validation.frequencyRequired")),
+          }),
       },
       {
         name: "paymentDay",
@@ -111,12 +121,40 @@ const rows = computed<FormRowConfig[]>(() => [
         type: FormFieldType.Number,
         props: { locale: "en-US", minFractionDigits: 0 },
         disabled: recurringFieldDisabled,
+        validation: Yup.number()
+          .nullable()
+          .when("recurring", {
+            is: true,
+            then: (schema) =>
+              schema
+                .typeError(t("purchase.validation.paymentDayRange"))
+                .required(t("purchase.validation.paymentDayRange"))
+                .min(1, t("purchase.validation.paymentDayRange"))
+                .max(31, t("purchase.validation.paymentDayRange")),
+          }),
       },
       {
         name: "endDate",
         label: t("purchase.fields.endDate"),
         type: FormFieldType.Date,
         disabled: recurringFieldDisabled,
+        validation: Yup.date()
+          .nullable()
+          .when("recurring", {
+            is: true,
+            then: (schema) =>
+              schema
+                .typeError(t("purchase.validation.endDateRequired"))
+                .required(t("purchase.validation.endDateRequired"))
+                .when("paymentDate", ([paymentDate], dateSchema) =>
+                  paymentDate instanceof Date
+                    ? dateSchema.min(
+                        paymentDate,
+                        t("purchase.validation.endDateAfterPaymentDate"),
+                      )
+                    : dateSchema,
+                ),
+          }),
       },
     ],
   },

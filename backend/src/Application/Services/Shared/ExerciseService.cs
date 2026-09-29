@@ -120,6 +120,13 @@ namespace Application.Services.System
                     localizationService.GetLocalizedString("ExerciseNotFound"));
             }
 
+            // Delivery notes, purchase orders and work orders cascade from their exercise, so an exercise in use is never deleted.
+            if (await unitOfWork.Exercices.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("ExerciseInUse", exercise.Name));
+            }
+
             await unitOfWork.Exercices.Remove(exercise);
             return new GenericResponse(true, exercise);
         }

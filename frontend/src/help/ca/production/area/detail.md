@@ -29,7 +29,7 @@
 - Si l'àrea té «Visible planta» i no està desactivada, surt a la pantalla d'àrees de planta amb les seves màquines actives. Aquesta pantalla mostra les àrees visibles de tots els centres.
 - Desmarcar «Visible planta» o marcar «Desactivat» amaga l'àrea i les seves màquines de la pantalla de planta, però les màquines continuen existint i es gestionen a «Gestió de màquines».
 - Les màquines no s'afegeixen des d'aquí: cada màquina tria la seva àrea a la seva pròpia fitxa.
-- Per eliminar una àrea, fes-ho des de la llista; consulta'n l'ajuda abans, perquè l'eliminació és definitiva i pot esborrar les màquines de l'àrea.
+- Per eliminar una àrea, fes-ho des de la llista; consulta'n l'ajuda abans: l'eliminació és definitiva i no es pot eliminar una àrea que tingui màquines.
 
 ## Errors frequents
 

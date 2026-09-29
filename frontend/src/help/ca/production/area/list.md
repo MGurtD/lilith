@@ -24,11 +24,11 @@ Aquí es gestionen les àrees, el tercer nivell de l'estructura de planta: empre
 - La llista no té filtres: mostra totes les àrees, també les desactivades, ordenades per nom.
 - A la pantalla d'àrees de planta només surten les àrees amb «Visible a planta» que no estan desactivades, amb les seves màquines actives.
 - Els camps de la fitxa s'expliquen a l'ajuda de la fitxa de l'àrea.
-- Eliminar una àrea és definitiu i també pot esborrar les màquines que hi pertanyen. Si l'àrea o les seves màquines ja tenen dades vinculades, per exemple materials amb aquesta «Àrea de producció», l'eliminació pot fallar. Si ja no la fas servir, marca-la com a «Desactivat» o treu-la de planta en lloc d'eliminar-la.
+- Eliminar una àrea és definitiu, i no es pot eliminar una àrea que tingui màquines o materials amb aquesta «Àrea de producció». Si ja no la fas servir, marca-la com a «Desactivat» o treu-la de planta en lloc d'eliminar-la.
 
 ## Errors frequents
 
-- Si en eliminar una àrea surt un error, l'àrea ja està en ús: desactiva-la en lloc d'eliminar-la.
+- Si surt «No s'ha pogut eliminar l'àrea ...», l'àrea ja està en ús: desactiva-la en lloc d'eliminar-la.
 - Si una àrea no surt a la pantalla de planta, comprova que tingui «Visible a planta» i que no estigui «Desactivat».
 - Si una màquina surt en una àrea equivocada, corregeix-ho a la fitxa de la màquina, a «Gestió de màquines».
 

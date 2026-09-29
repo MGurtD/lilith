@@ -21,8 +21,7 @@ Lista los impuestos (por ejemplo, el IVA al 21 %) que se aplican a las líneas d
 
 ## Aspectos importantes
 
-- La eliminación es definitiva. No se puede eliminar un impuesto que alguna referencia tiene asignado.
-- Si el impuesto ya se ha usado en facturas, no lo elimines: márcalo como «Desactivada». Las facturas guardan qué impuesto tiene cada línea.
+- La eliminación es definitiva. No se puede eliminar un impuesto que alguna referencia tiene asignado ni un impuesto que ya se ha usado en facturas de venta o de compra: para dejar de usarlo, márcalo como «Desactivada».
 - Los impuestos desactivados no se ofrecen en las líneas de las facturas de venta ni en los importes de las facturas de compra, pero siguen apareciendo en el selector «Impuesto» de la ficha de referencia.
 - Al facturar un albarán, cada línea toma el impuesto de su referencia. Si la referencia no tiene, se aplica el impuesto del 21 %, así que debe existir uno.
 - Al importar una factura de compra desde un PDF, los impuestos se reconocen por el porcentaje. Evita tener dos impuestos con el mismo porcentaje; si hay dos con el mismo porcentaje y uno es de inversión del sujeto pasivo, se elige el otro.
@@ -30,7 +29,7 @@ Lista los impuestos (por ejemplo, el IVA al 21 %) que se aplican a las líneas d
 
 ## Errores frecuentes
 
-- Si al eliminar aparece «No se ha podido eliminar el impuesto», comprueba si alguna referencia lo tiene como impuesto y cámbiaselo antes, o bien desactívalo.
+- Si al eliminar aparece «No se ha podido eliminar el impuesto», el impuesto está en uso en alguna referencia o factura: desactívalo en lugar de eliminarlo.
 - Si al facturar un albarán aparece «No existe el impuesto IVA 21%», crea un impuesto con porcentaje 21.
 - Si un impuesto no aparece en una factura, comprueba que no esté marcado como «Desactivada».
 

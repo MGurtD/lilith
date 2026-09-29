@@ -81,6 +81,13 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
+            // Sites cascade from the enterprise, so an enterprise with sites is never deleted.
+            if (await unitOfWork.Enterprises.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("EnterpriseInUse", enterprise.Name));
+            }
+
             var brandingCleanup = await brandingService.RemoveEnterpriseFiles(id);
             if (!brandingCleanup.Result)
                 return brandingCleanup;

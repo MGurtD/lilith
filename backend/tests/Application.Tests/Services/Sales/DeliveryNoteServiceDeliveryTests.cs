@@ -117,7 +117,7 @@ public class DeliveryNoteServiceDeliveryTests
         var stockMovementService = Substitute.For<IStockMovementService>();
         var salesOrderService = Substitute.For<ISalesOrderService>();
         var localization = Substitute.For<ILocalizationService>();
-        var references = Substitute.For<IRepository<Reference, Guid>>();
+        var references = Substitute.For<IReferenceRepository>();
         var referenceId = Guid.NewGuid();
 
         var deliveredStatus = new Status

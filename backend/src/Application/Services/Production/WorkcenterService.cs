@@ -99,6 +99,13 @@ public class WorkcenterService(IUnitOfWork unitOfWork, ILocalizationService loca
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
+        // Production parts and the shift history cascade from the workcenter, so a workcenter in use is never deleted.
+        if (await unitOfWork.Workcenters.IsInUse(id))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("WorkcenterInUse", entity.Name));
+        }
+
         // Remove supply locations and their join rows
         var links = unitOfWork.WorkcenterLocations
             .Find(wl => wl.WorkcenterId == id)
@@ -110,10 +117,12 @@ public class WorkcenterService(IUnitOfWork unitOfWork, ILocalizationService loca
                 .Find(l => l.Id == link.LocationId && l.LocationType == LocationTypeConstants.Supply)
                 .FirstOrDefault();
 
+            // The link cascades from the location, so it is removed first: removing it
+            // after its location failed with a concurrency error and kept the workcenter.
+            await unitOfWork.WorkcenterLocations.Remove(link);
+
             if (location is not null)
                 await warehouseService.RemoveLocation(location.Id);
-
-            await unitOfWork.WorkcenterLocations.Remove(link);
         }
 
         await unitOfWork.Workcenters.Remove(entity);

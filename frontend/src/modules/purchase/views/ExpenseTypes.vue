@@ -109,6 +109,13 @@ const deleteExpenseType = (expenseType: ExpenseType) => {
           life: 3000,
         });
         await expenseStore.fetchExpenseTypes();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("purchase.messages.expenseTypeDeleteError", { name: expenseType.name }),
+          detail: t("purchase.messages.expenseTypeDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

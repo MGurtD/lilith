@@ -25,11 +25,11 @@ This is where you register the company that works with the ERP. It is the first 
 - If there is no active company, or the active company has no default site, sales orders, delivery notes and sales invoices cannot be created.
 - The list has no filters: it shows every company, including disabled ones, sorted by name.
 - Each field is explained in the help for the company form.
-- Deleting a company is permanent. Its "Branding" logos are removed too, and the deletion can carry along the data that depends on it, such as its sites and, with them, their areas and machines. If any of that data has already been used, the deletion can fail. If you no longer use the company, mark it as "Disabled" instead of deleting it.
+- Deleting a company is permanent and also removes its "Branding" logos. A company that has sites cannot be deleted. If you no longer use the company, mark it as "Disabled" instead of deleting it.
 
 ## Common errors
 
-- If deleting a company shows an error, the company or its sites already have linked data: disable it instead of deleting it.
+- If "The enterprise ... could not be deleted" appears, the company has sites: disable it instead of deleting it.
 - If creating a sales order, delivery note or sales invoice says the site does not exist, check here that there is exactly one active company and that it has a "Default site".
 - If the "Default site" column is empty, open the company and pick the site in "Default location".
 

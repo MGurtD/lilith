@@ -34,7 +34,7 @@ Flux: `referència de venda -> ruta de fabricació -> ordre de fabricació -> fa
 - El filtre «Client» també mostra les rutes de referències que no tenen cap client assignat. Quan hi ha un client triat, el desplegable «Referència» només ofereix les seves referències.
 - Els filtres es recorden quan surts de la pantalla i hi tornes.
 - La columna «Desactivada» indica les rutes que ja no es poden triar per crear ordres de fabricació ni a les línies de pressupostos i comandes. Aquí continuen sortint.
-- L'eliminació és definitiva: s'esborra la ruta amb totes les seves fases, passos i materials. Si la ruta ja s'ha fet servir en ordres de fabricació, pressupostos o comandes, no l'eliminis: marca-la com a «Desactivat» a la seva fitxa.
+- L'eliminació és definitiva: s'esborra la ruta amb totes les seves fases, passos i materials. No es pot eliminar una ruta que ja s'ha fet servir en ordres de fabricació, pressupostos o comandes: marca-la com a «Desactivat» a la seva fitxa.
 
 ## Errors frequents
 

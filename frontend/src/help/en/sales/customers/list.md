@@ -30,8 +30,8 @@ The screen has two tabs: "Customers", with the customer list, and "Customer type
 - The "+" button creates a customer or a customer type depending on the active tab.
 - Customer types: each type has a "Name" and a "Description", both required (up to 250 characters). You cannot create a type with a name that already exists. After saving, the screen returns to the list.
 - Every customer must have a type: in the customer record, the "Customer type" field is required and its options come from this tab.
-- Deleting a customer is permanent, not a deactivation: its contacts and addresses are deleted too. Only delete customers created by mistake that have no sales documents.
-- Deleting a customer type is also permanent and can take the customers assigned to it along with it. Before deleting a type, change the type of its customers.
+- Deleting a customer is permanent, not a deactivation: its contacts and addresses are deleted too. That is why a customer with budgets, orders, delivery notes, invoices or references cannot be deleted.
+- Deleting a customer type is also permanent, and a type with customers assigned cannot be deleted. Before deleting a type, change the type of its customers.
 - The "Disabled" column is shown in the table, but the customer record does not let you change it.
 
 ## Common errors
@@ -39,7 +39,7 @@ The screen has two tabs: "Customers", with the customer list, and "Customer type
 - If you cannot find a customer, check the filter: it only searches the commercial name. Press "Clear" and try again.
 - If saving a new type shows "Entity already exists", there is already a type with that name.
 - If "+" opens a different screen than expected, check which tab is active.
-- If you cannot delete a customer or a type, it probably has related documents or customers; review them before trying again.
+- If "The customer ... could not be deleted" or "The customer type ... could not be deleted" appears, the customer has documents or the type has customers assigned: keep the customer, and delete the type only after changing the type of its customers.
 
 ## Basic process
 

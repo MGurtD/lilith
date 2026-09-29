@@ -29,10 +29,11 @@
 - Cada proveïdor ha de tenir un tipus: el camp «Tipus de proveïdor» de la fitxa és obligatori. Crea els tipus abans de donar d'alta proveïdors.
 - El tipus anomenat exactament «Logistica» té un ús especial: els proveïdors d'aquest tipus mostren la pestanya «Tarifes de transport» a la seva fitxa i són els que es poden triar com a transportistes als pressupostos i a les comandes de venda. No canviïs el nom d'aquest tipus.
 - Al diàleg de tipus, «Nom» i «Descripció» són obligatoris i admeten fins a 250 caràcters.
-- Eliminar un proveïdor o un tipus és definitiu. L'aplicació no comprova abans si el proveïdor té comandes, albarans o factures, ni si el tipus té proveïdors assignats. Elimina només registres que no s'hagin fet servir; si un tipus té proveïdors, canvia'ls primer de tipus.
+- Eliminar un proveïdor o un tipus és definitiu, i l'aplicació no ho permet si ja s'han fet servir: un proveïdor amb comandes, albarans, factures, tarifes o serveis externs, o un tipus amb proveïdors assignats, no s'elimina i surt un avís. Si un tipus té proveïdors, canvia'ls primer de tipus.
 
 ## Errors frequents
 
+- Si surt «No s'ha pogut eliminar el proveïdor ...» o «No s'ha pogut eliminar el tipus de proveïdor ...», el proveïdor ja s'ha fet servir i s'ha de conservar, o el tipus té proveïdors que cal canviar primer de tipus.
 - Si no trobes un proveïdor, comprova que el filtre «Tipus» estigui buit i que busques pel nom comercial, no pel nom fiscal.
 - Si en crear un tipus surt «L'entitat ja existeix», ja hi ha un tipus amb aquest nom.
 - Si el diàleg de tipus no es desa, revisa que «Nom» i «Descripció» estiguin informats.

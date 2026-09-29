@@ -24,12 +24,12 @@ Aquí se gestionan los centros de la empresa, el segundo nivel de la estructura 
 - La lista no tiene filtros: muestra todos los centros, también los desactivados, ordenados por nombre.
 - Los campos obligatorios y los datos que necesitan los documentos de venta se explican en la ayuda de la ficha del centro.
 - El centro predeterminado de la empresa activa es el que se asigna a los pedidos, albaranes y facturas de venta nuevos.
-- Eliminar un centro es definitivo y puede arrastrar los datos que dependen de él, como sus áreas y máquinas, los almacenes o los albaranes. Si el centro ya se ha usado en documentos, la eliminación puede fallar. Si ya no lo usas, márcalo como «Desactivado» en lugar de eliminarlo.
+- Eliminar un centro es definitivo, y no se puede eliminar un centro que tenga áreas, almacenes, pedidos, albaranes o facturas. Si ya no lo usas, márcalo como «Desactivado» en lugar de eliminarlo.
 - Si eliminas el centro predeterminado de una empresa, la empresa se queda sin centro predeterminado y no se pueden crear documentos de venta hasta que elijas otro.
 
 ## Errores frecuentes
 
-- Si al eliminar un centro aparece un error, el centro ya está en uso: desactívalo en lugar de eliminarlo.
+- Si aparece «No se ha podido eliminar el centro ...», el centro ya está en uso: desactívalo en lugar de eliminarlo.
 - Si al crear un pedido, un albarán o una factura de venta aparece que la sede no es válida, abre el centro predeterminado de la empresa y completa la dirección, la ciudad, la provincia, el código postal, el país y el CIF.
 - Si un centro no aparece para elegirlo como «Sede por defecto» de una empresa, ábrelo y comprueba que en el campo «Empresa» esté esa empresa.
 

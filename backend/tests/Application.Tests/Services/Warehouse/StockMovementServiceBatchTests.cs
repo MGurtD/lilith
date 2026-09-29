@@ -27,7 +27,7 @@ public class StockMovementServiceBatchTests
     {
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var warehouses = Substitute.For<IWarehouseRepository>();
-        var refsRepo = Substitute.For<IRepository<Reference, Guid>>();
+        var refsRepo = Substitute.For<IReferenceRepository>();
         var stocksRepo = Substitute.For<IRepository<Stock, Guid>>();
         var stockMovementsRepo = Substitute.For<IStockMovementRepository>();
         var lotsRepo = Substitute.For<ILotRepository>();

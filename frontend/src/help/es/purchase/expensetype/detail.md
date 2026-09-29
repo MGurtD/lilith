@@ -22,7 +22,7 @@ Es la ficha de un tipo de gasto. Se abre al crear un tipo desde «Gestión de ti
 - «Nombre» y «Descripción» son obligatorios y admiten hasta 250 caracteres cada uno. El nombre debe ser único.
 - Cambiar el nombre afecta a todos los gastos del tipo: en el «Panel de gastos» y en el panel de flujo de caja aparecerán con el nombre nuevo.
 - «Desactivada» no oculta el tipo: sigue disponible en el campo «Tipo» de los gastos.
-- El tipo se elimina desde la lista, y con él se eliminan también todos sus gastos (consulta la ayuda de «Gestión de tipos de gasto»).
+- El tipo se elimina desde la lista, y solo se puede si no tiene gastos (consulta la ayuda de «Gestión de tipos de gasto»).
 
 ## Errores frecuentes
 

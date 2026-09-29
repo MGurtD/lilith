@@ -28,7 +28,7 @@ Es el catálogo de referencias que se venden: las piezas o servicios que aparece
 - La columna «Coste» muestra el coste teórico de fabricación, calculado a partir de la ruta de fabricación de la referencia.
 - Una referencia con «Cliente» informado solo aparece en las líneas de los presupuestos de ese cliente. Las que no tienen cliente aparecen para todos los clientes.
 - «Fecha de creación» filtra por la fecha en que se dio de alta la referencia.
-- No se puede eliminar una referencia que ya se ha usado: el sistema lo bloquea si tiene pedidos, albaranes de recepción, movimientos de almacén o una ruta de fabricación, o si forma parte de una lista de materiales. Cuando se puede eliminar, la eliminación es definitiva.
+- No se puede eliminar una referencia que ya se ha usado: el sistema lo bloquea si tiene pedidos de venta o de compra, albaranes, presupuestos, albaranes de recepción, stock o lotes, movimientos de almacén, una ruta u órdenes de fabricación, si forma parte de una lista de materiales o de una tarifa de compra, o si es el servicio externo de una fase. Cuando se puede eliminar, la eliminación es definitiva.
 
 ## Errores frecuentes
 

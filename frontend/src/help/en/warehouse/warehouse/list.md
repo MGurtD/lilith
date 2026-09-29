@@ -24,10 +24,11 @@ Lists the company's warehouses. Each warehouse belongs to a site and has locatio
 - The "Default location" is where the system puts automatic inputs and outputs when no other location is given: purchase receipts, sales delivery notes, work order production and offcuts returned from machines. The system takes it from an active (not disabled) warehouse.
 - A disabled warehouse still appears in this list, but its stock no longer shows in "Stock" or "Inventory" and its locations are not offered in location dropdowns.
 - When a machine is created, the system automatically creates a "Supply" location named "APR-" plus the machine name in an active warehouse. This is where material supplied to the machine goes.
-- Deletion is permanent and also deletes the warehouse's locations and, with them, any stock they hold. If the warehouse has already been used, mark it as "Disabled" instead of deleting it.
+- Deletion is permanent and also deletes the warehouse's locations. A warehouse cannot be deleted if any of its locations has stock or warehouse movements; in that case, mark it as "Disabled".
 
 ## Common errors
 
+- If "The warehouse ... could not be deleted" appears, a location has stock or warehouse movements: mark it as "Disabled".
 - If a receipt, a delivery note or the end of a work order fails with "No default location defined in the project", open the active warehouse and choose its "Default location".
 - If the "Warehouse created successfully" message does not appear after creating a warehouse, first check that no other warehouse has the same name.
 - If a warehouse's stock has disappeared from "Stock", check that the warehouse or the location is not marked as "Disabled".

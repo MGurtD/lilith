@@ -153,6 +153,13 @@ const deleteButton = (machineStatus: MachineStatus) => {
           life: 3000,
         });
         await plantmodelStore.fetchMachineStatuses();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.machineStatusDeleteError", { name: machineStatus.name }),
+          detail: t("production.messages.machineStatusDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

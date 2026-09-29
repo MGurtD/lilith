@@ -23,13 +23,13 @@ Lists the machine types, the classification that groups machines able to do the 
 
 - The list shows every type, including disabled ones; the "Disabled" column tells them apart. This screen has no filters and the list is sorted by name.
 - Disabled types cannot be chosen when creating a machine from "Machine management", nor in the "Type of machine" field of route and work order phases.
-- Deleting is permanent: the type is not disabled, it is removed. Machines that have this type are removed with it, so check that it has none before deleting it.
+- Deleting is permanent: the type is not disabled, it is removed. That is why a type that has machines or is used on manufacturing route or work order phases cannot be deleted.
 - If the type has already been used, disable it instead of deleting it.
 - The fields of the record and the role of the profit margin are explained in the help of the "Machine type" screen.
 
 ## Common errors
 
-- If you cannot delete a type, a manufacturing route or work order phase probably uses it: disable it instead.
+- If "The machine type ... could not be deleted" appears, the type has machines or a manufacturing route or work order phase uses it: disable it instead.
 - If a type does not appear when creating a machine or a phase, check that it is not marked as "Disabled".
 - If "Workcenter type ... already exists" appears when creating a type, there is already one with that name: open it from the list.
 

@@ -27,13 +27,13 @@ Aquí se definen los estados en los que puede estar una máquina en planta, como
 - El estado marcado como «Cerrada» es el botón para parar la máquina en la barra de estados de planta. Marca solo uno.
 - Al finalizar una fase en planta sin cargar otra, la máquina pasa al estado marcado como «Parada».
 - En las áreas de planta, las máquinas en un estado «Parada» o «Cerrada» cuentan como «Paradas».
-- La eliminación es definitiva y puede borrar también datos que dependen del estado: sus motivos, los detalles de plantillas de fase, los pasos de rutas de fabricación, los costes por máquina y el historial de turnos que lo usan. Si el estado ya se ha usado, márcalo como «Desactivado» en lugar de eliminarlo.
+- La eliminación es definitiva y también borra los motivos del estado y los costes por máquina. No se puede eliminar un estado que usen el historial de turnos, los pasos de rutas o de órdenes de fabricación o los detalles de plantillas de fase; en ese caso, márcalo como «Desactivado».
 - El significado de cada marca se explica en la ayuda de «Estado de máquina».
 
 ## Errores frecuentes
 
 - Si al crear un estado aparece «La entidad ya existe», ya hay un estado con ese nombre.
-- Si no se puede eliminar un estado, márcalo como «Desactivado»: dejará de aparecer en planta.
+- Si aparece «No se ha podido eliminar el estado de máquina ...», el estado está en uso: márcalo como «Desactivado» y dejará de aparecer en planta.
 - Si en planta falta el botón para parar la máquina o aparece «No se ha encontrado el estado de máquina cerrada», marca un estado activo como «Cerrada».
 
 ## Proceso básico

@@ -45,11 +45,11 @@ export class ReferenceService extends BaseService<Reference> {
 
   async deleteReference(id: string): Promise<GenericResponse<Reference>> {
     const response = await this.apiClient.delete(`${this.resource}/${id}`);
+    // On success the API returns the deleted reference, not a GenericResponse.
     if (response.status === 200) {
-      return response.data as GenericResponse<Reference>;
-    } else {
-      return response.data as GenericResponse<Reference>;
+      return { result: true, errors: [], content: response.data as Reference };
     }
+    return response.data as GenericResponse<Reference>;
   }
 
   async getReferenceSuppliers(referenceId: string) {

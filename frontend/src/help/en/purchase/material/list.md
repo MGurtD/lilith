@@ -29,7 +29,7 @@ This is the catalog of the references you buy: materials, tools and services. Th
 - The columns change with the category: materials show "Type", "Format" and "Density (mm)"; services show "Price" and "Transport"; tools show the "Area".
 - The "+" button creates a reference in the category you have selected. Choose it before creating.
 - When you come back to the screen, your last filters are restored.
-- Deletion is permanent. Before deleting, the app checks whether the reference has dependencies, for example receipt delivery notes, stock movements, a production route, or whether it is part of a bill of materials. If it has any, it is not deleted.
+- Deletion is permanent. Before deleting, the app checks whether the reference has dependencies, for example orders, receipt delivery notes, stock or lots, stock movements, a production route or work orders, or whether it is part of a bill of materials or a purchase rate. If it has any, it is not deleted.
 
 ## Common errors
 

@@ -30,8 +30,8 @@ La pantalla tiene dos pestañas: «Clientes», con el listado de clientes, y «T
 - El botón «+» crea un cliente o un tipo de cliente según la pestaña activa.
 - Tipos de cliente: cada tipo tiene «Nombre» y «Descripción», ambos obligatorios (máximo 250 caracteres). No se puede crear un tipo con un nombre que ya existe. Al guardar, la pantalla vuelve al listado.
 - Todos los clientes deben tener un tipo: en la ficha, el campo «Tipo de cliente» es obligatorio y sus opciones salen de esta pestaña.
-- La eliminación de un cliente es definitiva, no una baja: también se borran sus contactos y direcciones. Elimina solo clientes dados de alta por error y sin documentos de venta.
-- La eliminación de un tipo de cliente también es definitiva y puede arrastrar a los clientes que lo tienen asignado. Antes de eliminar un tipo, cambia el tipo de sus clientes.
+- La eliminación de un cliente es definitiva, no una baja: también se borran sus contactos y direcciones. Por eso no se puede eliminar un cliente que tenga presupuestos, pedidos, albaranes, facturas o referencias.
+- La eliminación de un tipo de cliente también es definitiva, y no se puede eliminar un tipo que tenga clientes asignados. Antes de eliminar un tipo, cambia el tipo de sus clientes.
 - La columna «Desactivado» se muestra en la tabla, pero la ficha de cliente no permite cambiarla.
 
 ## Errores frecuentes
@@ -39,7 +39,7 @@ La pantalla tiene dos pestañas: «Clientes», con el listado de clientes, y «T
 - Si no encuentras un cliente, revisa el filtro: solo busca dentro del nombre comercial. Pulsa «Limpiar» y vuelve a intentarlo.
 - Si al guardar un tipo nuevo aparece «La entidad ya existe», ya hay un tipo con ese nombre.
 - Si «+» abre una pantalla distinta de la esperada, revisa qué pestaña tienes activa.
-- Si no puedes eliminar un cliente o un tipo, es probable que tenga documentos o clientes relacionados; revísalos antes de volver a intentarlo.
+- Si aparece «No se ha podido eliminar el cliente ...» o «No se ha podido eliminar el tipo de cliente ...», el cliente tiene documentos o el tipo tiene clientes asignados: el cliente debe conservarse, y el tipo solo se puede eliminar después de cambiar el tipo de sus clientes.
 
 ## Proceso básico
 

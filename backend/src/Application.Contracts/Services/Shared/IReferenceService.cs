@@ -22,7 +22,7 @@ public interface IReferenceService
     Task<GenericResponse> RemoveReference(Guid id);
 
     // Existing methods
-    GenericResponse CanDelete(Guid referenceId);
+    Task<GenericResponse> CanDelete(Guid referenceId);
     Task<List<Reference>> GetReferenceByCategory(string categoryName);
     Task<GenericResponse> UpdatePriceFromReceipt(Receipt receipt);
     Task<decimal> GetPrice(Guid referenceId, Guid? supplierId);

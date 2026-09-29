@@ -295,6 +295,13 @@ const deleteSupplier = (supplier: Supplier) => {
           life: 3000,
         });
         await supplierStore.fetchSuppliers();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("purchase.messages.supplierDeleteError", { name: supplier.comercialName }),
+          detail: t("purchase.messages.supplierDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });
@@ -316,6 +323,13 @@ const deleteSupplierType = (supplierType: SupplierType) => {
           life: 3000,
         });
         await supplierStore.fetchSupplierTypes();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("purchase.messages.supplierTypeDeleteError", { name: supplierType.name }),
+          detail: t("purchase.messages.supplierTypeDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });
