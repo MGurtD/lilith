@@ -22,7 +22,7 @@
 - «Nom» i «Descripció» són obligatoris i admeten fins a 250 caràcters cadascun. El nom ha de ser únic.
 - Canviar el nom afecta totes les despeses del tipus: al «Tauler de despeses» i al quadre de flux de caixa apareixeran amb el nom nou.
 - «Desactivada» no amaga el tipus: continua disponible al camp «Tipus» de les despeses.
-- Per eliminar el tipus cal fer-ho des de la llista, i s'eliminen també totes les seves despeses (vegeu l'ajuda de «Gestió de tipus de despesa»).
+- Per eliminar el tipus cal fer-ho des de la llista, i només es pot si no té despeses (vegeu l'ajuda de «Gestió de tipus de despesa»).
 
 ## Errors frequents
 

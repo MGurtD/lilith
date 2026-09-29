@@ -29,10 +29,11 @@ This is the company's supplier directory and, on the same screen, the catalog of
 - Every supplier needs a type: the "Supplier type" field on the record is required. Create the types before adding suppliers.
 - The type named exactly "Logistica" has a special use: suppliers of that type show the "Transport rates" tab on their record, and they are the ones you can choose as carriers in quotations and sales orders. Do not rename that type.
 - In the type dialog, "Name" and "Description" are required and accept up to 250 characters.
-- Deleting a supplier or a type is permanent. The app does not check beforehand whether the supplier has purchase orders, delivery notes or invoices, or whether the type has suppliers assigned. Only delete records that have not been used; if a type has suppliers, change their type first.
+- Deleting a supplier or a type is permanent, and the app does not allow it once they have been used: a supplier with purchase orders, delivery notes, invoices, rates or external services, or a type with suppliers assigned, is not deleted and a warning appears. If a type has suppliers, change their type first.
 
 ## Common errors
 
+- If "The supplier ... could not be deleted" or "The supplier type ... could not be deleted" appears, the supplier has already been used and must be kept, or the type has suppliers whose type you must change first.
 - If you cannot find a supplier, check that the "Type" filter is empty and that you are searching by trading name, not legal name.
 - If "Entity already exists" appears when creating a type, a type with that name already exists.
 - If the type dialog does not save, check that "Name" and "Description" are filled in.

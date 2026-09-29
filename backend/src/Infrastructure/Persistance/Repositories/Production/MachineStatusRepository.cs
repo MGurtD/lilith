@@ -24,5 +24,17 @@ namespace Infrastructure.Persistance.Repositories.Production
                         .AsNoTracking()
                         .ToListAsync();
         }
+
+        // The shift history, production route phase steps and phase template steps
+        // reference the machine status with a cascading foreign key, so deleting a
+        // status in use would silently delete them; work order phase steps would
+        // block the delete.
+        public async Task<bool> IsInUse(Guid machineStatusId)
+        {
+            return await context.Set<WorkcenterShiftDetail>().AnyAsync(e => e.MachineStatusId == machineStatusId)
+                || await context.Set<WorkMasterPhaseDetail>().AnyAsync(e => e.MachineStatusId == machineStatusId)
+                || await context.Set<WorkOrderPhaseDetail>().AnyAsync(e => e.MachineStatusId == machineStatusId)
+                || await context.Set<PhaseTemplateDetail>().AnyAsync(e => e.MachineStatusId == machineStatusId);
+        }
     }
 }

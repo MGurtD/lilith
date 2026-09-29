@@ -51,6 +51,13 @@ public class PaymentMethodService(IUnitOfWork unitOfWork, ILocalizationService l
             return new GenericResponse(false, message);
         }
 
+        // Invoices cascade from their payment method, so a payment method in use is never deleted.
+        if (await unitOfWork.PaymentMethods.IsInUse(id))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("PaymentMethodInUse", entity.Name));
+        }
+
         await unitOfWork.PaymentMethods.Remove(entity);
         return new GenericResponse(true, entity);
     }

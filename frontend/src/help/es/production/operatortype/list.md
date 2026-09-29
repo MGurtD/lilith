@@ -22,15 +22,15 @@ Lista los tipos de operario. Cada tipo tiene un coste/hora que el sistema usa pa
 ## Aspectos importantes
 
 - La lista está ordenada por la descripción y no tiene filtros.
-- Al eliminar un tipo de operario, también se eliminan los operarios que lo tienen asignado. Revísalos antes en «Gestión de operarios».
-- No se puede eliminar un tipo que se usa en las fases de rutas o de órdenes de fabricación, ni si alguno de sus operarios ya tiene actividad registrada. En estos casos, márcalo como «Desactivado».
+- No se puede eliminar un tipo de operario que tenga operarios asignados: primero cámbialos de tipo en «Gestión de operarios» o desactiva el tipo.
+- Tampoco se puede eliminar un tipo que se usa en las fases de rutas o de órdenes de fabricación. En estos casos, márcalo como «Desactivado».
 - Un tipo desactivado deja de aparecer en el selector «Tipo de operario» de las fases de rutas y de órdenes de fabricación.
 - Los campos de la ficha y cómo se aplica el coste/hora se explican en la ayuda de la pantalla «Tipo de operario».
 
 ## Errores frecuentes
 
 - Si al guardar un tipo nuevo aparece «Tipo de operario ... existente», ya hay un tipo con ese nombre.
-- Si al eliminar aparece «Conflicto con el estado actual del recurso», el tipo se usa en alguna fase o alguno de sus operarios ya tiene actividad: desactívalo en lugar de eliminarlo.
+- Si al eliminar aparece «No se ha podido eliminar el tipo de operario ...», el tipo tiene operarios o se usa en alguna fase: desactívalo en lugar de eliminarlo.
 
 ## Proceso básico
 

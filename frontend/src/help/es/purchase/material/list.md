@@ -29,7 +29,7 @@ Es el catálogo de las referencias que se compran: materiales, herramientas y se
 - Las columnas cambian según la categoría: los materiales muestran «Tipo», «Formato» y «Densidad (mm)»; los servicios, «Precio» y «Transporte»; las herramientas, el «Área».
 - El botón «+» crea una referencia de la categoría que tienes seleccionada. Elígela antes de crear.
 - Al volver a la pantalla se recuperan los últimos filtros que habías usado.
-- La eliminación es definitiva. Antes de eliminar, la aplicación comprueba si la referencia tiene dependencias, por ejemplo albaranes de recepción, movimientos de almacén, una ruta de fabricación o si forma parte de una lista de materiales. Si las tiene, no se elimina.
+- La eliminación es definitiva. Antes de eliminar, la aplicación comprueba si la referencia tiene dependencias, por ejemplo pedidos, albaranes de recepción, stock o lotes, movimientos de almacén, una ruta u órdenes de fabricación, o si forma parte de una lista de materiales o de una tarifa de compra. Si las tiene, no se elimina.
 
 ## Errores frecuentes
 

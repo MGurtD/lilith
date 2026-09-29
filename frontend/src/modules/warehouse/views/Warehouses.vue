@@ -113,6 +113,13 @@ const deleteButton = (warehouse: Warehouse) => {
           life: 3000,
         });
         await warehouseStore.fetchWarehouses();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("warehouse.messages.warehouseDeleteError", { name: warehouse.name }),
+          detail: t("warehouse.messages.warehouseDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

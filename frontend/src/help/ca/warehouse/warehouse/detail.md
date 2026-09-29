@@ -28,14 +28,14 @@
 - Les ubicacions es desen al moment, en prémer «Guardar» al seu diàleg, sense haver de desar la fitxa del magatzem.
 - La ubicació per defecte és on el sistema deixa les entrades i sortides automàtiques (recepcions de compra, albarans de venda, producció de les ordres de fabricació i retalls que tornen de les màquines). El sistema la pren d'un magatzem actiu.
 - No es pot eliminar la ubicació que és la ubicació per defecte del magatzem: primer cal triar-ne una altra.
-- Les ubicacions «APR-» més el nom d'una màquina, de tipus «Subministrament», les crea el sistema en crear la màquina. Si la màquina es desactiva o s'elimina, la seva ubicació també.
+- Les ubicacions «APR-» més el nom d'una màquina, de tipus «Subministrament», les crea el sistema en crear la màquina. Si la màquina es desactiva o s'elimina, la seva ubicació també, tret que tingui estoc o moviments: llavors es conserva.
 - Una ubicació o un magatzem marcats com a «Desactivat» deixen de mostrar el seu estoc a «Estocs» i a «Inventari» i no surten als desplegables d'ubicació.
-- Eliminar una ubicació és definitiu i pot eliminar també l'estoc que hi hagi. Si ja s'ha fet servir, marca-la com a «Desactivat».
+- Eliminar una ubicació és definitiu, i no es pot eliminar una ubicació que tingui estoc o moviments de magatzem. Si ja s'ha fet servir, marca-la com a «Desactivat».
 
 ## Errors frequents
 
 - Si en desar surt l'avís «Selecciona una ubicació per defecte», tria-la al camp «Ubicació per defecte». Si la llista és buida, crea primer alguna ubicació.
-- Si en eliminar una ubicació surt «Ubicació amb dependències», és la ubicació per defecte: tria'n una altra, desa i torna-ho a provar.
+- Si en eliminar una ubicació surt «Ubicació amb dependències», és la ubicació per defecte (tria'n una altra, desa i torna-ho a provar) o té estoc o moviments (marca-la com a «Desactivat»).
 - Si una ubicació nova no apareix a la taula després de desar-la, comprova primer que no n'hi hagi cap altra amb el mateix nom en aquest magatzem.
 - Si un magatzem nou no es desa, comprova que no existeixi ja un magatzem amb el mateix nom i que el nom no passi de 50 caràcters.
 

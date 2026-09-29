@@ -22,15 +22,15 @@ Llista els tipus d'operari. Cada tipus té un cost/hora que el sistema fa servir
 ## Aspectes importants
 
 - La llista està ordenada per la descripció i no té filtres.
-- En eliminar un tipus d'operari, també s'eliminen els operaris que el tenen assignat. Revisa'ls abans a «Gestió d'operaris».
-- No es pot eliminar un tipus que es fa servir a les fases de rutes o d'ordres de fabricació, ni si algun dels seus operaris ja té activitat registrada. En aquests casos, marca'l com a «Desactivat».
+- No es pot eliminar un tipus d'operari que tingui operaris assignats: primer canvia'ls de tipus a «Gestió d'operaris» o desactiva el tipus.
+- Tampoc es pot eliminar un tipus que es fa servir a les fases de rutes o d'ordres de fabricació. En aquests casos, marca'l com a «Desactivat».
 - Un tipus desactivat deixa de sortir al selector «Tipus d'operari» de les fases de rutes i d'ordres de fabricació.
 - Els camps de la fitxa i com s'aplica el cost/hora s'expliquen a l'ajuda de la pantalla «Tipus d'operari».
 
 ## Errors frequents
 
 - Si en desar un tipus nou surt «Tipus d'operari ... existent», ja hi ha un tipus amb aquest nom.
-- Si en eliminar surt «Conflicte amb l'estat actual del recurs», el tipus es fa servir en alguna fase o algun dels seus operaris ja té activitat: desactiva'l en lloc d'eliminar-lo.
+- Si en eliminar surt «No s'ha pogut eliminar el tipus d'operari ...», el tipus té operaris o es fa servir en alguna fase: desactiva'l en lloc d'eliminar-lo.
 
 ## Proces basic
 

@@ -12,7 +12,7 @@ namespace Application.Tests.TestSupport;
 /// Additional feature: <see cref="ThrowOnFindAsync"/> makes FindAsync throw to
 /// simulate a post-commit read failure (UploadLogo_preserves_committed_branding).
 /// </summary>
-public sealed class StagingRepository<TEntity> : IRepository<TEntity, Guid>
+public class StagingRepository<TEntity> : IRepository<TEntity, Guid>
     where TEntity : Entity
 {
     public List<TEntity> Store { get; } = [];

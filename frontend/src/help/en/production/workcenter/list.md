@@ -27,12 +27,12 @@ Lists every machine in the plant with its type and area. From here you find a ma
 - The filters only offer active types and areas. In the table, the "Type" or "Area" column is empty when the machine has a disabled type or area.
 - The list includes disabled machines. A disabled machine does not appear in the plant and cannot be chosen as "Preferred machine" in phases.
 - The plant only shows active machines in areas that have "Visible in plant" checked in "Area management".
-- Deleting is permanent and also removes the data that depends on the machine, such as its per-status costs, its profit percentages and the supply location created for it. If the machine has already worked, disable it instead of deleting it.
+- Deleting is permanent and also removes the data that depends on the machine, such as its per-status costs, its profit percentages and the supply location created for it (if it has no stock or movements). A machine that has already worked (production parts or shift history) or is the "Preferred machine" of a phase cannot be deleted: disable it.
 - The fields and tabs of the record are explained in the help of the "Machine" screen.
 
 ## Common errors
 
-- If you cannot delete a machine, check whether it is the "Preferred machine" of a manufacturing route or work order phase; if so, disable it.
+- If "The machine ... could not be deleted" appears, the machine has already worked or is the "Preferred machine" of a manufacturing route or work order phase: disable it.
 - If you cannot find a machine, check the "Type" and "Area" filters and reset them with "Clear filters".
 - If a machine does not appear in the plant, check that it is not disabled and that its area has "Visible in plant" checked.
 

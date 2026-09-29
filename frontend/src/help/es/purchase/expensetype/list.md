@@ -19,14 +19,14 @@ Lista los tipos de gasto, el catálogo que clasifica los gastos generales de la 
 
 ## Aspectos importantes
 
-- Eliminar un tipo de gasto borra definitivamente el tipo y también todos los gastos que lo tienen asignado. Esos gastos desaparecen de «Gestión de gastos», del «Panel de gastos» y del panel de flujo de caja.
+- Eliminar un tipo de gasto es definitivo, pero no se puede eliminar un tipo que tenga gastos asignados: así no se pierde ningún gasto registrado.
 - El nombre del tipo es el que aparece en el «Panel de gastos» (filtro «Detalle» y gráfico por tipología) cuando el tipo es «Gasto». Si lo cambias, los gastos ya registrados se muestran con el nombre nuevo.
 - Marcar un tipo como «Desactivada» solo queda como indicación en la lista: el tipo sigue disponible en el desplegable «Tipo» de los gastos y en los filtros.
 - La lista no tiene filtros: muestra siempre todos los tipos.
 
 ## Errores frecuentes
 
-- Antes de eliminar un tipo, comprueba en «Gestión de gastos», filtrando por ese «Tipo» y con un período amplio, que no tenga gastos que quieras conservar.
+- Si al eliminar aparece «No se ha podido eliminar el tipo de gasto ...», el tipo tiene gastos asignados. Cámbiales el «Tipo» en «Gestión de gastos» si lo quieres eliminar, o márcalo como «Desactivada».
 - Si al crearlo aparece «La entidad ya existe», ya hay un tipo con ese nombre.
 
 ## Proceso básico

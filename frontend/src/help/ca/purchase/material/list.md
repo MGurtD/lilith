@@ -28,7 +28,7 @@
 - Les columnes canvien segons la categoria: els materials mostren «Tipus», «Format» i «Densitat (mm)»; els serveis, «Preu» i «Transport»; les eines, l'«Àrea».
 - El botó «+» crea una referència de la categoria que tens seleccionada. Tria-la abans de crear.
 - En tornar a la pantalla es recuperen els últims filtres que havies fet servir.
-- L'eliminació és definitiva. Abans d'eliminar, l'aplicació comprova si la referència té dependències, per exemple albarans de recepció, moviments de magatzem, una ruta de fabricació o si forma part d'una llista de materials. Si en té, no s'elimina.
+- L'eliminació és definitiva. Abans d'eliminar, l'aplicació comprova si la referència té dependències, per exemple comandes, albarans de recepció, estoc o lots, moviments de magatzem, una ruta o ordres de fabricació, o si forma part d'una llista de materials o d'una tarifa de compra. Si en té, no s'elimina.
 
 ## Errors frequents
 

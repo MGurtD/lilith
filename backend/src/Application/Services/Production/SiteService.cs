@@ -56,6 +56,13 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
+            // Areas, warehouses and delivery notes cascade from the site, so a site in use is never deleted.
+            if (await unitOfWork.Sites.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("SiteInUse", site.Name));
+            }
+
             await unitOfWork.Sites.Remove(site);
             return new GenericResponse(true, site);
         }

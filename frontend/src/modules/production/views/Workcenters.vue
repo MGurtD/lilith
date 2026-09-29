@@ -195,6 +195,13 @@ const deleteButton = (entity: Workcenter) => {
           life: 3000,
         });
         await plantmodelStore.fetchWorkcenters();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.workcenterDeleteError", { name: entity.name }),
+          detail: t("production.messages.workcenterDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

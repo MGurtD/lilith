@@ -27,13 +27,13 @@ Aquí es defineixen els estats en què pot estar una màquina a planta, com ara 
 - L'estat marcat com a «Tancada» és el botó per aturar la màquina a la barra d'estats de planta. Marca'n només un.
 - En finalitzar una fase a planta sense carregar-ne una altra, la màquina passa a l'estat marcat com a «Aturada».
 - A les àrees de planta, les màquines en un estat «Aturada» o «Tancada» compten com a «Aturades».
-- L'eliminació és definitiva i pot esborrar també dades que en depenen: els motius de l'estat, els detalls de plantilles de fase, els pasos de rutes de fabricació, els costos per màquina i l'historial de torns que el fan servir. Si l'estat ja s'ha fet servir, marca'l «Desactivat» en lloc d'eliminar-lo.
+- L'eliminació és definitiva i també esborra els motius de l'estat i els costos per màquina. No es pot eliminar un estat que facin servir l'historial de torns, els passos de rutes o d'ordres de fabricació o els detalls de plantilles de fase; en aquest cas, marca'l «Desactivat».
 - El significat de cada marca s'explica a l'ajuda de «Estat de màquina».
 
 ## Errors frequents
 
 - Si en crear un estat surt «L'entitat ja existeix», ja hi ha un estat amb aquest nom.
-- Si no es pot eliminar un estat, marca'l «Desactivat»: deixarà de sortir a planta.
+- Si surt «No s'ha pogut eliminar l'estat de màquina ...», l'estat està en ús: marca'l «Desactivat» i deixarà de sortir a planta.
 - Si a planta falta el botó per aturar la màquina o surt «No s'ha trobat l'estat de màquina tancada», marca un estat actiu com a «Tancada».
 
 ## Proces basic

@@ -188,6 +188,13 @@ const deleteCustomer = (customer: Customer) => {
           life: 3000,
         });
         await customerStore.fetchCustomers();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("sales.customers.customerDeleteError", { name: customer.comercialName }),
+          detail: t("sales.customers.customerDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });
@@ -209,6 +216,13 @@ const deleteCustomerType = (customerType: CustomerType) => {
           life: 3000,
         });
         await customerStore.fetchCustomerTypes();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("sales.customers.customerTypeDeleteError", { name: customerType.name }),
+          detail: t("sales.customers.customerTypeDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

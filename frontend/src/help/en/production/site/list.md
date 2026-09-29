@@ -24,12 +24,12 @@ This is where you manage the company's sites, the second level of the plant stru
 - The list has no filters: it shows every site, including disabled ones, sorted by name.
 - The required fields and the data that sales documents need are explained in the help for the site form.
 - The default site of the active company is the one assigned to new sales orders, delivery notes and sales invoices.
-- Deleting a site is permanent and can carry along the data that depends on it, such as its areas and machines, warehouses or delivery notes. If the site has already been used in documents, the deletion can fail. If you no longer use the site, mark it as "Disabled" instead of deleting it.
+- Deleting a site is permanent, and a site that has areas, warehouses, orders, delivery notes or invoices cannot be deleted. If you no longer use the site, mark it as "Disabled" instead of deleting it.
 - If you delete a company's default site, the company is left without a default site and no sales documents can be created until you pick another one.
 
 ## Common errors
 
-- If deleting a site shows an error, the site is already in use: disable it instead of deleting it.
+- If "The site ... could not be deleted" appears, the site is already in use: disable it instead of deleting it.
 - If creating a sales order, delivery note or sales invoice says the site is not valid, open the company's default site and complete the address, city, region, postal code, country and tax ID.
 - If a site is not offered as a company's "Default location", open it and check that the "Company" field holds that company.
 

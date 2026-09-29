@@ -28,14 +28,14 @@ Es la ficha de un almacén. Arriba están los datos del almacén (nombre, descri
 - Las ubicaciones se guardan al momento, al pulsar «Guardar» en su diálogo, sin tener que guardar la ficha del almacén.
 - La ubicación predeterminada es donde el sistema deja las entradas y salidas automáticas (recepciones de compra, albaranes de venta, producción de las órdenes de fabricación y recortes que vuelven de las máquinas). El sistema la toma de un almacén activo.
 - No se puede eliminar la ubicación que es la ubicación predeterminada del almacén: antes hay que elegir otra.
-- Las ubicaciones «APR-» más el nombre de una máquina, de tipo «Suministro», las crea el sistema al crear la máquina. Si la máquina se desactiva o se elimina, su ubicación también.
+- Las ubicaciones «APR-» más el nombre de una máquina, de tipo «Suministro», las crea el sistema al crear la máquina. Si la máquina se desactiva o se elimina, su ubicación también, salvo que tenga stock o movimientos: entonces se conserva.
 - Una ubicación o un almacén marcados como «Desactivado» dejan de mostrar su stock en «Existencias» y en «Inventario» y no aparecen en los desplegables de ubicación.
-- Eliminar una ubicación es definitivo y puede eliminar también el stock que haya. Si ya se ha utilizado, márcala como «Desactivado».
+- Eliminar una ubicación es definitivo, y no se puede eliminar una ubicación que tenga stock o movimientos de almacén. Si ya se ha utilizado, márcala como «Desactivado».
 
 ## Errores frecuentes
 
 - Si al guardar aparece el aviso «Selecciona una ubicación predeterminada», elígela en el campo «Ubicación predeterminada». Si la lista está vacía, crea antes alguna ubicación.
-- Si al eliminar una ubicación aparece «Ubicación con dependencias», es la ubicación predeterminada: elige otra, guarda y vuelve a intentarlo.
+- Si al eliminar una ubicación aparece «Ubicación con dependencias», es la ubicación predeterminada (elige otra, guarda y vuelve a intentarlo) o tiene stock o movimientos (márcala como «Desactivado»).
 - Si una ubicación nueva no aparece en la tabla después de guardarla, comprueba primero que no haya otra con el mismo nombre en este almacén.
 - Si un almacén nuevo no se guarda, comprueba que no exista ya un almacén con el mismo nombre y que el nombre no supere los 50 caracteres.
 

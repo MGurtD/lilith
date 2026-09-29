@@ -23,13 +23,13 @@ Llista els tipus de màquina, la classificació que agrupa les màquines que pod
 
 - La llista mostra tots els tipus, també els desactivats; la columna «Desactivat» ho indica. Aquesta pantalla no té filtres i la llista surt ordenada pel nom.
 - Els tipus desactivats no es poden triar en crear una màquina des de «Gestió de màquines» ni en el camp «Tipus de màquina» de les fases de rutes i ordres de fabricació.
-- L'eliminació és definitiva: el tipus no es desactiva, s'esborra. Les màquines que tenen aquest tipus s'esborren amb ell, per això abans d'eliminar-lo comprova que no en tingui cap.
+- L'eliminació és definitiva: el tipus no es desactiva, s'esborra. Per això no es pot eliminar un tipus que tingui màquines o que es faci servir a les fases de rutes o d'ordres de fabricació.
 - Si el tipus ja s'ha fet servir, desactiva'l en lloc d'eliminar-lo.
 - Els camps de la fitxa i el paper del marge de benefici s'expliquen a l'ajuda de la pantalla «Tipus de màquina».
 
 ## Errors frequents
 
-- Si no pots eliminar un tipus, probablement alguna fase d'una ruta o d'una ordre de fabricació l'utilitza: desactiva'l en lloc d'eliminar-lo.
+- Si surt «No s'ha pogut eliminar el tipus de màquina ...», el tipus té màquines o alguna fase d'una ruta o d'una ordre de fabricació l'utilitza: desactiva'l en lloc d'eliminar-lo.
 - Si un tipus no apareix en crear una màquina o una fase, comprova que no estigui marcat com a «Desactivat».
 - Si en crear un tipus surt «Tipus de centre de treball ... existent», ja n'hi ha un amb el mateix nom: obre'l des de la llista.
 

@@ -19,14 +19,14 @@ Lists the expense types, the catalog that classifies the company's general expen
 
 ## Important notes
 
-- Deleting an expense type permanently removes the type and also every expense assigned to it. Those expenses disappear from "Expense management", the "Expense dashboard" and the cash flow dashboard.
+- Deleting an expense type is permanent, but a type that has expenses assigned cannot be deleted, so no recorded expense is lost.
 - The type name is what the "Expense dashboard" shows (the "Detail" filter and the chart by type) when the type is "Expense". If you rename it, existing expenses are shown under the new name.
 - Marking a type "Disabled" is only an indication in the list: the type is still available in the expenses' "Type" dropdown and in the filters.
 - The list has no filters: it always shows every type.
 
 ## Common errors
 
-- Before deleting a type, check in "Expense management", filtering by that "Type" over a wide period, that it has no expenses you want to keep.
+- If deleting shows "The expense type ... could not be deleted", the type has expenses assigned. Change their "Type" in "Expense management" if you want to delete it, or mark it "Disabled".
 - If "Entity already exists" appears when creating it, a type with that name already exists.
 
 ## Basic process

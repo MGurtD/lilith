@@ -112,6 +112,13 @@ const deleteButton = (entity: Site) => {
           life: 3000,
         });
         await plantmodelStore.fetchSites();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.siteDeleteError", { name: entity.name }),
+          detail: t("production.messages.siteDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

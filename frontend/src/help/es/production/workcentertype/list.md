@@ -23,13 +23,13 @@ Lista los tipos de máquina, la clasificación que agrupa las máquinas que pued
 
 - La lista muestra todos los tipos, también los desactivados; la columna «Desactivado» lo indica. Esta pantalla no tiene filtros y la lista sale ordenada por nombre.
 - Los tipos desactivados no se pueden elegir al crear una máquina desde «Gestión de máquinas» ni en el campo «Tipo de máquina» de las fases de rutas y órdenes de fabricación.
-- La eliminación es definitiva: el tipo no se desactiva, se borra. Las máquinas que tienen este tipo se borran con él, así que antes de eliminarlo comprueba que no tenga ninguna.
+- La eliminación es definitiva: el tipo no se desactiva, se borra. Por eso no se puede eliminar un tipo que tenga máquinas o que se use en las fases de rutas o de órdenes de fabricación.
 - Si el tipo ya se ha usado, desactívalo en lugar de eliminarlo.
 - Los campos de la ficha y el papel del margen de beneficio se explican en la ayuda de la pantalla «Tipo de máquina».
 
 ## Errores frecuentes
 
-- Si no puedes eliminar un tipo, probablemente alguna fase de una ruta o de una orden de fabricación lo usa: desactívalo en lugar de eliminarlo.
+- Si aparece «No se ha podido eliminar el tipo de máquina ...», el tipo tiene máquinas o alguna fase de una ruta o de una orden de fabricación lo usa: desactívalo en lugar de eliminarlo.
 - Si un tipo no aparece al crear una máquina o una fase, comprueba que no esté marcado como «Desactivado».
 - Si al crear un tipo aparece «Tipo de centro de trabajo ... existente», ya hay uno con el mismo nombre: ábrelo desde la lista.
 

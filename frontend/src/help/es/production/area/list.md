@@ -24,11 +24,11 @@ Aquí se gestionan las áreas, el tercer nivel de la estructura de planta: empre
 - La lista no tiene filtros: muestra todas las áreas, también las desactivadas, ordenadas por nombre.
 - En la pantalla de áreas de planta solo aparecen las áreas con «Visible en planta» que no están desactivadas, con sus máquinas activas.
 - Los campos de la ficha se explican en la ayuda de la ficha del área.
-- Eliminar un área es definitivo y también puede borrar las máquinas que pertenecen a ella. Si el área o sus máquinas ya tienen datos vinculados, por ejemplo materiales con esta «Área de producción», la eliminación puede fallar. Si ya no la usas, márcala como «Desactivado» o quítala de planta en lugar de eliminarla.
+- Eliminar un área es definitivo, y no se puede eliminar un área que tenga máquinas o materiales con esta «Área de producción». Si ya no la usas, márcala como «Desactivado» o quítala de planta en lugar de eliminarla.
 
 ## Errores frecuentes
 
-- Si al eliminar un área aparece un error, el área ya está en uso: desactívala en lugar de eliminarla.
+- Si aparece «No se ha podido eliminar el área ...», el área ya está en uso: desactívala en lugar de eliminarla.
 - Si un área no aparece en la pantalla de planta, comprueba que tenga «Visible en planta» y que no esté «Desactivado».
 - Si una máquina aparece en un área equivocada, corrígelo en la ficha de la máquina, en «Gestión de máquinas».
 

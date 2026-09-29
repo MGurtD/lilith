@@ -25,11 +25,11 @@ Aquí se da de alta la empresa que trabaja con el ERP. Es el primer nivel de la 
 - Si no hay ninguna empresa activa, o la empresa activa no tiene centro predeterminado, no se pueden crear pedidos, albaranes ni facturas de venta.
 - La lista no tiene filtros: muestra todas las empresas, también las desactivadas, ordenadas por nombre.
 - El detalle de cada campo se explica en la ayuda de la ficha de la empresa.
-- Eliminar una empresa es definitivo. También se borran sus logotipos de «Branding» y puede arrastrar los datos que dependen de ella, como los centros y, con ellos, las áreas y las máquinas. Si alguno de esos datos ya se ha usado, la eliminación puede fallar. Si ya no la usas, márcala como «Desactivado» en lugar de eliminarla.
+- Eliminar una empresa es definitivo y también borra sus logotipos de «Branding». No se puede eliminar una empresa que tenga centros. Si ya no la usas, márcala como «Desactivado» en lugar de eliminarla.
 
 ## Errores frecuentes
 
-- Si al eliminar una empresa aparece un error, es que ella o sus centros ya tienen datos vinculados: desactívala en lugar de eliminarla.
+- Si aparece «No se ha podido eliminar la empresa ...», la empresa tiene centros: desactívala en lugar de eliminarla.
 - Si al crear un pedido, un albarán o una factura de venta aparece que la sede no existe, comprueba aquí que haya exactamente una empresa activa y que tenga «Centro predeterminado».
 - Si la columna «Centro predeterminado» sale vacía, abre la empresa y elige el centro en «Sede por defecto».
 

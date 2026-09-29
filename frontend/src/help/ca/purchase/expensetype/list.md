@@ -19,14 +19,14 @@ Llista els tipus de despesa, el catàleg que classifica les despeses generals de
 
 ## Aspectes importants
 
-- Eliminar un tipus de despesa esborra definitivament el tipus i també totes les despeses que el tenen assignat. Aquestes despeses desapareixen de «Gestió de despeses», del «Tauler de despeses» i del quadre de flux de caixa.
+- Eliminar un tipus de despesa és definitiu, però no es pot eliminar un tipus que tingui despeses assignades: així no es perd cap despesa registrada.
 - El nom del tipus és el que apareix al «Tauler de despeses» (filtre «Detall» i gràfic per tipologia) quan el tipus és «Despesa». Si el canvies, les despeses ja registrades es mostren amb el nom nou.
 - Marcar un tipus com a «Desactivada» només queda com a indicació a la llista: el tipus continua disponible al desplegable «Tipus» de les despeses i als filtres.
 - La llista no té filtres: mostra sempre tots els tipus.
 
 ## Errors frequents
 
-- Abans d'eliminar un tipus, comprova a «Gestió de despeses», filtrant per aquest «Tipus» i amb un període ampli, que no tingui despeses que vulguis conservar.
+- Si en eliminar surt «No s'ha pogut eliminar el tipus de despesa ...», el tipus té despeses assignades. Canvia'n el «Tipus» a «Gestió de despeses» si el vols eliminar, o marca'l com a «Desactivada».
 - Si en crear-lo surt «L'entitat ja existeix», ja hi ha un tipus amb aquest nom.
 
 ## Proces basic

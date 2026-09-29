@@ -13,5 +13,11 @@ namespace Application.Contracts
         Task AddAddress(CustomerAddress address);
         Task UpdateAddress(CustomerAddress address);
         Task RemoveAddress(CustomerAddress address);
+
+        /// <summary>
+        /// True when a budget, sales order, delivery note, sales invoice or
+        /// reference uses the customer. Contacts and addresses do not count.
+        /// </summary>
+        Task<bool> IsInUse(Guid customerId);
     }
 }

@@ -22,7 +22,7 @@ This is the form of an expense type. It opens when you create a type from "Expen
 - "Name" and "Description" are required and accept up to 250 characters each. The name must be unique.
 - Renaming a type affects all its expenses: on the "Expense dashboard" and the cash flow dashboard they appear under the new name.
 - "Disabled" does not hide the type: it is still available in the expenses' "Type" field.
-- A type is deleted from the list, and all its expenses are deleted with it (see the "Expense type management" help).
+- A type is deleted from the list, and only when it has no expenses (see the "Expense type management" help).
 
 ## Common errors
 

@@ -34,7 +34,7 @@ Flow: `sales reference -> manufacturing route -> manufacturing order -> phases -
 - The "Customer" filter also shows routes whose reference has no customer. With a customer selected, the "Reference" dropdown only offers that customer's references.
 - Filters are remembered when you leave the screen and come back.
 - The "Disabled" column marks routes that can no longer be chosen to create manufacturing orders or on budget and sales order lines. They still show here.
-- Deleting is permanent: the route is removed with all its phases, steps and materials. If the route has already been used in manufacturing orders, budgets or sales orders, do not delete it: tick "Disabled" on its screen instead.
+- Deleting is permanent: the route is removed with all its phases, steps and materials. A route already used in manufacturing orders, budgets or sales orders cannot be deleted: tick "Disabled" on its screen instead.
 
 ## Common errors
 

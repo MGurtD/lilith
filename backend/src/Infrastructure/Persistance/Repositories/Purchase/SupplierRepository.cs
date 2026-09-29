@@ -1,6 +1,8 @@
 using Application.Contracts;
 using Domain.Constants;
 using Domain.Entities.Purchase;
+using Domain.Entities.Sales;
+using Domain.Entities.Transport;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistance.Repositories.Purchase
@@ -117,6 +119,22 @@ namespace Infrastructure.Persistance.Repositories.Purchase
                 .Distinct()
                 .OrderBy(a => a)
                 .ToListAsync();
+        }
+
+        // Purchase orders and invoices reference the supplier with a cascading
+        // foreign key and receipts have no foreign key at all, so deleting a supplier
+        // in use would silently delete or orphan them. Transport rates and the budget
+        // and sales order external services and transports have no foreign key either.
+        public async Task<bool> IsInUse(Guid supplierId)
+        {
+            return await context.Set<PurchaseOrder>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<Receipt>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<PurchaseInvoice>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<PurchaseRate>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<TransportRate>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<BudgetExternalServices>().AnyAsync(e => e.SupplierId == supplierId)
+                || await context.Set<BudgetTransport>().AnyAsync(e => e.LogisticSupplierId == supplierId || e.DestinationSupplierId == supplierId)
+                || await context.Set<SalesOrderExternalServices>().AnyAsync(e => e.SupplierId == supplierId);
         }
     }
 }

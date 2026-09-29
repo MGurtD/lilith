@@ -28,14 +28,14 @@ This is a warehouse's record. At the top are the warehouse's data (name, descrip
 - Locations are saved immediately when you press "Save" in their dialog, without saving the warehouse record.
 - The default location is where the system puts automatic inputs and outputs (purchase receipts, sales delivery notes, work order production and offcuts returned from machines). The system takes it from an active warehouse.
 - The location that is the warehouse's default location cannot be deleted: choose another one first.
-- "APR-" locations named after a machine, of type "Supply", are created by the system when the machine is created. If the machine is disabled or deleted, so is its location.
+- "APR-" locations named after a machine, of type "Supply", are created by the system when the machine is created. If the machine is disabled or deleted, so is its location, unless it has stock or movements: then it is kept.
 - A location or warehouse marked as "Disabled" no longer shows its stock in "Stock" or "Inventory" and is not offered in location dropdowns.
-- Deleting a location is permanent and may also delete the stock it holds. If it has already been used, mark it as "Disabled" instead.
+- Deleting a location is permanent, and a location that has stock or warehouse movements cannot be deleted. If it has already been used, mark it as "Disabled" instead.
 
 ## Common errors
 
 - If the "Select a default location" warning appears when saving, choose one in the "Default location" field. If the list is empty, create a location first.
-- If "Location has dependencies" appears when deleting a location, it is the default location: choose another one, save and try again.
+- If "Location has dependencies" appears when deleting a location, it is the default location (choose another one, save and try again) or it has stock or movements (mark it as "Disabled").
 - If a new location does not appear in the table after saving it, first check that this warehouse has no other location with the same name.
 - If a new warehouse is not saved, check that no warehouse with the same name already exists and that the name is no longer than 50 characters.
 

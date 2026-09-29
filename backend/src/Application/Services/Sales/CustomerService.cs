@@ -81,6 +81,13 @@ public class CustomerService(
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
+        // Delivery notes cascade from the customer, so a customer in use is never deleted.
+        if (await unitOfWork.Customers.IsInUse(id))
+        {
+            return new GenericResponse(false,
+                localizationService.GetLocalizedString("CustomerInUse", customer.ComercialName));
+        }
+
         await unitOfWork.Customers.Remove(customer);
         return new GenericResponse(true, customer);
     }

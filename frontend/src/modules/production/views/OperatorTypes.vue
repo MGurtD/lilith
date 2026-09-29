@@ -106,6 +106,13 @@ const deleteButton = (operatorType: OperatorType) => {
           life: 3000,
         });
         await plantmodelStore.fetchOperatorTypes();
+      } else {
+        toast.add({
+          severity: "warn",
+          summary: t("production.messages.operatorTypeDeleteError", { name: operatorType.name }),
+          detail: t("production.messages.operatorTypeDeleteErrorDetail"),
+          life: 6000,
+        });
       }
     },
   });

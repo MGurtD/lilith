@@ -34,7 +34,7 @@ Flujo: `referencia de venta -> ruta de fabricación -> orden de fabricación -> 
 - El filtro «Cliente» también muestra las rutas de referencias que no tienen ningún cliente asignado. Con un cliente elegido, el desplegable «Referencia» solo ofrece sus referencias.
 - Los filtros se recuerdan cuando sales de la pantalla y vuelves.
 - La columna «Desactivada» indica las rutas que ya no se pueden elegir para crear órdenes de fabricación ni en las líneas de presupuestos y pedidos. Aquí siguen apareciendo.
-- La eliminación es definitiva: se borra la ruta con todas sus fases, pasos y materiales. Si la ruta ya se ha usado en órdenes de fabricación, presupuestos o pedidos, no la elimines: márcala como «Desactivado» en su ficha.
+- La eliminación es definitiva: se borra la ruta con todas sus fases, pasos y materiales. No se puede eliminar una ruta que ya se ha usado en órdenes de fabricación, presupuestos o pedidos: márcala como «Desactivado» en su ficha.
 
 ## Errores frecuentes
 

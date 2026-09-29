@@ -27,13 +27,13 @@ This screen defines the statuses a machine can be in on the shop floor, such as 
 - The status marked as "Closed" is the button that stops the machine in the shop-floor status bar. Mark only one.
 - When a phase is finished on the shop floor without loading another one, the machine moves to the status marked as "Stopped".
 - In the shop-floor areas, machines in a "Stopped" or "Closed" status count as "Stopped".
-- Deletion is permanent and can also remove data that depends on the status: its reasons, phase template details, manufacturing route steps, machine costs and the shift history that use it. If the status has already been used, mark it as "Disabled" instead of deleting it.
+- Deletion is permanent and also removes the status's reasons and machine costs. A status used by the shift history, manufacturing route or work order steps or phase template details cannot be deleted; in that case, mark it as "Disabled".
 - The meaning of each flag is explained in the "Machine status" help.
 
 ## Common errors
 
 - If creating a status shows "Entity already exists", there is already a status with that name.
-- If a status cannot be deleted, mark it as "Disabled": it will no longer appear on the shop floor.
+- If "The machine status ... could not be deleted" appears, the status is in use: mark it as "Disabled" and it will no longer appear on the shop floor.
 - If the shop floor has no button to stop the machine, or shows "Closed machine status was not found", mark an active status as "Closed".
 
 ## Basic process

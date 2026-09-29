@@ -28,7 +28,7 @@
 - La columna «Cost» mostra el cost teòric de fabricació, calculat a partir de la ruta de fabricació de la referència.
 - Una referència amb «Client» informat només apareix a les línies dels pressupostos d'aquest client. Les que no tenen client apareixen per a tots els clients.
 - «Data creació» filtra per la data en què es va donar d'alta la referència.
-- No es pot eliminar una referència que ja s'ha fet servir: el sistema ho bloqueja si té comandes, albarans de recepció, moviments de magatzem o una ruta de fabricació, o si forma part d'una llista de materials. Quan es pot eliminar, l'eliminació és definitiva.
+- No es pot eliminar una referència que ja s'ha fet servir: el sistema ho bloqueja si té comandes de venda o de compra, albarans, pressupostos, albarans de recepció, estoc o lots, moviments de magatzem, una ruta o ordres de fabricació, si forma part d'una llista de materials o d'una tarifa de compra, o si és el servei extern d'una fase. Quan es pot eliminar, l'eliminació és definitiva.
 
 ## Errors frequents
 

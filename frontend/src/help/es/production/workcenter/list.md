@@ -27,12 +27,12 @@ Lista todas las máquinas de la planta con su tipo y su área. Desde aquí se lo
 - Los filtros solo ofrecen tipos y áreas activos. En la tabla, la columna «Tipo» o «Área» sale vacía si la máquina tiene asignado un tipo o un área desactivados.
 - La lista incluye las máquinas desactivadas. Una máquina desactivada no aparece en planta ni se puede elegir como «Máquina preferida» en las fases.
 - En planta solo aparecen las máquinas activas de áreas que tienen marcado «Visible en planta» en «Gestión de áreas».
-- La eliminación es definitiva y también borra los datos que dependen de la máquina, como los costes por estado, los porcentajes de beneficio y la ubicación de aprovisionamiento que se le creó. Si la máquina ya ha trabajado, desactívala en lugar de eliminarla.
+- La eliminación es definitiva y también borra los datos que dependen de la máquina, como los costes por estado, los porcentajes de beneficio y la ubicación de aprovisionamiento que se le creó (si no tiene stock ni movimientos). No se puede eliminar una máquina que ya ha trabajado (partes de producción o historial de turnos) ni la «Máquina preferida» de alguna fase: desactívala.
 - Los campos y las pestañas de la ficha se explican en la ayuda de la pantalla «Máquina».
 
 ## Errores frecuentes
 
-- Si no puedes eliminar una máquina, comprueba si es la «Máquina preferida» de alguna fase de una ruta o de una orden de fabricación; en ese caso, desactívala.
+- Si aparece «No se ha podido eliminar la máquina ...», la máquina ya ha trabajado o es la «Máquina preferida» de alguna fase de una ruta o de una orden de fabricación: desactívala.
 - Si no encuentras una máquina, revisa los filtros «Tipo» y «Área» y vacíalos con «Limpiar filtros».
 - Si una máquina no aparece en planta, comprueba que no esté desactivada y que su área tenga marcado «Visible en planta».
 

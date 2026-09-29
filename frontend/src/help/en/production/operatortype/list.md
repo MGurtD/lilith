@@ -22,15 +22,15 @@ Lists the operator types. Each type has an hourly cost that the system uses to c
 ## Important notes
 
 - The list is sorted by description and has no filters.
-- Deleting an operator type also deletes the operators assigned to it. Review them first in "Operator management".
-- You cannot delete a type used on route or manufacturing order phases, or one where any of its operators already has recorded activity. In those cases, mark it as "Disabled".
+- An operator type that has operators assigned cannot be deleted: first change their type in "Operator management" or disable the type.
+- Nor can you delete a type used on route or manufacturing order phases. In those cases, mark it as "Disabled".
 - A disabled type no longer appears in the "Type of operator" selector on route and manufacturing order phases.
 - The record's fields and how the hourly cost is applied are explained in the help for the "Operator type" screen.
 
 ## Common errors
 
 - If saving a new type shows "Operator type ... already exists", a type with that name already exists.
-- If deleting shows "Conflict with the current state of the resource", the type is used on some phase or one of its operators already has activity: disable it instead of deleting it.
+- If deleting shows "The operator type ... could not be deleted", the type has operators or is used on some phase: disable it instead of deleting it.
 
 ## Basic process
 

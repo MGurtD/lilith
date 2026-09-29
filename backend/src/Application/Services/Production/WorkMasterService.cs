@@ -96,6 +96,13 @@ namespace Application.Services.Production
                     localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
+            // Work orders cascade from their production route, so a route in use is never deleted.
+            if (await unitOfWork.WorkMasters.IsInUse(id))
+            {
+                return new GenericResponse(false,
+                    localizationService.GetLocalizedString("WorkMasterInUse"));
+            }
+
             await unitOfWork.WorkMasters.Remove(workMaster);
             return new GenericResponse(true, workMaster);
         }
