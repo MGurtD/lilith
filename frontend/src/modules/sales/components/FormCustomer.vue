@@ -94,6 +94,23 @@
       <label class="block text-900 mb-2">Notes de factura</label>
       <Textarea v-model="customer.invoiceNotes" class="w-full" />
     </div>
+    <template v-if="showFiscalAddress && fiscalAddress">
+      <h4 class="mt-4 mb-2">Adreça fiscal</h4>
+      <section class="three-columns mb-2">
+        <BaseInput
+          id="fiscalAddressName"
+          label="Nom"
+          v-model="fiscalAddress.name"
+          :class="{
+            'p-invalid': addressValidation.errors.name,
+          }"
+        ></BaseInput>
+      </section>
+      <LocationFields
+        :model-value="fiscalAddress"
+        :validation-errors="addressValidation.errors"
+      />
+    </template>
     <div class="mt-2 flex justify-content-end gap-2">
       <Button label="Guardar" @click="submitForm" />
       <Button label="Cancelar" severity="secondary" @click="emit('cancel')" />
@@ -102,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useCustomersStore } from "../store/customers";
 import { storeToRefs } from "pinia";
 import { Customer } from "../types";
@@ -114,6 +131,13 @@ import {
 import { useToast } from "primevue/usetoast";
 import { useSharedDataStore } from "../../../modules/shared/store/masterData";
 import LanguageSwitcher from "../../../components/LanguageSwitcher.vue";
+import LocationFields from "@/components/LocationFields.vue";
+
+// En l'alta el backend exigeix l'adreça fiscal principal, i la pestanya
+// d'adreces només apareix quan el client ja existeix
+const props = withDefaults(defineProps<{ showFiscalAddress?: boolean }>(), {
+  showFiscalAddress: false,
+});
 
 const emit = defineEmits<{
   (e: "submit", customer: Customer): void;
@@ -138,18 +162,44 @@ const validation = ref({
   errors: {},
 } as FormValidationResult);
 
+const fiscalAddress = computed(() => customer.value?.address?.[0]);
+
+const addressSchema = Yup.object().shape({
+  name: Yup.string()
+    .required("El nom de l'adreça fiscal és obligatori")
+    .max(250, "El nom de l'adreça fiscal no pot superar els 250 caràcters"),
+  country: Yup.string().required("El país és obligatori"),
+  city: Yup.string().required("El municipi és obligatori"),
+  postalCode: Yup.string().required("El codi postal és obligatori"),
+  address: Yup.string().required("La direcció és obligatòria"),
+});
+const addressValidation = ref({
+  result: true,
+  errors: {},
+} as FormValidationResult);
+
 const validate = () => {
   const formValidation = new FormValidation(schema);
   validation.value = formValidation.validate(customer.value);
+
+  if (props.showFiscalAddress) {
+    const addressFormValidation = new FormValidation(addressSchema);
+    addressValidation.value = addressFormValidation.validate(
+      fiscalAddress.value ?? {},
+    );
+  }
 };
 
 const submitForm = async () => {
   validate();
-  if (validation.value.result) {
+  if (validation.value.result && addressValidation.value.result) {
     emit("submit", customer.value as Customer);
   } else {
     let errors = "";
-    Object.entries(validation.value.errors).forEach((e) => {
+    Object.entries({
+      ...validation.value.errors,
+      ...addressValidation.value.errors,
+    }).forEach((e) => {
       errors += `${e[1].map((e) => e)}.   `;
     });
     toast.add({
