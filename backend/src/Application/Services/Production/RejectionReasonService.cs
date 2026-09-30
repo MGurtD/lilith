@@ -56,12 +56,6 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("RejectionReasonNotFound", id));
             }
 
-            var used = unitOfWork.WorkOrderPhaseRejections.Find(r => r.RejectionReasonId == id).Any();
-            if (used)
-            {
-                return new GenericResponse(false, localizationService.GetLocalizedString("RejectionReasonInUse", rejectionReason.Code));
-            }
-
             await unitOfWork.RejectionReasons.Remove(rejectionReason);
             return new GenericResponse(true, rejectionReason);
         }

@@ -125,9 +125,9 @@ import { useOrderStore } from "../store/order";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReferenceTypeStore } from "../../shared/store/referenceType";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const { locale, t } = useI18n();
 const route = useRoute();
 const store = useStore();
@@ -266,18 +266,12 @@ const editDetail = async (detail: ReceiptDetail) => {
   if (!response.result) showResponseErrorToast(response);
 };
 
-const removeDetail = async (detail: ReceiptDetail) => {
-  confirm.require({
-    message: t("purchase.receipt.messages.confirmDeleteLine"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const response = await receiptStore.deleteReceiptDetail(detail.id);
-      if (!response.result) showResponseErrorToast(response);
-    },
+const removeDetail = (detail: ReceiptDetail) =>
+  confirmDelete({
+    name: detail.description,
+    remove: async () =>
+      (await receiptStore.deleteReceiptDetail(detail.id)).result,
   });
-};
 
 const showResponseErrorToast = (response: GenericResponse<ReceiptDetail>) => {
   toast.add({

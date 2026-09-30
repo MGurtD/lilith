@@ -57,13 +57,6 @@ public class CustomerTypeService(
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Customers cascade from their type, so a type in use is never deleted.
-        if (await unitOfWork.CustomerTypes.IsInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("CustomerTypeInUse", customerType.Name));
-        }
-
         await unitOfWork.CustomerTypes.Remove(customerType);
         return new GenericResponse(true, customerType);
     }

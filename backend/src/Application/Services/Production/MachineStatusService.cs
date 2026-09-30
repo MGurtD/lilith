@@ -73,13 +73,6 @@ namespace Application.Services.Production
                     localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
-            // The shift history and phase steps cascade from the machine status, so a status in use is never deleted.
-            if (await unitOfWork.MachineStatuses.IsInUse(id))
-            {
-                return new GenericResponse(false,
-                    localizationService.GetLocalizedString("MachineStatusInUse", machineStatus.Name));
-            }
-
             await unitOfWork.MachineStatuses.Remove(machineStatus);
             return new GenericResponse(true, machineStatus);
         }

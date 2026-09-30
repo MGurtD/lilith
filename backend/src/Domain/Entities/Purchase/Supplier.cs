@@ -1,6 +1,6 @@
 namespace Domain.Entities.Purchase
 {
-    public class Supplier : Entity
+    public class Supplier : Entity, IMasterData
     {
         public string ComercialName { get; set; } = string.Empty;
         public string TaxName { get; set; } = string.Empty;

@@ -78,7 +78,7 @@ import Toolbar from "primevue/toolbar";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
 import { loadImage, createBlobAndDownloadFile } from "../utils/functions";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { DialogOptions, FileType } from "../types/component";
 import PdfViewer from "./PdfViewer.vue";
 import { useI18n } from "vue-i18n";
@@ -91,7 +91,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 
 const service = new FileService();
@@ -226,22 +226,12 @@ const getFileIcon = (file: File): string => {
   return PrimeIcons.FILE;
 };
 
-const deleteFile = async (file: File) => {
-  confirm.require({
-    message: t("fileEntityPicker.confirmDelete"),
-    accept: async () => {
-      var deleted = await service.Delete(file.id);
-      if (!deleted) {
-        toast.add({
-          severity: "error",
-          detail: t("fileEntityPicker.deleteFileError"),
-        });
-        return;
-      }
-      await fetchData();
-    },
+const deleteFile = (file: File) =>
+  confirmDelete({
+    name: file.originalName,
+    remove: () => service.Delete(file.id),
+    onDeleted: fetchData,
   });
-};
 </script>
 <style scoped>
 .base_input {

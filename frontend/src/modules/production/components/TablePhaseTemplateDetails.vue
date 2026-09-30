@@ -68,7 +68,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { PhaseTemplate, PhaseTemplateDetail } from "../types";
 import { getNewUuid } from "../../../utils/functions";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useI18n } from "vue-i18n";
 
@@ -83,7 +83,7 @@ const emit = defineEmits<{
   (e: "delete", detail: PhaseTemplateDetail): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 const plantModelStore = usePlantModelStore();
 
@@ -123,16 +123,12 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, detail: PhaseTemplateDetail) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("phaseTemplates.details.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (_event: any, detail: PhaseTemplateDetail) =>
+  confirmDelete({
+    notify: false,
+    remove: () => {
       emit("delete", detail);
+      return true;
     },
   });
-};
 </script>

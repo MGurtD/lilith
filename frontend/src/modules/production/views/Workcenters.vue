@@ -37,8 +37,7 @@ import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { Workcenter } from "../types";
 import { useShiftStore } from "../store/shift";
 
@@ -46,8 +45,7 @@ const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantmodelStore = usePlantModelStore();
 const shiftStore = useShiftStore();
 const userFilterStore = useUserFilterStore();
@@ -179,31 +177,10 @@ const createButtonClick = () => {
 const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workcenter/${row.data.id}` });
 };
-const deleteButton = (entity: Workcenter) => {
-  confirm.require({
-    message: t("production.detail.confirmDeleteWorkcenter"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteWorkcenter(entity.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchWorkcenters();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.workcenterDeleteError", { name: entity.name }),
-          detail: t("production.messages.workcenterDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (entity: Workcenter) =>
+  confirmDelete({
+    name: entity.name,
+    remove: () => plantmodelStore.deleteWorkcenter(entity.id),
+    onDeleted: () => plantmodelStore.fetchWorkcenters(),
   });
-};
 </script>

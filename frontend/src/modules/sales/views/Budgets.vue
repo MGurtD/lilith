@@ -71,12 +71,12 @@ import {
 } from "@/utils/functions";
 import { DialogOptions } from "@/types/component";
 import { Budget, CreateSalesHeaderRequest } from "../types";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useBudgetStore } from "../store/budget";
 
 const router = useRouter();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const store = useStore();
 const budgetStore = useBudgetStore();
 const customerStore = useCustomersStore();
@@ -267,23 +267,10 @@ const deleteBudget = async (budget: Budget) => {
     return;
   }
 
-  confirm.require({
-    message: t("sales.budgets.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await budgetStore.Delete(budget.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.list.messages.deleted"),
-          life: 3000,
-        });
-
-        await filterBudget();
-      }
-    },
+  confirmDelete({
+    name: budget.number,
+    remove: () => budgetStore.Delete(budget.id),
+    onDeleted: filterBudget,
   });
 };
 </script>

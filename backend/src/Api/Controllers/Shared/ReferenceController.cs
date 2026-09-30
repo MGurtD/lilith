@@ -121,10 +121,6 @@ namespace Api.Controllers.Shared
             if (!ModelState.IsValid)
                 return BadRequest(ModelState.ValidationState);
 
-            var canDeleteResponse = await service.CanDelete(id);
-            if (!canDeleteResponse.Result)
-                return BadRequest(canDeleteResponse);
-
             var response = await service.RemoveReference(id);
             if (response.Result)
                 return Ok(response.Content);

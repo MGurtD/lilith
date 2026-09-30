@@ -35,16 +35,14 @@ import { usePlantModelStore } from "../../production/store/plantmodel";
 import { computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Warehouse } from "../types";
 
 const router = useRouter();
 const { t, locale } = useI18n();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const warehouseStore = useWarehouseStore();
 const plantmodelStore = usePlantModelStore();
 
@@ -95,33 +93,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/warehouse/${row.data.id}` });
 };
 
-const deleteButton = (warehouse: Warehouse) => {
-  confirm.require({
-    message: t("warehouse.messages.confirmDeleteWarehouse", {
-      name: warehouse.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await warehouseStore.deleteWarehouse(warehouse.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("warehouse.messages.deleted"),
-          life: 3000,
-        });
-        await warehouseStore.fetchWarehouses();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("warehouse.messages.warehouseDeleteError", { name: warehouse.name }),
-          detail: t("warehouse.messages.warehouseDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (warehouse: Warehouse) =>
+  confirmDelete({
+    name: warehouse.name,
+    remove: () => warehouseStore.deleteWarehouse(warehouse.id),
+    onDeleted: () => warehouseStore.fetchWarehouses(),
   });
-};
 </script>

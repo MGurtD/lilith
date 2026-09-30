@@ -37,8 +37,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { formatDateForQueryParameter, formatCurrency, getNewUuid } from "../../../utils/functions";
 import { Expense } from "../types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useI18n } from "vue-i18n";
 import { useUserFilterStore } from "../../../store/userfilter";
 import type {
@@ -50,8 +49,7 @@ const router = useRouter();
 const store = useStore();
 const expenseStore = useExpenseStore();
 const userFilterStore = useUserFilterStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const { t, locale } = useI18n();
 
 const columns = computed<Column[]>(() => [
@@ -253,25 +251,12 @@ const editExpense = (row: DataTableRowClickEvent) => {
   router.push({ path: `/expense/${row.data.id}` });
 };
 
-const deleteExpense = (expense: Expense) => {
-  confirm.require({
-    message: t("purchase.messages.confirmDeleteExpense"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await expenseStore.deleteExpense(expense.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.messages.deleted"),
-          life: 3000,
-        });
-        await filterExpense();
-      }
-    },
+const deleteExpense = (expense: Expense) =>
+  confirmDelete({
+    name: expense.description,
+    remove: () => expenseStore.deleteExpense(expense.id),
+    onDeleted: () => filterExpense(),
   });
-};
 
 const getExpenseTypeNameById = (id: string) => {
   const type = expenseStore.expenseTypes?.find((s) => s.id === id);

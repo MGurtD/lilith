@@ -109,8 +109,6 @@ export const useMenusStore = defineStore("menus", {
         await Promise.all([this.fetchAll(), this.fetchHierarchy(true)]);
         if (this.current?.id === id) this.current = null;
         return true;
-      } catch {
-        return false;
       } finally {
         this.saving = false;
       }

@@ -54,13 +54,6 @@ public class ExpenseTypeService(
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Expenses cascade from their type, so a type in use is never deleted.
-        if (await unitOfWork.ExpenseTypes.IsInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("ExpenseTypeInUse", entity.Name));
-        }
-
         await unitOfWork.ExpenseTypes.Remove(entity);
         return new GenericResponse(true, entity);
     }

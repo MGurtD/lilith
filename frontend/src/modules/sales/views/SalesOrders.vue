@@ -84,12 +84,12 @@ import {
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest } from "../types";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const router = useRouter();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const store = useStore();
 const userFilterStore = useUserFilterStore();
@@ -276,24 +276,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/salesorder/${row.data.id}` });
 };
 
-const deleteSalesInvoice = (order: any) => {
-  confirm.require({
-    message: t("sales.orders.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await salesOrderStore.Delete(order.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.list.messages.deleted"),
-          life: 3000,
-        });
-
-        await filterSalesOrder();
-      }
-    },
+const deleteSalesInvoice = (order: any) =>
+  confirmDelete({
+    name: order.number,
+    remove: () => salesOrderStore.Delete(order.id),
+    onDeleted: filterSalesOrder,
   });
-};
 </script>

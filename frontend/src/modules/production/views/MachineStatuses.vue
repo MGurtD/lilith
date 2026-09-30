@@ -35,8 +35,7 @@ import { useI18n } from "vue-i18n";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -50,8 +49,7 @@ const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const columns = computed<Column[]>(() => [
   { field: "name", header: pt("Nom"), style: "width: 25%" },
@@ -133,35 +131,10 @@ const createButtonClick = () => {
 const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/machinestatus/${row.data.id}` });
 };
-const deleteButton = (machineStatus: MachineStatus) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteMachineStatus", {
-      name: machineStatus.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteMachineStatus(
-        machineStatus.id,
-      );
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchMachineStatuses();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.machineStatusDeleteError", { name: machineStatus.name }),
-          detail: t("production.messages.machineStatusDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (machineStatus: MachineStatus) =>
+  confirmDelete({
+    name: machineStatus.name,
+    remove: () => plantmodelStore.deleteMachineStatus(machineStatus.id),
+    onDeleted: () => plantmodelStore.fetchMachineStatuses(),
   });
-};
 </script>

@@ -35,15 +35,13 @@ import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { RejectionReason } from "../types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const rejectionReasonStore = useRejectionReasonStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 
 const columns = computed<Column[]>(() => [
@@ -94,25 +92,9 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/rejectionreason/${row.data.id}` });
 };
 
-const deleteButton = (rejectionReason: RejectionReason) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteRejectionReason", {
-      name: rejectionReason.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await rejectionReasonStore.delete(rejectionReason.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("production.messages.deleted"),
-          life: 3000,
-        });
-      }
-    },
+const deleteButton = (rejectionReason: RejectionReason) =>
+  confirmDelete({
+    name: rejectionReason.name,
+    remove: () => rejectionReasonStore.delete(rejectionReason.id),
   });
-};
 </script>

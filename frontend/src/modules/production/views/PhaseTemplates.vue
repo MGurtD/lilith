@@ -55,8 +55,7 @@ import { useStore } from "../../../store";
 import { computed, onMounted, reactive, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePhaseTemplateStore } from "../store/phasetemplate";
 import { PhaseTemplate } from "../types";
 import { getNewUuid } from "../../../utils/functions";
@@ -66,8 +65,7 @@ import * as Yup from "yup";
 
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const phaseTemplateStore = usePhaseTemplateStore();
 const { t, locale } = useI18n();
 
@@ -166,26 +164,10 @@ const onCreateSubmit = async (values: FormValues) => {
     });
 };
 
-const deleteButton = (phaseTemplate: PhaseTemplate) => {
-  confirm.require({
-    message: t("phaseTemplates.messages.confirmDelete", {
-      name: phaseTemplate.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await phaseTemplateStore.delete(phaseTemplate.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("phaseTemplates.messages.deleted"),
-          life: 3000,
-        });
-        await phaseTemplateStore.fetchAll();
-      }
-    },
+const deleteButton = (phaseTemplate: PhaseTemplate) =>
+  confirmDelete({
+    name: phaseTemplate.name,
+    remove: () => phaseTemplateStore.delete(phaseTemplate.id),
+    onDeleted: () => phaseTemplateStore.fetchAll(),
   });
-};
 </script>

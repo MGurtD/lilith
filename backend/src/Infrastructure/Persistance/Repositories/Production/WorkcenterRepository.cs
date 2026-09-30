@@ -89,15 +89,4 @@ public class WorkcenterRepository : Repository<Workcenter, Guid>, IWorkcenterRep
                 }))
             .ToListAsync();
     }
-
-    // Production parts and the shift history reference the workcenter with a
-    // cascading foreign key, so deleting a workcenter in use would silently delete
-    // them; the phases would block the delete.
-    public async Task<bool> IsInUse(Guid workcenterId)
-    {
-        return await _context.Set<ProductionPart>().AnyAsync(p => p.WorkcenterId == workcenterId)
-            || await _context.Set<WorkcenterShift>().AnyAsync(s => s.WorkcenterId == workcenterId)
-            || await _context.Set<WorkMasterPhase>().AnyAsync(p => p.PreferredWorkcenterId == workcenterId)
-            || await _context.Set<WorkOrderPhase>().AnyAsync(p => p.PreferredWorkcenterId == workcenterId);
-    }
 }

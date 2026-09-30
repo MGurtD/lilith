@@ -16,3 +16,17 @@ The import above loads the shared project rules from `AGENTS.md`, which OpenCode
 ## Hooks
 
 - Editing any file under `frontend/src/i18n/` runs the strict i18n check (`.claude/hooks/i18n-check.mjs`). A blocking report means locale parity or placeholders broke; fix it before continuing.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues on `MGurtD/lilith`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root, created lazily by `/domain-modeling`. See `docs/agents/domain.md`.

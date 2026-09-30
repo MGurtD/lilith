@@ -34,8 +34,7 @@ import type {
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
@@ -50,8 +49,7 @@ const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const userFilterStore = useUserFilterStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "50%", tablet: "75%" };
 
@@ -191,26 +189,9 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workcentercost/${row.data.id}` });
 };
 
-const deleteButton = (workcentercost: WorkcenterCost) => {
-  confirm.require({
-    message: t("production.detail.confirmDeleteWorkcenterCost"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteWorkcenterCost(
-        workcentercost.id,
-      );
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchWorkcenterCosts();
-      }
-    },
+const deleteButton = (workcentercost: WorkcenterCost) =>
+  confirmDelete({
+    remove: () => plantmodelStore.deleteWorkcenterCost(workcentercost.id),
+    onDeleted: () => plantmodelStore.fetchWorkcenterCosts(),
   });
-};
 </script>

@@ -1,6 +1,5 @@
 ﻿using Application.Contracts;
 using Domain.Entities.Production;
-using Domain.Entities.Sales;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistance.Repositories.Production
@@ -53,16 +52,6 @@ namespace Infrastructure.Persistance.Repositories.Production
                 query = query.Where(w => w.UpdatedOn <= endDate.Value);
 
             return await query.ToListAsync();
-        }
-
-        // Work orders reference their production route with a cascading foreign key,
-        // so deleting a route in use would silently delete them; budget and sales
-        // order lines would block the delete.
-        public async Task<bool> IsInUse(Guid workMasterId)
-        {
-            return await context.Set<WorkOrder>().AnyAsync(e => e.WorkMasterId == workMasterId)
-                || await context.Set<BudgetDetail>().AnyAsync(e => e.WorkMasterId == workMasterId)
-                || await context.Set<SalesOrderDetail>().AnyAsync(e => e.WorkMasterId == workMasterId);
         }
     }
 }

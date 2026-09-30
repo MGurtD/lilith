@@ -22,12 +22,5 @@ namespace Application.Contracts
         Task RemoveSupplierReference(SupplierReference reference);
 
         Task<List<string>> GetAccountNumbersUsedInPurchaseInvoices();
-
-        /// <summary>
-        /// True when a purchase order, receipt, purchase invoice, purchase rate,
-        /// transport rate, or a budget or sales order (external service or
-        /// transport) uses the supplier. Contacts and reference links do not count.
-        /// </summary>
-        Task<bool> IsInUse(Guid supplierId);
     }
 }

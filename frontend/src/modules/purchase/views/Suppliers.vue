@@ -85,7 +85,7 @@ import type {
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useSuppliersStore } from "../store/suppliers";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -98,7 +98,7 @@ import FormSupplierType from "../components/FormSupplierType.vue";
 
 const selectedTabIndex = ref("0");
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const router = useRouter();
 const store = useStore();
 const supplierStore = useSuppliersStore();
@@ -279,59 +279,17 @@ const closeSupplierTypeDialog = () => {
   supplierTypeFormMode.value = FormActionMode.CREATE;
 };
 
-const deleteSupplier = (supplier: Supplier) => {
-  confirm.require({
-    message: t("purchase.messages.confirmDeleteSupplier", { name: supplier.comercialName }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await supplierStore.deleteSupplier(supplier.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.messages.deleted"),
-          life: 3000,
-        });
-        await supplierStore.fetchSuppliers();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("purchase.messages.supplierDeleteError", { name: supplier.comercialName }),
-          detail: t("purchase.messages.supplierDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteSupplier = (supplier: Supplier) =>
+  confirmDelete({
+    name: supplier.comercialName,
+    remove: () => supplierStore.deleteSupplier(supplier.id),
+    onDeleted: () => supplierStore.fetchSuppliers(),
   });
-};
 
-const deleteSupplierType = (supplierType: SupplierType) => {
-  confirm.require({
-    message: t("purchase.messages.confirmDeleteSupplierType", { name: supplierType.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await supplierStore.deleteSupplierType(supplierType.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.messages.deleted"),
-          life: 3000,
-        });
-        await supplierStore.fetchSupplierTypes();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("purchase.messages.supplierTypeDeleteError", { name: supplierType.name }),
-          detail: t("purchase.messages.supplierTypeDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteSupplierType = (supplierType: SupplierType) =>
+  confirmDelete({
+    name: supplierType.name,
+    remove: () => supplierStore.deleteSupplierType(supplierType.id),
+    onDeleted: () => supplierStore.fetchSupplierTypes(),
   });
-};
 </script>

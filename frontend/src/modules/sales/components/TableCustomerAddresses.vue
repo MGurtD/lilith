@@ -39,13 +39,13 @@ import { getNewUuid } from "../../../utils/functions";
 import FormCustomerAddress from "./FormCustomerAddress.vue";
 import { CustomerAddress } from "../types";
 import { storeToRefs } from "pinia";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useCustomersStore } from "../store/customers";
 
 const { t } = useI18n();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const customerStore = useCustomersStore();
 const { customer } = storeToRefs(customerStore);
 const formMode = ref(FormActionMode.CREATE);
@@ -114,15 +114,13 @@ const submitForm = (address: CustomerAddress) => {
   selectedAddress.value = undefined;
 };
 
-const deleteAddress = (contact: CustomerAddress) => {
-  confirm.require({
-    message: t("sales.componentMessages.deleteAddress"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const deleteAddress = (contact: CustomerAddress) =>
+  confirmDelete({
+    name: contact.name,
+    notify: false,
+    remove: () => {
       emit("delete", contact);
+      return true;
     },
   });
-};
 </script>

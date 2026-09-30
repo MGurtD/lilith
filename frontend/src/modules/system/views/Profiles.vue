@@ -13,16 +13,14 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import type { DataTableRowClickEvent } from "primevue/datatable";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { getNewUuid } from "@/utils/functions";
 
 const { t } = useI18n();
 const router = useRouter();
 const globalStore = useStore();
 const profiles = useProfilesStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 
 const loading = ref(false);
 
@@ -68,18 +66,9 @@ const openRow = (row: DataTableRowClickEvent) => open(row.data as Profile);
 const canDelete = (profile: Profile) => !profile.isSystem;
 const remove = (profile: Profile) => {
   if (profile.isSystem) return;
-  confirm.require({
-    message: t("profiles.confirmDelete"),
-    header: t("profiles.confirmHeader"),
-    icon: "pi pi-exclamation-triangle",
-    accept: async () => {
-      const ok = await profiles.remove(profile.id);
-      toast.add({
-        severity: ok ? "success" : "error",
-        summary: t(ok ? "profiles.deleted" : "profiles.error"),
-        life: 3000,
-      });
-    },
+  confirmDelete({
+    name: profile.name,
+    remove: () => profiles.remove(profile.id),
   });
 };
 

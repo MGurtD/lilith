@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities.Production;
 
-public class Area : Entity
+public class Area : Entity, IMasterData
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

@@ -14,16 +14,14 @@ import { onMounted, onUnmounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import TableReferences from "../components/TableReferences.vue";
 import { Reference } from "../../../modules/shared/types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { getNewUuid } from "../../../utils/functions";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const referenceStore = useReferenceStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 
 onMounted(async () => {
@@ -48,32 +46,12 @@ const editReference = (reference: Reference) => {
   router.push({ path: `/sales/reference/${reference.id}` });
 };
 
-const deleteReference = (reference: Reference) => {
-  confirm.require({
-    message: t("sales.references.confirmDelete", { name: reference.description }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const response = await referenceStore.deleteReference(reference.id);
-      console.log("Delete reference response:", response);
-      if (!response.result) {
-        toast.add({
-          severity: "warn",
-          summary: response.errors[0],
-          life: 5000,
-          closable: true,
-        });
-      } else {
-        toast.add({
-          severity: "success",
-          summary: t("sales.references.deleted"),
-          life: 5000,
-        });
-      }
-    },
+const deleteReference = (reference: Reference) =>
+  confirmDelete({
+    name: reference.description,
+    remove: async () =>
+      (await referenceStore.deleteReference(reference.id)).result,
   });
-};
 </script>
 <style scoped>
 .references-header {

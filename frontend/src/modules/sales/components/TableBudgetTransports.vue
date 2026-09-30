@@ -30,7 +30,7 @@
           v-if="budgetStore.order === undefined"
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
+          @click="onDeleteRow(slotProps.data)"
         />
       </template>
     </Column>
@@ -41,7 +41,7 @@ import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Budget, BudgetTransport } from "../types";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useToast } from "primevue/usetoast";
 import { useBudgetStore } from "../store/budget";
 import { formatCurrency } from "../../../utils/functions";
@@ -57,7 +57,7 @@ const emit = defineEmits<{
   (e: "delete", transport: BudgetTransport): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const toast = useToast();
 const budgetStore = useBudgetStore();
 
@@ -71,18 +71,15 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, transport: BudgetTransport) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("sales.componentMessages.deleteTransport"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (transport: BudgetTransport) =>
+  confirmDelete({
+    name: transport.description,
+    notify: false,
+    remove: () => {
       emit("delete", transport);
+      return true;
     },
   });
-};
 
 const onDistributeCosts = async () => {
   const result = await budgetStore.DistributeTransportCosts(props.budget.id);

@@ -28,8 +28,7 @@ import { useI18n } from "vue-i18n";
 import { getNewUuid } from "../../../utils/functions";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePlantModelStore } from "../store/plantmodel";
 import { useOperatorTypeStore } from "../store/operatortype";
 import { computed, onMounted } from "vue";
@@ -43,8 +42,7 @@ const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
 const operatorTypeStore = useOperatorTypeStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const tableItems = computed(() =>
   (plantmodelStore.operators ?? []).map((operator) => ({
@@ -114,26 +112,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/operator/${row.data.id}` });
 };
 
-const deleteButton = (operator: Operator) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteOperator", {
-      name: `${operator.surname}, ${operator.name}`,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteOperator(operator.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchOperators();
-      }
-    },
+const deleteButton = (operator: Operator) =>
+  confirmDelete({
+    name: `${operator.surname}, ${operator.name}`,
+    remove: () => plantmodelStore.deleteOperator(operator.id),
+    onDeleted: () => plantmodelStore.fetchOperators(),
   });
-};
 </script>

@@ -1,6 +1,6 @@
 namespace Domain.Entities.Production;
 
-public class RejectionReason : Entity
+public class RejectionReason : Entity, IMasterData
 {
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

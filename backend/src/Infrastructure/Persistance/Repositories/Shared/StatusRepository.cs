@@ -1,8 +1,5 @@
 ﻿using Application.Contracts;
 using Domain.Entities;
-using Domain.Entities.Production;
-using Domain.Entities.Purchase;
-using Domain.Entities.Sales;
 using Domain.Entities.Shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,25 +48,6 @@ namespace Infrastructure.Persistance.Repositories.Purchase
                         );
 
             return await query.ToListAsync();
-        }
-
-        // Delivery notes, work orders, their phases, purchase orders and their lines
-        // reference the status with a cascading foreign key, so deleting a status in
-        // use would silently delete those documents.
-        public async Task<bool> IsInUse(Guid statusId)
-        {
-            return await context.Set<DeliveryNote>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<WorkOrder>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<WorkOrderPhase>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<PurchaseOrder>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<PurchaseOrderDetail>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<Receipt>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<PurchaseInvoice>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<Budget>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<SalesOrderHeader>().AnyAsync(e => e.StatusId == statusId)
-                || await context.Set<SalesInvoice>().AnyAsync(e => e.StatusId == statusId || e.IntegrationStatusId == statusId)
-                || await context.Set<StatusTransition>().AnyAsync(e => e.StatusId == statusId || e.StatusToId == statusId)
-                || await context.Set<Lifecycle>().AnyAsync(e => e.InitialStatusId == statusId || e.FinalStatusId == statusId);
         }
     }
 }

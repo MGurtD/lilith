@@ -2,7 +2,7 @@
 
 namespace Domain.Entities.Warehouse
 {
-    public class Warehouse : Entity
+    public class Warehouse : Entity, IMasterData
     {
         
         public string Name { get; set; } = string.Empty;

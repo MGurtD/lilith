@@ -56,7 +56,7 @@
           v-if="!slotProps.data.deliveryNoteDetailId && canDelete"
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
+          @click="onDeleteRow(slotProps.data)"
         />
       </template>
     </Column>
@@ -72,12 +72,14 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useReferenceStore } from "../../shared/store/reference";
 import { formatDate, formatCurrency } from "../../../utils/functions";
 import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import _ from "lodash";
 import { Reference } from "../../shared/types";
 import { useTaxesStore } from "../../shared/store/tax";
 
 const { t } = useI18n();
 const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const lifecycleStore = useLifecyclesStore();
 const taxesStore = useTaxesStore();
 const referenceStore = useReferenceStore();
@@ -153,17 +155,15 @@ const emit = defineEmits<{
   (e: "deleteDeliveryNote", deliveryNote: DeliveryNote): void;
 }>();
 
-const onDeleteRow = (event: any, SalesInvoiceDetail: any) => {
-  confirm.require({
-    message: t("sales.componentMessages.deleteInvoiceLine", { description: SalesInvoiceDetail.description }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
+const onDeleteRow = (SalesInvoiceDetail: any) =>
+  confirmDelete({
+    name: SalesInvoiceDetail.description,
+    notify: false,
+    remove: () => {
       emit("delete", SalesInvoiceDetail);
+      return true;
     },
   });
-};
 
 const onGroupDeleteRow = (event: any, clickedDeliveryNote: any) => {
   if (!props.deliveryNotes) return;

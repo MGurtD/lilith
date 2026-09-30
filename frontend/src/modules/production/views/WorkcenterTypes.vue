@@ -32,16 +32,14 @@ import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { WorkcenterType } from "../types";
 
 const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantmodelStore = usePlantModelStore();
 
 const columns = computed<Column[]>(() => [
@@ -91,33 +89,10 @@ const createButtonClick = () => {
 const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workcentertype/${row.data.id}` });
 };
-const deleteButton = (entity: WorkcenterType) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteWorkcenterType", {
-      name: entity.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteWorkcenterType(entity.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchWorkcenterTypes();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.workcenterTypeDeleteError", { name: entity.name }),
-          detail: t("production.messages.workcenterTypeDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (entity: WorkcenterType) =>
+  confirmDelete({
+    name: entity.name,
+    remove: () => plantmodelStore.deleteWorkcenterType(entity.id),
+    onDeleted: () => plantmodelStore.fetchWorkcenterTypes(),
   });
-};
 </script>

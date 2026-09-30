@@ -5,7 +5,7 @@ import type { FilterConfig } from "./TableFilter.vue";
 import { useUserTableViewStore } from "@/store/usertableview";
 import type { SortConfig } from "@/store/usertableview";
 import { useStore } from "@/store";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useToast } from "primevue/usetoast";
 import { hydrateFilter } from "@/utils/filter-hydrate";
 import { resolveFilterDisplayValue } from "./filterDisplay";
@@ -43,7 +43,7 @@ const emit = defineEmits<{
   (e: "update:sortConfig", value: SortConfig | null): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const toast = useToast();
 const { t } = useI18n();
 const store = useStore();
@@ -418,20 +418,10 @@ function deleteView() {
   const deletedViewId = selectedView.value.id;
   const wasActiveInTable = deletedViewId === props.activeViewId;
 
-  confirm.require({
-    message: t("tables.views.confirmDelete", { name: selectedView.value.name }),
-    header: t("tables.views.confirmation"),
-    icon: "pi pi-exclamation-triangle",
-    accept: async () => {
-      const deleted = await viewStore.delete(deletedViewId);
-      if (!deleted) return;
-
-      toast.add({
-        severity: "success",
-        summary: t("tables.views.deleted"),
-        life: 3000,
-      });
-
+  confirmDelete({
+    name: selectedView.value.name,
+    remove: () => viewStore.delete(deletedViewId),
+    onDeleted: async () => {
       // If the deleted view was the one Table.vue was applying, fall
       // back to the next default/remaining view. If none survives, the
       // user explicitly removed their default — force a hard reset so

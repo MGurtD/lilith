@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities.Shared;
 
-public class InvoiceSerie : Entity
+public class InvoiceSerie : Entity, IMasterData
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

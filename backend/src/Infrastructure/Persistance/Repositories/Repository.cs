@@ -1,5 +1,6 @@
 ﻿using Application.Contracts;
 using Domain.Entities;
+using Infrastructure.Persistance.MasterData;
 using Microsoft.EntityFrameworkCore;
 using SkiaSharp;
 using System.Linq.Expressions;
@@ -98,13 +99,16 @@ namespace Infrastructure.Persistance.Repositories
 
         public async Task Remove(Entity entity)
         {
+            await MasterDataDeleteGuard.EnsureNotInUse(context, [entity]);
             dbSet.Remove(entity);
             await context.SaveChangesAsync();
         }
 
         public async Task RemoveRange(IEnumerable<Entity> entities)
         {
-            dbSet.RemoveRange(entities);
+            var list = entities.ToList();
+            await MasterDataDeleteGuard.EnsureNotInUse(context, list);
+            dbSet.RemoveRange(list);
             await context.SaveChangesAsync();
         }
 

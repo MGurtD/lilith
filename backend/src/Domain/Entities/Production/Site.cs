@@ -1,6 +1,6 @@
 namespace Domain.Entities.Production
 {
-    public class Site : Entity
+    public class Site : Entity, IMasterData
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

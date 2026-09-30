@@ -52,7 +52,7 @@ import type {
   FilterBodyWidth,
   FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -71,7 +71,7 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 import { useI18n } from "vue-i18n";
 
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const router = useRouter();
 const store = useStore();
 const suppliersStore = useSuppliersStore();
@@ -244,23 +244,10 @@ const edit = (row: DataTableRowClickEvent) => {
 const canDelete = (order: PurchaseOrder) =>
   lifecycleStore.lifecycle?.initialStatusId === order.statusId;
 
-const remove = (order: PurchaseOrder) => {
-  confirm.require({
-    message: t("purchase.orders.messages.confirmDelete", { number: order.number }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await ordersStore.delete(order.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.messages.deleted"),
-          life: 3000,
-        });
-        await filterData();
-      }
-    },
+const remove = (order: PurchaseOrder) =>
+  confirmDelete({
+    name: order.number,
+    remove: () => ordersStore.delete(order.id),
+    onDeleted: () => filterData(),
   });
-};
 </script>

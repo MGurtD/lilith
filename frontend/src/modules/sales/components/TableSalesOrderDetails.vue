@@ -101,7 +101,7 @@
           v-if="!slotProps.data.isDelivered && !slotProps.data.workOrderId"
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
+          @click="onDeleteRow(slotProps.data)"
         />
       </template>
     </Column>
@@ -146,7 +146,7 @@ import {
   WorkOrder,
 } from "../../production/types";
 import { DialogOptions } from "../../../types/component";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { useWorkOrderStore } from "../../production/store/workorder";
 import {
@@ -169,7 +169,7 @@ const emit = defineEmits<{
   (e: "openWorkOrder", workorderid: string): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const workMasterStore = useWorkMasterStore();
 const workOrderStore = useWorkOrderStore();
 
@@ -221,18 +221,15 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, salesOrderDetail: SalesOrderDetail) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("sales.componentMessages.deleteReference"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (salesOrderDetail: SalesOrderDetail) =>
+  confirmDelete({
+    name: salesOrderDetail.description,
+    notify: false,
+    remove: () => {
       emit("delete", salesOrderDetail);
+      return true;
     },
   });
-};
 
 const getUnitRealCost = (detail: SalesOrderDetail) => {
   if (!detail.workOrderId) return 0;

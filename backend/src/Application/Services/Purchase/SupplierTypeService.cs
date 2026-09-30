@@ -54,13 +54,6 @@ public class SupplierTypeService(
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Suppliers cascade from their type, so a type in use is never deleted.
-        if (await unitOfWork.SupplierTypes.IsInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("SupplierTypeInUse", entity.Name));
-        }
-
         await unitOfWork.SupplierTypes.Remove(entity);
         return new GenericResponse(true, entity);
     }

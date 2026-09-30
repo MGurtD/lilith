@@ -53,13 +53,6 @@ namespace Application.Services.Production
                 return new GenericResponse(false, localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
-            // Workcenters cascade from the area, so an area in use is never deleted.
-            if (await unitOfWork.Areas.IsInUse(id))
-            {
-                return new GenericResponse(false,
-                    localizationService.GetLocalizedString("AreaInUse", area.Name));
-            }
-
             await unitOfWork.Areas.Remove(area);
             return new GenericResponse(true, area);
         }

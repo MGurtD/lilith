@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities.Sales
 {
-    public class Customer : Entity
+    public class Customer : Entity, IMasterData
     {
         public string Code { get; set; } = string.Empty;
         public string ComercialName { get; set; } = string.Empty;

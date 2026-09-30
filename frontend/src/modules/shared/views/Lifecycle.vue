@@ -135,7 +135,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../../../store";
 import { storeToRefs } from "pinia";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useLifecyclesStore } from "../store/lifecycle";
 import { PrimeIcons } from "@primevue/core/api";
 import { FormActionMode, DialogOptions } from "../../../types/component";
@@ -214,23 +214,10 @@ const deleteStatus = async (status: Status) => {
     return;
   }
 
-  confirm.require({
-    message: t("shared.lifecycle.messages.confirmDeleteStatus", { name: status.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      // The backend refuses a status used by documents, which cascade from it.
-      const deleted = await lifecycleStore.deleteStatus(status.id);
-      if (!deleted) {
-        toast.add({
-          severity: "warn",
-          summary: t("shared.lifecycle.messages.statusDeleteError", { name: status.name }),
-          detail: t("shared.lifecycle.messages.statusDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+  // The backend refuses a status used by documents, which cascade from it.
+  confirmDelete({
+    name: status.name,
+    remove: () => lifecycleStore.deleteStatus(status.id),
   });
 };
 
@@ -280,14 +267,9 @@ const openStatusTransition = (
 };
 
 const deleteStatusTransition = (transition: StatusTransition) =>
-  confirm.require({
-    message: t("shared.lifecycle.messages.confirmDeleteTransition", { name: transition.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      await lifecycleStore.deleteTransition(transition.id);
-    },
+  confirmDelete({
+    name: transition.name,
+    remove: () => lifecycleStore.deleteTransition(transition.id),
   });
 
 const onStatusTransitionSubmit = async (transition: StatusTransition) => {
@@ -321,22 +303,10 @@ const openTag = (action: FormActionMode, tag: LifecycleTag) => {
 };
 
 const deleteTag = (tag: LifecycleTag) =>
-  confirm.require({
-    message: t("shared.lifecycle.messages.confirmDeleteTag", { name: tag.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const result = await lifecycleStore.deleteTag(tag.id);
-      if (result) {
-        toast.add({
-          severity: "success",
-          summary: t("shared.lifecycle.messages.tagDeleted"),
-          life: 4000,
-        });
-        await loadView();
-      }
-    },
+  confirmDelete({
+    name: tag.name,
+    remove: () => lifecycleStore.deleteTag(tag.id),
+    onDeleted: loadView,
   });
 
 const onTagSubmit = async (tag: LifecycleTag) => {
@@ -372,7 +342,7 @@ const onTagSubmit = async (tag: LifecycleTag) => {
 
 // Lifecycle submit
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const submitForm = async (data: Lifecycle) => {
   let result = false;
   let message = "";

@@ -1,6 +1,6 @@
 namespace Domain.Entities.Shared
 {
-    public class ReferenceType : Entity
+    public class ReferenceType : Entity, IMasterData
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

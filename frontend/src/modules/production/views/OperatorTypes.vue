@@ -35,15 +35,13 @@ import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { OperatorType } from "../types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
 const plantmodelStore = usePlantModelStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 
 const columns = computed<Column[]>(() => [
@@ -88,33 +86,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/operatortype/${row.data.id}` });
 };
 
-const deleteButton = (operatorType: OperatorType) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteOperatorType", {
-      name: operatorType.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteOperatorType(operatorType.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("production.messages.deleted"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchOperatorTypes();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.operatorTypeDeleteError", { name: operatorType.name }),
-          detail: t("production.messages.operatorTypeDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (operatorType: OperatorType) =>
+  confirmDelete({
+    name: operatorType.name,
+    remove: () => plantmodelStore.deleteOperatorType(operatorType.id),
+    onDeleted: () => plantmodelStore.fetchOperatorTypes(),
   });
-};
 </script>

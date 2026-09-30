@@ -69,12 +69,12 @@ import {
 } from "../../../utils/functions";
 import { DialogOptions } from "../../../types/component";
 import { CreateSalesHeaderRequest, SalesOrderHeader } from "../types";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useDeliveryNoteStore } from "../store/deliveryNote";
 
 const router = useRouter();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const store = useStore();
 const deliveryNoteStore = useDeliveryNoteStore();
 const customerStore = useCustomersStore();
@@ -239,24 +239,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/deliverynote/${row.data.id}` });
 };
 
-const deleteDeliveryNote = async (order: SalesOrderHeader) => {
-  confirm.require({
-    message: t("sales.deliveryNotes.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await deliveryNoteStore.Delete(order.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.list.messages.deleted"),
-          life: 3000,
-        });
-
-        await filterData();
-      }
-    },
+const deleteDeliveryNote = (order: SalesOrderHeader) =>
+  confirmDelete({
+    name: order.number,
+    remove: () => deliveryNoteStore.Delete(order.id),
+    onDeleted: filterData,
   });
-};
 </script>

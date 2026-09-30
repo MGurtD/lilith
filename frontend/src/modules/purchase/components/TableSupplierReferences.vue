@@ -91,7 +91,7 @@
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
-            @click="deleteReferences($event, slotProps.data)"
+            @click="deleteReferences(slotProps.data)"
           />
         </template>
       </Column>
@@ -105,15 +105,15 @@ import FormSupplierReference from "./FormSupplierReference.vue";
 import { SupplierReference } from "../types";
 import { formatCurrency, getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { useToast } from "primevue/usetoast";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useI18n } from "vue-i18n";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const referenceStore = useReferenceStore();
 const supplierStore = useSuppliersStore();
 const formMode = ref(FormActionMode.CREATE);
@@ -188,16 +188,13 @@ const submitForm = (reference: SupplierReference) => {
   selectedReference.value = undefined;
 };
 
-const deleteReferences = (event: any, contact: SupplierReference) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("purchase.supplierReference.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
-      emit("delete", contact);
+const deleteReferences = (reference: SupplierReference) =>
+  confirmDelete({
+    name: reference.supplierCode,
+    notify: false,
+    remove: () => {
+      emit("delete", reference);
+      return true;
     },
   });
-};
 </script>

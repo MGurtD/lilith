@@ -46,7 +46,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkOrderPhase, WorkOrderPhaseBillOfMaterials } from "../types";
 import { getNewUuid } from "../../../utils/functions";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useReferenceStore } from "../../shared/store/reference";
 
 const props = defineProps<{
@@ -60,7 +60,7 @@ const emit = defineEmits<{
   (e: "delete", phase: WorkOrderPhaseBillOfMaterials): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const referenceStore = useReferenceStore();
 
 const getReference = (id: string) => {
@@ -95,16 +95,13 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, detail: WorkOrderPhaseBillOfMaterials) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("production.components.confirmDeletePhaseMaterial"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (_event: any, detail: WorkOrderPhaseBillOfMaterials) =>
+  confirmDelete({
+    name: getReference(detail.referenceId) || undefined,
+    notify: false,
+    remove: () => {
       emit("delete", detail);
+      return true;
     },
   });
-};
 </script>
