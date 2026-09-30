@@ -44,7 +44,7 @@
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
-            @click="onDeleteRow($event, slotProps.data)"
+            @click="onDeleteRow(slotProps.data)"
           />
         </template>
       </Column>
@@ -77,7 +77,7 @@ import {
   getLocationTypeLabel,
 } from "../types";
 import { getNewUuid } from "../../../utils/functions";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { DialogOptions, FormActionMode } from "../../../types/component";
@@ -123,7 +123,7 @@ const dialogOptions = reactive({
   position: "center",
   modal: true,
 } as DialogOptions);
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const selectedLocation = ref(undefined as Location | undefined);
 const formAction = ref(FormActionMode.CREATE);
@@ -168,16 +168,13 @@ const dialogClosed = () => {
   selectedLocation.value = undefined;
 };
 
-const onDeleteRow = (event: any, location: Location) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("warehouse.messages.confirmDeleteLocation", { name: location.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (location: Location) =>
+  confirmDelete({
+    name: location.name,
+    notify: false,
+    remove: () => {
       emit("delete", location);
+      return true;
     },
   });
-};
 </script>

@@ -558,7 +558,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
@@ -600,7 +600,7 @@ import { TransportRateService } from "../../purchase/services/transportRate.serv
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const store = useStore();
 const referenceStore = useReferenceStore();
@@ -919,19 +919,9 @@ const saveSupplier = async () => {
 };
 
 const removeSupplier = (data: SupplierReference) => {
-  confirm.require({
-    message: t("shared.referenceManagement.messages.confirmDeleteSupplier"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const ok = await referenceStore.deleteSupplier(data);
-      toast.add({
-        severity: ok ? "success" : "warn",
-        summary: ok ? t("shared.referenceManagement.messages.supplierDeleted") : t("shared.referenceManagement.messages.supplierDeleteError"),
-        life: 4000,
-      });
-    },
+  confirmDelete({
+    name: suppliersStore.getName(data.supplierId),
+    remove: () => referenceStore.deleteSupplier(data),
   });
 };
 

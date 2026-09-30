@@ -52,8 +52,7 @@
 <script setup lang="ts">
 import { getNewUuid } from "../../../utils/functions";
 import { PrimeIcons } from "@primevue/core/api";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useCustomersStore } from "../store/customers";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
@@ -69,8 +68,7 @@ const selectedTabIndex = ref("0");
 const activeTable = computed(() =>
   selectedTabIndex.value === "0" ? "customers" : "customerTypes",
 );
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const router = useRouter();
 const store = useStore();
 const customerStore = useCustomersStore();
@@ -172,61 +170,19 @@ onMounted(async () => {
 
 watch(locale, setMenuItem);
 
-const deleteCustomer = (customer: Customer) => {
-  confirm.require({
-    message: t("sales.customers.confirmDeleteCustomer", { name: customer.comercialName }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await customerStore.deleteCustomer(customer.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.customers.deleted"),
-          life: 3000,
-        });
-        await customerStore.fetchCustomers();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("sales.customers.customerDeleteError", { name: customer.comercialName }),
-          detail: t("sales.customers.customerDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteCustomer = (customer: Customer) =>
+  confirmDelete({
+    name: customer.comercialName,
+    remove: () => customerStore.deleteCustomer(customer.id),
+    onDeleted: () => customerStore.fetchCustomers(),
   });
-};
 
-const deleteCustomerType = (customerType: CustomerType) => {
-  confirm.require({
-    message: t("sales.customers.confirmDeleteCustomerType", { name: customerType.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await customerStore.deleteCustomerType(customerType.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.customers.deleted"),
-          life: 3000,
-        });
-        await customerStore.fetchCustomerTypes();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("sales.customers.customerTypeDeleteError", { name: customerType.name }),
-          detail: t("sales.customers.customerTypeDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteCustomerType = (customerType: CustomerType) =>
+  confirmDelete({
+    name: customerType.name,
+    remove: () => customerStore.deleteCustomerType(customerType.id),
+    onDeleted: () => customerStore.fetchCustomerTypes(),
   });
-};
 
 const editCustomer = (row: DataTableRowClickEvent) => {
   router.push({ path: `/customers/${row.data.id}` });

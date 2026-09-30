@@ -42,7 +42,7 @@
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
-            @click="deleteContact($event, slotProps.data)"
+            @click="deleteContact(slotProps.data)"
           />
         </template>
       </Column>
@@ -56,13 +56,13 @@ import SupplierContactForm from "./FormSupplierContact.vue";
 import { SupplierContact } from "../types";
 import { storeToRefs } from "pinia";
 import { PrimeIcons } from "@primevue/core/api";
-import { useConfirm } from "primevue/useconfirm";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
 import { getNewUuid } from "@/utils/functions";
 import { useI18n } from "vue-i18n";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const supplierStore = useSuppliersStore();
 const { supplier } = storeToRefs(supplierStore);
 const formMode = ref(FormActionMode.CREATE);
@@ -119,16 +119,13 @@ const submitForm = (contact: SupplierContact) => {
   selectedContact.value = undefined;
 };
 
-const deleteContact = (event: any, contact: SupplierContact) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("purchase.supplierContact.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const deleteContact = (contact: SupplierContact) =>
+  confirmDelete({
+    name: `${contact.firstName} ${contact.lastName}`.trim(),
+    notify: false,
+    remove: () => {
       emit("delete", contact);
+      return true;
     },
   });
-};
 </script>

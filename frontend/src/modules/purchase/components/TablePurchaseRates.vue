@@ -99,7 +99,7 @@
             <i
               :class="PrimeIcons.TIMES"
               class="grid_delete_column_button"
-              @click.stop="deleteRate($event, slotProps.data)"
+              @click.stop="deleteRate(slotProps.data)"
             />
           </div>
         </template>
@@ -155,7 +155,7 @@
           <i
             :class="PrimeIcons.TIMES"
             class="grid_delete_column_button"
-            @click.stop="deleteDetail($event, slotProps.data)"
+            @click.stop="deleteDetail(slotProps.data)"
           />
         </template>
       </Column>
@@ -177,7 +177,6 @@ import { usePurchaseRateStore } from "../store/purchaseRate";
 import { useReferenceStore } from "../../shared/store/reference";
 import { PurchaseRate, PurchaseRateDetail, CalculationType } from "../types";
 import { PrimeIcons } from "@primevue/core/api";
-import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { FormActionMode } from "../../../types/component";
@@ -185,12 +184,13 @@ import { formatCurrency, formatDate } from "@/utils/functions";
 import FormPurchaseRate from "./FormPurchaseRate.vue";
 import FormPurchaseRateDetail from "./FormPurchaseRateDetail.vue";
 import { useI18n } from "vue-i18n";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 
 const props = defineProps<{
   supplierId: string;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const toast = useToast();
 const purchaseRateStore = usePurchaseRateStore();
 const referenceStore = useReferenceStore();
@@ -317,19 +317,11 @@ const submitRateForm = async (rate: PurchaseRate) => {
   }
 };
 
-const deleteRate = (event: Event, rate: PurchaseRate) => {
-  confirm.require({
-    target: event.currentTarget as HTMLElement,
-    message: t("purchase.purchaseRates.messages.confirmDeleteRate"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const result = await purchaseRateStore.deletePurchaseRate(rate);
-      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.rateDeleted"), life: 4000 });
-    },
+const deleteRate = (rate: PurchaseRate) =>
+  confirmDelete({
+    name: rate.name,
+    remove: () => purchaseRateStore.deletePurchaseRate(rate),
   });
-};
 
 const openDuplicateDialog = (rate: PurchaseRate) => {
   selectedRate.value = rate;
@@ -395,19 +387,10 @@ const submitDetailForm = async (detail: PurchaseRateDetail) => {
   if (result) detailDialogVisible.value = false;
 };
 
-const deleteDetail = (event: Event, detail: PurchaseRateDetail) => {
-  confirm.require({
-    target: event.currentTarget as HTMLElement,
-    message: t("purchase.purchaseRates.messages.confirmDeleteDetail"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const result = await purchaseRateStore.deletePurchaseRateDetail(detail);
-      if (result) toast.add({ severity: "success", summary: t("purchase.purchaseRates.messages.detailDeleted"), life: 4000 });
-    },
+const deleteDetail = (detail: PurchaseRateDetail) =>
+  confirmDelete({
+    remove: () => purchaseRateStore.deletePurchaseRateDetail(detail),
   });
-};
 </script>
 
 <style scoped>

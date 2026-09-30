@@ -251,7 +251,7 @@ import * as Yup from "yup";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useWorkMasterStore } from "../store/workmaster";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useCustomersStore } from "../../sales/store/customers";
@@ -266,7 +266,7 @@ const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const workmasterStore = useWorkMasterStore();
 const referenceStore = useReferenceStore();
 const customersStore = useCustomersStore();
@@ -680,33 +680,10 @@ const onCreateSubmit = async (values: FormValues) => {
   }
 };
 
-const deleteButton = (workmaster: WorkMaster) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteWorkmaster", {
-      name: workmaster.reference!.description,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await workmasterStore.delete(workmaster.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminada"),
-          life: 3000,
-        });
-        await workmasterStore.fetchAll();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.workmasterDeleteError", { name: workmaster.reference?.description }),
-          detail: t("production.messages.workmasterDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (workmaster: WorkMaster) =>
+  confirmDelete({
+    name: workmaster.reference?.description,
+    remove: () => workmasterStore.delete(workmaster.id),
+    onDeleted: () => workmasterStore.fetchAll(),
   });
-};
 </script>

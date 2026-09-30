@@ -53,7 +53,7 @@ import type {
   FilterBodyWidth,
   FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -73,7 +73,7 @@ import { useLifecyclesStore } from "../../shared/store/lifecycle";
 
 const toast = useToast();
 const { locale, t } = useI18n();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const router = useRouter();
 const store = useStore();
 const lifecycleStore = useLifecyclesStore();
@@ -256,23 +256,10 @@ const editReceipt = (row: DataTableRowClickEvent) => {
 const canDelete = (receipt: Receipt) =>
   lifecycleStore.lifecycle?.initialStatusId === receipt.statusId;
 
-const deleteReceipt = (receipt: Receipt) => {
-  confirm.require({
-    message: t("purchase.receipts.messages.confirmDelete", { number: receipt.number }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await receiptsStore.deleteReceipt(receipt.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.receipts.messages.deleted"),
-          life: 3000,
-        });
-        await filterReceipts();
-      }
-    },
+const deleteReceipt = (receipt: Receipt) =>
+  confirmDelete({
+    name: receipt.number,
+    remove: () => receiptsStore.deleteReceipt(receipt.id),
+    onDeleted: () => filterReceipts(),
   });
-};
 </script>

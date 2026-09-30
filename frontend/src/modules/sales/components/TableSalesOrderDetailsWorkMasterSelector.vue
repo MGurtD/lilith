@@ -35,7 +35,7 @@ import { useI18n } from "vue-i18n";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { SalesOrderDetail } from "../types";
 import { useReferenceStore } from "../../shared/store/reference";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { computed } from "vue";
 import { CreateWorkOrderDto } from "../../production/types";
 import { convertDateTimeToJSON } from "../../../utils/functions";
@@ -50,7 +50,7 @@ const emit = defineEmits<{
   (e: "delete", salesOrderDetail: SalesOrderDetail): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const referenceStore = useReferenceStore();
 
 const createWorkOrderDtos = computed(() => {
@@ -76,16 +76,13 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, salesOrderDetail: SalesOrderDetail) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("sales.componentMessages.deleteReference"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (salesOrderDetail: SalesOrderDetail) =>
+  confirmDelete({
+    name: salesOrderDetail.description,
+    notify: false,
+    remove: () => {
       emit("delete", salesOrderDetail);
+      return true;
     },
   });
-};
 </script>

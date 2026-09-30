@@ -72,7 +72,7 @@ import { finiteNumberValue } from "@/components/forms/value-utils";
 import { WorkcenterProfitPercentage } from "../types";
 import { computed, reactive, ref } from "vue";
 import { DialogOptions } from "../../../types/component";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import * as Yup from "yup";
 import { getNewUuid } from "../../../utils/functions";
 
@@ -94,7 +94,7 @@ const dialogOptions = reactive({
   modal: true,
 } as DialogOptions);
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const newPercentage = ref({} as WorkcenterProfitPercentage);
 
@@ -159,14 +159,12 @@ const onSubmit = (values: FormValues) => {
 const onDeleteRow = (event: Event, percentage: WorkcenterProfitPercentage) => {
   if (!event.currentTarget) return;
 
-  confirm.require({
-    target: event.currentTarget as HTMLElement,
-    message: t("production.components.confirmDeletePercentage", { percentage: percentage.profitPercentage }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+  confirmDelete({
+    name: `${percentage.profitPercentage}%`,
+    notify: false,
+    remove: () => {
       emits("delete", percentage);
+      return true;
     },
   });
 };

@@ -56,7 +56,7 @@ const { t } = useI18n();
 const pt = (key: string): string => t(`production.ui.${key}`);
 import { onBeforeRouteLeave, useRouter } from "vue-router";
 import { useStore } from "../../../store";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { useToast } from "primevue/usetoast";
@@ -83,7 +83,7 @@ const productionPartStore = useProductionPartStore();
 const exerciseStore = useExerciseStore();
 const plantModelStore = usePlantModelStore();
 const workOrderStore = useWorkOrderStore();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const filterBodyWidth: FilterBodyWidth = { desktop: "80%" };
 
@@ -411,23 +411,9 @@ const createProductionPart = async (productionPart: ProductionPart) => {
   }
 };
 
-const deleteProductionPart = (productionPart: ProductionPart) => {
-  confirm.require({
-    message: t("production.detail.confirmDeleteProductionPart"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await productionPartStore.delete(productionPart.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminat"),
-          life: 3000,
-        });
-        await filterData();
-      }
-    },
+const deleteProductionPart = (productionPart: ProductionPart) =>
+  confirmDelete({
+    remove: () => productionPartStore.delete(productionPart.id),
+    onDeleted: () => filterData(),
   });
-};
 </script>

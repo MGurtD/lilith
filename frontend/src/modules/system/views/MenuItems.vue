@@ -5,8 +5,8 @@ import type { MenuItemNode } from "@/modules/system/types/menuitem";
 import { useRouter } from "vue-router";
 import { PrimeIcons } from "@primevue/core/api";
 import { useStore } from "@/store";
-import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useMenusStore } from "@/modules/system/store/menus";
 import { getNewUuid } from "@/utils/functions";
 import TableFilter, {
@@ -23,7 +23,7 @@ import { createBlobAndDownloadFile } from "@/utils/functions";
 const router = useRouter();
 const appStore = useStore();
 const menusStore = useMenusStore();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const toast = useToast();
 const { t } = useI18n();
 
@@ -135,26 +135,9 @@ const open = (event: any) => {
 const remove = (node: any) => {
   const id = node?.data?.id;
   if (!id) return;
-  confirm.require({
-    message: t("menuItems.confirmDelete"),
-    header: t("menuItems.confirmHeader"),
-    icon: "pi pi-exclamation-triangle",
-    accept: async () => {
-      const ok = await menusStore.remove(id);
-      if (ok) {
-        toast.add({
-          severity: "success",
-          summary: t("menuItems.deleted"),
-          life: 3000,
-        });
-      } else {
-        toast.add({
-          severity: "error",
-          summary: t("menuItems.error"),
-          life: 4000,
-        });
-      }
-    },
+  confirmDelete({
+    name: node.data.title,
+    remove: () => menusStore.remove(id),
   });
 };
 

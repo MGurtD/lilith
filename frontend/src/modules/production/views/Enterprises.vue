@@ -34,15 +34,13 @@ import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { Enterprise } from "../types";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantmodelStore = usePlantModelStore();
 const { t } = useI18n();
 
@@ -96,33 +94,10 @@ const createButtonClick = () => {
 const editEnterprise = (row: DataTableRowClickEvent) => {
   router.push({ path: `/enterprise/${row.data.id}` });
 };
-const deleteButton = (entity: Enterprise) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteEnterprise", {
-      name: entity.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteEnterprise(entity.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("production.messages.deleted"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchEnterprises();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.enterpriseDeleteError", { name: entity.name }),
-          detail: t("production.messages.enterpriseDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (entity: Enterprise) =>
+  confirmDelete({
+    name: entity.name,
+    remove: () => plantmodelStore.deleteEnterprise(entity.id),
+    onDeleted: () => plantmodelStore.fetchEnterprises(),
   });
-};
 </script>

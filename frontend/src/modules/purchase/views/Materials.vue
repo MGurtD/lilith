@@ -14,8 +14,7 @@ import { useStore } from "../../../store";
 import { onMounted, ref, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { Reference } from "../../../modules/shared/types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { getNewUuid } from "../../../utils/functions";
 import { useReferenceStore } from "../../../modules/shared/store/reference";
 import { useTaxesStore } from "../../shared/store/tax";
@@ -27,8 +26,7 @@ const store = useStore();
 const referenceStore = useReferenceStore();
 const taxesStore = useTaxesStore();
 const referenceTypeStore = useReferenceTypeStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 const { t, locale } = useI18n();
 
 const filter = ref({
@@ -66,33 +64,12 @@ const editReference = (reference: Reference) => {
   });
 };
 
-const deleteReference = (reference: Reference) => {
-  confirm.require({
-    message: t("purchase.materials.messages.confirmDelete", {
-      name: reference.description,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const response = await referenceStore.deleteReference(reference.id);
-      if (!response.result) {
-        toast.add({
-          severity: "warn",
-          summary: response.errors[0],
-          life: 5000,
-          closable: true,
-        });
-      } else {
-        toast.add({
-          severity: "success",
-          summary: t("purchase.materials.messages.deleted"),
-          life: 5000,
-        });
-      }
-    },
+const deleteReference = (reference: Reference) =>
+  confirmDelete({
+    name: reference.description,
+    remove: async () =>
+      (await referenceStore.deleteReference(reference.id)).result,
   });
-};
 </script>
 <style scoped>
 .references-header {

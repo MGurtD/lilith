@@ -73,7 +73,7 @@
           v-if="budgetStore.order === undefined"
           :class="PrimeIcons.TIMES"
           class="grid_delete_column_button"
-          @click="onDeleteRow($event, slotProps.data)"
+          @click="onDeleteRow(slotProps.data)"
         />
       </template>
     </Column>
@@ -91,7 +91,7 @@ import LinkReference from "../../shared/components/LinkReference.vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Budget, BudgetDetail } from "../types";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useBudgetStore } from "../store/budget";
 import { computed } from "vue";
 import { formatCurrency } from "../../../utils/functions";
@@ -107,7 +107,7 @@ const emit = defineEmits<{
   (e: "delete", detail: BudgetDetail): void;
 }>();
 
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const budgetStore = useBudgetStore();
 
 const totalAmount = computed(() => {
@@ -127,18 +127,15 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, detail: BudgetDetail) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("sales.componentMessages.deleteLine"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (detail: BudgetDetail) =>
+  confirmDelete({
+    name: detail.description,
+    notify: false,
+    remove: () => {
       emit("delete", detail);
+      return true;
     },
   });
-};
 </script>
 <style scoped>
 .total-footer {

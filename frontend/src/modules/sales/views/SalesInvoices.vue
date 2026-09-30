@@ -54,7 +54,7 @@ import type {
   FilterBodyWidth,
   FilterConfig,
 } from "../../../components/tables/TableFilter.vue";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useToast } from "primevue/usetoast";
 import { useRouter } from "vue-router";
 import { useStore } from "../../../store";
@@ -75,7 +75,7 @@ import { DialogOptions } from "../../../types/component";
 import { useUserFilterStore } from "../../../store/userfilter";
 
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
@@ -268,23 +268,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/sales-invoice/${row.data.id}` });
 };
 
-const deleteSalesInvoice = (invoice: SalesInvoice) => {
-  confirm.require({
-    message: t("sales.invoices.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await invoiceStore.Delete(invoice.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.list.messages.deleted"),
-          life: 3000,
-        });
-        await filterInvoices();
-      }
-    },
+const deleteSalesInvoice = (invoice: SalesInvoice) =>
+  confirmDelete({
+    name: invoice.invoiceNumber,
+    remove: () => invoiceStore.Delete(invoice.id),
+    onDeleted: filterInvoices,
   });
-};
 </script>

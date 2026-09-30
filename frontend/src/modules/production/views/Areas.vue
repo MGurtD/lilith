@@ -32,15 +32,13 @@ import { usePlantModelStore } from "../store/plantmodel";
 import { computed, onMounted, watch } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { Area } from "../types";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantmodelStore = usePlantModelStore();
 const { t, locale } = useI18n();
 
@@ -94,33 +92,12 @@ const createButtonClick = () => {
 const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/area/${row.data.id}` });
 };
-const deleteButton = (area: Area) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteArea", { name: area.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteArea(area.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("production.messages.deleted"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchAreas();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.areaDeleteError", { name: area.name }),
-          detail: t("production.messages.areaDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (area: Area) =>
+  confirmDelete({
+    name: area.name,
+    remove: () => plantmodelStore.deleteArea(area.id),
+    onDeleted: () => plantmodelStore.fetchAreas(),
   });
-};
 
 watch(locale, setMenuTitle);
 </script>

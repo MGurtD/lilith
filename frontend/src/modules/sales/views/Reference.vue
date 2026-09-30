@@ -136,13 +136,13 @@ import { useTaxesStore } from "../../shared/store/tax";
 import { useWorkMasterStore } from "../../production/store/workmaster";
 import { Reference, ReferenceCategoryEnum } from "../../shared/types";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { formatCurrency, getNewUuid } from "../../../utils/functions";
 import { useI18n } from "vue-i18n";
 
 const route = useRoute();
 const router = useRouter();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 
 const store = useStore();
 const taxesStore = useTaxesStore();
@@ -287,16 +287,11 @@ const editWorkmaster = (row: DataTableRowClickEvent) => {
   router.push({ path: `/workmaster/${row.data.id}` });
 };
 
-const deleteWorkmaster = async (event: any, workmaster: any) => {
+const deleteWorkmaster = (event: Event, workmaster: any) => {
   event.stopPropagation();
 
-  confirm.require({
-    target: event.currentTarget,
-    message: t("sales.references.confirmDeleteRoute"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
+  confirmDelete({
+    remove: async () => {
       // Eliminacion optimista: quitar del array local inmediatamente
       if (workmasterStore.workmasters) {
         workmasterStore.workmasters = workmasterStore.workmasters.filter(
@@ -304,22 +299,15 @@ const deleteWorkmaster = async (event: any, workmaster: any) => {
         );
       }
 
-      const result = await workmasterStore.delete(workmaster.id);
-      if (result) {
-        toast.add({
-          severity: "success",
-          summary: t("sales.detail.messages.routeDeleted"),
-          life: 5000,
-        });
-      } else {
+      let deleted = false;
+      try {
+        deleted = await workmasterStore.delete(workmaster.id);
+      } finally {
         // Si falla, recargar para restaurar el estado real
-        await workmasterStore.fetchByReferenceId(reference.value!.id);
-        toast.add({
-          severity: "warn",
-          summary: t("sales.detail.messages.routeDeleteError"),
-          life: 5000,
-        });
+        if (!deleted)
+          await workmasterStore.fetchByReferenceId(reference.value!.id);
       }
+      return deleted;
     },
   });
 };

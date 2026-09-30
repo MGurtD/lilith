@@ -91,7 +91,7 @@ import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { WorkOrder, WorkOrderPhase } from "../types";
 import { getNewUuid } from "../../../utils/functions";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { usePlantModelStore } from "../store/plantmodel";
 import FormWorkOrderPhase from "./FormWorkorderPhase.vue";
 import { DialogOptions } from "../../../types/component";
@@ -119,7 +119,7 @@ const dialogOptions = reactive({
 } as DialogOptions);
 
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantModelStore = usePlantModelStore();
 const lifecycleStore = useLifecyclesStore();
 
@@ -220,16 +220,13 @@ const onEditRow = (row: DataTableRowClickEvent) => {
   }
 };
 
-const onDeleteRow = (event: any, phase: WorkOrderPhase) => {
-  confirm.require({
-    target: event.currentTarget,
-    message: t("production.components.confirmDeletePhase", { code: phase.code, description: phase.description }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: () => {
+const onDeleteRow = (_event: any, phase: WorkOrderPhase) =>
+  confirmDelete({
+    name: `${phase.code} - ${phase.description}`,
+    notify: false,
+    remove: () => {
       emit("delete", phase);
+      return true;
     },
   });
-};
 </script>

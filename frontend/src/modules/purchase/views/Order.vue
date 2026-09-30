@@ -73,7 +73,7 @@ import {
 import { DialogOptions, FormActionMode } from "../../../types/component";
 import { useRouter, useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useStore } from "../../../store";
 import { useReferenceStore } from "../../shared/store/reference";
 import { useLifecyclesStore } from "../../shared/store/lifecycle";
@@ -89,7 +89,7 @@ const router = useRouter();
 const route = useRoute();
 const store = useStore();
 const orderForm = ref<{ submitForm: () => void } | null>(null);
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const referenceStore = useReferenceStore();
 const referenceTypeStore = useReferenceTypeStore();
 const orderStore = useOrderStore();
@@ -216,18 +216,12 @@ const editDetail = async (detail: PurchaseOrderDetail) => {
   if (!response.result) showResponseErrorToast(response);
 };
 
-const removeDetail = async (detail: PurchaseOrderDetail) => {
-  confirm.require({
-    message: t("purchase.orderDetail.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const response = await orderStore.deleteDetail(detail.id, detail);
-      if (!response.result) showResponseErrorToast(response);
-    },
+const removeDetail = (detail: PurchaseOrderDetail) =>
+  confirmDelete({
+    name: detail.description,
+    remove: async () =>
+      (await orderStore.deleteDetail(detail.id, detail)).result,
   });
-};
 
 const showResponseErrorToast = (
   response: GenericResponse<PurchaseOrderDetail>,

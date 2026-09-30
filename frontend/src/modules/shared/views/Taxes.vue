@@ -32,8 +32,7 @@ import { computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { DataTableRowClickEvent } from "primevue/datatable";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useStore } from "../../../store";
 import { useTaxesStore } from "../store/tax";
 import { Tax } from "../types";
@@ -42,8 +41,7 @@ const router = useRouter();
 const route = useRoute();
 const store = useStore();
 const taxStore = useTaxesStore();
-const confirm = useConfirm();
-const toast = useToast();
+const confirmDelete = useConfirmDelete();
 const { t } = useI18n();
 
 const columns = computed<Column[]>(() => [
@@ -117,28 +115,9 @@ const edit = (row: DataTableRowClickEvent) => {
   router.push({ path: `/tax/${row.data.id}` });
 };
 
-const deleteTax = (tax: Tax) => {
-  confirm.require({
-    message: t("shared.taxes.messages.confirmDelete"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await taxStore.delete(tax.id);
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("shared.taxes.messages.deleted"),
-          life: 3000,
-        });
-      } else {
-        toast.add({
-          severity: "error",
-          summary: t("shared.taxes.messages.deleteError"),
-          life: 4000,
-        });
-      }
-    },
+const deleteTax = (tax: Tax) =>
+  confirmDelete({
+    name: tax.name,
+    remove: () => taxStore.delete(tax.id),
   });
-};
 </script>

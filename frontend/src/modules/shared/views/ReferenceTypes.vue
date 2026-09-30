@@ -34,16 +34,14 @@ import { useStore } from "../../../store";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { PrimeIcons } from "@primevue/core/api";
-import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { ReferenceType } from "../types";
 import { useReferenceTypeStore } from "../store/referenceType";
 
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const referenceTypeStore = useReferenceTypeStore();
 const { t } = useI18n();
 
@@ -97,28 +95,10 @@ const editRow = (row: DataTableRowClickEvent) => {
   router.push({ path: `/referencetype/${row.data.id}` });
 };
 
-const deleteButton = (rawmaterialtype: ReferenceType) => {
-  confirm.require({
-    message: t("shared.referenceTypes.messages.confirmDelete", {
-      name: rawmaterialtype.name,
-    }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await referenceTypeStore.deleteReferenceType(
-        rawmaterialtype.id,
-      );
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("shared.referenceTypes.messages.deleted"),
-          life: 3000,
-        });
-        await referenceTypeStore.fetchAll();
-      }
-    },
+const deleteButton = (rawmaterialtype: ReferenceType) =>
+  confirmDelete({
+    name: rawmaterialtype.name,
+    remove: () => referenceTypeStore.deleteReferenceType(rawmaterialtype.id),
+    onDeleted: () => referenceTypeStore.fetchAll(),
   });
-};
 </script>

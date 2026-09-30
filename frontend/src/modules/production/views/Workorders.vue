@@ -49,7 +49,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { useToast } from "primevue/usetoast";
-import { useConfirm } from "primevue/useconfirm";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useReferenceStore } from "../../shared/store/reference";
 import { CreateWorkOrderDto, WorkOrder } from "../types";
 import { formatDateForQueryParameter } from "../../../utils/functions";
@@ -69,7 +69,7 @@ const router = useRouter();
 const store = useStore();
 const userFilterStore = useUserFilterStore();
 const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const workMasterStore = useWorkMasterStore();
 const workOrderStore = useWorkOrderStore();
 const referenceStore = useReferenceStore();
@@ -303,24 +303,12 @@ const createWorkOrder = async (dto: CreateWorkOrderDto) => {
     router.push({ path: `/workorder/${workOrderStore.workorder.id}` });
 };
 
-const deleteButton = (workorder: WorkOrder) => {
-  confirm.require({
-    message: t("production.detail.confirmDeleteWorkorder"),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await workOrderStore.delete(workorder.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: pt("Eliminada"),
-          life: 3000,
-        });
-        filterData();
-      }
+const deleteButton = (workorder: WorkOrder) =>
+  confirmDelete({
+    name: workorder.code,
+    remove: () => workOrderStore.delete(workorder.id),
+    onDeleted: () => {
+      filterData();
     },
   });
-};
 </script>

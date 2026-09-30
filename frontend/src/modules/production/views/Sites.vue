@@ -33,14 +33,12 @@ import { computed, onMounted } from "vue";
 import { PrimeIcons } from "@primevue/core/api";
 import { DataTableRowClickEvent } from "primevue/datatable";
 import { Site } from "../types";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import { useConfirmDelete } from "@/composables/useConfirmDelete";
 import { useI18n } from "vue-i18n";
 
 const router = useRouter();
 const store = useStore();
-const toast = useToast();
-const confirm = useConfirm();
+const confirmDelete = useConfirmDelete();
 const plantmodelStore = usePlantModelStore();
 const { t } = useI18n();
 
@@ -96,31 +94,10 @@ const editSite = (row: DataTableRowClickEvent) => {
   router.push({ path: `/site/${row.data.id}` });
 };
 
-const deleteButton = (entity: Site) => {
-  confirm.require({
-    message: t("production.messages.confirmDeleteSite", { name: entity.name }),
-    icon: "pi pi-question-circle",
-    acceptIcon: "pi pi-check",
-    rejectIcon: "pi pi-times",
-    accept: async () => {
-      const deleted = await plantmodelStore.deleteSite(entity.id);
-
-      if (deleted) {
-        toast.add({
-          severity: "success",
-          summary: t("production.messages.deleted"),
-          life: 3000,
-        });
-        await plantmodelStore.fetchSites();
-      } else {
-        toast.add({
-          severity: "warn",
-          summary: t("production.messages.siteDeleteError", { name: entity.name }),
-          detail: t("production.messages.siteDeleteErrorDetail"),
-          life: 6000,
-        });
-      }
-    },
+const deleteButton = (entity: Site) =>
+  confirmDelete({
+    name: entity.name,
+    remove: () => plantmodelStore.deleteSite(entity.id),
+    onDeleted: () => plantmodelStore.fetchSites(),
   });
-};
 </script>
