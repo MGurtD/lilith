@@ -68,13 +68,6 @@ public class SupplierService(
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Purchase orders and invoices cascade from the supplier, so a supplier in use is never deleted.
-        if (await unitOfWork.Suppliers.IsInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("SupplierInUse", entity.ComercialName));
-        }
-
         await unitOfWork.Suppliers.Remove(entity);
         return new GenericResponse(true, entity);
     }

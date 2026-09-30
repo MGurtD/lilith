@@ -2,7 +2,7 @@
 
 namespace Domain.Entities
 {
-    public class Status : Entity
+    public class Status : Entity, IMasterData
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

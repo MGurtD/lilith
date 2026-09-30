@@ -8,35 +8,21 @@ using Xunit;
 namespace Application.Tests.Services.Shared;
 
 /// <summary>
-/// <see cref="TaxService.RemoveTax"/> must refuse a tax in use (#159): the
-/// invoice tax breakdowns cascade from the tax, so deleting it would delete them.
+/// <see cref="TaxService.RemoveTax"/> deletes the tax; refusing a tax in use is the
+/// repository's job (see MasterDataDeleteGuardTests).
 /// </summary>
 public class TaxServiceTests
 {
     private static readonly Dictionary<string, string> LocalizationKeys = new()
     {
-        ["TaxInUse"] = "L'impost està en ús",
         ["EntityNotFound"] = "L'entitat amb ID {0} no existeix",
     };
-
-    [Fact]
-    public async Task RemoveTax_refuses_a_tax_in_use_and_keeps_it()
-    {
-        var tax = NewTax();
-        var context = BuildSut(tax, inUse: true);
-
-        var response = await context.Sut.RemoveTax(tax.Id);
-
-        Assert.False(response.Result);
-        Assert.Equal("L'impost està en ús", Assert.Single(response.Errors));
-        Assert.Contains(tax, context.Taxes.Items);
-    }
 
     [Fact]
     public async Task RemoveTax_deletes_an_unused_tax()
     {
         var tax = NewTax();
-        var context = BuildSut(tax, inUse: false);
+        var context = BuildSut(tax);
 
         var response = await context.Sut.RemoveTax(tax.Id);
 
@@ -46,9 +32,9 @@ public class TaxServiceTests
 
     private static Tax NewTax() => new() { Id = Guid.NewGuid(), Name = "IVA 10%", Percentatge = 10 };
 
-    private static TestContext BuildSut(Tax tax, bool inUse)
+    private static TestContext BuildSut(Tax tax)
     {
-        var taxes = new InMemoryTaxRepository([tax], inUse ? [tax.Id] : []);
+        var taxes = new InMemoryTaxRepository([tax]);
         var unitOfWork = Substitute.For<IUnitOfWork>();
         unitOfWork.Taxes.Returns(taxes);
 

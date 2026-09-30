@@ -158,31 +158,5 @@ namespace Infrastructure.Persistance.Repositories.Warehouse
 
             return await query.ToListAsync();
         }
-
-        // Stock references its location with a cascading foreign key and stock
-        // movements cascade from the stock, so deleting a location that holds stock
-        // or has movements would silently delete them.
-        public async Task<bool> IsLocationInUse(Guid locationId)
-        {
-            var locationIds = context.Set<Location>().Where(l => l.Id == locationId).Select(l => l.Id);
-            return await LocationsHoldStock(locationIds)
-                || await dbSet.AnyAsync(w => w.DefaultLocationId == locationId);
-        }
-
-        // Locations cascade from the warehouse, and their stock and movements from them.
-        public async Task<bool> IsInUse(Guid warehouseId)
-        {
-            var locationIds = context.Set<Location>().Where(l => l.WarehouseId == warehouseId).Select(l => l.Id);
-            return await LocationsHoldStock(locationIds)
-                || await dbSet.AnyAsync(w => w.Id != warehouseId && w.DefaultLocationId.HasValue && locationIds.Contains(w.DefaultLocationId.Value));
-        }
-
-        private async Task<bool> LocationsHoldStock(IQueryable<Guid> locationIds)
-        {
-            var stockIds = context.Set<Stock>().Where(s => locationIds.Contains(s.LocationId)).Select(s => s.Id);
-            return await context.Set<Stock>().AnyAsync(s => locationIds.Contains(s.LocationId) && s.Quantity != 0)
-                || await context.Set<StockMovement>().AnyAsync(m =>
-                    (m.LocationId.HasValue && locationIds.Contains(m.LocationId.Value)) || stockIds.Contains(m.StockId));
-        }
     }
 }

@@ -2,7 +2,6 @@ using Application.Contracts;
 using Application.Services;
 using Domain.Entities.Purchase;
 using Domain.Entities.Shared;
-using System.Text;
 
 namespace Application.Services.System
 {
@@ -121,10 +120,6 @@ namespace Application.Services.System
                     localizationService.GetLocalizedString("EntityNotFound", id));
             }
 
-            var canDelete = await CanDelete(id);
-            if (!canDelete.Result)
-                return canDelete;
-
             await unitOfWork.References.Remove(reference);
             return new GenericResponse(true, reference);
         }
@@ -152,42 +147,6 @@ namespace Application.Services.System
             }
 
             return reference.Code;
-        }
-
-        // Every line of the refusal message, in the order it is shown.
-        private static readonly (ReferenceUsage Usage, string Key)[] UsageMessages =
-        [
-            (ReferenceUsage.SalesOrders, "Reference.Delete.SalesOrders"),
-            (ReferenceUsage.PurchaseOrders, "Reference.Delete.PurchaseOrders"),
-            (ReferenceUsage.DeliveryNotes, "Reference.Delete.DeliveryNotes"),
-            (ReferenceUsage.Budgets, "Reference.Delete.Budgets"),
-            (ReferenceUsage.Receipts, "Reference.Delete.Receipts"),
-            (ReferenceUsage.Stock, "Reference.Delete.Stock"),
-            (ReferenceUsage.StockMovements, "Reference.Delete.StockMovements"),
-            (ReferenceUsage.ProductionRoute, "Reference.Delete.ProductionRoute"),
-            (ReferenceUsage.WorkOrders, "Reference.Delete.WorkOrders"),
-            (ReferenceUsage.BillOfMaterials, "Reference.Delete.BillOfMaterials"),
-            (ReferenceUsage.ExternalServicePhases, "Reference.Delete.ExternalServicePhases"),
-            (ReferenceUsage.PurchaseRates, "Reference.Delete.PurchaseRates"),
-        ];
-
-        // Document lines, stock and production data cascade from the reference, so a
-        // reference in use is never deleted. The message lists every use.
-        public async Task<GenericResponse> CanDelete(Guid referenceId)
-        {
-            var usage = await unitOfWork.References.GetUsage(referenceId);
-            if (usage == ReferenceUsage.None)
-                return new GenericResponse(true);
-
-            var sb = new StringBuilder();
-            sb.AppendLine(localizationService.GetLocalizedString("Reference.Delete.Header"));
-            foreach (var (flag, key) in UsageMessages)
-            {
-                if (usage.HasFlag(flag))
-                    sb.AppendLine(localizationService.GetLocalizedString(key));
-            }
-
-            return new GenericResponse(false, sb.ToString());
         }
 
         public async Task<List<Reference>> GetReferenceByCategory(string categoryName)

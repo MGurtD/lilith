@@ -126,6 +126,7 @@ namespace Api.Middlewares
                 ArgumentNullException => ((int)HttpStatusCode.BadRequest, "ErrorResponse.BadRequest"),
                 ArgumentException => ((int)HttpStatusCode.BadRequest, "ErrorResponse.BadRequest"),
                 InvalidOperationException => ((int)HttpStatusCode.BadRequest, "ErrorResponse.BadRequest"),
+                EntityInUseException => ((int)HttpStatusCode.Conflict, "ErrorResponse.Conflict"),
                 DbUpdateException => ((int)HttpStatusCode.Conflict, "ErrorResponse.Conflict"),
                 _ => ((int)HttpStatusCode.InternalServerError, "ErrorResponse.InternalServerError")
             };
@@ -138,6 +139,23 @@ namespace Api.Middlewares
             string localizationKey,
             string correlationId)
         {
+            // A refused delete is an expected outcome: the user only needs the reason.
+            if (exception is EntityInUseException inUse)
+            {
+                var reason = DescribeInUse(inUse);
+                return new ErrorResponse
+                {
+                    Type = $"https://httpstatuses.com/{statusCode}",
+                    Title = reason,
+                    Status = statusCode,
+                    Detail = reason,
+                    Instance = context.Request.Path,
+                    TraceId = correlationId,
+                    Errors = [reason],
+                    Timestamp = DateTime.UtcNow
+                };
+            }
+
             var errors = new List<string> { exception.Message };
             if (exception.InnerException != null)
             {
@@ -160,6 +178,14 @@ namespace Api.Middlewares
             };
 
             return errorResponse;
+        }
+
+        private string DescribeInUse(EntityInUseException exception)
+        {
+            var kinds = string.Join(", ", exception.DocumentKindKeys.Select(key => localizationService.GetLocalizedString(key)));
+            return string.IsNullOrWhiteSpace(exception.EntityName)
+                ? localizationService.GetLocalizedString("MasterData.InUse", kinds)
+                : localizationService.GetLocalizedString("MasterData.InUseNamed", exception.EntityName, kinds);
         }
 
         private static bool IsHealthCheckEndpoint(PathString path)

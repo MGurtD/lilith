@@ -4,7 +4,7 @@ using Domain.Entities.Sales;
 
 namespace Domain.Entities.Shared
 {
-    public class Reference : Entity
+    public class Reference : Entity, IMasterData
     {
         public string Code { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

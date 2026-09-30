@@ -51,13 +51,6 @@ public class TaxService(IUnitOfWork unitOfWork, ILocalizationService localizatio
             return new GenericResponse(false, message);
         }
 
-        // Invoice tax breakdowns cascade from the tax, so a tax in use is never deleted.
-        if (await unitOfWork.Taxes.IsInUse(id))
-        {
-            var message = localizationService.GetLocalizedString("TaxInUse");
-            return new GenericResponse(false, message);
-        }
-
         await unitOfWork.Taxes.Remove(entity);
         return new GenericResponse(true, entity);
     }

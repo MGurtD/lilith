@@ -16,17 +16,15 @@ public class RejectionReasonServiceTests
     {
         ["RejectionReasonCodeDuplicate"] = "Code {0} already exists",
         ["RejectionReasonNotFound"] = "Reason {0} not found",
-        ["RejectionReasonInUse"] = "Reason {0} is in use",
     };
 
     private static (RejectionReasonService Service, InMemoryRepository<RejectionReason> Reasons)
-        BuildService(IEnumerable<RejectionReason>? reasons = null, IEnumerable<WorkOrderPhaseRejection>? rejections = null)
+        BuildService(IEnumerable<RejectionReason>? reasons = null)
     {
         var unitOfWork = Substitute.For<IUnitOfWork>();
         var reasonsRepository = new InMemoryRepository<RejectionReason>(reasons);
 
         unitOfWork.RejectionReasons.Returns(reasonsRepository);
-        unitOfWork.WorkOrderPhaseRejections.Returns(new InMemoryRepository<WorkOrderPhaseRejection>(rejections));
 
         return (new RejectionReasonService(unitOfWork, new KeyedLocalizationService(Messages)), reasonsRepository);
     }
@@ -67,21 +65,6 @@ public class RejectionReasonServiceTests
         var response = await service.Update(existing);
 
         Assert.True(response.Result);
-    }
-
-    [Fact]
-    public async Task Remove_WhenReasonHasRecordedRejections_Fails()
-    {
-        var reason = new RejectionReason { Code = "DIM", Name = "Dimensional" };
-        var (service, reasons) = BuildService(
-            [reason],
-            [new WorkOrderPhaseRejection { RejectionReasonId = reason.Id, Quantity = 3 }]);
-
-        var response = await service.Remove(reason.Id);
-
-        Assert.False(response.Result);
-        Assert.Equal("Reason DIM is in use", Assert.Single(response.Errors));
-        Assert.Single(reasons.Items);
     }
 
     [Fact]

@@ -61,13 +61,6 @@ public class WarehouseService(IUnitOfWork unitOfWork, ILocalizationService local
                 localizationService.GetLocalizedString("EntityNotFound", id));
         }
 
-        // Locations cascade from the warehouse and stock from them, so a warehouse whose locations are in use is never deleted.
-        if (await unitOfWork.Warehouses.IsInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("WarehouseInUse", entity.Name));
-        }
-
         await unitOfWork.Warehouses.Remove(entity);
         return new GenericResponse(true, entity);
     }
@@ -108,13 +101,6 @@ public class WarehouseService(IUnitOfWork unitOfWork, ILocalizationService local
         {
             return new GenericResponse(false,
                 localizationService.GetLocalizedString("LocationNotFound", id));
-        }
-
-        // Stock cascades from its location, so a location in use is never deleted.
-        if (await unitOfWork.Warehouses.IsLocationInUse(id))
-        {
-            return new GenericResponse(false,
-                localizationService.GetLocalizedString("LocationInUse", location.Name));
         }
 
         await unitOfWork.Warehouses.Locations.Remove(location);

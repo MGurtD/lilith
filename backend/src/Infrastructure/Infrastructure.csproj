@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Application.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Migrations\Archive\**" />
     <EmbeddedResource Remove="Migrations\Archive\**" />
     <None Remove="Migrations\Archive\**" />

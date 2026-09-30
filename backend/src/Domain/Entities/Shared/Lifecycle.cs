@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities.Shared;
 
-public class Lifecycle : Entity
+public class Lifecycle : Entity, IMasterData
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

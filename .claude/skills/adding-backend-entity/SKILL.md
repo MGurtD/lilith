@@ -32,6 +32,12 @@ Build from current source, not copied templates.
 - Inspect the analogous entity before choosing physical deletion, `Disabled`, or a lifecycle transition.
 - Read the live `StatusConstants.cs`; never reproduce its values in the skill or new documentation.
 - Define cascade behavior deliberately for each relationship.
+- Decide whether the entity is master data (see Master data deletion in `AGENTS.md`):
+  - Configuration that documents refer to: implement `IMasterData` and add its name to `MasterDataCatalog.Names`.
+  - Records deleted together with a master: declare them in `MasterDataCatalog.OwnedParts`.
+  - A property that refers to master data without a foreign key: declare it in `MasterDataCatalog.ExtraReferences`, or better, add the foreign key.
+  - A new entity that refers to master data: give it a `DocumentKind.*` entry in `MasterDataCatalog.DocumentKinds`, with the key in every backend culture.
+  - `MasterDataDeleteGuardTests` must pass. Never write an in-use check in the service or repository.
 - Date properties are `DateTime` in Europe/Madrid local time, stored as `timestamp without time zone`, and set with `DateTime.Now`. Never use `DateTimeOffset` or `timestamp with time zone` (see Dates and Time in `AGENTS.md`).
 - Do not add backward compatibility unless a persisted or external consumer requires it.
 
