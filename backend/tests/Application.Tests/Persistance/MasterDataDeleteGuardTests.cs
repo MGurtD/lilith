@@ -30,6 +30,7 @@ public class MasterDataDeleteGuardTests
             .ToHashSet();
 
         Assert.Equal(masterData.OrderBy(t => t.Name), MasterDataCatalog.Names.Keys.OrderBy(t => t.Name));
+        Assert.Subset(masterData, MasterDataCatalog.CanBeDisabled.ToHashSet());
     }
 
     [Fact]
@@ -39,6 +40,27 @@ public class MasterDataDeleteGuardTests
 
         foreach (var part in MasterDataCatalog.OwnedParts)
             MasterDataDeleteGuard.OwnerReference(context.Model, part);
+    }
+
+    [Fact]
+    public void Master_data_cascades_only_to_its_unfiltered_owned_parts()
+    {
+        using var context = NewContext();
+        var ownedParts = MasterDataCatalog.OwnedParts
+            .Where(p => p.Filter is null)
+            .Select(p => (p.Owner, p.Part))
+            .ToHashSet();
+
+        var masterDataKeys = context.Model.GetEntityTypes()
+            .SelectMany(t => t.GetForeignKeys())
+            .Where(fk => typeof(IMasterData).IsAssignableFrom(fk.PrincipalEntityType.ClrType))
+            .ToList();
+
+        Assert.All(masterDataKeys.Where(fk => ownedParts.Contains((fk.PrincipalEntityType.ClrType, fk.DeclaringEntityType.ClrType))),
+            fk => Assert.Equal(DeleteBehavior.Cascade, fk.DeleteBehavior));
+        Assert.DoesNotContain(masterDataKeys,
+            fk => fk.DeleteBehavior == DeleteBehavior.Cascade
+                && !ownedParts.Contains((fk.PrincipalEntityType.ClrType, fk.DeclaringEntityType.ClrType)));
     }
 
     [Fact]
@@ -69,6 +91,7 @@ public class MasterDataDeleteGuardTests
             .Append("DocumentKind.Other")
             .Append("MasterData.InUse")
             .Append("MasterData.InUseNamed")
+            .Append("MasterData.DisableInstead")
             .Distinct()
             .ToList();
 
@@ -101,6 +124,7 @@ public class MasterDataDeleteGuardTests
 
         Assert.Equal("IVA 21%", refusal.EntityName);
         Assert.Equal(["DocumentKind.References"], refusal.DocumentKindKeys);
+        Assert.True(refusal.CanBeDisabled);
         await using var context = NewContext(database);
         Assert.True(await context.Set<Tax>().AnyAsync());
     }
@@ -118,6 +142,7 @@ public class MasterDataDeleteGuardTests
         var refusal = await Assert.ThrowsAsync<EntityInUseException>(() => Remove<Supplier>(database, supplier.Id));
 
         Assert.Equal(["DocumentKind.Budgets", "DocumentKind.PurchaseOrders"], refusal.DocumentKindKeys);
+        Assert.False(refusal.CanBeDisabled);
     }
 
     [Fact]
@@ -162,6 +187,23 @@ public class MasterDataDeleteGuardTests
         var refusal = await Assert.ThrowsAsync<EntityInUseException>(() => Remove<Location>(database, full.Id));
 
         Assert.Equal(["DocumentKind.Stock"], refusal.DocumentKindKeys);
+        await using var context = NewContext(database);
+        Assert.Equal([full.Id], await context.Set<Stock>().Select(s => s.LocationId).ToListAsync());
+    }
+
+    // Empty stock is restricted in the database, so the repository deletes it explicitly.
+    [Fact]
+    public async Task A_warehouse_is_deleted_with_its_locations_and_their_empty_stock()
+    {
+        var warehouse = new WarehouseEntity { Name = "Central" };
+        var location = new Location { Name = "A-01", WarehouseId = warehouse.Id };
+        var database = Seed(warehouse, location, new Stock { LocationId = location.Id, Quantity = 0 });
+
+        await Remove<WarehouseEntity>(database, warehouse.Id);
+
+        await using var context = NewContext(database);
+        Assert.False(await context.Set<Location>().AnyAsync());
+        Assert.False(await context.Set<Stock>().AnyAsync());
     }
 
     [Fact]

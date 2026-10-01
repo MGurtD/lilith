@@ -28,6 +28,31 @@ namespace Infrastructure.Persistance
 
             BuildApplicationViewMappings(builder);
             builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+            MasterData.MasterDataForeignKeys.Restrict(builder.Model);
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            try
+            {
+                return base.SaveChanges(acceptAllChangesOnSuccess);
+            }
+            catch (DbUpdateException exception) when (MasterData.MasterDataDeleteGuard.DatabaseRefusal(Model, exception) is { } refusal)
+            {
+                throw refusal;
+            }
+        }
+
+        public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            }
+            catch (DbUpdateException exception) when (MasterData.MasterDataDeleteGuard.DatabaseRefusal(Model, exception) is { } refusal)
+            {
+                throw refusal;
+            }
         }
 
         private static void BuildApplicationViewMappings(ModelBuilder builder)

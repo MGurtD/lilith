@@ -370,6 +370,7 @@
     "ErrorResponse.Conflict": "Conflicto con el estado actual del recurso",
     "MasterData.InUseNamed": "No se puede eliminar «{0}» porque está en uso en: {1}.",
     "MasterData.InUse": "No se puede eliminar porque está en uso en: {0}.",
+    "MasterData.DisableInstead": "Si ya no se necesita, se puede desactivar en lugar de eliminarlo.",
     "DocumentKind.Budgets": "presupuestos",
     "DocumentKind.SalesOrders": "pedidos de venta",
     "DocumentKind.DeliveryNotes": "albaranes",

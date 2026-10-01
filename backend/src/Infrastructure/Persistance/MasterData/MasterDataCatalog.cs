@@ -67,6 +67,33 @@ internal static class MasterDataCatalog
             [typeof(WorkMaster)] = _ => null,
         };
 
+    /// <summary>
+    /// Master data whose screens let the user deactivate it, so a refusal to delete it
+    /// suggests deactivating instead. Leave a type out until its screen has the option.
+    /// </summary>
+    public static readonly IReadOnlySet<Type> CanBeDisabled = new HashSet<Type>
+    {
+        typeof(Area),
+        typeof(Enterprise),
+        typeof(Exercise),
+        typeof(ExpenseType),
+        typeof(InvoiceSerie),
+        typeof(Location),
+        typeof(MachineStatus),
+        typeof(OperatorType),
+        typeof(PaymentMethod),
+        typeof(Reference),
+        typeof(ReferenceType),
+        typeof(RejectionReason),
+        typeof(Site),
+        typeof(Status),
+        typeof(Tax),
+        typeof(WarehouseEntity),
+        typeof(Workcenter),
+        typeof(WorkcenterType),
+        typeof(WorkMaster),
+    };
+
     public static readonly IReadOnlyList<OwnedPart> OwnedParts =
     [
         OwnedPart.Of<Customer, CustomerAddress>(),

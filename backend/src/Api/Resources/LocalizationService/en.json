@@ -370,6 +370,7 @@
     "ErrorResponse.Conflict": "Conflict with the current state of the resource",
     "MasterData.InUseNamed": "Cannot delete \"{0}\" because it is in use in: {1}.",
     "MasterData.InUse": "Cannot delete it because it is in use in: {0}.",
+    "MasterData.DisableInstead": "If it is no longer needed, it can be deactivated instead.",
     "DocumentKind.Budgets": "budgets",
     "DocumentKind.SalesOrders": "sales orders",
     "DocumentKind.DeliveryNotes": "delivery notes",

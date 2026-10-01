@@ -156,14 +156,20 @@ namespace Api.Middlewares
                 };
             }
 
-            var errors = new List<string> { exception.Message };
-            if (exception.InnerException != null)
-            {
-                errors.Add(exception.InnerException.Message);
-            }
-
             // Get localized title
             var title = localizationService.GetLocalizedString(localizationKey);
+
+            // Exception text can carry database and internal details, such as constraint names.
+            // Only Development shows it; elsewhere it stays in the log under the trace id.
+            var errors = new List<string> { title };
+            if (environment.IsDevelopment())
+            {
+                errors = [exception.Message];
+                if (exception.InnerException != null)
+                {
+                    errors.Add(exception.InnerException.Message);
+                }
+            }
 
             var errorResponse = new ErrorResponse
             {
@@ -183,9 +189,12 @@ namespace Api.Middlewares
         private string DescribeInUse(EntityInUseException exception)
         {
             var kinds = string.Join(", ", exception.DocumentKindKeys.Select(key => localizationService.GetLocalizedString(key)));
-            return string.IsNullOrWhiteSpace(exception.EntityName)
+            var reason = string.IsNullOrWhiteSpace(exception.EntityName)
                 ? localizationService.GetLocalizedString("MasterData.InUse", kinds)
                 : localizationService.GetLocalizedString("MasterData.InUseNamed", exception.EntityName, kinds);
+            return exception.CanBeDisabled
+                ? $"{reason} {localizationService.GetLocalizedString("MasterData.DisableInstead")}"
+                : reason;
         }
 
         private static bool IsHealthCheckEndpoint(PathString path)

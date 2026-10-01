@@ -4,6 +4,7 @@ using Application.Contracts;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Npgsql;
 
 namespace Infrastructure.Persistance.MasterData;
 
@@ -25,19 +26,40 @@ internal static class MasterDataDeleteGuard
         .Distinct()
         .ToList();
 
-    public static async Task EnsureNotInUse(ApplicationDbContext context, IEnumerable<Entity> entities)
+    /// <summary>
+    /// Throws <see cref="EntityInUseException"/> when the master data in
+    /// <paramref name="entities"/> is in use, without changing the context. Otherwise returns
+    /// the ids of the owned parts that go with it, for <see cref="RemoveOwnedParts"/>.
+    /// </summary>
+    public static async Task<IReadOnlyDictionary<Type, List<Guid>>> EnsureNotInUse(
+        ApplicationDbContext context, IEnumerable<Entity> entities)
     {
         var roots = entities.Where(e => e is IMasterData).ToList();
         if (roots.Count == 0)
-            return;
+            return new Dictionary<Type, List<Guid>>();
 
         var deleted = await CollectDeletedSet(context, roots);
         var kinds = await FindDocumentKindsInUse(context, deleted);
-        if (kinds.Count == 0)
-            return;
+        if (kinds.Count > 0)
+            throw new EntityInUseException(roots.Count == 1 ? NameOf(roots[0]) : null, kinds, CanBeDisabled(roots));
 
-        var name = roots.Count == 1 ? NameOf(roots[0]) : null;
-        throw new EntityInUseException(name, kinds);
+        var rootIds = roots.Select(r => r.Id).ToHashSet();
+        return deleted
+            .Select(d => (Type: d.Key, Ids: d.Value.Where(id => !rootIds.Contains(id)).ToList()))
+            .Where(d => d.Ids.Count > 0)
+            .ToDictionary(d => d.Type, d => d.Ids);
+    }
+
+    /// <summary>
+    /// Marks the owned parts as deleted, so EF deletes them in order with their owner. A
+    /// filtered part, such as empty stock, is not deleted in cascade by the database (see
+    /// <see cref="MasterDataForeignKeys"/>), so only this explicit delete removes it. Call it
+    /// after removing the owner, so parts the owner brought into the context are reused.
+    /// </summary>
+    public static async Task RemoveOwnedParts(ApplicationDbContext context, IReadOnlyDictionary<Type, List<Guid>> parts)
+    {
+        foreach (var (type, ids) in parts)
+            context.RemoveRange(await Invoke<Task<List<Entity>>>(nameof(LoadParts), type, context, ids));
     }
 
     /// <summary>A reference to one entity type: the referring type and its property.</summary>
@@ -76,7 +98,38 @@ internal static class MasterDataDeleteGuard
                 $"{part.Part.Name} must refer to {part.Owner.Name} through exactly one foreign key, found {references.Count}.");
     }
 
+    /// <summary>
+    /// The same refusal as <see cref="EnsureNotInUse"/> when a delete bypassed the guard and
+    /// PostgreSQL refused it through a foreign key from master data
+    /// (see <see cref="MasterDataForeignKeys"/>); null for any other failure.
+    /// </summary>
+    internal static EntityInUseException? DatabaseRefusal(IModel model, DbUpdateException exception)
+    {
+        if (exception.InnerException is not PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } refusal)
+            return null;
+
+        var foreignKey = model.GetEntityTypes()
+            .SelectMany(t => t.GetDeclaredForeignKeys())
+            .FirstOrDefault(fk => fk.GetConstraintName() == refusal.ConstraintName);
+        if (foreignKey is null || !typeof(IMasterData).IsAssignableFrom(foreignKey.PrincipalEntityType.ClrType))
+            return null;
+
+        // Without a deleted master, an insert or update referred to a record that does not exist.
+        var deleted = exception.Entries
+            .Where(e => e.State == EntityState.Deleted && e.Metadata.ClrType == foreignKey.PrincipalEntityType.ClrType)
+            .Select(e => (Entity)e.Entity)
+            .ToList();
+        if (deleted.Count == 0)
+            return null;
+
+        var kind = DocumentKindKey(foreignKey.DeclaringEntityType.ClrType) ?? "DocumentKind.Other";
+        return new EntityInUseException(deleted.Count == 1 ? NameOf(deleted[0]) : null, [kind], CanBeDisabled(deleted), exception);
+    }
+
     internal static string? DocumentKindKey(Type type) => DocumentKindKeys.GetValueOrDefault(type);
+
+    private static bool CanBeDisabled(IEnumerable<Entity> entities) =>
+        entities.All(e => MasterDataCatalog.CanBeDisabled.Contains(e.GetType()));
 
     private static string? NameOf(Entity entity) =>
         MasterDataCatalog.Names.TryGetValue(entity.GetType(), out var name) ? name(entity) : null;
@@ -185,6 +238,14 @@ internal static class MasterDataDeleteGuard
             .IgnoreQueryFilters()
             .AsNoTracking()
             .Where(Expression.Lambda<Func<TDependent, bool>>(contains, entity));
+    }
+
+    // Tracked, so records already in the context are reused instead of attached twice.
+    private static async Task<List<Entity>> LoadParts<TPart>(ApplicationDbContext context, List<Guid> ids)
+        where TPart : Entity
+    {
+        var parts = await context.Set<TPart>().IgnoreQueryFilters().Where(e => ids.Contains(e.Id)).ToListAsync();
+        return parts.Cast<Entity>().ToList();
     }
 
     // Reading the ids through a property lets EF send them as a query parameter.
