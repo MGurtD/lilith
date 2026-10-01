@@ -11,12 +11,13 @@ We replaced them with one module. `Repository.Remove` and `RemoveRange` run `Mas
 ## Considered options
 
 - **An explicit list per entity, kept in one place.** Rejected: it keeps today's failure mode, because every new document still has to be added to every list by hand.
-- **Letting the database refuse** (`Restrict` foreign keys, translating PostgreSQL error 23503). Kept as a later safety net (#166), not as the guard. It needs a migration over dozens of foreign keys, and it can only name a constraint, not the documents that use the record.
+- **Letting the database refuse** (`Restrict` foreign keys, translating PostgreSQL error 23503). Kept as a safety net (#166), not as the guard. It stops only at the first violated constraint, so it can name one kind of document at most, and only after the delete reached the database.
 - **An `EnsureNotInUse` call in every service before `Remove`.** Rejected: it depends on remembering the call, which is how guards went missing before.
 
 ## Consequences
 
 - `Repository.Remove` can throw. A delete with other effects (files, related records) must remove the master data first, so a refusal happens before anything else changes. `EnterpriseService` and `WorkcenterService` are ordered this way.
 - Only `Remove` and `RemoveRange` are guarded. `context.Remove`, `ExecuteDelete` and SQL bypass the guard, so master data must not be deleted that way.
+- As the safety net for those paths, `MasterDataForeignKeys` turns every cascading foreign key from master data into `Restrict`, except those to owned parts, which keep cascading (migration `RestrictMasterDataForeignKeys`). A filtered owned part, such as empty stock, is restricted too, because a foreign key cannot tell empty stock from stock on hand, so `Repository.Remove` loads and deletes the owned parts itself. When `SaveChanges` hits one of them, `ApplicationDbContext` rethrows the PostgreSQL refusal as `EntityInUseException` naming the referring document kind; `ExecuteDelete` and SQL get the raw database error.
 - Nothing detects a configuration entity that should implement `IMasterData` but does not. `AGENTS.md` and the `adding-backend-entity` skill carry that rule.
 - `MasterDataDeleteGuardTests` fails when a record that can keep master data in use has no document kind, when an owned part does not match exactly one foreign key, or when a master has no name.
