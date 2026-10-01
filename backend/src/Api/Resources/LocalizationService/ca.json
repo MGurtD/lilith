@@ -370,6 +370,7 @@
     "ErrorResponse.Conflict": "Conflicte amb l'estat actual del recurs",
     "MasterData.InUseNamed": "No es pot eliminar «{0}» perquè està en ús a: {1}.",
     "MasterData.InUse": "No es pot eliminar perquè està en ús a: {0}.",
+    "MasterData.DisableInstead": "Si ja no es necessita, es pot desactivar en lloc d'eliminar-lo.",
     "DocumentKind.Budgets": "pressupostos",
     "DocumentKind.SalesOrders": "comandes de venda",
     "DocumentKind.DeliveryNotes": "albarans",

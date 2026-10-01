@@ -99,16 +99,18 @@ namespace Infrastructure.Persistance.Repositories
 
         public async Task Remove(Entity entity)
         {
-            await MasterDataDeleteGuard.EnsureNotInUse(context, [entity]);
+            var ownedParts = await MasterDataDeleteGuard.EnsureNotInUse(context, [entity]);
             dbSet.Remove(entity);
+            await MasterDataDeleteGuard.RemoveOwnedParts(context, ownedParts);
             await context.SaveChangesAsync();
         }
 
         public async Task RemoveRange(IEnumerable<Entity> entities)
         {
             var list = entities.ToList();
-            await MasterDataDeleteGuard.EnsureNotInUse(context, list);
+            var ownedParts = await MasterDataDeleteGuard.EnsureNotInUse(context, list);
             dbSet.RemoveRange(list);
+            await MasterDataDeleteGuard.RemoveOwnedParts(context, ownedParts);
             await context.SaveChangesAsync();
         }
 
